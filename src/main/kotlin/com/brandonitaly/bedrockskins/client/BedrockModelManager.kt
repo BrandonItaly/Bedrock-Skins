@@ -10,6 +10,7 @@ object BedrockModelManager {
     private val activeSkinKeys = mutableMapOf<UUID, String>()
     private val gson = Gson()
 
+    @JvmStatic
     fun getModel(uuid: UUID): BedrockPlayerModel? {
         val skinKey = SkinManager.getSkin(uuid.toString()) ?: return null
         

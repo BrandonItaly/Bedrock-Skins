@@ -55,6 +55,7 @@ object SkinManager {
         playerSkins.remove(uuid)
     }
 
+    @JvmStatic
     fun getSkin(uuid: String): String? {
         return playerSkins[uuid]
     }

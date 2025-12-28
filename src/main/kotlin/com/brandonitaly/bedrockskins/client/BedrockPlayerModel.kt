@@ -10,8 +10,8 @@ import net.minecraft.client.render.entity.state.PlayerEntityRenderState
 class BedrockPlayerModel(
     val root: ModelPart, 
     thinArms: Boolean, 
-    val partsMap: Map<String, ModelPart>,
-    val defaultTransforms: Map<String, PartTransform>,
+    @JvmField val partsMap: Map<String, ModelPart>,
+    @JvmField val defaultTransforms: Map<String, PartTransform>,
     val animationArmsOutFront: Boolean,
     val animationStationaryLegs: Boolean
 ) : PlayerEntityModel(root, thinArms) {
@@ -20,8 +20,11 @@ class BedrockPlayerModel(
 
     // Vertical offsets to apply to armor / cape feature rendering so they line up
     // with Bedrock geometry when that geometry uses non-standard pivots.
+    @JvmField
     var armorYOffset: Float = 0f
+    @JvmField
     var capeYOffset: Float = 0f
+    @JvmField
     var upperArmorYOffset: Float = 0f
 
     companion object {

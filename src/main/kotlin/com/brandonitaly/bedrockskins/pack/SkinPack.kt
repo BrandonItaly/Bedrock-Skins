@@ -27,7 +27,9 @@ data class LoadedSkin(
     val cape: AssetSource? = null,
     
     // Runtime Mutables
+    @JvmField
     var identifier: Identifier? = null,
+    @JvmField
     var capeIdentifier: Identifier? = null
 ) {
     val key: String 

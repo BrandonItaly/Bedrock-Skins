@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets
 object SkinPackLoader {
     private var vanillaGeometryJson: JsonObject? = null
     private val gson = Gson()
+    @JvmField
     val loadedSkins = mutableMapOf<String, LoadedSkin>()
     val skinPacksDir = File("skin_packs")
     val translations = mutableMapOf<String, MutableMap<String, String>>()
@@ -21,6 +22,7 @@ object SkinPackLoader {
 
     // --- Public API ---
 
+    @JvmStatic
     fun getTranslation(key: String): String? {
         val currentLang = try { MinecraftClient.getInstance().languageManager.language } catch (_: Exception) { "en_us" }
         return translations[currentLang]?.get(key)
@@ -44,15 +46,22 @@ object SkinPackLoader {
         loadPackOrder(manager)
     }
 
+    @JvmStatic
     fun registerTextures() {
         println("SkinPackLoader: Registering all textures...")
         loadedSkins.values.forEach { registerSkinAssets(it) }
     }
 
+    @JvmStatic
     fun registerTextureFor(key: String): Identifier? {
         val skin = loadedSkins[key] ?: return null
         registerSkinAssets(skin)
         return skin.identifier
+    }
+
+    @JvmStatic
+    fun registerRemoteSkinStatic(key: String, geometryJson: String, textureData: ByteArray) {
+        registerRemoteSkin(key, geometryJson, textureData)
     }
 
     fun registerRemoteSkin(key: String, geometryJson: String, textureData: ByteArray) {
