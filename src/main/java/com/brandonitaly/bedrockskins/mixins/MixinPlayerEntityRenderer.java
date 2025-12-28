@@ -3,7 +3,6 @@ package com.brandonitaly.bedrockskins.mixins;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.PlayerLikeEntity;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.RotationAxis;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -19,7 +18,9 @@ import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.entity.PlayerEntityRenderer;
+import net.minecraft.client.render.entity.model.PlayerEntityModel;
 import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
+import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(PlayerEntityRenderer.class)
 public abstract class MixinPlayerEntityRenderer {
@@ -56,6 +57,7 @@ public abstract class MixinPlayerEntityRenderer {
         if (player == null) return;
         var uuid = player.getUuid();
         var bedrockModel = BedrockModelManager.getModel(uuid);
+        
         if (bedrockModel != null) {
             String partKey = "right_arm";
             var part = bedrockModel.partsMap.get(partKey);
@@ -63,28 +65,44 @@ public abstract class MixinPlayerEntityRenderer {
                 partKey = "rightArm";
                 part = bedrockModel.partsMap.get(partKey);
             }
+            
             String sleeveKey = "right_sleeve";
             var sleeve = bedrockModel.partsMap.get(sleeveKey);
             if (sleeve == null) {
                 sleeveKey = "rightSleeve";
                 sleeve = bedrockModel.partsMap.get(sleeveKey);
             }
+
             if (part != null) {
                 String skinKey = SkinManager.getSkin(uuid.toString());
                 var bedrockSkin = (skinKey != null) ? SkinPackLoader.loadedSkins.get(skinKey) : null;
                 Identifier texture = (bedrockSkin != null && bedrockSkin.identifier != null) ? bedrockSkin.identifier : skinTexture;
+                
                 var layer = RenderLayers.entityTranslucent(texture);
+                
                 final var finalPart = part;
                 final var finalSleeve = sleeve;
+                
                 queue.submitCustom(matrices, layer, (entry, consumer) -> {
                     MatrixStack ms = new MatrixStack();
                     ms.peek().getPositionMatrix().set(entry.getPositionMatrix());
                     ms.peek().getNormalMatrix().set(entry.getNormalMatrix());
+                    
                     finalPart.resetTransform();
-                    if (finalSleeve != null) finalSleeve.resetTransform();
+                    
+                    // Handle sleeve visibility
+                    if (finalSleeve != null) {
+                        finalSleeve.resetTransform();
+                        finalSleeve.visible = sleeveVisible;
+                    }
+
+                    // Render the main arm
                     finalPart.render(ms, consumer, light, OverlayTexture.DEFAULT_UV);
+                    
+                    // If the sleeve is separate (not a child), we must manually render it
+                    // but ONLY if the sleeve is supposed to be visible.
                     boolean sleeveIsChild = finalPart.hasChild("right_sleeve") || finalPart.hasChild("rightSleeve");
-                    if (finalSleeve != null && !sleeveIsChild) {
+                    if (finalSleeve != null && !sleeveIsChild && sleeveVisible) {
                         finalSleeve.render(ms, consumer, light, OverlayTexture.DEFAULT_UV);
                     }
                 });
@@ -99,6 +117,7 @@ public abstract class MixinPlayerEntityRenderer {
         if (player == null) return;
         var uuid = player.getUuid();
         var bedrockModel = BedrockModelManager.getModel(uuid);
+        
         if (bedrockModel != null) {
             String partKey = "left_arm";
             var part = bedrockModel.partsMap.get(partKey);
@@ -106,28 +125,40 @@ public abstract class MixinPlayerEntityRenderer {
                 partKey = "leftArm";
                 part = bedrockModel.partsMap.get(partKey);
             }
+            
             String sleeveKey = "left_sleeve";
             var sleeve = bedrockModel.partsMap.get(sleeveKey);
             if (sleeve == null) {
                 sleeveKey = "leftSleeve";
                 sleeve = bedrockModel.partsMap.get(sleeveKey);
             }
+
             if (part != null) {
                 String skinKey = SkinManager.getSkin(uuid.toString());
                 var bedrockSkin = (skinKey != null) ? SkinPackLoader.loadedSkins.get(skinKey) : null;
                 Identifier texture = (bedrockSkin != null && bedrockSkin.identifier != null) ? bedrockSkin.identifier : skinTexture;
+                
                 var layer = RenderLayers.entityTranslucent(texture);
+                
                 final var finalPart = part;
                 final var finalSleeve = sleeve;
+                
                 queue.submitCustom(matrices, layer, (entry, consumer) -> {
                     MatrixStack ms = new MatrixStack();
                     ms.peek().getPositionMatrix().set(entry.getPositionMatrix());
                     ms.peek().getNormalMatrix().set(entry.getNormalMatrix());
+                    
                     finalPart.resetTransform();
-                    if (finalSleeve != null) finalSleeve.resetTransform();
+                    
+                    if (finalSleeve != null) {
+                        finalSleeve.resetTransform();
+                        finalSleeve.visible = sleeveVisible;
+                    }
+
                     finalPart.render(ms, consumer, light, OverlayTexture.DEFAULT_UV);
+                    
                     boolean sleeveIsChild = finalPart.hasChild("left_sleeve") || finalPart.hasChild("leftSleeve");
-                    if (finalSleeve != null && !sleeveIsChild) {
+                    if (finalSleeve != null && !sleeveIsChild && sleeveVisible) {
                         finalSleeve.render(ms, consumer, light, OverlayTexture.DEFAULT_UV);
                     }
                 });
