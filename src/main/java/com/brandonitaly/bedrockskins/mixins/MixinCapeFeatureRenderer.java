@@ -2,6 +2,7 @@ package com.brandonitaly.bedrockskins.mixins;
 
 import com.brandonitaly.bedrockskins.client.BedrockModelManager;
 import com.brandonitaly.bedrockskins.client.BedrockSkinState;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.entity.feature.CapeFeatureRenderer;
