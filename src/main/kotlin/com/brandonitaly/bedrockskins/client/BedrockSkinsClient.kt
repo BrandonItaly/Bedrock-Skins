@@ -14,12 +14,9 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.minecraft.client.option.KeyBinding
 import net.minecraft.client.util.InputUtil
 import org.lwjgl.glfw.GLFW
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper
 import net.minecraft.resource.ResourceType
 import net.minecraft.util.Identifier
 import net.minecraft.resource.ResourceManager
-import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener
-import net.minecraft.resource.SynchronousResourceReloader
 import java.io.File
 
 class BedrockSkinsClient : ClientModInitializer {
@@ -75,11 +72,12 @@ class BedrockSkinsClient : ClientModInitializer {
                         if (!savedKey.isNullOrEmpty()) {
                             // Always set runtime mapping so the local player sees their selected skin immediately
                             val parts = savedKey.split(":", limit = 2)
-                            if (client.player != null) {
+                            val player = client.player
+                            if (player != null) {
                                 if (parts.size >= 2) {
-                                    SkinManager.setSkin(client.player.uuid.toString(), parts[0], savedKey.substring(parts[0].length + 1))
+                                    SkinManager.setSkin(player.uuid.toString(), parts[0], savedKey.substring(parts[0].length + 1))
                                 } else {
-                                    SkinManager.setSkin(client.player.uuid.toString(), "Remote", savedKey)
+                                    SkinManager.setSkin(player.uuid.toString(), "Remote", savedKey)
                                 }
                             } else {
                                 // When no player object available, set preview mapping so UI reflects selection
@@ -93,7 +91,8 @@ class BedrockSkinsClient : ClientModInitializer {
                             // Try to send payload to server (server must support mod)
                             try {
                                 val loadedSkin = SkinPackLoader.loadedSkins[savedKey]
-                                if (loadedSkin != null && client.player != null) {
+                                val playerNow = client.player
+                                if (loadedSkin != null && playerNow != null) {
                                     val geometry = loadedSkin.geometryData.toString()
                                     
                                     val textureData: ByteArray = when (val source = loadedSkin.texture) {
@@ -129,23 +128,47 @@ class BedrockSkinsClient : ClientModInitializer {
 
             // Attempt to register a resource reload listener so skin packs reload when resource packs change
             try {
-                ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(
-                    object : IdentifiableResourceReloadListener, SynchronousResourceReloader {
-                        override fun getFabricId(): Identifier {
-                            return Identifier.of("bedrockskins", "skinpack-reloader")
-                        }
+                val rm = net.minecraft.client.MinecraftClient.getInstance().resourceManager
+                if (rm is net.minecraft.resource.ReloadableResourceManagerImpl) {
+                    rm.registerReloader(object : net.minecraft.resource.ResourceReloader {
+                        override fun getName(): String = "Bedrock Skins Resource Reloader"
 
-                        override fun reload(resourceManager: ResourceManager) {
-                            try {
-                                SkinPackLoader.loadPacks()
-                                println("SkinPackLoader: Reloaded skin packs after resource reload")
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
+                        override fun reload(
+                            store: net.minecraft.resource.ResourceReloader.Store,
+                            prepareExecutor: java.util.concurrent.Executor,
+                            reloadSynchronizer: net.minecraft.resource.ResourceReloader.Synchronizer,
+                            applyExecutor: java.util.concurrent.Executor
+                        ): java.util.concurrent.CompletableFuture<Void> {
+                            return java.util.concurrent.CompletableFuture.runAsync({
+                                try {
+                                    SkinPackLoader.loadPacks()
+                                    BedrockModelManager.clearAllModels()
+
+                                    val client = net.minecraft.client.MinecraftClient.getInstance()
+                                    client.execute {
+                                        client.player?.let { player ->
+                                            val uuid = player.uuid.toString()
+                                            val skinKey = com.brandonitaly.bedrockskins.client.SkinManager.getSkin(uuid)
+                                            if (skinKey != null) {
+                                                val parts = skinKey.split(":", limit = 2)
+                                                if (parts.size >= 2) {
+                                                    com.brandonitaly.bedrockskins.client.SkinManager.setSkin(uuid, parts[0], skinKey.substring(parts[0].length + 1))
+                                                } else {
+                                                    com.brandonitaly.bedrockskins.client.SkinManager.setSkin(uuid, "Remote", skinKey)
+                                                }
+                                            }
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }, applyExecutor)
                         }
-                    }
-                )
-                println("BedrockSkinsClient: Registered resource reload listener")
+                    })
+                    println("BedrockSkinsClient: Registered resource reload listener")
+                } else {
+                    println("BedrockSkinsClient: Resource manager is not reloadable; skipping registration")
+                }
             } catch (e: Exception) {
                 println("BedrockSkinsClient: Failed to register resource reload listener: $e")
             }

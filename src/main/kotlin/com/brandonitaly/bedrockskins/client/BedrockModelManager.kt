@@ -46,4 +46,13 @@ object BedrockModelManager {
         
         return null
     }
+
+    /**
+     * Clears all cached BedrockPlayerModels and active skin keys.
+     */
+    @JvmStatic
+    fun clearAllModels() {
+        bedrockModels.clear()
+        activeSkinKeys.clear()
+    }
 }

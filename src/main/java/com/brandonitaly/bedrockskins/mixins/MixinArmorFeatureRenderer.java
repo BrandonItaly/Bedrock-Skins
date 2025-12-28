@@ -6,6 +6,8 @@ import com.brandonitaly.bedrockskins.client.BedrockSkinState;
 import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.entity.feature.ArmorFeatureRenderer;
 import net.minecraft.client.render.entity.state.BipedEntityRenderState;
+import com.brandonitaly.bedrockskins.client.SkinManager;
+import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import net.minecraft.item.ItemStack;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.client.util.math.MatrixStack;
@@ -32,6 +34,44 @@ public abstract class MixinArmorFeatureRenderer {
                 // Default to visible. Specific features will hide them if present.
                 bedrockModel.setBedrockPartVisible("bodyArmor", true);
                 bedrockModel.setBedrockPartVisible("helmet", true);
+
+                // Hide body armor if the player has a cape visible (vanilla flag) or if the Bedrock geometry contains a cape bone
+                boolean hasCape = false;
+                if (state instanceof net.minecraft.client.render.entity.state.PlayerEntityRenderState) {
+                    try {
+                        boolean capeFlag = ((net.minecraft.client.render.entity.state.PlayerEntityRenderState) state).capeVisible;
+                        if (capeFlag) {
+                            // The vanilla flag may be set even if the player doesn't actually have a cape asset.
+                            // Check the player's network PlayerListEntry skin textures for a cape texture
+                            try {
+                                var client = net.minecraft.client.MinecraftClient.getInstance();
+                                if (client != null && client.getNetworkHandler() != null) {
+                                    var entry = client.getNetworkHandler().getPlayerListEntry(uuid);
+                                    if (entry != null) {
+                                        var textures = entry.getSkinTextures();
+                                        if (textures != null && textures.cape() != null) {
+                                            try {
+                                                var capeAsset = textures.cape();
+                                                if (capeAsset != null) {
+                                                    hasCape = true;
+                                                }
+                                            } catch (Exception ignored) { }
+                                        }
+                                    }
+                                }
+                            } catch (Throwable ignored) { }
+                        }
+                    } catch (Throwable ignored) { }
+                }
+
+                if (!hasCape) {
+                    // fallback: check if the model actually contains a cape part
+                    hasCape = bedrockModel.partsMap.containsKey("cape") || bedrockModel.partsMap.containsKey("elytra");
+                }
+
+                if (hasCape) {
+                    bedrockModel.setBedrockPartVisible("bodyArmor", false);
+                }
             }
         }
     }
