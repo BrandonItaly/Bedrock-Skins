@@ -1,11 +1,6 @@
 package com.brandonitaly.bedrockskins.client
 
 import com.brandonitaly.bedrockskins.pack.LoadedSkin
-import com.google.gson.Gson
-import net.minecraft.client.MinecraftClient
-import java.io.File
-import java.io.FileReader
-import java.io.FileWriter
 
 object FavoritesManager {
     private val favoriteKeys = mutableListOf<String>()
