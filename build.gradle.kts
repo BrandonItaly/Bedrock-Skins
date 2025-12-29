@@ -1,7 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.0.20"
     id("net.fabricmc.fabric-loom-remap") version "1.14-SNAPSHOT"
-}
+} 
 
 // These lines make the mod filename `{mod.id}-${mod.version}+${sc.current.version}.jar`
 version = "${property("mod.version")}+${sc.current.version}"
@@ -27,7 +26,6 @@ dependencies {
 
     modImplementation("net.fabricmc:fabric-loader:${property("deps.fabric_loader")}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${project.property("deps.fabric_api")}")
-    modImplementation("net.fabricmc:fabric-language-kotlin:${project.property("deps.fabric_kotlin")}")
     modImplementation("com.terraformersmc:modmenu:${project.property("deps.modmenu_version")}")
 }
 
@@ -65,11 +63,5 @@ tasks {
         from(remapJar.map { it.archiveFile }, remapSourcesJar.map { it.archiveFile })
         into(rootProject.layout.buildDirectory.file("libs/${project.property("mod.version")}"))
         dependsOn("build")
-    }
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions {
-        jvmTarget = requiredJava.majorVersion
     }
 }
