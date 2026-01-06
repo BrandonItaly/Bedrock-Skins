@@ -10,5 +10,4 @@ stonecutter parameters {
     swaps["minecraft"] = "\"${node.metadata.version}\";"
     constants["release"] = property("mod.id") != "template"
     dependencies["fapi"] = node.project.property("deps.fabric_api") as String
-    dependencies["fabric_kotlin"] = node.project.property("deps.fabric_kotlin") as String
 }
