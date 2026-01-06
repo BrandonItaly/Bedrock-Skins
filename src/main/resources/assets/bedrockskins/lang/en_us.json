@@ -13,5 +13,13 @@
   "bedrockskins.message.set_skin": "Set skin to %s",
 
   "key.bedrockskins.open": "Change Skin",
+  "key.bedrockskins.toggle_cape": "Toggle Cape",
+  "key.bedrockskins.toggle_jacket": "Toggle Jacket",
+  "key.bedrockskins.toggle_left_sleeve": "Toggle Left Sleeve",
+  "key.bedrockskins.toggle_right_sleeve": "Toggle Right Sleeve",
+  "key.bedrockskins.toggle_left_pants": "Toggle Left Pants Leg",
+  "key.bedrockskins.toggle_right_pants": "Toggle Right Pants Leg",
+  "key.bedrockskins.toggle_hat": "Toggle Hat",
+  "key.bedrockskins.swap_main_hand": "Swap Main Hand",
   "key.category.bedrockskins.controls": "Bedrock Skins"
 }

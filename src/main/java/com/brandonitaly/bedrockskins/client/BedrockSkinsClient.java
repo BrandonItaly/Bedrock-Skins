@@ -19,14 +19,35 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.world.entity.player.PlayerModelPart;
+import net.minecraft.world.InteractionHand;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.File;
 
 public class BedrockSkinsClient implements ClientModInitializer {
+    
+    // Keybinds for skin customization
+    private static KeyMapping toggleCapeKey;
+    private static KeyMapping toggleJacketKey;
+    private static KeyMapping toggleLeftSleeveKey;
+    private static KeyMapping toggleRightSleeveKey;
+    private static KeyMapping toggleLeftPantsKey;
+    private static KeyMapping toggleRightPantsKey;
+    private static KeyMapping toggleHatKey;
+    private static KeyMapping toggleMainHandKey;
+    
+    //? if >1.21.8 {
+    private static KeyMapping.Category keybindCategory;
+    //?}
+    
     @Override
     public void onInitializeClient() {
+        //? if >1.21.8 {
+        keybindCategory = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("bedrockskins", "controls"));
+        //?}
         registerKeyBinding();
+        registerCustomizationKeybinds();
         registerLifecycleEvents();
         registerNetworking();
     }
@@ -37,8 +58,7 @@ public class BedrockSkinsClient implements ClientModInitializer {
             //? if <=1.21.8 {
             /*KeyBinding key = new KeyBinding(keyId, InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_K, "bedrockskins.controls");*/
             //?} else {
-            KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("bedrockskins", "controls"));
-            KeyMapping key = new KeyMapping(keyId, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_K, category);
+            KeyMapping key = new KeyMapping(keyId, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_K, keybindCategory);
             //?}
             KeyMapping openKey = KeyBindingHelper.registerKeyBinding(key);
 
@@ -51,6 +71,94 @@ public class BedrockSkinsClient implements ClientModInitializer {
         } catch (Exception e) {
             System.out.println("BedrockSkinsClient: Keybinding error: " + e);
         }
+    }
+    
+    private void registerCustomizationKeybinds() {
+        try {
+            //? if <=1.21.8 {
+            /*String categoryName = "bedrockskins.controls";*/
+            //?}
+            
+            // Register all customization keybinds (unbound by default - GLFW.GLFW_KEY_UNKNOWN)
+            //? if <=1.21.8 {
+            /*toggleCapeKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.bedrockskins.toggle_cape", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), categoryName));
+            toggleJacketKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.bedrockskins.toggle_jacket", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), categoryName));
+            toggleLeftSleeveKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.bedrockskins.toggle_left_sleeve", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), categoryName));
+            toggleRightSleeveKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.bedrockskins.toggle_right_sleeve", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), categoryName));
+            toggleLeftPantsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.bedrockskins.toggle_left_pants", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), categoryName));
+            toggleRightPantsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.bedrockskins.toggle_right_pants", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), categoryName));
+            toggleHatKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.bedrockskins.toggle_hat", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), categoryName));
+            toggleMainHandKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.bedrockskins.swap_main_hand", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), categoryName));*/
+            //?} else {
+            toggleCapeKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.bedrockskins.toggle_cape", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), keybindCategory));
+            toggleJacketKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.bedrockskins.toggle_jacket", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), keybindCategory));
+            toggleLeftSleeveKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.bedrockskins.toggle_left_sleeve", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), keybindCategory));
+            toggleRightSleeveKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.bedrockskins.toggle_right_sleeve", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), keybindCategory));
+            toggleLeftPantsKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.bedrockskins.toggle_left_pants", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), keybindCategory));
+            toggleRightPantsKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.bedrockskins.toggle_right_pants", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), keybindCategory));
+            toggleHatKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.bedrockskins.toggle_hat", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), keybindCategory));
+            toggleMainHandKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.bedrockskins.swap_main_hand", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), keybindCategory));
+            //?}
+            
+            // Register tick handler for customization keybinds
+            ClientTickEvents.END_CLIENT_TICK.register(client -> {
+                if (client.player == null) return;
+                
+                while (toggleCapeKey.consumeClick()) {
+                    toggleModelPart(client, PlayerModelPart.CAPE);
+                }
+                while (toggleJacketKey.consumeClick()) {
+                    toggleModelPart(client, PlayerModelPart.JACKET);
+                }
+                while (toggleLeftSleeveKey.consumeClick()) {
+                    toggleModelPart(client, PlayerModelPart.LEFT_SLEEVE);
+                }
+                while (toggleRightSleeveKey.consumeClick()) {
+                    toggleModelPart(client, PlayerModelPart.RIGHT_SLEEVE);
+                }
+                while (toggleLeftPantsKey.consumeClick()) {
+                    toggleModelPart(client, PlayerModelPart.LEFT_PANTS_LEG);
+                }
+                while (toggleRightPantsKey.consumeClick()) {
+                    toggleModelPart(client, PlayerModelPart.RIGHT_PANTS_LEG);
+                }
+                while (toggleHatKey.consumeClick()) {
+                    toggleModelPart(client, PlayerModelPart.HAT);
+                }
+                while (toggleMainHandKey.consumeClick()) {
+                    toggleMainHand(client);
+                }
+            });
+            
+            System.out.println("BedrockSkinsClient: Registered customization keybinds");
+        } catch (Exception e) {
+            System.out.println("BedrockSkinsClient: Customization keybinding error: " + e);
+        }
+    }
+    
+    private void toggleModelPart(Minecraft client, PlayerModelPart part) {
+        if (client.player == null) return;
+        
+        boolean current = client.options.isModelPartEnabled(part);
+        
+        // Toggle the model part through options
+        client.options.setModelPart(part, !current);
+        
+        // Save the updated customization
+        client.options.save();
+    }
+    
+    private void toggleMainHand(Minecraft client) {
+        if (client.player == null) return;
+        
+        // Toggle main hand between left and right
+        net.minecraft.world.entity.HumanoidArm currentHand = client.options.mainHand().get();
+        net.minecraft.world.entity.HumanoidArm newHand = currentHand == net.minecraft.world.entity.HumanoidArm.LEFT 
+            ? net.minecraft.world.entity.HumanoidArm.RIGHT 
+            : net.minecraft.world.entity.HumanoidArm.LEFT;
+        
+        client.options.mainHand().set(newHand);
+        client.options.save();
     }
 
     private void registerLifecycleEvents() {
