@@ -356,7 +356,7 @@ public class SkinPreviewPanel {
     public void render(GuiGraphics gui, int mouseX, int mouseY) {
 
 
-        drawPanel(gui, x, y, width, height, Component.translatable("bedrockskins.gui.preview"));
+        GuiUtils.drawPanelChrome(gui, x, y, width, height, Component.translatable("bedrockskins.gui.preview"), font);
         
         int PANEL_HEADER_HEIGHT = 24;
         int entityY = y + PANEL_HEADER_HEIGHT;
@@ -429,78 +429,10 @@ public class SkinPreviewPanel {
     private void renderRotatableEntity(GuiGraphics gui, int x, int y, int width, int height, LivingEntity entity) {
         // Calculate size for the entity render (keep moderate defaults)
         int size = Math.min((int)(height / 2.5), 80);
+        // Compute yaw offset from rotationX and render via shared helper
         float rotationModifier = 3;
-        
-        // Save entity state
-        float yBodyRot = entity.yBodyRot;
-        float yRot = entity.getYRot();
-        float yRotO = entity.yRotO;
-        float yBodyRotO = entity.yBodyRotO;
-        float xRot = entity.getXRot();
-        float xRotO = entity.xRotO;
-        float yHeadRotO = entity.yHeadRotO;
-        float yHeadRot = entity.yHeadRot;
-        Vec3 vel = entity.getDeltaMovement();
-        
-        // Apply rotation to entity
-        entity.yBodyRot = (180.0F + rotationX * rotationModifier);
-        entity.setYRot(180.0F + rotationX * rotationModifier);
-        entity.yBodyRotO = entity.yBodyRot;
-        entity.yRotO = entity.getYRot();
-        entity.setDeltaMovement(Vec3.ZERO);
-        entity.setXRot(0);
-        entity.xRotO = entity.getXRot();
-        entity.yHeadRot = entity.getYRot();
-        entity.yHeadRotO = entity.getYRot();
-        
-        // Setup quaternions for rotation
-        Quaternionf quaternion = new Quaternionf().rotationZ((float)Math.toRadians(180.0F));
-        Quaternionf quaternion2 = new Quaternionf().rotationX(0); // No Y-axis rotation
-        quaternion.mul(quaternion2);
-        
-        // Get entity renderer and create render state
-        EntityRenderDispatcher entityRenderDispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
-        var entityRenderer = entityRenderDispatcher.getRenderer(entity);
-        var entityRenderState = entityRenderer.createRenderState(entity, 1.0F);
-        
-        // Set full brightness lighting
-        entityRenderState.lightCoords = 15728880;
-        
-        // Disable hitboxes
-        entityRenderState.boundingBoxHeight = 0;
-        entityRenderState.boundingBoxWidth = 0;
-        
-        // Calculate scale and position
-        float scale = entity.getScale();
-        Vector3f vector3f = new Vector3f(0.0F, entity.getBbHeight() / 2.0F, 0.0F);
-        float renderScale = (float) size / scale;
-        
-        // Conjugate quaternion2 for camera orientation
-        quaternion2.conjugate();
-        
-        // Submit entity render state
-        gui.submitEntityRenderState(
-            entityRenderState,
-            renderScale,
-            vector3f,
-            quaternion,
-            quaternion2,
-            x - width,
-            y - height,
-            x + width,
-            y + height
-        );
-        
-        // Restore entity state
-        entity.yBodyRot = yBodyRot;
-        entity.yBodyRotO = yBodyRotO;
-        entity.setYRot(yRot);
-        entity.yRotO = yRotO;
-        entity.setXRot(xRot);
-        entity.xRotO = xRotO;
-        entity.yHeadRotO = yHeadRotO;
-        entity.yHeadRot = yHeadRot;
-        entity.setDeltaMovement(vel);
+        float yawOffset = rotationX * rotationModifier;
+        GuiUtils.renderEntityInRect(gui, entity, yawOffset, (int)(x - width), (int)(y - height), (int)(x + width), (int)(y + height), 72);
     }
     
     public void renderSprites(GuiGraphics gui) {
@@ -509,31 +441,10 @@ public class SkinPreviewPanel {
         }
     }
 
-    private void drawPanel(GuiGraphics gui, int x, int y, int w, int h, Component title) {
-        int PANEL_HEADER_HEIGHT = 24;
-        int right = x + w;
-        int bottom = y + h;
-        
-        int COL_PANEL_BG = 0xE6181818;
-        int COL_PANEL_HEADER = 0xFF252525;
-        int COL_BORDER_OUTER = 0xFF000000;
-        int COL_BORDER_INNER = 0xFF383838;
-        int COL_TEXT_TITLE = 0xFFFFFFFF;
 
-        gui.fill(x - 1, y - 1, right + 1, bottom + 1, COL_BORDER_OUTER);
-        gui.fill(x, y, right, bottom, COL_PANEL_BG);
-        gui.fill(x, y, right, y + PANEL_HEADER_HEIGHT, COL_PANEL_HEADER);
-        gui.fill(x, y + PANEL_HEADER_HEIGHT, right, y + PANEL_HEADER_HEIGHT + 1, COL_BORDER_INNER);
-        gui.drawCenteredString(font, title, x + (w / 2), y + 8, COL_TEXT_TITLE);
-        
-        gui.fill(x, y, right, y + 1, COL_BORDER_INNER); 
-        gui.fill(x, bottom - 1, right, bottom, COL_BORDER_INNER); 
-        gui.fill(x, y, x + 1, bottom, COL_BORDER_INNER); 
-        gui.fill(right - 1, y, right, bottom, COL_BORDER_INNER);
-    }
 
-    private void safeResetPreview(String uuid) { try { SkinManager.resetPreviewSkin(uuid); } catch (Exception ignored) {} }
-    private void safeRegisterTexture(String key) { try { SkinPackLoader.registerTextureFor(key); } catch (Exception ignored) {} }
+    private void safeResetPreview(String uuid) { GuiUtils.safeResetPreview(uuid); }
+    private void safeRegisterTexture(String key) { GuiUtils.safeRegisterTexture(key); }
     
     private byte[] loadTextureData(LoadedSkin skin) {
         try {

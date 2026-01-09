@@ -400,15 +400,15 @@ public class SkinSelectionScreen extends Screen {
         Util.getPlatform().openFile(dir);
     }
 
-    private void safeRegisterTexture(String key) { try { SkinPackLoader.registerTextureFor(key); } catch (Exception ignored) {} }
-    private void safeResetPreview(String uuid) { try { SkinManager.resetPreviewSkin(uuid); } catch (Exception ignored) {} }
+    private void safeRegisterTexture(String key) { GuiUtils.safeRegisterTexture(key); }
+    private void safeResetPreview(String uuid) { GuiUtils.safeResetPreview(uuid); }
 
     @Override
     public void render(GuiGraphics gui, int mouseX, int mouseY, float delta) {
         // Only draw the pack & skins panels for the Skins tab
         if (activeTab == 0) {
-            drawPanel(gui, rPacks, Component.translatable("bedrockskins.gui.packs"));
-            drawPanel(gui, rSkins, getSkinsPanelTitle());
+            GuiUtils.drawPanelChrome(gui, rPacks.x, rPacks.y, rPacks.w, rPacks.h, Component.translatable("bedrockskins.gui.packs"), font);
+            GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h, getSkinsPanelTitle(), font);
         }
         
         // Handle mouse events for preview panel
@@ -447,28 +447,6 @@ public class SkinSelectionScreen extends Screen {
         graphics.blit(RenderPipelines.GUI_TEXTURED, TAB_HEADER_BACKGROUND, 0, 0, 0.0F, 0.0F, this.width, this.layout.getHeaderHeight(), 16, 16);
         this.renderMenuBackground(graphics, 0, this.layout.getHeaderHeight(), this.width, this.height);
     }
-
-    private void drawPanel(GuiGraphics gui, Rect r, Component title) {
-        int PANEL_HEADER_HEIGHT = 24;
-        int COL_PANEL_BG = 0xE6181818;
-        int COL_PANEL_HEADER = 0xFF252525;
-        int COL_BORDER_OUTER = 0xFF000000;
-        int COL_BORDER_INNER = 0xFF383838;
-        int COL_TEXT_TITLE = 0xFFFFFFFF;
-
-        gui.fill(r.x - 1, r.y - 1, r.right() + 1, r.bottom() + 1, COL_BORDER_OUTER);
-        gui.fill(r.x, r.y, r.right(), r.bottom(), COL_PANEL_BG);
-        gui.fill(r.x, r.y, r.right(), r.y + PANEL_HEADER_HEIGHT, COL_PANEL_HEADER);
-        gui.fill(r.x, r.y + PANEL_HEADER_HEIGHT, r.right(), r.y + PANEL_HEADER_HEIGHT + 1, COL_BORDER_INNER);
-        gui.drawCenteredString(font, title, r.centerX(), r.y + 8, COL_TEXT_TITLE);
-        
-        gui.fill(r.x, r.y, r.right(), r.y + 1, COL_BORDER_INNER); 
-        gui.fill(r.x, r.bottom() - 1, r.right(), r.bottom(), COL_BORDER_INNER); 
-        gui.fill(r.x, r.y, r.x + 1, r.bottom(), COL_BORDER_INNER); 
-        gui.fill(r.right() - 1, r.y, r.right(), r.bottom(), COL_BORDER_INNER);
-    }
-
-
 
     private static class Rect {
         int x, y, w, h;

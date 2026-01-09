@@ -309,21 +309,13 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                     quaternion2.conjugate();
 
                     // Center coordinates for rendering
-                    int centerX = x + (w / 2);
-                    int centerY = y + (h / 2);
+                    int left = x + (w / 2) - (w / 2);
+                    int top = y + (h / 2) - (h / 2);
+                    int right = x + (w / 2) + (w / 2);
+                    int bottom = y + (h / 2) + (h / 2);
 
-                    // Submit entity render state using the cell's centered bounds
-                    context.submitEntityRenderState(
-                        entityRenderState,
-                        renderScale,
-                        vector3f,
-                        quaternion,
-                        quaternion2,
-                        (int)(centerX - (w / 2)),
-                        (int)(centerY - (h / 2)),
-                        (int)(centerX + (w / 2)),
-                        (int)(centerY + (h / 2))
-                    );
+                    // Use common helper
+                    GuiUtils.renderEntityInRect(context, player, hoverYaw, left, top, right, bottom, 72);
 
                     // Restore entity state
                     player.yBodyRot = yBodyRot;
