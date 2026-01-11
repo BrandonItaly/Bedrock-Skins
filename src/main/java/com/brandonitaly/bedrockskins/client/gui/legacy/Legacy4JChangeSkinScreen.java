@@ -157,28 +157,42 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         if (this.playerSkinWidgetList != null && this.playerSkinWidgetList.element3 != null) {
             SkinReference ref = this.playerSkinWidgetList.element3.skinRef.get();
             if (ref == null) return;
-            
-            // Resolve skin from the correct pack
-            SkinPackAdapter pack = SkinPackAdapter.getPack(ref.packId());
-            if (pack == null) return; 
-            
-            LoadedSkin skin = pack.getSkin(ref.ordinal());
+
+            // Always update focused pack and packId to match the selected skin
+            String newPackId = ref.packId();
+            SkinPackAdapter newPack = SkinPackAdapter.getPack(newPackId);
+            if (newPack == null) return;
+
+            // If the focused pack does not match the selected skin, update it and queue update
+            if (!Objects.equals(focusedPackId, newPackId) || focusedPack != newPack) {
+                focusedPackId = newPackId;
+                focusedPack = newPack;
+                queuedChangeSkinPack = true;
+                // Optionally, update the button focus as well
+                Button btn = packButtons.get(newPackId);
+                if (btn != null) {
+                    setFocused(btn);
+                    ensureButtonVisible(btn);
+                }
+            }
+
+            LoadedSkin skin = newPack.getSkin(ref.ordinal());
             if (skin == null) return;
-            
+
             try {
                 String skinKey = skin.getKey();
                 SkinManager.setSkin(minecraft.player.getUUID().toString(), skin.getPackDisplayName(), skin.getSkinDisplayName());
-                
+
                 // Load texture data
                 byte[] textureData = new byte[0];
                 // TODO: Load actual texture data if needed for networking
-                
+
                 ClientPlayNetworking.send(new BedrockSkinsNetworking.SetSkinPayload(
-                    skinKey, 
-                    skin.getGeometryData().toString(), 
+                    skinKey,
+                    skin.getGeometryData().toString(),
                     textureData
                 ));
-                
+
                 playUISound();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -194,35 +208,31 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         if (focusedPackId != null && !sortedPackIds.isEmpty()) {
             int currentIndex = sortedPackIds.indexOf(focusedPackId);
             if (keyCode == InputConstants.KEY_UP) {
-                int newIndex = (currentIndex > 0) ? currentIndex - 1 : 0;
-                if (newIndex != currentIndex) {
-                    String newPackId = sortedPackIds.get(newIndex);
-                    focusedPackId = newPackId;
-                    focusedPack = allPacks.get(newPackId);
-                    queuedChangeSkinPack = true;
-                    Button btn = packButtons.get(newPackId);
-                    if (btn != null) {
-                        setFocused(btn);
-                        ensureButtonVisible(btn);
-                    }
-                    playScrollSound();
-                    return true;
+                int newIndex = (currentIndex > 0) ? currentIndex - 1 : sortedPackIds.size() - 1; // loop to bottom
+                String newPackId = sortedPackIds.get(newIndex);
+                focusedPackId = newPackId;
+                focusedPack = allPacks.get(newPackId);
+                queuedChangeSkinPack = true;
+                Button btn = packButtons.get(newPackId);
+                if (btn != null) {
+                    setFocused(btn);
+                    ensureButtonVisible(btn);
                 }
+                playFocusSound();
+                return true;
             } else if (keyCode == InputConstants.KEY_DOWN) {
-                int newIndex = (currentIndex < sortedPackIds.size() - 1) ? currentIndex + 1 : sortedPackIds.size() - 1;
-                if (newIndex != currentIndex) {
-                    String newPackId = sortedPackIds.get(newIndex);
-                    focusedPackId = newPackId;
-                    focusedPack = allPacks.get(newPackId);
-                    queuedChangeSkinPack = true;
-                    Button btn = packButtons.get(newPackId);
-                    if (btn != null) {
-                        setFocused(btn);
-                        ensureButtonVisible(btn);
-                    }
-                    playScrollSound();
-                    return true;
+                int newIndex = (currentIndex < sortedPackIds.size() - 1) ? currentIndex + 1 : 0; // loop to top
+                String newPackId = sortedPackIds.get(newIndex);
+                focusedPackId = newPackId;
+                focusedPack = allPacks.get(newPackId);
+                queuedChangeSkinPack = true;
+                Button btn = packButtons.get(newPackId);
+                if (btn != null) {
+                    setFocused(btn);
+                    ensureButtonVisible(btn);
                 }
+                playFocusSound();
+                return true;
             }
         }
 
@@ -251,20 +261,37 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
      * Scrolls the list until the button is visible.
      */
     private void ensureButtonVisible(Button button) {
-        // Try to scroll to the button, legacy style
-        // Custom logic: scroll to bottom, then up until button is visible
+        // Ensure the highlighted button is always visible, including when looping
         int safety = 0;
-        // Scroll to bottom first: keep scrolling down until the last button is visible
-        List<Button> allButtons = new ArrayList<>(packButtons.values());
-        if (allButtons.isEmpty()) return;
-        Button lastButton = allButtons.get(allButtons.size() - 1);
-        while (!this.children().contains(lastButton) && safety++ < 500) {
+        if (!packButtons.containsValue(button)) return;
+        // Try to scroll down until visible, then up if not found, then loop
+        boolean found = false;
+        for (int i = 0; i < 500; i++) {
+            if (this.children().contains(button)) {
+                found = true;
+                break;
+            }
             renderableVList.mouseScrolled(true);
         }
-        safety = 0;
-        // Now scroll up until the target button is visible
-        while (!this.children().contains(button) && safety++ < 500) {
-            renderableVList.mouseScrolled(false);
+        if (!found) {
+            // Try scrolling up if not found
+            for (int i = 0; i < 500; i++) {
+                if (this.children().contains(button)) {
+                    found = true;
+                    break;
+                }
+                renderableVList.mouseScrolled(false);
+            }
+        }
+        // If still not found, forcibly scroll to top or bottom and try again (looping)
+        if (!found) {
+            // Scroll to top
+            for (int i = 0; i < 500; i++) renderableVList.mouseScrolled(false);
+            // Try to scroll down to find the button
+            for (int i = 0; i < 500; i++) {
+                if (this.children().contains(button)) break;
+                renderableVList.mouseScrolled(true);
+            }
         }
     }
 
@@ -633,8 +660,15 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     void openToCurrentSkin() {
         String currentSkinKey = SkinManager.getLocalSelectedKey();
         if (currentSkinKey == null) {
-            // Open first available pack
-            if (!SkinPackAdapter.getAllPacks().isEmpty()) {
+            // Default to Standard pack if available, else first available pack
+            String defaultPackId = "skinpack.Standard";
+            SkinPackAdapter defaultPack = SkinPackAdapter.getPack(defaultPackId);
+            if (defaultPack != null) {
+                focusedPackId = defaultPackId;
+                focusedPack = defaultPack;
+                queuedChangeSkinPack = true;
+                updateSkinPack(0);
+            } else if (!SkinPackAdapter.getAllPacks().isEmpty()) {
                 String firstPackId = SkinPackAdapter.getAllPacks().keySet().iterator().next();
                 focusedPackId = firstPackId;
                 focusedPack = SkinPackAdapter.getPack(firstPackId);
@@ -643,19 +677,55 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             }
             return;
         }
-        
+
         LoadedSkin currentSkin = SkinPackLoader.loadedSkins.get(currentSkinKey);
-        if (currentSkin == null) return;
-        
+        if (currentSkin == null) {
+            // Default to Standard pack if available, else first available pack
+            String defaultPackId = "skinpack.Standard";
+            SkinPackAdapter defaultPack = SkinPackAdapter.getPack(defaultPackId);
+            if (defaultPack != null) {
+                focusedPackId = defaultPackId;
+                focusedPack = defaultPack;
+                queuedChangeSkinPack = true;
+                updateSkinPack(0);
+            } else if (!SkinPackAdapter.getAllPacks().isEmpty()) {
+                String firstPackId = SkinPackAdapter.getAllPacks().keySet().iterator().next();
+                focusedPackId = firstPackId;
+                focusedPack = SkinPackAdapter.getPack(firstPackId);
+                queuedChangeSkinPack = true;
+                updateSkinPack(0);
+            }
+            return;
+        }
+
         String packId = currentSkin.getId();
         SkinPackAdapter pack = SkinPackAdapter.getPack(packId);
+        if (pack == null) {
+            // Default to Standard pack if available, else first available pack
+            String defaultPackId = "skinpack.Standard";
+            SkinPackAdapter defaultPack = SkinPackAdapter.getPack(defaultPackId);
+            if (defaultPack != null) {
+                focusedPackId = defaultPackId;
+                focusedPack = defaultPack;
+                queuedChangeSkinPack = true;
+                updateSkinPack(0);
+            } else if (!SkinPackAdapter.getAllPacks().isEmpty()) {
+                String firstPackId = SkinPackAdapter.getAllPacks().keySet().iterator().next();
+                focusedPackId = firstPackId;
+                focusedPack = SkinPackAdapter.getPack(firstPackId);
+                queuedChangeSkinPack = true;
+                updateSkinPack(0);
+            }
+            return;
+        }
+
         int skinIndex = pack.indexOf(currentSkin);
-        
+
         focusedPackId = packId;
         focusedPack = pack;
         queuedChangeSkinPack = true;
         updateSkinPack(skinIndex);
-        
+
         if (packButtons.containsKey(packId)) {
             setFocused(packButtons.get(packId));
         }
@@ -667,7 +737,12 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     
     void updateSkinPack(int index) {
         this.queuedChangeSkinPack = false;
-        
+
+        // Always ensure focusedPackId matches the selected button if possible
+        if (focusedPackId != null && packButtons.containsKey(focusedPackId)) {
+            setFocused(packButtons.get(focusedPackId));
+        }
+
         // Clear existing widgets
         if (playerSkinWidgetList != null) {
             for (PlayerSkinWidget widget : playerSkinWidgetList.widgets) {
@@ -708,7 +783,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         for (int i = 0; i < focusedPack.size(); i++) {
             final int skinIndex = i;
             final LoadedSkin skin = focusedPack.getSkin(i);
-            
+
             // For favorites pack, we need to get the actual skin from its original pack
             // For normal packs, we can use the ordinal directly
             final SkinReference finalRef;
@@ -721,10 +796,10 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             } else {
                 finalRef = new SkinReference(focusedPackId, skinIndex);
             }
-            
+
             PlayerSkinWidget widget = addRenderableWidget(new PlayerSkinWidget(
-                130, 160, 
-                minecraft.getEntityModels(), 
+                130, 160,
+                minecraft.getEntityModels(),
                 () -> finalRef
             ));
             widgets.add(widget);
@@ -733,11 +808,16 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         // Initialize the list using the precise visual center
         // -130/2 ensures the center widget is exactly centered at centerX
         playerSkinWidgetList = PlayerSkinWidgetList.of(
-            centerX - 130 / 2, 
-            centerY - 130 / 2, 
+            centerX - 130 / 2,
+            centerY - 130 / 2,
             widgets.toArray(new PlayerSkinWidget[0])
         );
         playerSkinWidgetList.sortForIndex(index);
+
+        // After updating the skin pack, ensure the focused button matches the pack
+        if (focusedPackId != null && packButtons.containsKey(focusedPackId)) {
+            setFocused(packButtons.get(focusedPackId));
+        }
 
         // Add scissor end - disable clipping
         scissorEnd = addRenderableOnly((guiGraphics, i, j, f) -> {
@@ -771,6 +851,14 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         minecraft.getSoundManager().play(
             net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
                 LegacyRegistries.SCROLL.get(), 1.0f
+            )
+        );
+    }
+
+    private void playFocusSound() {
+        minecraft.getSoundManager().play(
+            net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                LegacyRegistries.FOCUS.get(), 1.0f
             )
         );
     }
