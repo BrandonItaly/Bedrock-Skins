@@ -163,19 +163,6 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             SkinPackAdapter newPack = SkinPackAdapter.getPack(newPackId);
             if (newPack == null) return;
 
-            // If the focused pack does not match the selected skin, update it and queue update
-            if (!Objects.equals(focusedPackId, newPackId) || focusedPack != newPack) {
-                focusedPackId = newPackId;
-                focusedPack = newPack;
-                queuedChangeSkinPack = true;
-                // Optionally, update the button focus as well
-                Button btn = packButtons.get(newPackId);
-                if (btn != null) {
-                    setFocused(btn);
-                    ensureButtonVisible(btn);
-                }
-            }
-
             LoadedSkin skin = newPack.getSkin(ref.ordinal());
             if (skin == null) return;
 
