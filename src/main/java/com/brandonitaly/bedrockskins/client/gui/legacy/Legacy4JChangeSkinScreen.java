@@ -323,7 +323,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         if (state.is(ControllerBinding.UP_BUTTON) && state.released) {
             favorite();
         }
-        if (state.is(ControllerBinding.RIGHT_STICK_BUTTON) && state.justPressed) {
+        if (state.is(ControllerBinding.RIGHT_STICK_DOWN) && state.justPressed) {
             if (handlePoseChange(true, false)) return;
         }
     }
