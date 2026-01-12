@@ -69,6 +69,11 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     // Maintain a map of all packs so we can update Favorites dynamically
     private final Map<String, SkinPackAdapter> allPacks = new HashMap<>();
 
+    // --- Rotation state for preview ---
+    private boolean isDraggingPreview = false;
+    private double lastMouseX = 0;
+    private double lastMouseY = 0;
+
     public Legacy4JChangeSkinScreen(Screen parent) {
         super(parent, 180, 290, Component.translatable("bedrockskins.gui.title"));
         renderableVList.layoutSpacing(l -> 0);
@@ -146,6 +151,8 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         }
         
         openToCurrentSkin();
+        // Mouse drag state reset
+        isDraggingPreview = false;
     }
     
     private void rebuildFavoritesPack() {
@@ -341,6 +348,20 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         if (state.is(ControllerBinding.RIGHT_STICK_BUTTON) && state.justPressed) {
             resetSkin();
             return;
+        }
+        // --- Controller right stick rotation for preview ---
+        if (playerSkinWidgetList != null && playerSkinWidgetList.element3 != null) {
+            PlayerSkinWidget widget = playerSkinWidgetList.element3;
+            // Use BindingState.Axis for stick input
+            if (state.is(ControllerBinding.RIGHT_STICK) && state instanceof BindingState.Axis stick) {
+                double sensitivity = 0.15d;
+                double deltaX = stick.getDeadZone() > Math.abs(stick.x) ? 0 : -(double)stick.x * sensitivity;
+                // Only rotate if stick is moved
+                if (Math.abs(deltaX) > 0.01) {
+                    widget.onDrag(widget.getX(), widget.getY(), deltaX, 0);
+                }
+                state.block();
+            }
         }
     }
 
@@ -894,5 +915,49 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             }
         } catch (Exception ignored) {}
         return new byte[0];
+    }
+
+    // --- Mouse drag for preview rotation ---
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubled) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
+        if (button == 0 && playerSkinWidgetList != null && playerSkinWidgetList.element3 != null) {
+            PlayerSkinWidget widget = playerSkinWidgetList.element3;
+            if (mouseX >= widget.getX() && mouseX < widget.getX() + widget.getWidth() &&
+                mouseY >= widget.getY() && mouseY < widget.getY() + widget.getHeight()) {
+                isDraggingPreview = true;
+                lastMouseX = mouseX;
+                lastMouseY = mouseY;
+                return true;
+            }
+        }
+        return super.mouseClicked(event, doubled);
+    }
+
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
+        int button = event.button();
+        if (button == 0 && isDraggingPreview) {
+            isDraggingPreview = false;
+            return true;
+        }
+        return super.mouseReleased(event);
+    }
+
+    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double deltaX, double deltaY) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+            if (isDraggingPreview && playerSkinWidgetList != null && playerSkinWidgetList.element3 != null) {
+                PlayerSkinWidget widget = playerSkinWidgetList.element3;
+                double delta = lastMouseX - mouseX;
+                // Ignore tiny deltas to prevent drift
+                if (Math.abs(delta) > 0.01) {
+                    widget.onDrag(mouseX, 0, delta, 0);
+                }
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
+                return true;
+            }
+        return super.mouseDragged(event, deltaX, deltaY);
     }
 }
