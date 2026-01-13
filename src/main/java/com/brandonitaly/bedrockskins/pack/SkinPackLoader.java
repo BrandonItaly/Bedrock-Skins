@@ -8,6 +8,8 @@ import com.mojang.blaze3d.platform.NativeImage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -67,11 +69,47 @@ public final class SkinPackLoader {
         translations.clear();
         packTypesByPackId.clear();
 
+        // Load external skin packs from skin_packs directory
         if (skinPacksDir.exists()) {
             File[] children = skinPacksDir.listFiles();
             if (children != null) {
                 for (File f : children) {
                     if (f.isDirectory()) loadExternalPack(f);
+                }
+            }
+        }
+
+        // Optionally scan resourcepacks for skin packs
+        if (com.brandonitaly.bedrockskins.client.BedrockSkinsConfig.isScanResourcePacksForSkinsEnabled()) {
+            File resourcepacksDir = getResourcepacksDir();
+            if (resourcepacksDir != null && resourcepacksDir.exists()) {
+                File[] packs = resourcepacksDir.listFiles();
+                if (packs != null) {
+                    for (File pack : packs) {
+                        if (pack.isDirectory()) {
+                            // Look for skin packs inside resource pack folders
+                            File assetsDir = new File(pack, "assets");
+                            if (assetsDir.exists()) {
+                                File bedrockskinsDir = new File(assetsDir, "bedrockskins");
+                                File skinPacksDir = new File(bedrockskinsDir, "skin_packs");
+                                if (skinPacksDir.exists()) {
+                                    File[] skinPackFolders = skinPacksDir.listFiles();
+                                    if (skinPackFolders != null) {
+                                        for (File skinPackFolder : skinPackFolders) {
+                                            if (skinPackFolder.isDirectory()) {
+                                                loadExternalPack(skinPackFolder);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (pack.isFile()) {
+                            String name = pack.getName().toLowerCase(Locale.ROOT);
+                            if (name.endsWith(".zip") || name.endsWith(".mcpack")) {
+                                loadSkinsFromResourcePackZip(pack);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -84,6 +122,15 @@ public final class SkinPackLoader {
         loadVanillaGeometry(manager);
         loadInternalPacks(manager);
         loadPackOrder(manager);
+    }
+
+    private static File getResourcepacksDir() {
+        try {
+            File gameDir = Minecraft.getInstance().gameDirectory;
+            File resourcepacks = new File(gameDir, "resourcepacks");
+            if (resourcepacks.exists()) return resourcepacks;
+        } catch (Exception ignored) {}
+        return null;
     }
 
     public static void registerTextures() {
@@ -351,6 +398,15 @@ public final class SkinPackLoader {
                 try (InputStream is = new FileInputStream(new File(((AssetSource.File) source).getPath()))) {
                     return NativeImage.read(is);
                 }
+            } else if (source instanceof AssetSource.Zip) {
+                AssetSource.Zip zs = (AssetSource.Zip) source;
+                try (ZipFile zf = new ZipFile(zs.getZipPath())) {
+                    ZipEntry ze = zf.getEntry(zs.getInternalPath());
+                    if (ze == null) return null;
+                    try (InputStream is = zf.getInputStream(ze)) {
+                        return NativeImage.read(is);
+                    }
+                }
             } else {
                 return null; // Remote already pre-loaded
             }
@@ -358,6 +414,96 @@ public final class SkinPackLoader {
             System.out.println("Failed to load image (" + source + "): " + e);
             return null;
         }
+    }
+
+    private static void loadSkinsFromResourcePackZip(File pack) {
+        try (ZipFile zf = new ZipFile(pack)) {
+            // Find all skins.json files under assets/bedrockskins/skin_packs/<packName>/skins.json
+            Enumeration<? extends ZipEntry> entries = zf.entries();
+            Set<String> packDirs = new HashSet<>();
+            while (entries.hasMoreElements()) {
+                ZipEntry e = entries.nextElement();
+                String name = e.getName();
+                if (name.startsWith("assets/bedrockskins/skin_packs/") && name.endsWith("/skins.json")) {
+                    String dir = name.substring(0, name.lastIndexOf('/'));
+                    packDirs.add(dir);
+                }
+            }
+
+            for (String dir : packDirs) {
+                try {
+                    ZipEntry skinsEntry = zf.getEntry(dir + "/skins.json");
+                    if (skinsEntry == null) continue;
+
+                    JsonObject geometryJson = null;
+                    ZipEntry geoEntry = zf.getEntry(dir + "/geometry.json");
+                    if (geoEntry != null) {
+                        try (InputStream is = zf.getInputStream(geoEntry); InputStreamReader r = new InputStreamReader(is)) {
+                            geometryJson = JsonParser.parseReader(r).getAsJsonObject();
+                        }
+                    }
+
+                    SkinPackManifest manifest;
+                    try (InputStream is = zf.getInputStream(skinsEntry); InputStreamReader r = new InputStreamReader(is)) {
+                        manifest = gson.fromJson(r, SkinPackManifest.class);
+                    }
+
+                    loadExternalTranslationsFromZip(zf, dir);
+
+                    if (manifest.getSerializeName() != null) {
+                        String packId = "skinpack." + manifest.getSerializeName();
+                        String packType = manifest.getPackType();
+                        if (packType == null || packType.isEmpty()) {
+                            if (!"Favorites".equals(manifest.getSerializeName()) && !"Standard".equals(manifest.getSerializeName())) {
+                                packType = "skin_pack";
+                            }
+                        }
+                        if (packType != null) packTypesByPackId.put(packId, packType);
+                    }
+
+                    for (SkinEntry entry : manifest.getSkins()) {
+                        JsonObject geometry = resolveGeometry(entry.getGeometry(), geometryJson);
+                        if (geometry == null) continue;
+
+                        String texPath = (dir + "/" + entry.getTexture()).toLowerCase(Locale.ROOT);
+                        ZipEntry texEntry = zf.getEntry(texPath);
+                        String capePath = entry.getCape() != null ? (dir + "/" + entry.getCape()).toLowerCase(Locale.ROOT) : null;
+                        ZipEntry capeEntry = capePath != null ? zf.getEntry(capePath) : null;
+
+                        if (texEntry != null) {
+                            String key = manifest.getLocalizationName() + ":" + entry.getLocalizationName();
+                            loadedSkins.put(key, new LoadedSkin(
+                                manifest.getSerializeName(),
+                                manifest.getLocalizationName(),
+                                entry.getLocalizationName(),
+                                geometry,
+                                new AssetSource.Zip(pack.getAbsolutePath(), texPath),
+                                capeEntry != null ? new AssetSource.Zip(pack.getAbsolutePath(), capePath) : null
+                            ));
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println("Error loading skin pack from zip: " + e);
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Failed to scan resource pack zip " + pack + ": " + e);
+        }
+    }
+
+    private static void loadExternalTranslationsFromZip(ZipFile zf, String dir) {
+        // texts/<lang>.lang under dir
+        try {
+            for (String lang : new String[] {"en_us"}) {
+                String base = dir + "/texts/" + lang + ".lang";
+                ZipEntry te = zf.getEntry(base);
+                if (te != null) {
+                    try (InputStream is = zf.getInputStream(te)) {
+                        parseTranslationStream(is, translations.computeIfAbsent(lang, k -> new HashMap<>()));
+                    }
+                }
+            }
+        } catch (Exception e) { System.out.println("Error loading translations from zip: " + e); }
     }
 
     // --- Helpers: Translations & Misc ---

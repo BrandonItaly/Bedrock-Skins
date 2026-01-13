@@ -33,4 +33,12 @@ public abstract class AssetSource {
         public static final Remote INSTANCE = new Remote();
         private Remote() {}
     }
+
+    public static final class Zip extends AssetSource {
+        private final String zipPath;
+        private final String internalPath;
+        public Zip(String zipPath, String internalPath) { this.zipPath = zipPath; this.internalPath = internalPath; }
+        public String getZipPath() { return zipPath; }
+        public String getInternalPath() { return internalPath; }
+    }
 }

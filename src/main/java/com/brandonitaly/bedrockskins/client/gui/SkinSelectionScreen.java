@@ -9,6 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.tabs.GridLayoutTab;
 import net.minecraft.client.gui.components.tabs.TabManager;
 import net.minecraft.client.gui.components.tabs.TabNavigationBar;
@@ -27,6 +28,7 @@ import net.minecraft.util.Util;
 import net.minecraft.Util;*/
 //?}
 import net.minecraft.world.entity.player.PlayerModelPart;
+import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -84,7 +86,7 @@ public class SkinSelectionScreen extends Screen {
         
         // Initialize tab navigation
         this.tabNavigationBar = TabNavigationBar.builder(this.tabManager, this.width)
-            .addTabs(new SkinsTab(), new SkinCustomizationTab())
+            .addTabs(new SkinsTab(), new SkinCustomizationTab(), new ModOptionsTab())
             .build();
         this.addRenderableWidget(this.tabNavigationBar);
         
@@ -275,48 +277,89 @@ public class SkinSelectionScreen extends Screen {
     private void createCustomizationWidgets(ScreenRectangle tabArea) {
         int PANEL_HEADER_HEIGHT = 24;
         int PANEL_PADDING = 4;
-        int colGap = 8;
-        // Constrain button width so two columns always fit inside skins panel
-        int maxButtonWidth = 210;
-        int btnW = Math.min(maxButtonWidth, (rSkins.w - (PANEL_PADDING * 2) - colGap) / 2);
-        int btnH = 20; // keep original height; only width is constrained
-        int gap = 6;
-
-        // Two-column layout within the skins panel
-        int leftX = rSkins.x + PANEL_PADDING;
-        int rightX = rSkins.x + rSkins.w - PANEL_PADDING - btnW;
-        int startY = rSkins.y + PANEL_HEADER_HEIGHT + PANEL_PADDING;
+        
+        // Define the content area within rSkins
+        int contentX = rSkins.x + PANEL_PADDING;
+        int contentY = rSkins.y + PANEL_HEADER_HEIGHT + PANEL_PADDING;
+        int contentW = rSkins.w - (PANEL_PADDING * 2);
+        int contentH = rSkins.h - PANEL_HEADER_HEIGHT - (PANEL_PADDING * 2);
+        
+        // Button settings
+        int btnHeight = 20;
+        int gapX = 8;
+        int gapY = 6;
+        int maxButtonWidth = 150;
+        int singleColMaxWidth = 310; // Similar to vanilla options width
+        
+        // Calculate layout strategy
+        // We prefer 2 columns if width allows (e.g., > 320px for two 150px buttons + gap)
+        // If not, fall back to 1 column.
+        
+        int columns;
+        int btnWidth;
+        
+        // Check if we can fit 2 columns of at least 100px
+        if (contentW > 210) { 
+             columns = 2;
+             // Calculate width for 2 columns: (Available - Gap) / 2
+             int w = (contentW - gapX) / 2;
+             // Cap at maxButtonWidth
+             btnWidth = Math.min(maxButtonWidth, w);
+        } else {
+             columns = 1;
+             btnWidth = Math.min(singleColMaxWidth, contentW);
+        }
+        
+        // Calculate starting X to center the grid/list
+        int totalGridWidth;
+        if (columns == 1) {
+            totalGridWidth = btnWidth;
+        } else {
+            totalGridWidth = (btnWidth * 2) + gapX;
+        }
+        
+        int startX = contentX + (contentW - totalGridWidth) / 2;
+        int startY = contentY;
 
         var options = Minecraft.getInstance().options;
         PlayerModelPart[] parts = PlayerModelPart.values();
         int total = parts.length + 1; // include main hand
 
         for (int i = 0; i < total; i++) {
-            int col = i % 2;
-            int row = i / 2;
-            int x = (col == 0) ? leftX : rightX;
-            int y = startY + row * (btnH + gap);
+            int col, row;
+            if (columns == 1) {
+                col = 0;
+                row = i;
+            } else {
+                col = i % 2;
+                row = i / 2;
+            }
+            
+            int x = startX + col * (btnWidth + gapX);
+            int y = startY + row * (btnHeight + gapY);
+
+            // Prevent buttons from overlapping the bottom of the skins panel
+            if (y + btnHeight > contentY + contentH) break;
 
             if (i < parts.length) {
                 PlayerModelPart part = parts[i];
                 CycleButton<Boolean> btn = CycleButton.onOffBuilder(options.isModelPartEnabled(part))
-                        .create(x, y, btnW, btnH, part.getName(), (button, value) -> options.setModelPart(part, value));
+                        .create(x, y, btnWidth, btnHeight, part.getName(), (button, value) -> options.setModelPart(part, value));
                 this.addRenderableWidget(btn);
                 customizationWidgets.add(btn);
             } else {
-                // main hand button placed as part of the grid
+                // main hand button
                 var mainHandBtn = options.mainHand().createButton(options);
                 mainHandBtn.setX(x);
                 mainHandBtn.setY(y);
-                mainHandBtn.setWidth(btnW);
+                mainHandBtn.setWidth(btnWidth);
+                mainHandBtn.setHeight(btnHeight);
                 this.addRenderableWidget(mainHandBtn);
                 customizationWidgets.add(mainHandBtn);
             }
-
-            // Prevent buttons from overlapping the bottom of the skins panel
-            if (y + btnH > rSkins.y + rSkins.h - PANEL_PADDING) break;
         }
     }
+    
     private Component getSkinsPanelTitle() {
         if (selectedPackId == null) return Component.translatable("bedrockskins.gui.skins");
         List<LoadedSkin> skins = skinCache.get(selectedPackId);
@@ -427,7 +470,7 @@ public class SkinSelectionScreen extends Screen {
         // Handle mouse events for preview panel
         boolean mousePressed = org.lwjgl.glfw.GLFW.glfwGetMouseButton(
             org.lwjgl.glfw.GLFW.glfwGetCurrentContext(),
-            org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT
+            org.lwjgl.glfw.GLFW.glfwGetCurrentContext() != 0 ? org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT : 0
         ) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
         
         if (previewPanel != null) {
@@ -621,6 +664,64 @@ public class SkinSelectionScreen extends Screen {
             // Remove any existing customization widgets then build new ones positioned within the skins panel
             SkinSelectionScreen.this.clearCustomizationWidgets();
             SkinSelectionScreen.this.createCustomizationWidgets(tabArea);
+        }
+    }
+
+    private class ModOptionsTab extends GridLayoutTab {
+        private static final Component TITLE = Component.translatable("bedrockskins.gui.mod_options");
+
+        public ModOptionsTab() {
+            super(TITLE);
+        }
+
+        @Override
+        public void doLayout(ScreenRectangle tabArea) {
+            // Activate mod options tab
+            SkinSelectionScreen.this.activeTab = 2;
+            // Layout using the tab area
+            SkinSelectionScreen.this.calculateLayout(tabArea);
+
+            // Hide skin pack/skins widgets
+            if (SkinSelectionScreen.this.packList != null) SkinSelectionScreen.this.packList.visible = false;
+            if (SkinSelectionScreen.this.skinGrid != null) SkinSelectionScreen.this.skinGrid.visible = false;
+
+            // Ensure preview panel remains visible and placed in preview area
+            if (SkinSelectionScreen.this.previewPanel != null) SkinSelectionScreen.this.previewPanel.reposition(SkinSelectionScreen.this.rPreview.x, SkinSelectionScreen.this.rPreview.y, SkinSelectionScreen.this.rPreview.w, SkinSelectionScreen.this.rPreview.h);
+
+            // Remove any existing customization widgets then build new ones positioned within the skins panel
+            SkinSelectionScreen.this.clearCustomizationWidgets();
+
+            // Create Mod Options UI - single toggle for scanning resource packs
+            int PANEL_HEADER_HEIGHT = 24;
+            int PANEL_PADDING = 4;
+            
+            // Available content area
+            int contentW = rSkins.w - (PANEL_PADDING * 2);
+            int contentX = rSkins.x + PANEL_PADDING;
+            
+            int btnH = 20; // standard height
+            // Calculate optimal width: min(300, available) but check bounds
+            int btnW = Math.min(300, contentW);
+            
+            // Center the button in content area
+            int x = contentX + (contentW - btnW) / 2;
+            int y = rSkins.y + PANEL_HEADER_HEIGHT + PANEL_PADDING + 8;
+
+            CycleButton<Boolean> scanToggle = CycleButton.onOffBuilder(BedrockSkinsConfig.isScanResourcePacksForSkinsEnabled())
+                .create(x, y, btnW, btnH, Component.translatable("bedrockskins.option.scan_resourcepacks"), (button, value) -> {
+                    BedrockSkinsConfig.setScanResourcePacksForSkins(value);
+                    try {
+                        SkinPackLoader.loadPacks();
+                        SkinPackLoader.registerTextures();
+                    } catch (Exception ignored) {}
+                    SkinSelectionScreen.this.buildSkinCache();
+                    SkinSelectionScreen.this.refreshPackList();
+                    if (SkinSelectionScreen.this.selectedPackId != null) SkinSelectionScreen.this.selectPack(SkinSelectionScreen.this.selectedPackId);
+                });
+
+            SkinSelectionScreen.this.addRenderableWidget(scanToggle);
+            scanToggle.setTooltip(Tooltip.create(Component.translatable("bedrockskins.option.scan_resourcepacks.tooltip")));
+            SkinSelectionScreen.this.customizationWidgets.add(scanToggle);
         }
     }
 }

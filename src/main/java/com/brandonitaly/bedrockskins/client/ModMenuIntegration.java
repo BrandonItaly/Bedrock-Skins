@@ -11,6 +11,8 @@ public class ModMenuIntegration implements ModMenuApi {
     
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
-        return parent -> BedrockSkinsClient.getAppropriateSkinScreen((Screen) parent);
+        // return parent -> BedrockSkinsClient.getAppropriateSkinScreen((Screen) parent);
+        // Open the normal skin selection screen from mod menu for access to mod options
+        return parent -> new SkinSelectionScreen((Screen) parent);
     }
 }
