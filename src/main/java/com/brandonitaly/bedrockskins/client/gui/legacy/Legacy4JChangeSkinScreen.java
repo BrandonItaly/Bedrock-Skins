@@ -1,5 +1,7 @@
 package com.brandonitaly.bedrockskins.client.gui.legacy;
 
+//? if legacy4j {
+/*
 import com.brandonitaly.bedrockskins.BedrockSkinsNetworking;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
@@ -8,10 +10,12 @@ import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.pack.StringUtils;
 import com.mojang.blaze3d.platform.InputConstants;
+//? if fabric {
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+//? }
 //? if <1.21.11 {
-/*import net.minecraft.Util;
-*///?}
+import net.minecraft.Util;
+//?}
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -22,7 +26,7 @@ import net.minecraft.network.chat.Component;
 //? if >=1.21.11 {
 import net.minecraft.resources.Identifier;
 //?} else {
-/*import net.minecraft.resources.ResourceLocation;*/
+import net.minecraft.resources.ResourceLocation;
 //?}
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.ChatFormatting;
@@ -49,10 +53,6 @@ import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-/**
- * Legacy4J-styled carousel skin selection screen for Bedrock Skins.
- * Adapted from legacy-skins ChangeSkinScreen.
- */
 public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Controller.Event, ControlTooltip.Event {
     protected final Minecraft minecraft;
     protected final Panel tooltipBox = Panel.tooltipBoxOf(panel, 350 + 50);
@@ -186,11 +186,21 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
                 // Load texture data
                 byte[] textureData = loadTextureData(skin);
 
+                //? if fabric {
                 ClientPlayNetworking.send(new BedrockSkinsNetworking.SetSkinPayload(
                     skinKey,
                     skin.getGeometryData().toString(),
                     textureData
                 ));
+                //? } else if neoforge {
+                net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                    new BedrockSkinsNetworking.SetSkinPayload(
+                        skinKey,
+                        skin.getGeometryData().toString(),
+                        textureData
+                    )
+                );
+                //? }
 
                 playUISound();
             } catch (Exception e) {
@@ -202,7 +212,13 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     private void resetSkin() {
         if (minecraft.player != null) {
             SkinManager.resetSkin(minecraft.player.getUUID().toString());
+            //? if fabric {
             ClientPlayNetworking.send(new BedrockSkinsNetworking.SetSkinPayload("RESET", "", new byte[0]));
+            //? } else if neoforge {
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new BedrockSkinsNetworking.SetSkinPayload("RESET", "", new byte[0])
+            );
+            //? }
             playUISound();
         }
     }
@@ -267,10 +283,6 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         return super.keyPressed(event);
     }
 
-    /**
-     * Ensures the given button is visible in the renderableVList.
-     * Scrolls the list until the button is visible.
-     */
     private void ensureButtonVisible(Button button) {
         // Ensure the highlighted button is always visible, including when looping
         int safety = 0;
@@ -508,13 +520,11 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         var packNameBox = Identifier.fromNamespaceAndPath("bedrockskins", "tiles/pack_name_box");
         var skinBox = Identifier.fromNamespaceAndPath("bedrockskins", "tiles/skin_box");
         //?} else {
-        /*
         var skinPanel = ResourceLocation.fromNamespaceAndPath("bedrockskins", "tiles/skin_panel");
         var panelFiller = ResourceLocation.fromNamespaceAndPath("bedrockskins", "tiles/panel_filler");
         var recessedPanel = ResourceLocation.fromNamespaceAndPath(Legacy4J.MOD_ID, "tiles/square_recessed_panel");
         var packNameBox = ResourceLocation.fromNamespaceAndPath("bedrockskins", "tiles/pack_name_box");
         var skinBox = ResourceLocation.fromNamespaceAndPath("bedrockskins", "tiles/skin_box");
-        */
         //?}
 
         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, skinPanel,
@@ -531,9 +541,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         //? if >=1.21.11 {
         var iconHolder = Identifier.fromNamespaceAndPath(Legacy4J.MOD_ID, "container/sizeable_icon_holder");
         //?} else {
-        /*
         var iconHolder = ResourceLocation.fromNamespaceAndPath(Legacy4J.MOD_ID, "container/sizeable_icon_holder");
-        */
         //?}
         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, iconHolder,
             tooltipBox.getX() + tooltipBox.getWidth() - 50,
@@ -619,9 +627,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             //? if >=1.21.11 {
             var beaconCheck = Identifier.fromNamespaceAndPath(Legacy4J.MOD_ID, "container/beacon_check");
             //?} else {
-            /*
             var beaconCheck = ResourceLocation.fromNamespaceAndPath(Legacy4J.MOD_ID, "container/beacon_check");
-            */
             //?}
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, beaconCheck,
                 tooltipBox.getX() + tooltipBox.getWidth() - 50,
@@ -635,10 +641,8 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             var heartContainer = Identifier.fromNamespaceAndPath("minecraft", "hud/heart/container");
             var heartFull = Identifier.fromNamespaceAndPath("minecraft", "hud/heart/full");
             //?} else {
-            /*
             var heartContainer = ResourceLocation.fromNamespaceAndPath("minecraft", "hud/heart/container");
             var heartFull = ResourceLocation.fromNamespaceAndPath("minecraft", "hud/heart/full");
-            */
             //?}
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, heartContainer,
                 tooltipBox.getX() + tooltipBox.getWidth() - 50 + 4,
@@ -668,9 +672,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
                 //? if >=1.21.11 {
                 Identifier.fromNamespaceAndPath(Legacy4J.MOD_ID, "tiles/square_recessed_panel"),
                 //?} else {
-                /*
                 ResourceLocation.fromNamespaceAndPath(Legacy4J.MOD_ID, "tiles/square_recessed_panel"),
-                */
                 //?}
                 panel.getX() + 7, panel.getY() + 7 + 130 - 8,
                 panel.getWidth() - 14, panel.getHeight() - 14 - 135 + 1 + 8));
@@ -679,9 +681,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
                 //? if >=1.21.11 {
                 Identifier.fromNamespaceAndPath(Legacy4J.MOD_ID, "tiles/square_recessed_panel"),
                 //?} else {
-                /*
                 ResourceLocation.fromNamespaceAndPath(Legacy4J.MOD_ID, "tiles/square_recessed_panel"),
-                */
                 //?}
                 panel.getX() + 34, panel.getY() + 10, 112, 112));
         // Removed pack icon rendering
@@ -960,4 +960,5 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             }
         return super.mouseDragged(event, deltaX, deltaY);
     }
-}
+}*/
+//?}

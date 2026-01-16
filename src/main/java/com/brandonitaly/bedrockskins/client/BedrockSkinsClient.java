@@ -5,6 +5,7 @@ import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.brandonitaly.bedrockskins.client.gui.SkinSelectionScreen;
+//? if fabric {
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -14,6 +15,19 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+//? } else if neoforge {
+/*import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.common.NeoForge;
+import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;*/
+//? }
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 //? if >=1.21.11 {
@@ -25,14 +39,13 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.player.PlayerModelPart;
-import net.minecraft.world.InteractionHand;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.File;
 
+//? if fabric {
 public class BedrockSkinsClient implements ClientModInitializer {
     
-    // Keybinds for skin customization
     private static KeyMapping toggleCapeKey;
     private static KeyMapping toggleJacketKey;
     private static KeyMapping toggleLeftSleeveKey;
@@ -41,6 +54,7 @@ public class BedrockSkinsClient implements ClientModInitializer {
     private static KeyMapping toggleRightPantsKey;
     private static KeyMapping toggleHatKey;
     private static KeyMapping toggleMainHandKey;
+    private static KeyMapping openKey;
     
     //? if >1.21.8 {
     private static KeyMapping.Category keybindCategory;
@@ -64,12 +78,10 @@ public class BedrockSkinsClient implements ClientModInitializer {
     public static net.minecraft.client.gui.screens.Screen getAppropriateSkinScreen(net.minecraft.client.gui.screens.Screen parent) {
         if (FabricLoader.getInstance().isModLoaded("legacy")) {
             try {
-                // Use reflection to avoid loading Legacy4J classes when the mod isn't present
                 Class<?> screenClass = Class.forName("com.brandonitaly.bedrockskins.client.gui.legacy.Legacy4JChangeSkinScreen");
                 var constructor = screenClass.getConstructor(net.minecraft.client.gui.screens.Screen.class);
                 return (net.minecraft.client.gui.screens.Screen) constructor.newInstance(parent);
             } catch (Exception e) {
-                // Fallback to standard screen if Legacy4J integration fails
                 return new SkinSelectionScreen(parent);
             }
         } else {
@@ -85,14 +97,13 @@ public class BedrockSkinsClient implements ClientModInitializer {
             //?} else {
             KeyMapping key = new KeyMapping(keyId, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_K, keybindCategory);
             //?}
-            KeyMapping openKey = KeyBindingHelper.registerKeyBinding(key);
+            openKey = KeyBindingHelper.registerKeyBinding(key);
 
             ClientTickEvents.END_CLIENT_TICK.register(client -> {
                 while (openKey.consumeClick()) {
                     client.setScreen(getAppropriateSkinScreen(client.screen));
                 }
             });
-            System.out.println("BedrockSkinsClient: Registered keybinding (K)");
         } catch (Exception e) {
             System.out.println("BedrockSkinsClient: Keybinding error: " + e);
         }
@@ -104,7 +115,6 @@ public class BedrockSkinsClient implements ClientModInitializer {
             /*String categoryName = "bedrockskins.controls";*/
             //?}
             
-            // Register all customization keybinds (unbound by default - GLFW.GLFW_KEY_UNKNOWN)
             //? if <=1.21.8 {
             /*toggleCapeKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.bedrockskins.toggle_cape", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), categoryName));
             toggleJacketKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.bedrockskins.toggle_jacket", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), categoryName));
@@ -125,103 +135,183 @@ public class BedrockSkinsClient implements ClientModInitializer {
             toggleMainHandKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.bedrockskins.swap_main_hand", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), keybindCategory));
             //?}
             
-            // Register tick handler for customization keybinds
             ClientTickEvents.END_CLIENT_TICK.register(client -> {
                 if (client.player == null) return;
-                
-                while (toggleCapeKey.consumeClick()) {
-                    toggleModelPart(client, PlayerModelPart.CAPE);
-                }
-                while (toggleJacketKey.consumeClick()) {
-                    toggleModelPart(client, PlayerModelPart.JACKET);
-                }
-                while (toggleLeftSleeveKey.consumeClick()) {
-                    toggleModelPart(client, PlayerModelPart.LEFT_SLEEVE);
-                }
-                while (toggleRightSleeveKey.consumeClick()) {
-                    toggleModelPart(client, PlayerModelPart.RIGHT_SLEEVE);
-                }
-                while (toggleLeftPantsKey.consumeClick()) {
-                    toggleModelPart(client, PlayerModelPart.LEFT_PANTS_LEG);
-                }
-                while (toggleRightPantsKey.consumeClick()) {
-                    toggleModelPart(client, PlayerModelPart.RIGHT_PANTS_LEG);
-                }
-                while (toggleHatKey.consumeClick()) {
-                    toggleModelPart(client, PlayerModelPart.HAT);
-                }
-                while (toggleMainHandKey.consumeClick()) {
-                    toggleMainHand(client);
-                }
+                while (toggleCapeKey.consumeClick()) CommonLogic.toggleModelPart(client, PlayerModelPart.CAPE);
+                while (toggleJacketKey.consumeClick()) CommonLogic.toggleModelPart(client, PlayerModelPart.JACKET);
+                while (toggleLeftSleeveKey.consumeClick()) CommonLogic.toggleModelPart(client, PlayerModelPart.LEFT_SLEEVE);
+                while (toggleRightSleeveKey.consumeClick()) CommonLogic.toggleModelPart(client, PlayerModelPart.RIGHT_SLEEVE);
+                while (toggleLeftPantsKey.consumeClick()) CommonLogic.toggleModelPart(client, PlayerModelPart.LEFT_PANTS_LEG);
+                while (toggleRightPantsKey.consumeClick()) CommonLogic.toggleModelPart(client, PlayerModelPart.RIGHT_PANTS_LEG);
+                while (toggleHatKey.consumeClick()) CommonLogic.toggleModelPart(client, PlayerModelPart.HAT);
+                while (toggleMainHandKey.consumeClick()) CommonLogic.toggleMainHand(client);
             });
-            
-            System.out.println("BedrockSkinsClient: Registered customization keybinds");
         } catch (Exception e) {
-            System.out.println("BedrockSkinsClient: Customization keybinding error: " + e);
+            e.printStackTrace();
         }
-    }
-    
-    private void toggleModelPart(Minecraft client, PlayerModelPart part) {
-        if (client.player == null) return;
-        
-        boolean current = client.options.isModelPartEnabled(part);
-        
-        // Toggle the model part through options
-        client.options.setModelPart(part, !current);
-        
-        // Save the updated customization
-        client.options.save();
-    }
-    
-    private void toggleMainHand(Minecraft client) {
-        if (client.player == null) return;
-        
-        // Toggle main hand between left and right
-        net.minecraft.world.entity.HumanoidArm currentHand = client.options.mainHand().get();
-        net.minecraft.world.entity.HumanoidArm newHand = currentHand == net.minecraft.world.entity.HumanoidArm.LEFT 
-            ? net.minecraft.world.entity.HumanoidArm.RIGHT 
-            : net.minecraft.world.entity.HumanoidArm.LEFT;
-        
-        client.options.mainHand().set(newHand);
-        client.options.save();
     }
 
     private void registerLifecycleEvents() {
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
-            reloadResources(client);
-
-            // Register a synchronous reload listener that triggers a resource reload
+            CommonLogic.reloadResources(client);
             ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new Reloader());
         });
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> CommonLogic.applySavedSkinOnJoin(client));
+    }
 
-        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> applySavedSkinOnJoin(client));
+    private void registerNetworking() {
+        ClientPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.SkinUpdatePayload.ID, (payload, context) -> {
+            BedrockSkinsNetworking.SkinUpdatePayload p = payload;
+            context.client().execute(() -> CommonLogic.handleSkinUpdate(p));
+        });
     }
 
     private final class Reloader implements IdentifiableResourceReloadListener, ResourceManagerReloadListener {
         @Override
         //? if >=1.21.11 {
-        public Identifier getFabricId() {
-            return Identifier.fromNamespaceAndPath("bedrockskins", "reloader");
-        }
+        public Identifier getFabricId() { return Identifier.fromNamespaceAndPath("bedrockskins", "reloader"); }
         //?} else {
-        /*public ResourceLocation getFabricId() {
-            return ResourceLocation.fromNamespaceAndPath("bedrockskins", "reloader");
-        }*/
+        /*public ResourceLocation getFabricId() { return ResourceLocation.fromNamespaceAndPath("bedrockskins", "reloader"); }*/
         //?}
 
         @Override
         public void onResourceManagerReload(ResourceManager manager) {
-            reloadResources(Minecraft.getInstance());
+            CommonLogic.reloadResources(Minecraft.getInstance());
+        }
+    }
+}
+//? } else if neoforge {
+/*public class BedrockSkinsClient {
+    private static KeyMapping toggleCapeKey;
+    private static KeyMapping toggleJacketKey;
+    private static KeyMapping toggleLeftSleeveKey;
+    private static KeyMapping toggleRightSleeveKey;
+    private static KeyMapping toggleLeftPantsKey;
+    private static KeyMapping toggleRightPantsKey;
+    private static KeyMapping toggleHatKey;
+    private static KeyMapping toggleMainHandKey;
+    private static KeyMapping openKey;
+
+    public static void init(IEventBus modBus) {
+        // Register Mod Bus Events
+        modBus.register(BedrockSkinsClient.class);
+        
+        // Register Game Bus Events
+        NeoForge.EVENT_BUS.register(GameEvents.class);
+    }
+
+    @SubscribeEvent
+    public static void registerKeys(RegisterKeyMappingsEvent event) {
+        //? if >=1.21.11 {
+        KeyMapping.Category category = new KeyMapping.Category(Identifier.fromNamespaceAndPath("bedrockskins", "controls"));
+        //?} else {
+        KeyMapping.Category category = new KeyMapping.Category(ResourceLocation.fromNamespaceAndPath("bedrockskins", "controls"));
+        //?}
+        
+        openKey = new KeyMapping("key.bedrockskins.open", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_K, category);
+        
+        toggleCapeKey = new KeyMapping("key.bedrockskins.toggle_cape", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), category);
+        toggleJacketKey = new KeyMapping("key.bedrockskins.toggle_jacket", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), category);
+        toggleLeftSleeveKey = new KeyMapping("key.bedrockskins.toggle_left_sleeve", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), category);
+        toggleRightSleeveKey = new KeyMapping("key.bedrockskins.toggle_right_sleeve", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), category);
+        toggleLeftPantsKey = new KeyMapping("key.bedrockskins.toggle_left_pants", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), category);
+        toggleRightPantsKey = new KeyMapping("key.bedrockskins.toggle_right_pants", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), category);
+        toggleHatKey = new KeyMapping("key.bedrockskins.toggle_hat", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), category);
+        toggleMainHandKey = new KeyMapping("key.bedrockskins.swap_main_hand", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), category);
+
+        event.register(openKey);
+        event.register(toggleCapeKey);
+        event.register(toggleJacketKey);
+        event.register(toggleLeftSleeveKey);
+        event.register(toggleRightSleeveKey);
+        event.register(toggleLeftPantsKey);
+        event.register(toggleRightPantsKey);
+        event.register(toggleHatKey);
+        event.register(toggleMainHandKey);
+    }
+
+    @SubscribeEvent
+    public static void onClientSetup(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> {
+            CommonLogic.reloadResources(Minecraft.getInstance());
+        });
+    }
+
+    // Networking handler called from main class
+    public static void handleSkinUpdatePacket(BedrockSkinsNetworking.SkinUpdatePayload payload) {
+        CommonLogic.handleSkinUpdate(payload);
+    }
+    
+    // Runtime events
+    public static class GameEvents {
+        @SubscribeEvent
+        public static void onClientTick(ClientTickEvent.Post event) {
+            Minecraft client = Minecraft.getInstance();
+            if (client.player == null) return;
+            
+            while (openKey.consumeClick()) {
+                client.setScreen(getAppropriateSkinScreen(client.screen));
+            }
+
+            while (toggleCapeKey.consumeClick()) CommonLogic.toggleModelPart(client, PlayerModelPart.CAPE);
+            while (toggleJacketKey.consumeClick()) CommonLogic.toggleModelPart(client, PlayerModelPart.JACKET);
+            while (toggleLeftSleeveKey.consumeClick()) CommonLogic.toggleModelPart(client, PlayerModelPart.LEFT_SLEEVE);
+            while (toggleRightSleeveKey.consumeClick()) CommonLogic.toggleModelPart(client, PlayerModelPart.RIGHT_SLEEVE);
+            while (toggleLeftPantsKey.consumeClick()) CommonLogic.toggleModelPart(client, PlayerModelPart.LEFT_PANTS_LEG);
+            while (toggleRightPantsKey.consumeClick()) CommonLogic.toggleModelPart(client, PlayerModelPart.RIGHT_PANTS_LEG);
+            while (toggleHatKey.consumeClick()) CommonLogic.toggleModelPart(client, PlayerModelPart.HAT);
+            while (toggleMainHandKey.consumeClick()) CommonLogic.toggleMainHand(client);
+        }
+
+        @SubscribeEvent
+        public static void onJoin(ClientPlayerNetworkEvent.LoggingIn event) {
+            CommonLogic.applySavedSkinOnJoin(Minecraft.getInstance());
         }
     }
 
-    private void reloadResources(Minecraft client) {
+    public static net.minecraft.client.gui.screens.Screen getAppropriateSkinScreen(net.minecraft.client.gui.screens.Screen parent) {
+        // For NeoForge, use Legacy4J screen if loaded, else fallback
+        if (net.neoforged.fml.ModList.get().isLoaded("legacy")) {
+            try {
+                Class<?> screenClass = Class.forName("com.brandonitaly.bedrockskins.client.gui.legacy.Legacy4JChangeSkinScreen");
+                var constructor = screenClass.getConstructor(net.minecraft.client.gui.screens.Screen.class);
+                return (net.minecraft.client.gui.screens.Screen) constructor.newInstance(parent);
+            } catch (Exception e) {
+                // Fallback if reflection fails
+                return new com.brandonitaly.bedrockskins.client.gui.SkinSelectionScreen(parent);
+            }
+        } else {
+            return new com.brandonitaly.bedrockskins.client.gui.SkinSelectionScreen(parent);
+        }
+    }
+}*/
+//? }
+
+// Shared Logic Container
+class CommonLogic {
+    static void toggleModelPart(Minecraft client, PlayerModelPart part) {
+        if (client.player == null) return;
+        boolean current = client.options.isModelPartEnabled(part);
+        client.options.setModelPart(part, !current);
+        client.options.save();
+    }
+    
+    static void toggleMainHand(Minecraft client) {
+        if (client.player == null) return;
+        net.minecraft.world.entity.HumanoidArm currentHand = client.options.mainHand().get();
+        net.minecraft.world.entity.HumanoidArm newHand = currentHand == net.minecraft.world.entity.HumanoidArm.LEFT 
+            ? net.minecraft.world.entity.HumanoidArm.RIGHT 
+            : net.minecraft.world.entity.HumanoidArm.LEFT;
+        client.options.mainHand().set(newHand);
+        client.options.save();
+    }
+
+    static void reloadResources(Minecraft client) {
         try {
             SkinPackLoader.loadPacks();
             FavoritesManager.load();
             SkinManager.load();
             BedrockModelManager.clearAllModels();
-
             if (client.player != null) {
                 String localUuid = client.player.getUUID().toString();
                 String key = SkinManager.getSkin(localUuid);
@@ -237,12 +327,11 @@ public class BedrockSkinsClient implements ClientModInitializer {
         }
     }
 
-    private void applySavedSkinOnJoin(Minecraft client) {
+    static void applySavedSkinOnJoin(Minecraft client) {
         try {
             BedrockSkinsState state = StateManager.readState();
             String savedKey = state.getSelected();
-            if (savedKey == null) return;
-            if (client.player == null) return;
+            if (savedKey == null || client.player == null) return;
 
             String[] parts = savedKey.split(":", 2);
             String pack = parts.length == 2 ? parts[0] : "Remote";
@@ -253,7 +342,16 @@ public class BedrockSkinsClient implements ClientModInitializer {
             if (loadedSkin != null) {
                 byte[] textureData = loadTextureData(client, loadedSkin);
                 if (textureData.length > 0) {
-                    ClientPlayNetworking.send(new BedrockSkinsNetworking.SetSkinPayload(savedKey, loadedSkin.getGeometryData().toString(), textureData));
+                    var packet = new BedrockSkinsNetworking.SetSkinPayload(savedKey, loadedSkin.getGeometryData().toString(), textureData);
+                    
+                    //? if fabric {
+                    ClientPlayNetworking.send(packet);
+                    //? } else if neoforge {
+                    /*if (client.getConnection() != null) {
+                        client.getConnection().send(new ServerboundCustomPayloadPacket(packet));
+                    }*/
+                    //? }
+                    
                     System.out.println("BedrockSkinsClient: Synced skin " + savedKey);
                 }
             }
@@ -262,31 +360,24 @@ public class BedrockSkinsClient implements ClientModInitializer {
         }
     }
 
-    private void registerNetworking() {
-        ClientPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.SkinUpdatePayload.ID, (payload, context) -> {
-            BedrockSkinsNetworking.SkinUpdatePayload p = payload;
-            context.client().execute(() -> {
-                String key = p.getSkinKey();
-                java.util.UUID uuid = p.getUuid();
-                String geom = p.getGeometry();
-                byte[] tex = p.getTextureData();
+    static void handleSkinUpdate(BedrockSkinsNetworking.SkinUpdatePayload p) {
+        String key = p.getSkinKey();
+        java.util.UUID uuid = p.getUuid();
+        String geom = p.getGeometry();
+        byte[] tex = p.getTextureData();
 
-                if ("RESET".equals(key)) {
-                    SkinManager.resetSkin(uuid.toString());
-                } else {
-                    SkinPackLoader.registerRemoteSkin(key, geom, tex);
-                    String[] parts = key.split(":", 2);
-                    String pack = parts.length == 2 ? parts[0] : "Remote";
-                    String name = parts.length == 2 ? parts[1] : key;
-                    SkinManager.setSkin(uuid.toString(), pack, name);
-                }
-            });
-        });
+        if ("RESET".equals(key)) {
+            SkinManager.resetSkin(uuid.toString());
+        } else {
+            SkinPackLoader.registerRemoteSkin(key, geom, tex);
+            String[] parts = key.split(":", 2);
+            String pack = parts.length == 2 ? parts[0] : "Remote";
+            String name = parts.length == 2 ? parts[1] : key;
+            SkinManager.setSkin(uuid.toString(), pack, name);
+        }
     }
 
-    // --- Helpers ---
-
-    private byte[] loadTextureData(Minecraft client, com.brandonitaly.bedrockskins.pack.LoadedSkin skin) {
+    static byte[] loadTextureData(Minecraft client, com.brandonitaly.bedrockskins.pack.LoadedSkin skin) {
         try {
             AssetSource src = skin.getTexture();
             if (src instanceof AssetSource.Resource) {

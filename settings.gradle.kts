@@ -1,20 +1,28 @@
 pluginManagement {
     repositories {
         maven("https://maven.fabricmc.net/")
-        mavenCentral()
+        maven("https://maven.architectury.dev/")
+        maven("https://maven.minecraftforge.net/")
+        maven("https://maven.kikugie.dev/snapshots")
+        maven("https://maven.kikugie.dev/releases")
         gradlePluginPortal()
     }
 }
 
 plugins {
-    id("dev.kikugie.stonecutter") version "0.8"
+    id("dev.kikugie.stonecutter") version "0.7.6"
 }
 
 stonecutter {
     create(rootProject) {
-        versions("1.21.9", "1.21.10", "1.21.11")
-        vcsVersion = "1.21.11"
+        vers("1.21.9-fabric", "1.21.9")
+        vers("1.21.9-neoforge", "1.21.9")
+        vers("1.21.10-fabric", "1.21.10")
+        vers("1.21.10-neoforge", "1.21.10")
+        vers("1.21.11-fabric", "1.21.11")
+        vers("1.21.11-neoforge", "1.21.11")
+        vcsVersion = "1.21.11-fabric"
     }
 }
 
-rootProject.name = "BedrockSkins"
+rootProject.name = "Bedrock Skins"

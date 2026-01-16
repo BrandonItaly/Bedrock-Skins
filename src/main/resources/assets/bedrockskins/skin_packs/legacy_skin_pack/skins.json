@@ -19,6 +19,12 @@
       "type": "free"
     },
     {
+      "localization_name": "AthleteSteve",
+      "geometry": "geometry.DefaultConsole.Steve",
+      "texture": "AthleteSteve.png",
+      "type": "free"
+    },
+    {
       "localization_name": "ScottishSteve",
       "geometry": "geometry.DefaultConsole.ScottishSteve",
       "texture": "ScottishSteve.png",
@@ -58,6 +64,12 @@
       "localization_name": "TuxedoAlex",
       "geometry": "geometry.DefaultConsole.TuxedoAlex",
       "texture": "TuxedoAlex.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "AthleteAlex",
+      "geometry": "geometry.DefaultConsole.alex",
+      "texture": "AthleteAlex.png",
       "type": "free"
     },
     {

@@ -1,0 +1,23 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license="${mod_license}"
+issueTrackerURL="${mod_issues}"
+
+[[mods]]
+modId="${mod_id}"
+version="${version}"
+displayName="${mod_name}"
+displayURL="${mod_source}"
+logoFile="assets/bedrockskins/icon.png"
+authors="${mod_authors}"
+description="${mod_description}"
+credits="${mod_credits}"
+[[mixins]]
+config="${mod_id}.mixins.json"
+
+[[dependencies.${mod_id}]]
+modId = "minecraft"
+type="required"
+versionRange = "[${mc_version_range}]"
+ordering = "NONE"
+side = "BOTH"

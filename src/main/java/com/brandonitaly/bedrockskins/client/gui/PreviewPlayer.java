@@ -18,6 +18,11 @@ import net.minecraft.core.ClientAsset.ResourceTexture;
 
 public class PreviewPlayer extends RemotePlayer {
 
+    @Override
+    public boolean shouldShowName() {
+        return false;
+    }
+
     //? if >=1.21.11 {
     private Identifier forcedCape = null;
     //?} else {

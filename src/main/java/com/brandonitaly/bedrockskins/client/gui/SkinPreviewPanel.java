@@ -8,7 +8,9 @@ import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.authlib.GameProfile;
+//? if fabric {
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+//? }
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -271,9 +273,17 @@ public class SkinPreviewPanel {
             if (minecraft.player != null) {
                 SkinManager.setSkin(minecraft.player.getUUID().toString(), pack, name);
                 if (data.length > 0) {
+                    //? if fabric {
                     ClientPlayNetworking.send(new BedrockSkinsNetworking.SetSkinPayload(
                         key, selectedSkin.getGeometryData().toString(), data
                     ));
+                    //? } else if neoforge {
+                    /*net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                        new BedrockSkinsNetworking.SetSkinPayload(
+                            key, selectedSkin.getGeometryData().toString(), data
+                        )
+                    );*/
+                    //? }
                 }
             } else {
                 StateManager.saveState(FavoritesManager.getFavoriteKeys(), key);
@@ -290,8 +300,13 @@ public class SkinPreviewPanel {
         currentSkinKey = null;
         if (minecraft.player != null) {
             SkinManager.resetSkin(minecraft.player.getUUID().toString());
+            //? if fabric {
             ClientPlayNetworking.send(new BedrockSkinsNetworking.SetSkinPayload("RESET", "", new byte[0]));
-            
+            //? } else if neoforge {
+            /*net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new BedrockSkinsNetworking.SetSkinPayload("RESET", "", new byte[0])
+            );*/
+            //? }
             safeResetPreview(this.dummyUuid.toString());
             this.dummyUuid = minecraft.player.getUUID();
             updatePreviewModel(this.dummyUuid, null);

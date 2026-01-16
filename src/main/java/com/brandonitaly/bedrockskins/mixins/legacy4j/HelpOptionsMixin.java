@@ -1,6 +1,10 @@
 package com.brandonitaly.bedrockskins.mixins.legacy4j;
 
+//? if legacy4j {
+/*
+//? if fabric {
 import com.brandonitaly.bedrockskins.client.BedrockSkinsClient;
+//? }
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -29,8 +33,18 @@ public abstract class HelpOptionsMixin extends RenderableVListScreen {
     )
     private RenderableVList bedrockskins$ChangeSkinButton(RenderableVList instance, Renderable renderable, Operation<RenderableVList> original) {
         original.call(instance, openScreenButton(Component.translatable("legacy.menu.change_skin"), () -> {
-            return BedrockSkinsClient.getAppropriateSkinScreen(this);
+            // Works for both Fabric and NeoForge
+            return com.brandonitaly.bedrockskins.client.BedrockSkinsClient.getAppropriateSkinScreen(this);
         }).build());
         return instance;
     }
+}*/
+//?} else {
+import org.spongepowered.asm.mixin.Mixin;
+import net.minecraft.client.Minecraft;
+
+@Mixin(Minecraft.class)
+public class HelpOptionsMixin {
+
 }
+//?}
