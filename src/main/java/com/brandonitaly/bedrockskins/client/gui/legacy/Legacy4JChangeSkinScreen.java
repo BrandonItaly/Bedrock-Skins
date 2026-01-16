@@ -7,7 +7,9 @@ import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
+import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
+import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.StringUtils;
 import com.mojang.blaze3d.platform.InputConstants;
 //? if fabric {
@@ -158,7 +160,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     private void rebuildFavoritesPack() {
         List<LoadedSkin> favs = new ArrayList<>();
         for (String key : FavoritesManager.getFavoriteKeys()) {
-            LoadedSkin s = SkinPackLoader.loadedSkins.get(key);
+            LoadedSkin s = SkinPackLoader.getLoadedSkin(SkinId.parse(key));
             if (s != null) favs.add(s);
         }
         allPacks.put("skinpack.Favorites", new SkinPackAdapter("skinpack.Favorites", favs));
@@ -180,8 +182,8 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             if (skin == null) return;
 
             try {
-                String skinKey = skin.getKey();
-                SkinManager.setSkin(minecraft.player.getUUID().toString(), skin.getPackDisplayName(), skin.getSkinDisplayName());
+                String skinKey = skin.getSkinId().toString();
+                SkinManager.setSkin(minecraft.player.getUUID().toString(), skin.getSerializeName(), skin.getSkinDisplayName());
 
                 // Load texture data
                 byte[] textureData = loadTextureData(skin);
@@ -622,8 +624,8 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         guiGraphics.drawCenteredString(minecraft.font, Component.literal(skinName), middle, panel.getY() + tooltipBox.getHeight() - 59 + 10, 0xffffffff);
         
         // Render checkmark if this skin is currently selected
-        String currentSkinKey = SkinManager.getLocalSelectedKey();
-        if (currentSkinKey != null && currentSkinKey.equals(skin.getKey())) {
+        SkinId currentSkinKey = SkinManager.getLocalSelectedKey();
+        if (currentSkinKey != null && java.util.Objects.equals(currentSkinKey, skin.getSkinId())) {
             //? if >=1.21.11 {
             var beaconCheck = Identifier.fromNamespaceAndPath(Legacy4J.MOD_ID, "container/beacon_check");
             //?} else {
@@ -693,7 +695,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     }
 
     void openToCurrentSkin() {
-        String currentSkinKey = SkinManager.getLocalSelectedKey();
+        SkinId currentSkinKey = SkinManager.getLocalSelectedKey();
         if (currentSkinKey == null) {
             // Default to Standard pack if available, else first available pack
             String defaultPackId = "skinpack.Standard";
@@ -713,7 +715,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             return;
         }
 
-        LoadedSkin currentSkin = SkinPackLoader.loadedSkins.get(currentSkinKey);
+        LoadedSkin currentSkin = SkinPackLoader.getLoadedSkin(currentSkinKey);
         if (currentSkin == null) {
             // Default to Standard pack if available, else first available pack
             String defaultPackId = "skinpack.Standard";

@@ -1,5 +1,7 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
+import com.brandonitaly.bedrockskins.pack.SkinId;
+import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
@@ -73,7 +75,7 @@ public final class GuiUtils {
         entity.setDeltaMovement(vel);
     }
 
-    public static void safeRegisterTexture(String key) { try { com.brandonitaly.bedrockskins.pack.SkinPackLoader.registerTextureFor(key); } catch (Exception ignored) {} }
+    public static void safeRegisterTexture(String key) { try { var id = SkinId.parse(key); if (id != null) SkinPackLoader.registerTextureFor(id); } catch (Exception ignored) {} }
     public static void safeResetPreview(String uuid) { try { com.brandonitaly.bedrockskins.client.SkinManager.resetPreviewSkin(uuid); } catch (Exception ignored) {} }
 
 

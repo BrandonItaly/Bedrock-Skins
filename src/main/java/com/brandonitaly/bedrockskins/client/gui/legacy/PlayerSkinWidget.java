@@ -206,13 +206,11 @@ public class PlayerSkinWidget extends AbstractWidget {
             // Update the preview skin before rendering
             LoadedSkin loadedSkin = this.skin.get();
             if (loadedSkin != null) {
-                String skinKey = loadedSkin.getKey();
-                String[] parts = skinKey.split(":", 2);
-                if (parts.length == 2) {
-                    SkinManager.setPreviewSkin(dummyUuid.toString(), parts[0], parts[1]);
-                    SkinPackLoader.registerTextureFor(skinKey);
+                var id = loadedSkin.getSkinId();
+                if (id != null) {
+                    SkinManager.setPreviewSkin(dummyUuid.toString(), id.getPack(), id.getName());
+                    SkinPackLoader.registerTextureFor(id);
                 }
-                
                 // Set cape if provided
                 dummyPlayer.setForcedCape(loadedSkin.capeIdentifier);
             }

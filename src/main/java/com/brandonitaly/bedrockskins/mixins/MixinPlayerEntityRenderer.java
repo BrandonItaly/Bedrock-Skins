@@ -4,6 +4,7 @@ import com.brandonitaly.bedrockskins.client.BedrockModelManager;
 import com.brandonitaly.bedrockskins.client.BedrockSkinState;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
+import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
@@ -56,8 +57,8 @@ public abstract class MixinPlayerEntityRenderer {
             if (sleeve == null) sleeve = parts.get(side + "Sleeve");
 
             if (part != null) {
-                String skinKey = SkinManager.getSkin(uuid.toString());
-                var bedrockSkin = (skinKey != null) ? SkinPackLoader.loadedSkins.get(skinKey) : null;
+                SkinId skinId = SkinManager.getSkin(uuid.toString());
+                var bedrockSkin = (skinId != null) ? SkinPackLoader.getLoadedSkin(skinId) : null;
                 var texture = (bedrockSkin != null && bedrockSkin.identifier != null) ? bedrockSkin.identifier : skinTexture;
 
                 final var finalPart = part;
@@ -156,9 +157,9 @@ public abstract class MixinPlayerEntityRenderer {
         if (state instanceof BedrockSkinState skinState) {
             java.util.UUID uuid = skinState.getUniqueId();
             if (uuid != null) {
-                String skinKey = SkinManager.getSkin(uuid.toString());
-                if (skinKey != null) {
-                    var skin = SkinPackLoader.loadedSkins.get(skinKey);
+                SkinId skinId = SkinManager.getSkin(uuid.toString());
+                if (skinId != null) {
+                    var skin = SkinPackLoader.getLoadedSkin(skinId);
                     if (skin != null && skin.identifier != null) ci.setReturnValue(skin.identifier);
                 }
             }

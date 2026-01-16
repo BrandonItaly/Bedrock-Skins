@@ -1,6 +1,7 @@
 package com.brandonitaly.bedrockskins.client;
 
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
+import com.brandonitaly.bedrockskins.pack.SkinId;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,13 +10,18 @@ import java.util.List;
 public final class FavoritesManager {
     private FavoritesManager() {}
 
-    private static final List<String> favoriteKeys = new ArrayList<>();
+    private static final List<SkinId> favoriteIds = new ArrayList<>();
 
     public static void load() {
-        favoriteKeys.clear();
+        favoriteIds.clear();
         try {
             BedrockSkinsState state = StateManager.readState();
-            if (state.getFavorites() != null) favoriteKeys.addAll(state.getFavorites());
+            if (state.getFavorites() != null) {
+                for (String k : state.getFavorites()) {
+                    var id = SkinId.parse(k);
+                    if (id != null) favoriteIds.add(id);
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -23,29 +29,39 @@ public final class FavoritesManager {
 
     public static void save() {
         try {
-            String selected = SkinManager.getLocalSelectedKey();
-            StateManager.saveState(new ArrayList<>(favoriteKeys), selected);
+            SkinId selected = SkinManager.getLocalSelectedKey();
+            List<String> keys = new ArrayList<>();
+            for (SkinId id : favoriteIds) keys.add(id.toString());
+            StateManager.saveState(keys, selected == null ? null : selected.toString());
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     public static boolean isFavorite(LoadedSkin skin) {
-        return favoriteKeys.contains(skin.getKey());
+        return favoriteIds.contains(skin.getSkinId());
     }
 
     public static void addFavorite(LoadedSkin skin) {
-        if (!isFavorite(skin)) {
-            favoriteKeys.add(0, skin.getKey());
+        var id = skin.getSkinId();
+        if (id != null && !favoriteIds.contains(id)) {
+            favoriteIds.add(0, id);
             save();
         }
     }
 
     public static void removeFavorite(LoadedSkin skin) {
-        if (favoriteKeys.remove(skin.getKey())) save();
+        var id = skin.getSkinId();
+        if (id != null && favoriteIds.remove(id)) save();
     }
 
     public static List<String> getFavoriteKeys() {
-        return Collections.unmodifiableList(new ArrayList<>(favoriteKeys));
+        List<String> out = new ArrayList<>();
+        for (var id : favoriteIds) out.add(id.toString());
+        return Collections.unmodifiableList(out);
+    }
+
+    public static List<SkinId> getFavoriteIds() {
+        return Collections.unmodifiableList(new ArrayList<>(favoriteIds));
     }
 }

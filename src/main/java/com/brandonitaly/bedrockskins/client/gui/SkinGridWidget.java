@@ -3,6 +3,7 @@ package com.brandonitaly.bedrockskins.client.gui;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
+import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.client.gui.PreviewPlayer.PreviewPlayerPool;
 import com.mojang.authlib.GameProfile;
 import java.util.ArrayList;
@@ -216,12 +217,11 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
 
                 ClientLevel world = Minecraft.getInstance().level;
                 if (world != null) {
-                    // Assumes getter exists for key
-                    String[] parts = skin.getKey().split(":", 2); 
-                    if (parts.length == 2) {
+                    var id = skin.getSkinId();
+                    if (id != null) {
                         try {
-                            registerTextureFor.accept(skin.getKey());
-                            setPreviewSkin.set(uuid.toString(), parts[0], parts[1]);
+                            registerTextureFor.accept(id.toString());
+                            setPreviewSkin.set(uuid.toString(), id.getPack(), id.getName());
                             this.player = PreviewPlayerPool.get(world, new GameProfile(uuid, ""));
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -347,8 +347,8 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                 }
 
                 // If this skin is currently equipped by the local player, draw the nine-sliced equipped border on top
-                String localKey = SkinManager.getLocalSelectedKey();
-                boolean isEquipped = localKey != null && localKey.equals(skin.getKey());
+                SkinId localKey = SkinManager.getLocalSelectedKey();
+                boolean isEquipped = localKey != null && java.util.Objects.equals(localKey, skin.getSkinId());
                 if (isEquipped) {
                     context.blitSprite(RenderPipelines.GUI_TEXTURED, EQUIPPED_BORDER, x, y, w, h);
                 }

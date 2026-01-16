@@ -2,6 +2,7 @@ package com.brandonitaly.bedrockskins.client;
 
 import com.brandonitaly.bedrockskins.bedrock.BedrockFile;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
+import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.google.gson.Gson;
 
 import java.util.HashMap;
@@ -12,14 +13,14 @@ public final class BedrockModelManager {
     private BedrockModelManager() {}
 
     private static final Map<UUID, BedrockPlayerModel> bedrockModels = new HashMap<>();
-    private static final Map<UUID, String> activeSkinKeys = new HashMap<>();
+    private static final Map<UUID, SkinId> activeSkinKeys = new HashMap<>();
     private static final Gson gson = new Gson();
 
     public static BedrockPlayerModel getModel(UUID uuid) {
-        String skinKey = SkinManager.getSkin(uuid.toString());
+        SkinId skinKey = SkinManager.getSkin(uuid.toString());
         if (skinKey == null) return null;
 
-        if (!skinKey.equals(activeSkinKeys.get(uuid))) {
+        if (!java.util.Objects.equals(skinKey, activeSkinKeys.get(uuid))) {
             bedrockModels.remove(uuid);
             activeSkinKeys.put(uuid, skinKey);
         }
@@ -28,7 +29,7 @@ public final class BedrockModelManager {
             return bedrockModels.get(uuid);
         }
 
-        var skin = SkinPackLoader.loadedSkins.get(skinKey);
+        var skin = SkinPackLoader.getLoadedSkin(skinKey);
         if (skin == null) return null;
 
         try {

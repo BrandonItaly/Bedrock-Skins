@@ -43,11 +43,15 @@ public class LoadedSkin {
     public AssetSource getTexture() { return texture; }
     public AssetSource getCape() { return cape; }
 
-    public String getKey() { return packDisplayName + ":" + skinDisplayName; }
+    // Canonical identifier for a skin (uses serializeName for the pack id)
+    public String getKey() { return serializeName + ":" + skinDisplayName; }
     public String getId() { return "skinpack." + serializeName; }
 
     public String getSafePackName() { return StringUtils.sanitize("skinpack." + packDisplayName); }
     public String getSafeSkinName() { return StringUtils.sanitize("skin." + packDisplayName + "." + skinDisplayName); }
+
+    // New: strongly-typed ID (pack uses serializeName)
+    public SkinId getSkinId() { return SkinId.of(serializeName, skinDisplayName); }
 
     public boolean isInternal() { return texture instanceof AssetSource.Resource; }
 

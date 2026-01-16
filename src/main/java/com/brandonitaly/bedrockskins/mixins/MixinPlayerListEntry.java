@@ -2,6 +2,7 @@ package com.brandonitaly.bedrockskins.mixins;
 
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
+import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.core.ClientAsset;
@@ -49,9 +50,9 @@ public abstract class MixinPlayerListEntry {
         }
         if (id == null) return;
         String uuid = id.toString();
-        String skinKey = SkinManager.getSkin(uuid);
-        if (skinKey == null) return;
-        var loadedSkin = SkinPackLoader.loadedSkins.get(skinKey);
+        SkinId skinId = SkinManager.getSkin(uuid);
+        if (skinId == null) return;
+        var loadedSkin = SkinPackLoader.getLoadedSkin(skinId);
         if (loadedSkin == null) return;
 
         if (loadedSkin.capeIdentifier != null) {

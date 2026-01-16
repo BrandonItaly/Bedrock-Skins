@@ -29,7 +29,7 @@ public final class SkinPackLoader {
     private static JsonObject vanillaGeometryJson = null;
     private static final Gson gson = new Gson();
 
-    public static final Map<String, LoadedSkin> loadedSkins = Collections.synchronizedMap(new LinkedHashMap<>());
+    public static final Map<SkinId, LoadedSkin> loadedSkins = Collections.synchronizedMap(new LinkedHashMap<>());
     private static final File skinPacksDir = new File("skin_packs");
     private static final Map<String, Map<String, String>> translations = new HashMap<>();
     public static List<String> packOrder = Collections.emptyList();
@@ -138,24 +138,29 @@ public final class SkinPackLoader {
         for (LoadedSkin s : loadedSkins.values()) registerSkinAssets(s);
     }
 
+
     //? if >=1.21.11 {
-    public static Identifier registerTextureFor(String key) {
+    public static Identifier registerTextureFor(SkinId id) {
     //?} else {
-    /*public static ResourceLocation registerTextureFor(String key) {*/
+    /*public static ResourceLocation registerTextureFor(SkinId id) {*/
     //?}
-        LoadedSkin skin = loadedSkins.get(key);
+        LoadedSkin skin = id == null ? null : loadedSkins.get(id);
         if (skin == null) return null;
         if (skin.getIdentifier() != null) return skin.getIdentifier();
         registerSkinAssets(skin);
         return skin.getIdentifier();
     }
 
+    // Helper to lookup by SkinId
+    public static LoadedSkin getLoadedSkin(SkinId id) { return id == null ? null : loadedSkins.get(id); }
+
     public static void registerRemoteSkinStatic(String key, String geometryJson, byte[] textureData) {
         registerRemoteSkin(key, geometryJson, textureData);
     }
 
     public static void registerRemoteSkin(String key, String geometryJson, byte[] textureData) {
-        if (loadedSkins.containsKey(key)) return;
+        SkinId idKey = SkinId.parse(key);
+        if (loadedSkins.containsKey(idKey)) return;
         try {
             if (!validateRemoteData(key, textureData, geometryJson)) return;
 
@@ -174,7 +179,7 @@ public final class SkinPackLoader {
                 AssetSource.Remote.INSTANCE
             );
             ls.identifier = id;
-            loadedSkins.put(key, ls);
+            loadedSkins.put(idKey, ls);
             System.out.println("Registered remote skin: " + key);
         } catch (Exception e) {
             System.out.println("Failed to register remote skin " + key + ": " + e);
@@ -232,8 +237,8 @@ public final class SkinPackLoader {
                 if (capeFile != null && !capeFile.exists()) capeFile = null;
 
                 if (textureFile.exists()) {
-                    String key = manifest.getLocalizationName() + ":" + entry.getLocalizationName();
-                    loadedSkins.put(key, new LoadedSkin(
+                    SkinId id = SkinId.of(manifest.getSerializeName(), entry.getLocalizationName());
+                    loadedSkins.put(id, new LoadedSkin(
                         manifest.getSerializeName(),
                         manifest.getLocalizationName(),
                         entry.getLocalizationName(),
@@ -296,8 +301,8 @@ public final class SkinPackLoader {
                             if (manager.getResource(candidate).isPresent()) capeId = candidate;
                         }
 
-                        String key = manifest.getLocalizationName() + ":" + entry.getLocalizationName();
-                        loadedSkins.put(key, new LoadedSkin(
+                        SkinId skinId = SkinId.of(manifest.getSerializeName(), entry.getLocalizationName());
+                        loadedSkins.put(skinId, new LoadedSkin(
                             manifest.getSerializeName(),
                             manifest.getLocalizationName(),
                             entry.getLocalizationName(),
@@ -471,8 +476,8 @@ public final class SkinPackLoader {
                         ZipEntry capeEntry = capePath != null ? zf.getEntry(capePath) : null;
 
                         if (texEntry != null) {
-                            String key = manifest.getLocalizationName() + ":" + entry.getLocalizationName();
-                            loadedSkins.put(key, new LoadedSkin(
+                            SkinId id = SkinId.of(manifest.getSerializeName(), entry.getLocalizationName());
+                            loadedSkins.put(id, new LoadedSkin(
                                 manifest.getSerializeName(),
                                 manifest.getLocalizationName(),
                                 entry.getLocalizationName(),

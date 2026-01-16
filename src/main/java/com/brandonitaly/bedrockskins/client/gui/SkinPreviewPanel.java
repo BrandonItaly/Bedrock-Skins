@@ -7,6 +7,7 @@ import com.brandonitaly.bedrockskins.client.StateManager;
 import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
+import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.mojang.authlib.GameProfile;
 //? if fabric {
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -184,18 +185,18 @@ public class SkinPreviewPanel {
 
     public void initPreviewState() {
         if (this.selectedSkin != null) {
-            updatePreviewModel(this.dummyUuid, this.selectedSkin.getKey());
+            updatePreviewModel(this.dummyUuid, this.selectedSkin.getSkinId());
             return;
         }
 
-        String currentKey = SkinManager.getLocalSelectedKey();
+        SkinId currentKey = SkinManager.getLocalSelectedKey();
         
-        if (currentKey != null && !currentKey.isEmpty()) {
+        if (currentKey != null) {
             this.dummyUuid = UUID.randomUUID();
-            this.currentSkinKey = currentKey;
+            this.currentSkinKey = currentKey == null ? null : currentKey.toString();
             
             // Try to load the skin object for the current key
-            LoadedSkin currentSkin = SkinPackLoader.loadedSkins.get(currentKey);
+            LoadedSkin currentSkin = SkinPackLoader.getLoadedSkin(currentKey);
             if (currentSkin != null) {
                 this.selectedSkin = currentSkin;
             }
@@ -228,11 +229,11 @@ public class SkinPreviewPanel {
                 safeResetPreview(this.dummyUuid.toString());
                 this.dummyUuid = UUID.randomUUID();
             }
-            updatePreviewModel(dummyUuid, skin.getKey());
+            updatePreviewModel(dummyUuid, skin.getSkinId());
         }
     }
 
-    private void updatePreviewModel(UUID uuid, String skinKey) {
+    private void updatePreviewModel(UUID uuid, SkinId skinId) {
         if (minecraft.level == null) return;
         
         if (!this.dummyUuid.equals(uuid)) {
@@ -240,12 +241,11 @@ public class SkinPreviewPanel {
         }
         this.dummyUuid = uuid;
         
-        if (skinKey != null) {
-            String[] parts = skinKey.split(":", 2);
-            if (parts.length == 2) {
-                SkinManager.setPreviewSkin(uuid.toString(), parts[0], parts[1]);
-                safeRegisterTexture(skinKey);
-            }
+        if (skinId != null) {
+            String pack = skinId.getPack();
+            String name = skinId.getName();
+            SkinManager.setPreviewSkin(uuid.toString(), pack, name);
+            safeRegisterTexture(skinId.toString());
         }
         
         String name = minecraft.player != null ? minecraft.player.getName().getString() : "Preview";
@@ -263,10 +263,10 @@ public class SkinPreviewPanel {
         if (selectedSkin == null) return;
         try {
             byte[] data = loadTextureData(selectedSkin);
-            String key = selectedSkin.getKey();
-            String[] parts = key.split(":", 2);
-            String pack = parts.length == 2 ? parts[0] : "Remote";
-            String name = parts.length == 2 ? parts[1] : key;
+            var id = selectedSkin.getSkinId();
+            String key = id == null ? null : id.toString();
+            String pack = id == null ? "Remote" : (id.getPack() == null || id.getPack().isEmpty() ? "Remote" : id.getPack());
+            String name = id == null ? "" : id.getName();
             
             safeRegisterTexture(key);
             
@@ -287,7 +287,7 @@ public class SkinPreviewPanel {
                 }
             } else {
                 StateManager.saveState(FavoritesManager.getFavoriteKeys(), key);
-                updatePreviewModel(dummyUuid, key);
+                updatePreviewModel(dummyUuid, SkinId.parse(key));
         updateActionButtons();
             }
         } catch (Exception e) {

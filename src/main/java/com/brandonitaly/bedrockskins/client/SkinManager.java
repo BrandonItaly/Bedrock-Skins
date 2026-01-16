@@ -3,11 +3,12 @@ package com.brandonitaly.bedrockskins.client;
 import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
+import com.brandonitaly.bedrockskins.pack.SkinId;
 
 public final class SkinManager {
     private SkinManager() {}
 
-    private static final Map<String, String> playerSkins = new HashMap<>();
+    private static final Map<String, SkinId> playerSkins = new HashMap<>();
 
     public static void load() {
         playerSkins.clear();
@@ -17,14 +18,14 @@ public final class SkinManager {
             var client = Minecraft.getInstance();
             var player = client.player;
             if (selected != null && !selected.isEmpty() && player != null) {
-                playerSkins.put(player.getUUID().toString(), selected);
+                playerSkins.put(player.getUUID().toString(), SkinId.parse(selected));
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public static String getLocalSelectedKey() {
+    public static SkinId getLocalSelectedKey() {
         var client = Minecraft.getInstance();
         var localUuid = client.player != null ? client.player.getUUID().toString() : null;
         if (localUuid == null) return null;
@@ -32,14 +33,14 @@ public final class SkinManager {
     }
 
     public static void setSkin(String uuid, String packName, String skinName) {
-        String key = packName + ":" + skinName;
-        playerSkins.put(uuid, key);
+        SkinId id = SkinId.of(packName, skinName);
+        playerSkins.put(uuid, id);
         var client = Minecraft.getInstance();
         var localUuid = client.player != null ? client.player.getUUID().toString() : null;
         if (localUuid != null && localUuid.equals(uuid)) {
             try {
                 var favorites = FavoritesManager.getFavoriteKeys();
-                StateManager.saveState(favorites, key);
+                StateManager.saveState(favorites, id == null ? null : id.toString());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -47,15 +48,15 @@ public final class SkinManager {
     }
 
     public static void setPreviewSkin(String uuid, String packName, String skinName) {
-        String key = packName + ":" + skinName;
-        playerSkins.put(uuid, key);
+        SkinId id = SkinId.of(packName, skinName);
+        playerSkins.put(uuid, id);
     }
 
     public static void resetPreviewSkin(String uuid) {
         playerSkins.remove(uuid);
     }
 
-    public static String getSkin(String uuid) {
+    public static SkinId getSkin(String uuid) {
         return playerSkins.get(uuid);
     }
 

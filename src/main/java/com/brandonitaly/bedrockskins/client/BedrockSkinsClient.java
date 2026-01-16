@@ -3,6 +3,8 @@ package com.brandonitaly.bedrockskins.client;
 import com.brandonitaly.bedrockskins.BedrockSkinsNetworking;
 import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
+import com.brandonitaly.bedrockskins.pack.SkinId;
+import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.brandonitaly.bedrockskins.client.gui.SkinSelectionScreen;
 //? if fabric {
@@ -314,11 +316,10 @@ class CommonLogic {
             BedrockModelManager.clearAllModels();
             if (client.player != null) {
                 String localUuid = client.player.getUUID().toString();
-                String key = SkinManager.getSkin(localUuid);
-                if (key != null) {
-                    String[] parts = key.split(":", 2);
-                    String pack = parts.length == 2 ? parts[0] : "Remote";
-                    String name = parts.length == 2 ? parts[1] : key;
+                SkinId id = SkinManager.getSkin(localUuid);
+                if (id != null) {
+                    String pack = id.getPack() == null || id.getPack().isEmpty() ? "Remote" : id.getPack();
+                    String name = id.getName() == null || id.getName().isEmpty() ? id.toString() : id.getName();
                     SkinManager.setSkin(localUuid, pack, name);
                 }
             }
@@ -338,7 +339,7 @@ class CommonLogic {
             String name = parts.length == 2 ? parts[1] : savedKey;
             SkinManager.setSkin(client.player.getUUID().toString(), pack, name);
 
-            com.brandonitaly.bedrockskins.pack.LoadedSkin loadedSkin = SkinPackLoader.loadedSkins.get(savedKey);
+            LoadedSkin loadedSkin = SkinPackLoader.getLoadedSkin(SkinId.parse(savedKey));
             if (loadedSkin != null) {
                 byte[] textureData = loadTextureData(client, loadedSkin);
                 if (textureData.length > 0) {
@@ -377,7 +378,7 @@ class CommonLogic {
         }
     }
 
-    static byte[] loadTextureData(Minecraft client, com.brandonitaly.bedrockskins.pack.LoadedSkin skin) {
+    static byte[] loadTextureData(Minecraft client, LoadedSkin skin) {
         try {
             AssetSource src = skin.getTexture();
             if (src instanceof AssetSource.Resource) {

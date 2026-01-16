@@ -4,6 +4,7 @@ import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
+import com.brandonitaly.bedrockskins.pack.SkinId;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -153,7 +154,7 @@ public class SkinSelectionScreen extends Screen {
         
         List<LoadedSkin> favs = new ArrayList<>();
         for (String key : FavoritesManager.getFavoriteKeys()) {
-            LoadedSkin s = SkinPackLoader.loadedSkins.get(key);
+            LoadedSkin s = SkinPackLoader.getLoadedSkin(SkinId.parse(key));
             if (s != null) favs.add(s);
         }
         skinCache.put("skinpack.Favorites", favs);

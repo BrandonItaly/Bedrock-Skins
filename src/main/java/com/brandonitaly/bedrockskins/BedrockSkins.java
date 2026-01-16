@@ -20,6 +20,7 @@ import net.neoforged.fml.loading.FMLLoader;*/
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.brandonitaly.bedrockskins.pack.SkinId;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -41,9 +42,10 @@ public class BedrockSkins implements ModInitializer {
         // Handle player joining - send them all existing skins
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerSkinManager.getAllSkins().forEach((uuid, skinData) -> {
+                String key = skinData.getSkinId() == null ? null : skinData.getSkinId().toString();
                 ServerPlayNetworking.send(handler.player, new BedrockSkinsNetworking.SkinUpdatePayload(
                     uuid,
-                    skinData.skinKey,
+                    key,
                     skinData.geometry,
                     skinData.textureData
                 ));
@@ -106,7 +108,7 @@ public class BedrockSkins implements ModInitializer {
         if ("RESET".equals(skinKey)) {
             ServerSkinManager.removeSkin(uuid);
         } else {
-            final PlayerSkinData data = new PlayerSkinData(skinKey, geometry, textureData);
+            final PlayerSkinData data = new PlayerSkinData(SkinId.parse(skinKey), geometry, textureData);
             ServerSkinManager.setSkin(uuid, data);
         }
 
@@ -189,7 +191,7 @@ public class BedrockSkins {
         if ("RESET".equals(skinKey)) {
             ServerSkinManager.removeSkin(uuid);
         } else {
-            final PlayerSkinData data = new PlayerSkinData(skinKey, geometry, textureData);
+            final PlayerSkinData data = new PlayerSkinData(SkinId.parse(skinKey), geometry, textureData);
             ServerSkinManager.setSkin(uuid, data);
         }
         
@@ -205,7 +207,7 @@ public class BedrockSkins {
             ServerSkinManager.getAllSkins().forEach((uuid, skinData) -> {
                 PacketDistributor.sendToPlayer(serverPlayer, new BedrockSkinsNetworking.SkinUpdatePayload(
                     uuid,
-                    skinData.skinKey,
+                    skinData.getSkinId() == null ? null : skinData.getSkinId().toString(),
                     skinData.geometry,
                     skinData.textureData
                 ));
