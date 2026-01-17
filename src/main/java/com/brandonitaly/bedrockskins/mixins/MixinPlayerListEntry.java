@@ -32,22 +32,7 @@ public abstract class MixinPlayerListEntry {
     private void onGetSkinTextures(CallbackInfoReturnable<PlayerSkin> cir) {
     //?}
         GameProfile profile = getProfile();
-        java.util.UUID id = null;
-        try {
-            java.lang.reflect.Field f = profile.getClass().getDeclaredField("id");
-            f.setAccessible(true);
-            Object o = f.get(profile);
-            if (o instanceof java.util.UUID) id = (java.util.UUID) o;
-            else if (o instanceof String) id = java.util.UUID.fromString((String) o);
-        } catch (Exception ignored) {
-            // fallback: try common getters
-            try {
-                java.lang.reflect.Method m = profile.getClass().getMethod("getId");
-                Object o = m.invoke(profile);
-                if (o instanceof java.util.UUID) id = (java.util.UUID) o;
-                else if (o instanceof String) id = java.util.UUID.fromString((String) o);
-            } catch (Exception ignored2) { }
-        }
+        java.util.UUID id = profile.id();
         if (id == null) return;
         String uuid = id.toString();
         SkinId skinId = SkinManager.getSkin(uuid);

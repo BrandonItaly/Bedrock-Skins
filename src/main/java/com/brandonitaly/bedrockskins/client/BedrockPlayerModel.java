@@ -330,22 +330,14 @@ public class BedrockPlayerModel extends PlayerModel {
             dest = partsMap.get("leftLeg"); if (dest != null) { dest.xRot = vanillaModel.leftLeg.xRot; dest.yRot = vanillaModel.leftLeg.yRot; dest.zRot = vanillaModel.leftLeg.zRot; }
         }
 
-        // getPivotY reflectively
+        // getPivotY via the ModelPart initial pose
         java.util.function.Function<ModelPart, Float> getPivotY = part -> {
+            if (part == null) return 0f;
             try {
-                var field = part.getClass().getDeclaredField("pivotY");
-                field.setAccessible(true);
-                Object f = field.get(part);
-                if (f instanceof Number) return ((Number)f).floatValue();
+                PartPose init = part.getInitialPose();
+                return init != null ? init.y() : 0f;
+            } catch (Exception e) {
                 return 0f;
-            } catch (Exception ex) {
-                try {
-                    var field = net.minecraft.client.model.geom.ModelPart.class.getDeclaredField("pivotY");
-                    field.setAccessible(true);
-                    return field.getFloat(part);
-                } catch (Exception e) {
-                    return 0f;
-                }
             }
         };
 

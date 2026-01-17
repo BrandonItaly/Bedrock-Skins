@@ -76,14 +76,8 @@ public class PreviewPlayer extends RemotePlayer {
         private static final Map<UUID, PreviewPlayer> pool = new ConcurrentHashMap<>();
 
         public static PreviewPlayer get(ClientLevel world, GameProfile profile) {
-            UUID id;
-            try {
-                // Try standard getter via reflection
-                java.lang.reflect.Method m = GameProfile.class.getMethod("getId");
-                id = (UUID) m.invoke(profile);
-            } catch (Exception e) {
-                id = UUID.randomUUID();
-            }
+            UUID id = profile.id();
+            if (id == null) id = UUID.randomUUID();
 
             return pool.computeIfAbsent(id, k -> new PreviewPlayer(world, profile));
         }
