@@ -438,13 +438,13 @@ public final class SkinPackLoader {
 
     private static void loadSkinsFromResourcePackZip(File pack) {
         try (ZipFile zf = new ZipFile(pack)) {
-            // Find all skins.json files under skin_packs/<packName>/skins.json
+            // Find all skins.json files under assets/bedrockskins/skin_packs/<packName>/skins.json
             Enumeration<? extends ZipEntry> entries = zf.entries();
             Set<String> packDirs = new HashSet<>();
             while (entries.hasMoreElements()) {
                 ZipEntry e = entries.nextElement();
                 String name = e.getName();
-                if (name.startsWith("skin_packs/") && name.endsWith("/skins.json")) {
+                if (name.startsWith("assets/bedrockskins/skin_packs/") && name.endsWith("/skins.json")) {
                     String dir = name.substring(0, name.lastIndexOf('/'));
                     packDirs.add(dir);
                 }
