@@ -1,0 +1,139 @@
+{
+  "skins": [
+    {
+      "localization_name": "PartySteve",
+      "geometry": "geometry.1stBirthday.PartySteve",
+      "texture": "PartySteve.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartyCreeper",
+      "geometry": "geometry.1stBirthday.PartyCreeper",
+      "texture": "PartyCreeper.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "CakeZombie",
+      "geometry": "geometry.1stBirthday.CakeZombie",
+      "texture": "CakeZombie.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartyPigZombie",
+      "geometry": "geometry.1stBirthday.PartyPigZombie",
+      "texture": "PartyPigZombie.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartySkeleton",
+      "geometry": "geometry.1stBirthday.PartySkeleton",
+      "texture": "PartySkeleton.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartyPig",
+      "geometry": "geometry.1stBirthday.PartyPig",
+      "texture": "PartyPig.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartyCow",
+      "geometry": "geometry.1stBirthday.PartyCow",
+      "texture": "PartyCow.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartySquid",
+      "geometry": "geometry.1stBirthday.PartySquid",
+      "texture": "PartySquid.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartySnowGolem",
+      "geometry": "geometry.1stBirthday.PartySnowGolem",
+      "texture": "PartySnowGolem.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartyEnderman",
+      "geometry": "geometry.1stBirthday.PartyEnderman",
+      "texture": "PartyEnderman.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartyIronGolem",
+      "geometry": "geometry.1stBirthday.PartyIronGolem",
+      "texture": "PartyIronGolem.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TopHatSheep",
+      "geometry": "geometry.1stBirthday.TopHatSheep",
+      "texture": "TopHatSheep.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Mooshroom",
+      "geometry": "geometry.1stBirthday.Mooshroom",
+      "texture": "Mooshroom.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "WolfWithCollar",
+      "geometry": "geometry.1stBirthday.WolfWithCollar",
+      "texture": "WolfWithCollar.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SteveCreeperBoxhead",
+      "geometry": "geometry.1stBirthday.SteveCreeperBoxhead",
+      "texture": "SteveCreeperBoxhead.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "CreeperSteveBoxhead",
+      "geometry": "geometry.1stBirthday.CreeperSteveBoxhead",
+      "texture": "CreeperSteveBoxhead.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "FarmerVillager",
+      "geometry": "geometry.1stBirthday.FarmerVillager",
+      "texture": "FarmerVillager.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "BirthdayPresent",
+      "geometry": "geometry.1stBirthday.BirthdayPresent",
+      "texture": "BirthdayPresent.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Slime",
+      "geometry": "geometry.1stBirthday.Slime",
+      "texture": "Slime.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "BirthdayCake",
+      "geometry": "geometry.1stBirthday.BirthdayCake",
+      "texture": "BirthdayCake.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Blaze",
+      "geometry": "geometry.1stBirthday.Blaze",
+      "texture": "Blaze.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "EnderDragon",
+      "geometry": "geometry.1stBirthday.EnderDragon",
+      "texture": "EnderDragon.png",
+      "cape": "EnderDragon_cape.png",
+      "type": "free"
+    }
+  ],
+  "serialize_name": "1stBirthday",
+  "localization_name": "1stBirthday"
+}
