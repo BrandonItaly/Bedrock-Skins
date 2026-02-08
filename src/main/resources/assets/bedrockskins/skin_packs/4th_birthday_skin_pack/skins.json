@@ -1,0 +1,126 @@
+{
+  "skins": [
+    {
+      "localization_name": "WolfTShirt",
+      "geometry": "geometry.4thBirthday.WolfTShirt",
+      "texture": "WolfTShirt.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "WolfTShirtv2",
+      "geometry": "geometry.4thBirthday.WolfTShirtv2",
+      "texture": "WolfTShirtv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ChickenTShirt",
+      "geometry": "geometry.4thBirthday.ChickenTShirt",
+      "texture": "ChickenTShirt.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ChickenTShirtv2",
+      "geometry": "geometry.4thBirthday.ChickenTShirtv2",
+      "texture": "ChickenTShirtv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "CreeperTShirt",
+      "geometry": "geometry.4thBirthday.CreeperTShirt",
+      "texture": "CreeperTShirt.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "CreeperTShirtv2",
+      "geometry": "geometry.4thBirthday.CreeperTShirtv2",
+      "texture": "CreeperTShirtv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "GuardianTShirt",
+      "geometry": "geometry.4thBirthday.GuardianTShirt",
+      "texture": "GuardianTShirt.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "GuardianTShirtv2",
+      "geometry": "geometry.4thBirthday.GuardianTShirtv2",
+      "texture": "GuardianTShirtv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SlimeTShirt",
+      "geometry": "geometry.4thBirthday.SlimeTShirt",
+      "texture": "SlimeTShirt.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SlimeTShirtv2",
+      "geometry": "geometry.4thBirthday.SlimeTShirtv2",
+      "texture": "SlimeTShirtv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "GhastTShirt",
+      "geometry": "geometry.4thBirthday.GhastTShirt",
+      "texture": "GhastTShirt.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "GhastTShirtv2",
+      "geometry": "geometry.4thBirthday.GhastTShirtv2",
+      "texture": "GhastTShirtv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SheepTShirt",
+      "geometry": "geometry.4thBirthday.SheepTShirt",
+      "texture": "SheepTShirt.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SheepTShirtv2",
+      "geometry": "geometry.4thBirthday.SheepTShirtv2",
+      "texture": "SheepTShirtv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "OcelotTShirt",
+      "geometry": "geometry.4thBirthday.OcelotTShirt",
+      "texture": "OcelotTShirt.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "OcelotTShirtv2",
+      "geometry": "geometry.4thBirthday.OcelotTShirtv2",
+      "texture": "OcelotTShirtv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "WitherTShirt",
+      "geometry": "geometry.4thBirthday.WitherTShirt",
+      "texture": "WitherTShirt.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "WitherTShirtv2",
+      "geometry": "geometry.4thBirthday.WitherTShirtv2",
+      "texture": "WitherTShirtv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SkeletonTShirt",
+      "geometry": "geometry.4thBirthday.SkeletonTShirt",
+      "texture": "SkeletonTShirt.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SkeletonTShirtv2",
+      "geometry": "geometry.4thBirthday.SkeletonTShirtv2",
+      "texture": "SkeletonTShirtv2.png",
+      "type": "free"
+    }
+  ],
+  "serialize_name": "4thBirthday",
+  "localization_name": "4thBirthday"
+}

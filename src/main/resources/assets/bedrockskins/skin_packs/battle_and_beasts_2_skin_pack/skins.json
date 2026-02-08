@@ -1,0 +1,299 @@
+{
+  "skins": [
+    {
+      "localization_name": "BabyGhast",
+      "geometry": "geometry.BattleAndBeasts2.BabyGhast",
+      "enable_attachables": false,
+      "texture": "BabyGhast.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SiameseCat",
+      "geometry": "geometry.BattleAndBeasts2.SiameseCat",
+      "texture": "SiameseCat.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Rabbit",
+      "geometry": "geometry.BattleAndBeasts2.Rabbit",
+      "texture": "Rabbit.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Tiger",
+      "geometry": "geometry.BattleAndBeasts2.Tiger",
+      "texture": "Tiger.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SnowLeopard",
+      "geometry": "geometry.BattleAndBeasts2.SnowLeopard",
+      "texture": "SnowLeopard.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "FungiCreature",
+      "geometry": "geometry.BattleAndBeasts2.FungiCreature",
+      "texture": "FungiCreature.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NetherCreature",
+      "geometry": "geometry.BattleAndBeasts2.NetherCreature",
+      "texture": "NetherCreature.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "GiantPanda",
+      "geometry": "geometry.BattleAndBeasts2.GiantPanda",
+      "texture": "GiantPanda.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "RedPanda",
+      "geometry": "geometry.BattleAndBeasts2.RedPanda",
+      "texture": "RedPanda.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Lemur",
+      "geometry": "geometry.BattleAndBeasts2.Lemur",
+      "texture": "Lemur.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Shark",
+      "geometry": "geometry.BattleAndBeasts2.Shark",
+      "animations": {
+        "move.legs": "animation.player.move.legs.single",
+        "bob": "animation.player.bob.stationary"
+      },
+      "texture": "Shark.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Walrus",
+      "geometry": "geometry.BattleAndBeasts2.Walrus",
+      "animations": {
+        "move.legs": "animation.player.move.legs.single",
+        "bob": "animation.player.bob.stationary"
+      },
+      "texture": "Walrus.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Dolphin",
+      "geometry": "geometry.BattleAndBeasts2.Dolphin",
+      "animations": {
+        "move.legs": "animation.player.move.legs.single",
+        "bob": "animation.player.bob.stationary"
+      },
+      "texture": "Dolphin.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Narwhal",
+      "geometry": "geometry.BattleAndBeasts2.Narwhal",
+      "animations": {
+        "move.legs": "animation.player.move.legs.single",
+        "bob": "animation.player.bob.stationary"
+      },
+      "texture": "Narwhal.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Orca",
+      "geometry": "geometry.BattleAndBeasts2.Orca",
+      "animations": {
+        "move.legs": "animation.player.move.legs.single",
+        "bob": "animation.player.bob.stationary"
+      },
+      "texture": "Orca.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Gecko",
+      "geometry": "geometry.BattleAndBeasts2.Gecko",
+      "texture": "Gecko.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Fox",
+      "geometry": "geometry.BattleAndBeasts2.Fox",
+      "texture": "Fox.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Toad",
+      "geometry": "geometry.BattleAndBeasts2.Toad",
+      "texture": "Toad.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Sloth",
+      "geometry": "geometry.BattleAndBeasts2.Sloth",
+      "texture": "Sloth.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Badger",
+      "geometry": "geometry.BattleAndBeasts2.Badger",
+      "texture": "Badger.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "StarNosedMole",
+      "geometry": "geometry.BattleAndBeasts2.StarNosedMole",
+      "texture": "StarNosedMole.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Capybara",
+      "geometry": "geometry.BattleAndBeasts2.Capybara",
+      "texture": "Capybara.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Hedgehog",
+      "geometry": "geometry.BattleAndBeasts2.Hedgehog",
+      "texture": "Hedgehog.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Octopus",
+      "geometry": "geometry.BattleAndBeasts2.Octopus",
+      "texture": "Octopus.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MoleRat",
+      "geometry": "geometry.BattleAndBeasts2.MoleRat",
+      "texture": "MoleRat.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Masai",
+      "geometry": "geometry.BattleAndBeasts2.Masai",
+      "texture": "Masai.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Masaiv2",
+      "geometry": "geometry.BattleAndBeasts2.Masaiv2",
+      "texture": "Masaiv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Musketeer",
+      "geometry": "geometry.BattleAndBeasts2.Musketeer",
+      "texture": "Musketeer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Musketeerv2",
+      "geometry": "geometry.BattleAndBeasts2.Musketeerv2",
+      "texture": "Musketeerv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Incan",
+      "geometry": "geometry.BattleAndBeasts2.Incan",
+      "texture": "Incan.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Incanv2",
+      "geometry": "geometry.BattleAndBeasts2.Incanv2",
+      "texture": "Incanv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Maori",
+      "geometry": "geometry.BattleAndBeasts2.Maori",
+      "texture": "Maori.png",
+      "cape": "Maori_cape.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Maoriv2",
+      "geometry": "geometry.BattleAndBeasts2.Maoriv2",
+      "texture": "Maoriv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Arabian",
+      "geometry": "geometry.BattleAndBeasts2.Arabian",
+      "texture": "Arabian.png",
+      "cape": "Arabian_cape.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Arabianv2",
+      "geometry": "geometry.BattleAndBeasts2.Arabianv2",
+      "texture": "Arabianv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Cossack",
+      "geometry": "geometry.BattleAndBeasts2.Cossack",
+      "texture": "Cossack.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Cossackv2",
+      "geometry": "geometry.BattleAndBeasts2.Cossackv2",
+      "texture": "Cossackv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Conquistador",
+      "geometry": "geometry.BattleAndBeasts2.Conquistador",
+      "texture": "Conquistador.png",
+      "type": "free"
+    },
+        {
+      "localization_name": "Conquistadorv2",
+      "geometry": "geometry.BattleAndBeasts2.Conquistadorv2",
+      "texture": "Conquistadorv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Barbarian",
+      "geometry": "geometry.BattleAndBeasts2.Barbarian",
+      "texture": "Barbarian.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Barbarianv2",
+      "geometry": "geometry.BattleAndBeasts2.Barbarianv2",
+      "texture": "Barbarianv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Egyptian",
+      "geometry": "geometry.BattleAndBeasts2.Egyptian",
+      "texture": "Egyptian.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Egyptianv2",
+      "geometry": "geometry.BattleAndBeasts2.Egyptianv2",
+      "texture": "Egyptianv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Highland",
+      "geometry": "geometry.BattleAndBeasts2.Highland",
+      "texture": "Highland.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Highlandv2",
+      "geometry": "geometry.BattleAndBeasts2.Highlandv2",
+      "texture": "Highlandv2.png",
+      "type": "free"
+    }
+  ],
+  "serialize_name": "BattleAndBeasts2",
+  "localization_name": "BattleAndBeasts2"
+}

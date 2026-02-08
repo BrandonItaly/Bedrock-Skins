@@ -1,0 +1,150 @@
+{
+  "skins": [
+    {
+      "localization_name": "TundraTamer",
+      "geometry": "geometry.humanoid.customSlim",
+      "texture": "tundra_tamer_slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TundraArcher",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "tundra_archer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TundraBrawler",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "tundra_brawler.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TundraBrewer",
+      "geometry": "geometry.humanoid.customSlim",
+      "texture": "tundra_brewer_slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TundraEngineer",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "tundra_engineer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TundraGriefer",
+      "geometry": "geometry.humanoid.customSlim",
+      "texture": "tundra_griefer_slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TundraHunter",
+      "geometry": "geometry.humanoid.customSlim",
+      "texture": "tundra_hunter_slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TundraStray",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "tundra_stray.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ForestGriefer",
+      "geometry": "geometry.humanoid.customSlim",
+      "texture": "Forest_Griefer_Slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ForestArcher",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "Forest_Archer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ForestBrawler",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "Forest_Brawler.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ForestBrewer",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "Forest_Brewer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ForestEngineer",
+      "geometry": "geometry.humanoid.customSlim",
+      "texture": "Forest_Engineer_Slim.png",
+      "type": "free"
+    },    
+    {
+      "localization_name": "ForestHunter",
+      "geometry": "geometry.humanoid.customSlim",
+      "texture": "Forest_Hunter_Slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ForestTamer",
+      "geometry": "geometry.humanoid.customSlim",
+      "texture": "Forest_Tamer_Slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ForestWoodbeast",
+      "geometry": "geometry.humanoid.customSlim",
+      "texture": "Forest_Woodbeast_Slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "DesertTamer",
+      "geometry": "geometry.humanoid.customSlim",
+      "texture": "Desert_Tamer_Slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "DesertArcher",
+      "geometry": "geometry.humanoid.customSlim",
+      "texture": "Desert_Archer_Slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "DesertBrawler",
+      "geometry": "geometry.humanoid.customSlim",
+      "texture": "Desert_Brawler_Slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "DesertBrewer",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "Desert_Brewer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "DesertEngineer",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "Desert_Engineer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "DesertGriefer",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "Desert_Griefer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "DesertHunter",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "Desert_Hunter.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "DesertHusk",
+      "geometry": "geometry.humanoid.customSlim",
+      "texture": "Desert_Husk_Slim.png",
+      "type": "free"
+    }
+  ],
+  "serialize_name": "Biome1",
+  "localization_name": "Biome1"
+}

@@ -1,0 +1,168 @@
+{
+  "skins": [
+    {
+      "localization_name": "JesseF",
+      "geometry": "geometry.StoryMode.JesseF",
+      "texture": "JesseF.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "JesseFA",
+      "geometry": "geometry.StoryMode.JesseFA",
+      "texture": "JesseFA.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "JesseFB",
+      "geometry": "geometry.StoryMode.JesseFB",
+      "texture": "JesseFB.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "JesseM",
+      "geometry": "geometry.StoryMode.JesseM",
+      "texture": "JesseM.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "JesseMA",
+      "geometry": "geometry.StoryMode.JesseMA",
+      "texture": "JesseMA.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "JesseMB",
+      "geometry": "geometry.StoryMode.JesseMB",
+      "texture": "JesseMB.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "JesseFArmored",
+      "geometry": "geometry.StoryMode.JesseFArmored",
+      "texture": "JesseFArmored.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "JesseFAArmored",
+      "geometry": "geometry.StoryMode.JesseFAArmored",
+      "texture": "JesseFAArmored.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "JesseFBArmored",
+      "geometry": "geometry.StoryMode.JesseFBArmored",
+      "texture": "JesseFBArmored.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "JesseMArmored",
+      "geometry": "geometry.StoryMode.JesseMArmored",
+      "texture": "JesseMArmored.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "JesseMAArmored",
+      "geometry": "geometry.StoryMode.JesseMAArmored",
+      "texture": "JesseMAArmored.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "JesseMBArmored",
+      "geometry": "geometry.StoryMode.JesseMBArmored",
+      "texture": "JesseMBArmored.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Axel",
+      "geometry": "geometry.StoryMode.Axel",
+      "texture": "Axel.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "AxelArmored",
+      "geometry": "geometry.StoryMode.AxelArmored",
+      "texture": "AxelArmored.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Ellegaard",
+      "geometry": "geometry.StoryMode.Ellegaard",
+      "texture": "Ellegaard.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "EllegaardArmored",
+      "geometry": "geometry.StoryMode.EllegaardArmored",
+      "texture": "EllegaardArmored.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Gabriel",
+      "geometry": "geometry.StoryMode.Gabriel",
+      "texture": "Gabriel.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Ivor",
+      "geometry": "geometry.StoryMode.Ivor",
+      "texture": "Ivor.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Lukas",
+      "geometry": "geometry.StoryMode.Lukas",
+      "texture": "Lukas.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Magnus",
+      "geometry": "geometry.StoryMode.Magnus",
+      "texture": "Magnus.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MagnusArmored",
+      "geometry": "geometry.StoryMode.MagnusArmored",
+      "texture": "MagnusArmored.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Olivia",
+      "geometry": "geometry.StoryMode.Olivia",
+      "texture": "olivia.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "OliviaArmored",
+      "geometry": "geometry.StoryMode.OliviaArmored",
+      "texture": "OliviaArmored.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Petra",
+      "geometry": "geometry.StoryMode.Petra",
+      "texture": "Petra.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PetraArmored",
+      "geometry": "geometry.StoryMode.PetraArmored",
+      "texture": "PetraArmored.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Soren",
+      "geometry": "geometry.StoryMode.Soren",
+      "texture": "Soren.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SorenArmored",
+      "geometry": "geometry.StoryMode.SorenArmored",
+      "texture": "SorenArmored.png",
+      "type": "free"
+    }
+  ],
+  "serialize_name": "StoryMode",
+  "localization_name": "StoryMode"
+}

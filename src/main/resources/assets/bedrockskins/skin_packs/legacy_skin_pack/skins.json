@@ -1,0 +1,114 @@
+{
+  "skins": [
+    {
+      "localization_name": "Steve",
+      "geometry": "geometry.DefaultConsole.Steve",
+      "texture": "Steve.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TennisSteve",
+      "geometry": "geometry.DefaultConsole.TennisSteve",
+      "texture": "TennisSteve.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TuxedoSteve",
+      "geometry": "geometry.DefaultConsole.TuxedoSteve",
+      "texture": "TuxedoSteve.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "AthleteSteve",
+      "geometry": "geometry.DefaultConsole.Steve",
+      "texture": "AthleteSteve.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ScottishSteve",
+      "geometry": "geometry.DefaultConsole.ScottishSteve",
+      "texture": "ScottishSteve.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PrisonerSteve",
+      "geometry": "geometry.DefaultConsole.PrisonerSteve",
+      "texture": "PrisonerSteve.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "CyclistSteve",
+      "geometry": "geometry.DefaultConsole.CyclistSteve",
+      "texture": "CyclistSteve.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "BoxerSteve",
+      "geometry": "geometry.DefaultConsole.BoxerSteve",
+      "texture": "BoxerSteve.png",
+      "type": "free"
+    },
+        {
+      "localization_name": "alex",
+      "geometry": "geometry.DefaultConsole.alex",
+      "texture": "alex.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TennisAlex",
+      "geometry": "geometry.DefaultConsole.TennisAlex",
+      "texture": "TennisAlex.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TuxedoAlex",
+      "geometry": "geometry.DefaultConsole.TuxedoAlex",
+      "texture": "TuxedoAlex.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "AthleteAlex",
+      "geometry": "geometry.DefaultConsole.alex",
+      "texture": "AthleteAlex.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SwedishAlex",
+      "geometry": "geometry.DefaultConsole.SwedishAlex",
+      "texture": "SwedishAlex.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PrisonerAlex",
+      "geometry": "geometry.DefaultConsole.PrisonerAlex",
+      "texture": "PrisonerAlex.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "CyclistAlex",
+      "geometry": "geometry.DefaultConsole.CyclistAlex",
+      "texture": "CyclistAlex.png",
+      "type": "free"
+    },
+        {
+      "localization_name": "BoxerAlex",
+      "geometry": "geometry.DefaultConsole.BoxerAlex",
+      "texture": "BoxerAlex.png",
+      "type": "free"
+    },
+        {
+      "localization_name": "devalex",
+      "geometry": "geometry.DefaultConsole.devalex",
+      "texture": "devalex.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "devsteve",
+      "geometry": "geometry.DefaultConsole.devsteve",
+      "texture": "devsteve.png",
+      "type": "free"
+    }
+  ],
+  "serialize_name": "LegacySkinPack",
+  "localization_name": "LegacySkinPack"
+}

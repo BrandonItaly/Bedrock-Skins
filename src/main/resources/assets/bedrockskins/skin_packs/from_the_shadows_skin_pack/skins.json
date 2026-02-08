@@ -1,0 +1,102 @@
+{
+  "localization_name": "FromTheShadowsSkinPack",
+  "serialize_name": "FromTheShadowsSkinPack",
+  "skins": [
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Wick",
+      "localization_name": "Wick",
+      "texture": "Wick.png",
+      "type": "free"
+    },
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Torn",
+      "localization_name": "Torn",
+      "texture": "Torn.png",
+      "type": "free"
+    },
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Harbinger",
+      "localization_name": "Harbinger",
+      "texture": "Harbinger.png",
+      "type": "free"
+    },
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Poppy",
+      "localization_name": "Poppy",
+      "texture": "Poppy.png",
+      "type": "free"
+    },
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Gothica",
+      "localization_name": "Gothica",
+      "texture": "Gothica.png",
+      "type": "free"
+    },
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Yokai",
+      "localization_name": "Yokai",
+      "texture": "Yokai.png",
+      "type": "free"
+    },
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Seenoevil",
+      "localization_name": "Seenoevil",
+      "texture": "Seenoevil.png",
+      "type": "free"
+    },
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Hearnoevil",
+      "localization_name": "Hearnoevil",
+      "texture": "Hearnoevil.png",
+      "type": "free"
+    },
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Speaknoevil",
+      "localization_name": "Speaknoevil",
+      "texture": "Speaknoevil.png",
+      "type": "free"
+    },
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Parasite",
+      "localization_name": "Parasite",
+      "texture": "Parasite.png",
+      "type": "free"
+    },
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Lurk",
+      "localization_name": "Lurk",
+      "texture": "Lurk.png",
+      "type": "free"
+    },
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Vein",
+      "localization_name": "Vein",
+      "texture": "Vein.png",
+      "type": "free"
+    },
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Splinter",
+      "localization_name": "Splinter",
+      "texture": "Splinter.png",
+      "type": "free"
+    },
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Bulbo",
+      "localization_name": "Bulbo",
+      "texture": "Bulbo.png",
+      "type": "free"
+    },
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Mush",
+      "localization_name": "Mush",
+      "texture": "Mush.png",
+      "type": "free"
+    },
+    {
+      "geometry": "geometry.FromTheShadowsSkinPack.Patchwork",
+      "localization_name": "Patchwork",
+      "texture": "Patchwork.png",
+      "type": "free"
+    }
+  ]
+}

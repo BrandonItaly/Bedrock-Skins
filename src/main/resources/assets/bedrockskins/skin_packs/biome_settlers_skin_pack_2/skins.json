@@ -1,0 +1,150 @@
+{
+  "skins": [
+    {
+      "localization_name": "MooshroomTamer",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "mushroom_tamer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MooshroomArcher",
+      "geometry": "geometry.Biome2.mushroom_archer",
+      "texture": "mushroom_archer_slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MooshroomBrawler",
+      "geometry": "geometry.Biome2.mushroom_brawler",
+      "texture": "mushroom_brawler_slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MooshroomBrewer",
+      "geometry": "geometry.Biome2.mushroom_brewer",
+      "texture": "mushroom_brewer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MooshroomEngineer",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "mushroom_engineer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MooshroomExplorer",
+      "geometry": "geometry.Biome2.mushroom_explorer",
+      "texture": "mushroom_explorer_slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MooshroomFarmer",
+      "geometry": "geometry.Biome2.mushroom_farmer",
+      "texture": "mushroom_farmer_slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MooshroomForager",
+      "geometry": "geometry.Biome2.mushroom_forager",
+      "texture": "mushroom_forager.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MooshroomGriefer",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "mushroom_griefer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MooshroomHunter",
+      "geometry": "geometry.Biome2.mushroom_hunter",
+      "texture": "mushroom_hunter_slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MooshroomMiner",
+      "geometry": "geometry.Biome2.mushroom_miner",
+      "texture": "mushroom_miner.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MooshroomUnique",
+      "geometry": "geometry.Biome2.mushroom_shroom_glutton",
+      "texture": "mushroom_shroom_glutton.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NetherTamer",
+      "geometry": "geometry.humanoid.customSlim",
+      "texture": "nether_tamer_slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NetherArcher",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "nether_archer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NetherBanished",
+      "geometry": "geometry.Biome2.nether_banished",
+      "texture": "nether_banished.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NetherBrawler",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "nether_brawler.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NetherBrewer",
+      "geometry": "geometry.Biome2.nether_brewer",
+      "texture": "nether_brewer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NetherEngineer",
+      "geometry": "geometry.Biome2.nether_engineer",
+      "texture": "nether_engineer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NetherExplorer",
+      "geometry": "geometry.Biome2.nether_explorer",
+      "texture": "nether_explorer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NetherExtinguisher",
+      "geometry": "geometry.Biome2.nether_extinguisher",
+      "texture": "nether_extinguisher.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NetherWartFarmer",
+      "geometry": "geometry.Biome2.nether_farmer",
+      "texture": "nether_farmer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NetherGriefer",
+      "geometry": "geometry.humanoid.customSlim",
+      "texture": "nether_griefer_slim.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NetherHunter",
+      "geometry": "geometry.Biome2.nether_hunter",
+      "texture": "nether_hunter.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NetherMiner",
+      "geometry": "geometry.Biome2.nether_miner",
+      "texture": "nether_miner.png",
+      "type": "free"
+    }
+  ],
+  "serialize_name": "Biome2",
+  "localization_name": "Biome2"
+}

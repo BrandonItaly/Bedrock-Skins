@@ -1,0 +1,108 @@
+{
+  "skins": [
+    {
+      "localization_name": "StrongholdMonarch",
+      "geometry": "geometry.Villains.StrongholdMonarch",
+      "texture": "StrongholdMonarch.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "StrongholdSeer",
+      "geometry": "geometry.Villains.StrongholdSeer",
+      "texture": "StrongholdSeer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Bisector",
+      "geometry": "geometry.Villains.Bisector",
+      "texture": "Bisector.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "CakeManiac",
+      "geometry": "geometry.Villains.CakeManiac",
+      "texture": "CakeManiac.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Doorman",
+      "geometry": "geometry.Villains.Doorman",
+      "texture": "Doorman.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "DungeonSpector",
+      "geometry": "geometry.Villains.DungeonSpector",
+      "texture": "DungeonSpector.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Enchantro",
+      "geometry": "geometry.Villains.Enchantro",
+      "texture": "Enchantro.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Endergaunt",
+      "geometry": "geometry.Villains.Endergaunt",
+      "texture": "endergaunt.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Eyece",
+      "geometry": "geometry.Villains.Eyece",
+      "texture": "Eyece.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Frankencrafter",
+      "geometry": "geometry.Villains.Frankencrafter",
+      "texture": "Frankencrafter.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "LavaFiend",
+      "geometry": "geometry.Villains.LavaFiend",
+      "texture": "LavaFiend.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "RedstoneZealot",
+      "geometry": "geometry.Villains.RedstoneZealot",
+      "texture": "RedstoneZealot.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SilverfishMonger",
+      "geometry": "geometry.Villains.SilverfishMonger",
+      "texture": "SilverfishMonger.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Slymime",
+      "geometry": "geometry.Villains.Slymime",
+      "texture": "Slymime.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Swindler",
+      "geometry": "geometry.Villains.Swindler",
+      "texture": "Swindler.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TerrorSpawner",
+      "geometry": "geometry.Villains.TerrorSpawner",
+      "texture": "TerrorSpawner.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Patchkin",
+      "geometry": "geometry.Villains.Patchkin",
+      "texture": "Patchkin.png",
+      "type": "free"
+    }
+  ],
+  "serialize_name": "Villains",
+  "localization_name": "Villains"
+}

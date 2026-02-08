@@ -1,0 +1,278 @@
+{
+  "skins": [
+    {
+      "localization_name": "EndermaninaSuit",
+      "geometry": "geometry.BattleAndBeasts.EndermaninaSuit",
+      "texture": "EndermaninaSuit.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ZombieinaSuit",
+      "geometry": "geometry.BattleAndBeasts.ZombieinaSuit",
+      "texture": "ZombieinaSuit.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "CaveSpiderinaSuit",
+      "geometry": "geometry.BattleAndBeasts.CaveSpiderinaSuit",
+      "texture": "CaveSpiderinaSuit.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ChickeninaSuit",
+      "geometry": "geometry.BattleAndBeasts.ChickeninaSuit",
+      "texture": "ChickeninaSuit.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Zebra",
+      "geometry": "geometry.BattleAndBeasts.Zebra",
+      "texture": "Zebra.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Panther",
+      "geometry": "geometry.BattleAndBeasts.Panther",
+      "texture": "Panther.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Warthog",
+      "geometry": "geometry.BattleAndBeasts.Warthog",
+      "texture": "Warthog.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MandrillBaboon",
+      "geometry": "geometry.BattleAndBeasts.MandrillBaboon",
+      "texture": "MandrillBaboon.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Meerkat",
+      "geometry": "geometry.BattleAndBeasts.Meerkat",
+      "texture": "Meerkat.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Rhinoceros",
+      "geometry": "geometry.BattleAndBeasts.Rhinoceros",
+      "texture": "Rhinoceros.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Hippopotamus",
+      "geometry": "geometry.BattleAndBeasts.Hippopotamus",
+      "texture": "Hippopotamus.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Elephant",
+      "geometry": "geometry.BattleAndBeasts.Elephant",
+      "texture": "Elephant.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Lion",
+      "geometry": "geometry.BattleAndBeasts.Lion",
+      "texture": "Lion.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Aardvark",
+      "geometry": "geometry.BattleAndBeasts.Aardvark",
+      "texture": "Aardvark.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Leopard",
+      "geometry": "geometry.BattleAndBeasts.Leopard",
+      "texture": "Leopard.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Gnu",
+      "geometry": "geometry.BattleAndBeasts.Gnu",
+      "texture": "Gnu.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Hyena",
+      "geometry": "geometry.BattleAndBeasts.Hyena",
+      "texture": "Hyena.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Antelope",
+      "geometry": "geometry.BattleAndBeasts.Antelope",
+      "texture": "Antelope.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Gorilla",
+      "geometry": "geometry.BattleAndBeasts.Gorilla",
+      "texture": "Gorilla.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "BushBaby",
+      "geometry": "geometry.BattleAndBeasts.BushBaby",
+      "texture": "BushBaby.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Crocodile",
+      "geometry": "geometry.BattleAndBeasts.Crocodile",
+      "texture": "Crocodile.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Spartan",
+      "geometry": "geometry.BattleAndBeasts.Spartan",
+      "texture": "Spartan.png",
+      "cape": "Spartan_cape.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Roman",
+      "geometry": "geometry.BattleAndBeasts.Roman",
+      "texture": "Roman.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NorseRaider",
+      "geometry": "geometry.BattleAndBeasts.NorseRaider",
+      "texture": "NorseRaider.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MedievalKnight",
+      "geometry": "geometry.BattleAndBeasts.MedievalKnight",
+      "texture": "MedievalKnight.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SamuraiWarrior",
+      "geometry": "geometry.BattleAndBeasts.SamuraiWarrior",
+      "texture": "SamuraiWarrior.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SteppesWarrior",
+      "geometry": "geometry.BattleAndBeasts.SteppesWarrior",
+      "texture": "SteppesWarrior.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NativeAmerican",
+      "geometry": "geometry.BattleAndBeasts.NativeAmerican",
+      "texture": "NativeAmerican.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Cowhand",
+      "geometry": "geometry.BattleAndBeasts.Cowhand",
+      "texture": "Cowhand.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SouthernAfricanWarrior",
+      "geometry": "geometry.BattleAndBeasts.SouthernAfricanWarrior",
+      "texture": "SouthernAfricanWarrior.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ImperialBritishSoldier",
+      "geometry": "geometry.BattleAndBeasts.ImperialBritishSoldier",
+      "texture": "ImperialBritishSoldier.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "AfricanWarrior",
+      "geometry": "geometry.BattleAndBeasts.AfricanWarrior",
+      "texture": "AfricanWarrior.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ImperialFrenchSoldier",
+      "geometry": "geometry.BattleAndBeasts.ImperialFrenchSoldier",
+      "texture": "ImperialFrenchSoldier.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Spartanv2",
+      "geometry": "geometry.BattleAndBeasts.Spartanv2",
+      "texture": "Spartanv2.png",
+      "cape": "Spartanv2_cape.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Romanv2",
+      "geometry": "geometry.BattleAndBeasts.Romanv2",
+      "texture": "Romanv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NorseRaiderv2",
+      "geometry": "geometry.BattleAndBeasts.NorseRaiderv2",
+      "texture": "NorseRaiderv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MedievalKnightv2",
+      "geometry": "geometry.BattleAndBeasts.MedievalKnightv2",
+      "texture": "MedievalKnightv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SamuraiWarriorv2",
+      "geometry": "geometry.BattleAndBeasts.SamuraiWarriorv2",
+      "texture": "SamuraiWarriorv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SteppesWarriorv2",
+      "geometry": "geometry.BattleAndBeasts.SteppesWarriorv2",
+      "texture": "SteppesWarriorv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "NativeAmericanv2",
+      "geometry": "geometry.BattleAndBeasts.NativeAmerican",
+      "texture": "NativeAmericanv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Cowhandv2",
+      "geometry": "geometry.BattleAndBeasts.Cowhandv2",
+      "texture": "Cowhandv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SouthernAfricanWarriorv2",
+      "geometry": "geometry.BattleAndBeasts.SouthernAfricanWarriorv2",
+      "texture": "SouthernAfricanWarriorv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ImperialBritishSoldierv2",
+      "geometry": "geometry.BattleAndBeasts.ImperialBritishSoldierv2",
+      "texture": "ImperialBritishSoldierv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "AfricanWarriorv2",
+      "geometry": "geometry.BattleAndBeasts.AfricanWarriorv2",
+      "texture": "AfricanWarriorv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ImperialFrenchSoldierv2",
+      "geometry": "geometry.BattleAndBeasts.ImperialFrenchSoldierv2",
+      "texture": "ImperialFrenchSoldierv2.png",
+      "type": "free"
+    }
+  ],
+  "serialize_name": "BattleAndBeasts",
+  "localization_name": "BattleAndBeasts"
+}

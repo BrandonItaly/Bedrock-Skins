@@ -1,0 +1,23 @@
+{
+    "header":  {
+                   "version":  [
+                                   1,
+                                   0,
+                                   1
+                               ],
+                   "name":  "BiomeSettlers02_SkinPack",
+                   "uuid":  "5a5dcffc-f194-4a8b-a7b7-94fa7997a434"
+               },
+    "modules":  [
+                    {
+                        "version":  [
+                                        1,
+                                        0,
+                                        1
+                                    ],
+                        "type":  "skin_pack",
+                        "uuid":  "7a7e7875-996a-477c-a8a9-56d1d108abbd"
+                    }
+                ],
+    "format_version":  1
+}

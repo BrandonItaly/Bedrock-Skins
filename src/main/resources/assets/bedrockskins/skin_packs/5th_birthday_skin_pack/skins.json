@@ -1,0 +1,174 @@
+{
+  "skins": [
+    {
+      "localization_name": "ChrisVDK",
+      "geometry": "geometry.5thBirthday.ChrisVDK",
+      "texture": "ChrisVDK.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Paddy",
+      "geometry": "geometry.5thBirthday.Paddy",
+      "texture": "Paddy.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Anne",
+      "geometry": "geometry.5thBirthday.Anne",
+      "texture": "Anne.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Richard",
+      "geometry": "geometry.5thBirthday.Richard",
+      "texture": "Richard.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Stuart",
+      "geometry": "geometry.5thBirthday.Stuart",
+      "texture": "Stuart.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "David",
+      "geometry": "geometry.5thBirthday.David",
+      "texture": "David.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Kate",
+      "geometry": "geometry.5thBirthday.Kate",
+      "texture": "Kate.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Michael",
+      "geometry": "geometry.5thBirthday.Michael",
+      "texture": "Michael.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Steven",
+      "geometry": "geometry.5thBirthday.Steven",
+      "texture": "Steven.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Mark",
+      "geometry": "geometry.5thBirthday.Mark",
+      "texture": "Mark.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Iain",
+      "geometry": "geometry.5thBirthday.Iain",
+      "texture": "Iain.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Thomas",
+      "geometry": "geometry.5thBirthday.Thomas",
+      "texture": "Thomas.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "James",
+      "geometry": "geometry.5thBirthday.James",
+      "texture": "James.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Vince",
+      "geometry": "geometry.5thBirthday.Vince",
+      "texture": "Vince.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "George",
+      "geometry": "geometry.5thBirthday.George",
+      "texture": "George.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Rory",
+      "geometry": "geometry.5thBirthday.Rory",
+      "texture": "Rory.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Tom",
+      "geometry": "geometry.5thBirthday.Tom",
+      "texture": "Tom.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Julie",
+      "geometry": "geometry.5thBirthday.Julie",
+      "texture": "Julie.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Alan",
+      "geometry": "geometry.5thBirthday.Alan",
+      "texture": "Alan.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Donald",
+      "geometry": "geometry.5thBirthday.Donald",
+      "texture": "Donald.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Chris",
+      "geometry": "geometry.5thBirthday.Chris",
+      "texture": "Chris.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Sidney",
+      "geometry": "geometry.5thBirthday.Sidney",
+      "texture": "Sidney.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Brian",
+      "geometry": "geometry.5thBirthday.Brian",
+      "texture": "Brian.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Jonathan",
+      "geometry": "geometry.5thBirthday.Jonathan",
+      "texture": "Jonathan.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Scott",
+      "geometry": "geometry.5thBirthday.Scott",
+      "texture": "Scott.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "IronGolemBattler",
+      "geometry": "geometry.5thBirthday.IronGolemBattler",
+      "texture": "IronGolemBattler.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "IronGolemTumbler",
+      "geometry": "geometry.5thBirthday.IronGolemTumbler",
+      "texture": "IronGolemTumbler.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "IronGolemGlider",
+      "geometry": "geometry.5thBirthday.IronGolemGlider",
+      "texture": "IronGolemGlider.png",
+      "type": "free"
+    }
+  ],
+  "serialize_name": "5thBirthday",
+  "localization_name": "5thBirthday"
+}

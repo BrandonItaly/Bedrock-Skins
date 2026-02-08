@@ -1,0 +1,23 @@
+{
+    "header":  {
+                   "version":  [
+                                   1,
+                                   0,
+                                   2
+                               ],
+                   "name":  "StoryMode_SkinPack",
+                   "uuid":  "598de0d1-08a8-448b-89d4-6ba73bcbe593"
+               },
+    "modules":  [
+                    {
+                        "version":  [
+                                        1,
+                                        0,
+                                        2
+                                    ],
+                        "type":  "skin_pack",
+                        "uuid":  "28857aea-d897-4cb1-af79-437a628b264b"
+                    }
+                ],
+    "format_version":  1
+}

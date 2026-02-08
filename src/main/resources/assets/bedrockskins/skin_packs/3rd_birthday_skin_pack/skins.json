@@ -1,0 +1,127 @@
+{
+  "skins": [
+    {
+      "localization_name": "Jens",
+      "geometry": "geometry.3rdBirthday.Jens",
+      "texture": "Jens.png",
+      "cape": "Jens_cape.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "DanielKaplan",
+      "geometry": "geometry.3rdBirthday.DanielKaplan",
+      "texture": "DanielKaplan.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "MarkusJunkboy",
+      "geometry": "geometry.3rdBirthday.MarkusJunkboy",
+      "texture": "MarkusJunkboy.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Aron",
+      "geometry": "geometry.3rdBirthday.Aron",
+      "texture": "Aron.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Mattis",
+      "geometry": "geometry.3rdBirthday.Mattis",
+      "texture": "Mattis.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Henrik",
+      "geometry": "geometry.3rdBirthday.Henrik",
+      "texture": "Henrik.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "DanielFrisk",
+      "geometry": "geometry.3rdBirthday.DanielFrisk",
+      "texture": "DanielFrisk.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Jon",
+      "geometry": "geometry.3rdBirthday.Jon",
+      "texture": "Jon.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Mans",
+      "geometry": "geometry.3rdBirthday.Mans",
+      "texture": "Mans.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Johan",
+      "geometry": "geometry.3rdBirthday.Johan",
+      "texture": "Johan.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Lydia",
+      "geometry": "geometry.3rdBirthday.Lydia",
+      "texture": "Lydia.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Karin",
+      "geometry": "geometry.3rdBirthday.Karin",
+      "texture": "Karin.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Kristoffer",
+      "geometry": "geometry.3rdBirthday.Kristoffer",
+      "texture": "Kristoffer.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Nathan",
+      "geometry": "geometry.3rdBirthday.Nathan",
+      "texture": "Nathan.png",
+      "animations": {
+        "humanoid_base_pose": "animation.player.base_pose.upside_down"
+      },
+      "type": "free"
+    },
+    {
+      "localization_name": "Erik",
+      "geometry": "geometry.3rdBirthday.Erik",
+      "texture": "Erik.png",
+      "animations": {
+        "humanoid_base_pose": "animation.player.base_pose.upside_down"
+      },
+      "type": "free"
+    },
+    {
+      "localization_name": "Tommaso",
+      "geometry": "geometry.3rdBirthday.Tommaso",
+      "texture": "Tommaso.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "RedstoneCreature",
+      "geometry": "geometry.3rdBirthday.RedstoneCreature",
+      "texture": "RedstoneCreature.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TheEndCreature",
+      "geometry": "geometry.3rdBirthday.TheEndCreature",
+      "texture": "TheEndCreature.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SandstoneCreature",
+      "geometry": "geometry.3rdBirthday.SandstoneCreature",
+      "texture": "SandstoneCreature.png",
+      "type": "free"
+    }
+  ],
+  "serialize_name": "3rdBirthday",
+  "localization_name": "3rdBirthday"
+}

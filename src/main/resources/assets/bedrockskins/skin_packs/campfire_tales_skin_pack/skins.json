@@ -1,0 +1,102 @@
+{
+  "skins": [
+    {
+      "localization_name": "RancidAnne",
+      "geometry": "geometry.CampfireTales.RancidAnne",
+      "texture": "RancidAnne.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "OlDiggy",
+      "geometry": "geometry.CampfireTales.OlDiggy",
+      "texture": "OlDiggy.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Bedlam",
+      "geometry": "geometry.CampfireTales.Bedlam",
+      "texture": "Bedlam.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Crisp",
+      "geometry": "geometry.CampfireTales.Crisp",
+      "texture": "Crisp.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TheEnderall",
+      "geometry": "geometry.CampfireTales.TheEnderall",
+      "texture": "TheEnderall.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Farlander",
+      "geometry": "geometry.CampfireTales.Farlander",
+      "texture": "Farlander.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TheHeadlessHaunter",
+      "geometry": "geometry.CampfireTales.TheHeadlessHaunter",
+      "texture": "TheHeadlessHaunter.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TheLapisLady",
+      "geometry": "geometry.CampfireTales.TheLapisLady",
+      "texture": "TheLapisLady.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "LumberingJack",
+      "geometry": "geometry.CampfireTales.LumberingJack",
+      "texture": "LumberingJack.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TheArisenRose",
+      "geometry": "geometry.CampfireTales.TheArisenRose",
+      "texture": "TheArisenRose.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TheSeaSwallowedCaptain",
+      "geometry": "geometry.CampfireTales.TheSeaSwallowedCaptain",
+      "texture": "TheSeaSwallowedCaptain.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TheBlocksquatch",
+      "geometry": "geometry.CampfireTales.TheBlocksquatch",
+      "texture": "TheBlocksquatch.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TheUnshorn",
+      "geometry": "geometry.CampfireTales.TheUnshorn",
+      "texture": "TheUnshorn.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Silksnatcher",
+      "geometry": "geometry.CampfireTales.Silksnatcher",
+      "texture": "Silksnatcher.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Cropsy",
+      "geometry": "geometry.CampfireTales.Cropsy",
+      "texture": "Cropsy.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "TheWellWisher",
+      "geometry": "geometry.CampfireTales.TheWellWisher",
+      "texture": "TheWellWisher.png",
+      "type": "free"
+    }
+  ],
+  "serialize_name": "CampfireTales",
+  "localization_name": "CampfireTales"
+}
