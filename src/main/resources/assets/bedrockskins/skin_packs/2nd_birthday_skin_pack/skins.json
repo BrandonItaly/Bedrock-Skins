@@ -1,0 +1,156 @@
+{
+  "skins": [
+    {
+      "localization_name": "PartyPlasticSteve",
+      "geometry": "geometry.2ndBirthday.PartyPlasticSteve",
+      "texture": "PartyPlasticSteve.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartyPlasticCreeper",
+      "geometry": "geometry.2ndBirthday.PartyPlasticCreeper",
+      "texture": "PartyPlasticCreeper.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartyZombieVillager",
+      "geometry": "geometry.2ndBirthday.PartyZombieVillager",
+      "texture": "PartyZombieVillager.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Witch",
+      "geometry": "geometry.2ndBirthday.Witch",
+      "texture": "Witch.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartyWitherSkeleton",
+      "geometry": "geometry.2ndBirthday.PartyWitherSkeleton",
+      "texture": "PartyWitherSkeleton.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Wither",
+      "geometry": "geometry.2ndBirthday.Wither",
+      "texture": "Wither.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartyRedCat",
+      "geometry": "geometry.2ndBirthday.PartyRedCat",
+      "texture": "PartyRedCat.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartyBlackCat",
+      "geometry": "geometry.2ndBirthday.PartyBlackCat",
+      "texture": "PartyBlackCat.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartySiameseCat",
+      "geometry": "geometry.2ndBirthday.PartySiameseCat",
+      "texture": "PartySiameseCat.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "PartyOcelot",
+      "geometry": "geometry.2ndBirthday.PartyOcelot",
+      "texture": "PartyOcelot.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "DustAnElysianTailPartyFidget",
+      "geometry": "geometry.2ndBirthday.DustAnElysianTailPartyFidget",
+      "texture": "DustAnElysianTailPartyFidget.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "DustAnElysianTailPartyDust",
+      "geometry": "geometry.2ndBirthday.DustAnElysianTailPartyDust",
+      "texture": "DustAnElysianTailPartyDust.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "FableJackofBlades",
+      "geometry": "geometry.2ndBirthday.FableJackofBlades",
+      "texture": "FableJackofBlades.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "FableHeroChicken",
+      "geometry": "geometry.2ndBirthday.FableHeroChicken",
+      "texture": "FableHeroChicken.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "VivaPinataHorstachio",
+      "geometry": "geometry.2ndBirthday.VivaPinataHorstachio",
+      "texture": "VivaPinataHorstachio.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "VivaPinataPretztail",
+      "geometry": "geometry.2ndBirthday.VivaPinataPretztail",
+      "texture": "VivaPinataPretztail.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "VivaPinataFudgehog",
+      "geometry": "geometry.2ndBirthday.VivaPinataFudgehog",
+      "texture": "VivaPinataFudgehog.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ConkersBadFurDayConker",
+      "geometry": "geometry.2ndBirthday.ConkersBadFurDayConker",
+      "texture": "ConkersBadFurDayConker.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "ConkerLiveandReloadedConkerv2",
+      "geometry": "geometry.2ndBirthday.ConkerLiveandReloadedConkerv2",
+      "texture": "ConkerLiveandReloadedConkerv2.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "BanjoKazooieKazooie",
+      "geometry": "geometry.2ndBirthday.BanjoKazooieKazooie",
+      "texture": "BanjoKazooieKazooie.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "BanjoKazooieBanjoandKazooie",
+      "geometry": "geometry.2ndBirthday.BanjoKazooieBanjoandKazooie",
+      "texture": "BanjoKazooieBanjoandKazooie.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "BanjoKazooieGruntilda",
+      "geometry": "geometry.2ndBirthday.BanjoKazooieGruntilda",
+      "texture": "BanjoKazooieGruntilda.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "HaloPartyGrunt",
+      "geometry": "geometry.2ndBirthday.HaloPartyGrunt",
+      "texture": "HaloPartyGrunt.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "HaloPartyRedSpartan",
+      "geometry": "geometry.2ndBirthday.HaloPartyRedSpartan",
+      "texture": "HaloPartyRedSpartan.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "HaloPartyBlueSpartan",
+      "geometry": "geometry.2ndBirthday.HaloPartyBlueSpartan",
+      "texture": "HaloPartyBlueSpartan.png",
+      "type": "free"
+    }
+  ],
+  "serialize_name": "2ndBirthday",
+  "localization_name": "2ndBirthday"
+}
