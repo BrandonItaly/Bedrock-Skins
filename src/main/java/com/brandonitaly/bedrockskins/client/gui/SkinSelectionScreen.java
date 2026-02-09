@@ -471,30 +471,33 @@ public class SkinSelectionScreen extends Screen {
             GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h, getSkinsPanelTitle(), font);
         }
         
-        // Handle mouse events for preview panel
-        boolean mousePressed = org.lwjgl.glfw.GLFW.glfwGetMouseButton(
-            org.lwjgl.glfw.GLFW.glfwGetCurrentContext(),
-            org.lwjgl.glfw.GLFW.glfwGetCurrentContext() != 0 ? org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT : 0
-        ) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
-        
-        if (previewPanel != null) {
-            // Detect mouse click
-            if (mousePressed && !wasMousePressed) {
-                previewPanel.mouseClicked(mouseX, mouseY, 0);
-            }
-            // Detect mouse release
-            if (!mousePressed && wasMousePressed) {
-                previewPanel.mouseReleased(mouseX, mouseY, 0);
-            }
-            wasMousePressed = mousePressed;
+        // Only render preview panel for Skins and Customization tabs (not Mod Options)
+        if (activeTab != 2) {
+            // Handle mouse events for preview panel
+            boolean mousePressed = org.lwjgl.glfw.GLFW.glfwGetMouseButton(
+                org.lwjgl.glfw.GLFW.glfwGetCurrentContext(),
+                org.lwjgl.glfw.GLFW.glfwGetCurrentContext() != 0 ? org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT : 0
+            ) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
             
-            previewPanel.render(gui, mouseX, mouseY);
+            if (previewPanel != null) {
+                // Detect mouse click
+                if (mousePressed && !wasMousePressed) {
+                    previewPanel.mouseClicked(mouseX, mouseY, 0);
+                }
+                // Detect mouse release
+                if (!mousePressed && wasMousePressed) {
+                    previewPanel.mouseReleased(mouseX, mouseY, 0);
+                }
+                wasMousePressed = mousePressed;
+                
+                previewPanel.render(gui, mouseX, mouseY);
+            }
         }
         
         super.render(gui, mouseX, mouseY, delta);
         
-        // Render the full heart sprite AFTER buttons have rendered
-        if (previewPanel != null) {
+        // Render the full heart sprite AFTER buttons have rendered (only if preview panel is visible)
+        if (activeTab != 2 && previewPanel != null) {
             previewPanel.renderSprites(gui);
         }
         
@@ -545,7 +548,10 @@ public class SkinSelectionScreen extends Screen {
             // Ensure the skins widgets are visible
             if (SkinSelectionScreen.this.packList != null) SkinSelectionScreen.this.packList.visible = true;
             if (SkinSelectionScreen.this.skinGrid != null) SkinSelectionScreen.this.skinGrid.visible = true;
-            if (SkinSelectionScreen.this.previewPanel != null) SkinSelectionScreen.this.previewPanel.reposition(SkinSelectionScreen.this.rPreview.x, SkinSelectionScreen.this.rPreview.y, SkinSelectionScreen.this.rPreview.w, SkinSelectionScreen.this.rPreview.h);
+            if (SkinSelectionScreen.this.previewPanel != null) {
+                SkinSelectionScreen.this.previewPanel.reposition(SkinSelectionScreen.this.rPreview.x, SkinSelectionScreen.this.rPreview.y, SkinSelectionScreen.this.rPreview.w, SkinSelectionScreen.this.rPreview.h);
+                SkinSelectionScreen.this.previewPanel.setButtonsVisible(true);
+            }
         }
     }
     
@@ -568,7 +574,10 @@ public class SkinSelectionScreen extends Screen {
             if (SkinSelectionScreen.this.skinGrid != null) SkinSelectionScreen.this.skinGrid.visible = false;
 
             // Ensure preview panel remains visible and placed in preview area
-            if (SkinSelectionScreen.this.previewPanel != null) SkinSelectionScreen.this.previewPanel.reposition(SkinSelectionScreen.this.rPreview.x, SkinSelectionScreen.this.rPreview.y, SkinSelectionScreen.this.rPreview.w, SkinSelectionScreen.this.rPreview.h);
+            if (SkinSelectionScreen.this.previewPanel != null) {
+                SkinSelectionScreen.this.previewPanel.reposition(SkinSelectionScreen.this.rPreview.x, SkinSelectionScreen.this.rPreview.y, SkinSelectionScreen.this.rPreview.w, SkinSelectionScreen.this.rPreview.h);
+                SkinSelectionScreen.this.previewPanel.setButtonsVisible(true);
+            }
 
             // Remove any existing customization widgets then build new ones positioned within the skins panel
             SkinSelectionScreen.this.clearCustomizationWidgets();
@@ -594,8 +603,8 @@ public class SkinSelectionScreen extends Screen {
             if (SkinSelectionScreen.this.packList != null) SkinSelectionScreen.this.packList.visible = false;
             if (SkinSelectionScreen.this.skinGrid != null) SkinSelectionScreen.this.skinGrid.visible = false;
 
-            // Ensure preview panel remains visible and placed in preview area
-            if (SkinSelectionScreen.this.previewPanel != null) SkinSelectionScreen.this.previewPanel.reposition(SkinSelectionScreen.this.rPreview.x, SkinSelectionScreen.this.rPreview.y, SkinSelectionScreen.this.rPreview.w, SkinSelectionScreen.this.rPreview.h);
+            // Hide preview panel buttons
+            if (SkinSelectionScreen.this.previewPanel != null) SkinSelectionScreen.this.previewPanel.setButtonsVisible(false);
 
             // Remove any existing customization widgets then build new ones positioned within the skins panel
             SkinSelectionScreen.this.clearCustomizationWidgets();

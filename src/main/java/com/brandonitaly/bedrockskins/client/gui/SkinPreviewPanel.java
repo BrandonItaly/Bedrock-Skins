@@ -469,6 +469,12 @@ public class SkinPreviewPanel {
         GuiUtils.renderEntityInRect(gui, entity, yawOffset, (int)(x - width), (int)(y - height), (int)(x + width), (int)(y + height), scale);
     }
     
+    public void setButtonsVisible(boolean visible) {
+        if (selectButton != null) selectButton.visible = visible;
+        if (resetButton != null) resetButton.visible = visible;
+        if (favoriteButton != null) favoriteButton.getButton().visible = visible;
+    }
+
     public void renderSprites(GuiGraphics gui) {
         if (favoriteButton != null) {
             favoriteButton.renderSprites(gui);
