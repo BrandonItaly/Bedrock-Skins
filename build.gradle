@@ -8,6 +8,17 @@ plugins {
     id 'maven-publish'
 }
 
+// Load .env file if it exists
+def envFile = rootProject.file('.env')
+if (envFile.exists()) {
+    envFile.readLines().each { line ->
+        def (key, value) = line.split('=', 2)
+        if (key && value && !System.getenv(key)) {
+            System.setProperty(key.trim(), value.trim())
+        }
+    }
+}
+
 base.archivesName = project.archives_base_name
 version = stonecutter.current.version + "-" + mod_version
 group = rootProject.maven_group
@@ -316,7 +327,7 @@ publishMods {
         else javaVersions.addAll(JavaVersion.VERSION_17,JavaVersion.VERSION_18)
         clientRequired = true
         serverRequired = false
-        accessToken = project.findProperty("CURSEFORGE_API_KEY") ?: System.getenv("CURSEFORGE_API_KEY")
+        accessToken = project.findProperty("CURSEFORGE_API_KEY") ?: System.getenv("CURSEFORGE_API_KEY") ?: System.getProperty("CURSEFORGE_API_KEY") ?: ""
         projectId = curseforge_id
         if (isFabric) optional("modmenu")
         if (isFabric) requires("fabric-api")
@@ -324,7 +335,7 @@ publishMods {
 
     modrinth {
         minecraftVersions.addAll versions
-        accessToken = project.findProperty("MODRINTH_TOKEN") ?: System.getenv("MODRINTH_TOKEN")
+        accessToken = project.findProperty("MODRINTH_TOKEN") ?: System.getenv("MODRINTH_TOKEN") ?: System.getProperty("MODRINTH_TOKEN") ?: ""
         projectId = modrinth_id
         publishMods.version = "$project.version+$loader"
         if (isFabric) optional("modmenu")
