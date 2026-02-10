@@ -316,7 +316,7 @@ publishMods {
         else javaVersions.addAll(JavaVersion.VERSION_17,JavaVersion.VERSION_18)
         clientRequired = true
         serverRequired = false
-        accessToken = project.findProperty("CURSEFORGE_TOKEN") ?: System.getenv("CURSEFORGE_TOKEN")
+        accessToken = project.findProperty("CURSEFORGE_API_KEY") ?: System.getenv("CURSEFORGE_API_KEY")
         projectId = curseforge_id
         if (isFabric) optional("modmenu")
         if (isFabric) requires("fabric-api")
