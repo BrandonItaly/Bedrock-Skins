@@ -18,7 +18,16 @@ public final class BedrockModelManager {
         if (skinId == null) return null;
 
         if (bedrockModels.containsKey(skinId)) {
-            return bedrockModels.get(skinId);
+            var cached = bedrockModels.get(skinId);
+            var skin = SkinPackLoader.getLoadedSkin(skinId);
+            if (skin != null && skin.identifier == null) {
+                try {
+                    SkinPackLoader.registerTextureFor(skinId);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            return cached;
         }
 
         var skin = SkinPackLoader.getLoadedSkin(skinId);

@@ -783,6 +783,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         // Clear existing widgets
         if (playerSkinWidgetList != null) {
             for (PlayerSkinWidget widget : playerSkinWidgetList.widgets) {
+                widget.cleanup();
                 removeWidget(widget);
             }
         }
@@ -961,6 +962,16 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
                 return true;
             }
         return super.mouseDragged(event, deltaX, deltaY);
+    }
+
+    @Override
+    public void onClose() {
+        if (playerSkinWidgetList != null) {
+            for (PlayerSkinWidget widget : playerSkinWidgetList.widgets) {
+                widget.cleanup();
+            }
+        }
+        super.onClose();
     }
 }*/
 //?}

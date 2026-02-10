@@ -481,6 +481,12 @@ public class SkinPreviewPanel {
         }
     }
 
+    public void cleanup() {
+        safeResetPreview(this.dummyUuid.toString());
+        PreviewPlayer.PreviewPlayerPool.remove(this.dummyUuid);
+        this.dummyPlayer = null;
+    }
+
     private void safeResetPreview(String uuid) { GuiUtils.safeResetPreview(uuid); }
     private void safeRegisterTexture(String key) { GuiUtils.safeRegisterTexture(key); }
     

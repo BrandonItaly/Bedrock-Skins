@@ -2,16 +2,20 @@ package com.brandonitaly.bedrockskins.client;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import net.minecraft.client.Minecraft;
 import com.brandonitaly.bedrockskins.pack.SkinId;
+import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 
 public final class SkinManager {
     private SkinManager() {}
 
     private static final Map<String, SkinId> playerSkins = new HashMap<>();
+    private static final Map<String, SkinId> previewSkins = new HashMap<>();
 
     public static void load() {
         playerSkins.clear();
+        previewSkins.clear();
         try {
             var state = StateManager.readState();
             var selected = state.getSelected();
@@ -34,7 +38,10 @@ public final class SkinManager {
 
     public static void setSkin(String uuid, String packName, String skinName) {
         SkinId id = SkinId.of(packName, skinName);
-        playerSkins.put(uuid, id);
+        SkinId previous = playerSkins.put(uuid, id);
+        if (!Objects.equals(previous, id)) {
+            releaseIfUnused(previous);
+        }
         var client = Minecraft.getInstance();
         var localUuid = client.player != null ? client.player.getUUID().toString() : null;
         if (localUuid != null && localUuid.equals(uuid)) {
@@ -49,19 +56,25 @@ public final class SkinManager {
 
     public static void setPreviewSkin(String uuid, String packName, String skinName) {
         SkinId id = SkinId.of(packName, skinName);
-        playerSkins.put(uuid, id);
+        SkinId previous = previewSkins.put(uuid, id);
+        if (!Objects.equals(previous, id)) {
+            releaseIfUnused(previous);
+        }
     }
 
     public static void resetPreviewSkin(String uuid) {
-        playerSkins.remove(uuid);
+        SkinId previous = previewSkins.remove(uuid);
+        releaseIfUnused(previous);
     }
 
     public static SkinId getSkin(String uuid) {
-        return playerSkins.get(uuid);
+        SkinId preview = previewSkins.get(uuid);
+        return preview != null ? preview : playerSkins.get(uuid);
     }
 
     public static void resetSkin(String uuid) {
-        if (playerSkins.remove(uuid) != null) {
+        SkinId previous = playerSkins.remove(uuid);
+        if (previous != null) {
             var client = Minecraft.getInstance();
             var localUuid = client.player != null ? client.player.getUUID().toString() : null;
             if (localUuid != null && localUuid.equals(uuid)) {
@@ -72,6 +85,14 @@ public final class SkinManager {
                     e.printStackTrace();
                 }
             }
+            releaseIfUnused(previous);
         }
+    }
+
+    private static void releaseIfUnused(SkinId id) {
+        if (id == null) return;
+        if (playerSkins.containsValue(id)) return;
+        if (previewSkins.containsValue(id)) return;
+        SkinPackLoader.releaseSkinAssets(id);
     }
 }

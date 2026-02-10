@@ -266,4 +266,9 @@ public class PlayerSkinWidget extends AbstractWidget {
     public void resetPose() {
         crouchPose = false;
     }
+
+    public void cleanup() {
+        SkinManager.resetPreviewSkin(dummyUuid.toString());
+        PreviewPlayer.PreviewPlayerPool.remove(dummyUuid);
+    }
 }

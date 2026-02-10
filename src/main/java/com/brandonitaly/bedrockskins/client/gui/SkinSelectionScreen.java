@@ -519,6 +519,8 @@ public class SkinSelectionScreen extends Screen {
 
     @Override
     public void onClose() {
+        if (skinGrid != null) skinGrid.clear();
+        if (previewPanel != null) previewPanel.cleanup();
         if (minecraft != null) minecraft.setScreen(parent);
     }
     

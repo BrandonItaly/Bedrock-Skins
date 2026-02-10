@@ -140,6 +140,24 @@ public final class SkinPackLoader {
         for (LoadedSkin s : loadedSkins.values()) registerSkinAssets(s);
     }
 
+    public static void releaseSkinAssets(SkinId id) {
+        if (id == null) return;
+        LoadedSkin skin = loadedSkins.get(id);
+        if (skin == null) return;
+        try {
+            if (skin.identifier != null) {
+                Minecraft.getInstance().getTextureManager().release(skin.identifier);
+                skin.identifier = null;
+            }
+        } catch (Exception ignored) {}
+        try {
+            if (skin.capeIdentifier != null) {
+                Minecraft.getInstance().getTextureManager().release(skin.capeIdentifier);
+                skin.capeIdentifier = null;
+            }
+        } catch (Exception ignored) {}
+    }
+
 
     //? if >=1.21.11 {
     public static Identifier registerTextureFor(SkinId id) {
