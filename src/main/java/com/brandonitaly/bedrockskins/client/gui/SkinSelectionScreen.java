@@ -87,7 +87,7 @@ public class SkinSelectionScreen extends Screen {
         
         // Initialize tab navigation
         this.tabNavigationBar = TabNavigationBar.builder(this.tabManager, this.width)
-            .addTabs(new SkinsTab(), new SkinCustomizationTab(), new ModOptionsTab())
+            .addTabs(new SkinsTab(), new SkinCustomizationTab())
             .build();
         this.addRenderableWidget(this.tabNavigationBar);
         
@@ -365,26 +365,6 @@ public class SkinSelectionScreen extends Screen {
         }
     }
 
-    private void createModOptionsWidgets(ScreenRectangle tabArea) {
-        if (minecraft == null) return;
-
-        ModOptionsHost host = new ModOptionsHost(this, minecraft.options);
-        host.resize(this.width, this.height);
-        host.layout.setHeaderHeight(this.layout.getHeaderHeight());
-        host.layout.setFooterHeight(this.layout.getFooterHeight());
-        host.layout.arrangeElements();
-
-        OptionsList optionsList = new OptionsList(minecraft, this.width, host);
-        optionsList.setX(0);
-        optionsList.setY(host.layout.getHeaderHeight());
-        optionsList.setWidth(this.width);
-        optionsList.setHeight(Math.max(0, host.layout.getContentHeight() - 2));
-
-        optionsList.addSmall(com.brandonitaly.bedrockskins.client.BedrockSkinsConfig.asOptions());
-        SkinSelectionScreen.this.addRenderableWidget(optionsList);
-        SkinSelectionScreen.this.customizationWidgets.add(optionsList);
-    }
-    
     private Component getSkinsPanelTitle() {
         if (selectedPackId == null) return Component.translatable("bedrockskins.gui.skins");
         List<LoadedSkin> skins = skinCache.get(selectedPackId);
@@ -492,33 +472,30 @@ public class SkinSelectionScreen extends Screen {
             GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h, getSkinsPanelTitle(), font);
         }
         
-        // Only render preview panel for Skins and Customization tabs (not Mod Options)
-        if (activeTab != 2) {
-            // Handle mouse events for preview panel
-            boolean mousePressed = org.lwjgl.glfw.GLFW.glfwGetMouseButton(
-                org.lwjgl.glfw.GLFW.glfwGetCurrentContext(),
-                org.lwjgl.glfw.GLFW.glfwGetCurrentContext() != 0 ? org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT : 0
-            ) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+        // Handle mouse events for preview panel
+        boolean mousePressed = org.lwjgl.glfw.GLFW.glfwGetMouseButton(
+            org.lwjgl.glfw.GLFW.glfwGetCurrentContext(),
+            org.lwjgl.glfw.GLFW.glfwGetCurrentContext() != 0 ? org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT : 0
+        ) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
             
-            if (previewPanel != null) {
-                // Detect mouse click
-                if (mousePressed && !wasMousePressed) {
-                    previewPanel.mouseClicked(mouseX, mouseY, 0);
-                }
-                // Detect mouse release
-                if (!mousePressed && wasMousePressed) {
-                    previewPanel.mouseReleased(mouseX, mouseY, 0);
-                }
-                wasMousePressed = mousePressed;
-                
-                previewPanel.render(gui, mouseX, mouseY);
+        if (previewPanel != null) {
+            // Detect mouse click
+            if (mousePressed && !wasMousePressed) {
+                previewPanel.mouseClicked(mouseX, mouseY, 0);
             }
+            // Detect mouse release
+            if (!mousePressed && wasMousePressed) {
+                previewPanel.mouseReleased(mouseX, mouseY, 0);
+            }
+            wasMousePressed = mousePressed;
+            
+            previewPanel.render(gui, mouseX, mouseY);
         }
         
         super.render(gui, mouseX, mouseY, delta);
         
         // Render the full heart sprite AFTER buttons have rendered (only if preview panel is visible)
-        if (activeTab != 2 && previewPanel != null) {
+        if (previewPanel != null) {
             previewPanel.renderSprites(gui);
         }
         
@@ -538,19 +515,6 @@ public class SkinSelectionScreen extends Screen {
         int right() { return x + w; }
         int bottom() { return y + h; }
         int centerX() { return x + (w / 2); }
-    }
-
-    private static class ModOptionsHost extends OptionsSubScreen {
-        ModOptionsHost(Screen parent, net.minecraft.client.Options options) {
-            super(parent, options, Component.translatable("bedrockskins.gui.mod_options"));
-        }
-
-        @Override
-        protected void addOptions() {
-        if (this.list != null) {
-                this.list.addSmall(com.brandonitaly.bedrockskins.client.BedrockSkinsConfig.asOptions());
-            }
-        }
     }
 
     @Override
@@ -616,33 +580,5 @@ public class SkinSelectionScreen extends Screen {
             SkinSelectionScreen.this.createCustomizationWidgets(tabArea);
         }
     }
-
-    private class ModOptionsTab extends GridLayoutTab {
-        private static final Component TITLE = Component.translatable("bedrockskins.gui.mod_options");
-
-        public ModOptionsTab() {
-            super(TITLE);
-        }
-
-        @Override
-        public void doLayout(ScreenRectangle tabArea) {
-            // Activate mod options tab
-            SkinSelectionScreen.this.activeTab = 2;
-            // Layout using the tab area
-            SkinSelectionScreen.this.calculateLayout(tabArea);
-
-            // Hide skin pack/skins widgets
-            if (SkinSelectionScreen.this.packList != null) SkinSelectionScreen.this.packList.visible = false;
-            if (SkinSelectionScreen.this.skinGrid != null) SkinSelectionScreen.this.skinGrid.visible = false;
-
-            // Hide preview panel buttons
-            if (SkinSelectionScreen.this.previewPanel != null) SkinSelectionScreen.this.previewPanel.setButtonsVisible(false);
-
-            // Remove any existing customization widgets then build new ones positioned within the skins panel
-            SkinSelectionScreen.this.clearCustomizationWidgets();
-
-            // Create Mod Options UI
-            SkinSelectionScreen.this.createModOptionsWidgets(tabArea);
-        }
-    }
 }
+
