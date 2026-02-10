@@ -37,9 +37,9 @@ public abstract class MixinPlayerEntityRenderer {
 
     @Unique
     //? if >=1.21.11 {
-    private void bedrockSkins$renderArm(boolean isRightArm, PoseStack matrices, int light, Identifier skinTexture, boolean sleeveVisible, Object rendererOrQueue, CallbackInfo ci) {
+    private void bedrockSkins$renderArm(boolean isRightArm, PoseStack matrices, int light, Identifier skinTexture, boolean sleeveVisible, Object rendererOrQueue, ModelPart vanillaArm, CallbackInfo ci) {
     //?} else {
-    /*private void bedrockSkins$renderArm(boolean isRightArm, PoseStack matrices, int light, ResourceLocation skinTexture, boolean sleeveVisible, Object rendererOrQueue, CallbackInfo ci) {*/
+    /*private void bedrockSkins$renderArm(boolean isRightArm, PoseStack matrices, int light, ResourceLocation skinTexture, boolean sleeveVisible, Object rendererOrQueue, ModelPart vanillaArm, CallbackInfo ci) {*/
     //?}
         var player = Minecraft.getInstance().player;
         if (player == null) return;
@@ -75,10 +75,37 @@ public abstract class MixinPlayerEntityRenderer {
                 ms.peek().getPositionMatrix().set(matrices.peek().getPositionMatrix());
                 ms.peek().getNormalMatrix().set(matrices.peek().getNormalMatrix());
 
+                // Reset parts first to avoid accumulated transformations
                 finalPart.resetTransform();
                 if (finalSleeve != null) {
                     finalSleeve.resetTransform();
+                }
+
+                // Copy vanilla arm transformations to Bedrock arm for accurate first-person positioning
+                finalPart.x = vanillaArm.x;
+                finalPart.y = vanillaArm.y;
+                finalPart.z = vanillaArm.z;
+                finalPart.xRot = vanillaArm.xRot;
+                finalPart.yRot = vanillaArm.yRot;
+                finalPart.zRot = vanillaArm.zRot;
+                finalPart.xScale = vanillaArm.xScale;
+                finalPart.yScale = vanillaArm.yScale;
+                finalPart.zScale = vanillaArm.zScale;
+                
+                if (finalSleeve != null) {
                     finalSleeve.visible = sleeveVisible;
+                    // Only copy transformations if sleeve is NOT a child (separate part)
+                    if (!sleeveIsChild) {
+                        finalSleeve.x = vanillaArm.x;
+                        finalSleeve.y = vanillaArm.y;
+                        finalSleeve.z = vanillaArm.z;
+                        finalSleeve.xRot = vanillaArm.xRot;
+                        finalSleeve.yRot = vanillaArm.yRot;
+                        finalSleeve.zRot = vanillaArm.zRot;
+                        finalSleeve.xScale = vanillaArm.xScale;
+                        finalSleeve.yScale = vanillaArm.yScale;
+                        finalSleeve.zScale = vanillaArm.zScale;
+                    }
                 }
 
                 finalPart.render(ms, consumers.getBuffer(layer), light, OverlayTexture.DEFAULT_UV);
@@ -100,10 +127,37 @@ public abstract class MixinPlayerEntityRenderer {
                     ms.last().pose().set(entry.pose());
                     ms.last().normal().set(entry.normal());
 
+                    // Reset parts first to avoid accumulated transformations
                     finalPart.resetPose();
                     if (finalSleeve != null) {
                         finalSleeve.resetPose();
+                    }
+
+                    // Copy vanilla arm transformations to Bedrock arm for accurate first-person positioning
+                    finalPart.x = vanillaArm.x;
+                    finalPart.y = vanillaArm.y;
+                    finalPart.z = vanillaArm.z;
+                    finalPart.xRot = vanillaArm.xRot;
+                    finalPart.yRot = vanillaArm.yRot;
+                    finalPart.zRot = vanillaArm.zRot;
+                    finalPart.xScale = vanillaArm.xScale;
+                    finalPart.yScale = vanillaArm.yScale;
+                    finalPart.zScale = vanillaArm.zScale;
+                    
+                    if (finalSleeve != null) {
                         finalSleeve.visible = sleeveVisible;
+                        // Only copy transformations if sleeve is NOT a child (separate part)
+                        if (!sleeveIsChild) {
+                            finalSleeve.x = vanillaArm.x;
+                            finalSleeve.y = vanillaArm.y;
+                            finalSleeve.z = vanillaArm.z;
+                            finalSleeve.xRot = vanillaArm.xRot;
+                            finalSleeve.yRot = vanillaArm.yRot;
+                            finalSleeve.zRot = vanillaArm.zRot;
+                            finalSleeve.xScale = vanillaArm.xScale;
+                            finalSleeve.yScale = vanillaArm.yScale;
+                            finalSleeve.zScale = vanillaArm.zScale;
+                        }
                     }
 
                     finalPart.render(ms, consumer, light, OverlayTexture.NO_OVERLAY);
@@ -129,7 +183,7 @@ public abstract class MixinPlayerEntityRenderer {
     private void renderHand(PoseStack matrices, MultiBufferSource consumers, int light, AbstractClientPlayer player, ModelPart arm, ModelPart sleeve, CallbackInfo ci) {
         HumanoidModel<?> model = (HumanoidModel<?>) ((AvatarRenderer)(Object)this).getModel();
         boolean isRightArm = (arm == model.rightArm);
-        bedrockSkins$renderArm(isRightArm, matrices, light, player.getSkinTextureLocation(), sleeve.visible, consumers, ci);
+        bedrockSkins$renderArm(isRightArm, matrices, light, player.getSkinTextureLocation(), sleeve.visible, consumers, arm, ci);
     }*/
     //?} else {
     @Inject(method = "extractRenderState", at = @At("RETURN"))
@@ -146,7 +200,7 @@ public abstract class MixinPlayerEntityRenderer {
     /*private void renderHand(PoseStack matrices, SubmitNodeCollector queue, int light, ResourceLocation tex, ModelPart arm, boolean sleeve, CallbackInfo ci) {*///?}
         HumanoidModel<?> model = (HumanoidModel<?>) ((AvatarRenderer)(Object)this).getModel();
         boolean isRightArm = (arm == model.rightArm);
-        bedrockSkins$renderArm(isRightArm, matrices, light, tex, sleeve, queue, ci);
+        bedrockSkins$renderArm(isRightArm, matrices, light, tex, sleeve, queue, arm, ci);
     }
 
     @Inject(method = "getTextureLocation", at = @At("HEAD"), cancellable = true)
