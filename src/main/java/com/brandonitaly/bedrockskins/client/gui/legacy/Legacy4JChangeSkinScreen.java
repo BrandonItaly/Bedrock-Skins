@@ -54,6 +54,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Controller.Event, ControlTooltip.Event {
     protected final Minecraft minecraft;
@@ -913,6 +915,16 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             } else if (src instanceof AssetSource.File) {
                 File f = new File(((AssetSource.File) src).getPath());
                 return Files.readAllBytes(f.toPath());
+            } else if (src instanceof AssetSource.Zip) {
+                AssetSource.Zip z = (AssetSource.Zip) src;
+                try (ZipFile zip = new ZipFile(z.getZipPath())) {
+                    ZipEntry entry = zip.getEntry(z.getInternalPath());
+                    if (entry != null) {
+                        try (var is = zip.getInputStream(entry)) {
+                            return is.readAllBytes();
+                        }
+                    }
+                }
             } else {
                 return new byte[0];
             }

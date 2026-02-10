@@ -38,6 +38,8 @@ import org.joml.Vector3f;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -498,6 +500,15 @@ public class SkinPreviewPanel {
                 if (resOpt.isPresent()) return resOpt.get().open().readAllBytes();
             } else if (src instanceof AssetSource.File f) {
                 return Files.readAllBytes(new File(f.getPath()).toPath());
+            } else if (src instanceof AssetSource.Zip z) {
+                try (ZipFile zip = new ZipFile(z.getZipPath())) {
+                    ZipEntry entry = zip.getEntry(z.getInternalPath());
+                    if (entry != null) {
+                        try (var is = zip.getInputStream(entry)) {
+                            return is.readAllBytes();
+                        }
+                    }
+                }
             }
         } catch (Exception ignored) {}
         return new byte[0];

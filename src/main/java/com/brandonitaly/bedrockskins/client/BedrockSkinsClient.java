@@ -44,6 +44,8 @@ import net.minecraft.world.entity.player.PlayerModelPart;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.File;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 //? if fabric {
 public class BedrockSkinsClient implements ClientModInitializer {
@@ -390,6 +392,17 @@ class CommonLogic {
             } else if (src instanceof AssetSource.File) {
                 File f = new File(((AssetSource.File) src).getPath());
                 return java.nio.file.Files.readAllBytes(f.toPath());
+            } else if (src instanceof AssetSource.Zip) {
+                AssetSource.Zip z = (AssetSource.Zip) src;
+                try (ZipFile zip = new ZipFile(z.getZipPath())) {
+                    ZipEntry entry = zip.getEntry(z.getInternalPath());
+                    if (entry != null) {
+                        try (var is = zip.getInputStream(entry)) {
+                            return is.readAllBytes();
+                        }
+                    }
+                }
+                return new byte[0];
             } else {
                 return new byte[0];
             }
