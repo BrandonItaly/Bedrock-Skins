@@ -1,5 +1,7 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
+import com.brandonitaly.bedrockskins.client.SkinManager;
+import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import net.minecraft.client.Minecraft;
@@ -51,7 +53,11 @@ public final class GuiUtils {
         int height = bottom - top;
         int size = Math.min((int) (height / 3.0), sizeCap);
         float scale = entity.getScale();
-        Vector3f vector3f = new Vector3f(0.0F, entity.getBbHeight() / 2.0F, 0.0F);
+        float centerY = entity.getBbHeight() / 2.0F;
+        if (isUpsideDown(entity)) {
+            centerY -= entity.getBbHeight();
+        }
+        Vector3f vector3f = new Vector3f(0.0F, centerY, 0.0F);
         float renderScale = (float) size / scale;
 
         // Quaternions
@@ -78,6 +84,12 @@ public final class GuiUtils {
     public static void safeRegisterTexture(String key) { try { var id = SkinId.parse(key); if (id != null) SkinPackLoader.registerTextureFor(id); } catch (Exception ignored) {} }
     public static void safeResetPreview(String uuid) { try { com.brandonitaly.bedrockskins.client.SkinManager.resetPreviewSkin(uuid); } catch (Exception ignored) {} }
 
+    private static boolean isUpsideDown(LivingEntity entity) {
+        SkinId id = SkinManager.getSkin(entity.getUUID().toString());
+        if (id == null) return false;
+        LoadedSkin skin = SkinPackLoader.getLoadedSkin(id);
+        return skin != null && skin.isUpsideDown();
+    }
 
     public static void drawPanelChrome(GuiGraphics gui, int x, int y, int w, int h, net.minecraft.network.chat.Component title, net.minecraft.client.gui.Font font) {
         int PANEL_HEADER_HEIGHT = 24;

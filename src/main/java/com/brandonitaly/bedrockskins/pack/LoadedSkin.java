@@ -14,6 +14,7 @@ public class LoadedSkin {
     public final com.google.gson.JsonObject geometryData;
     public final AssetSource texture;
     public final AssetSource cape; // nullable
+    public final boolean upsideDown;
 
     //? if >=1.21.11 {
     public Identifier identifier;
@@ -24,16 +25,21 @@ public class LoadedSkin {
     //?}
 
     public LoadedSkin(String serializeName, String packDisplayName, String skinDisplayName, com.google.gson.JsonObject geometryData, AssetSource texture) {
-        this(serializeName, packDisplayName, skinDisplayName, geometryData, texture, null);
+        this(serializeName, packDisplayName, skinDisplayName, geometryData, texture, null, false);
     }
 
     public LoadedSkin(String serializeName, String packDisplayName, String skinDisplayName, com.google.gson.JsonObject geometryData, AssetSource texture, AssetSource cape) {
+        this(serializeName, packDisplayName, skinDisplayName, geometryData, texture, cape, false);
+    }
+
+    public LoadedSkin(String serializeName, String packDisplayName, String skinDisplayName, com.google.gson.JsonObject geometryData, AssetSource texture, AssetSource cape, boolean upsideDown) {
         this.serializeName = serializeName;
         this.packDisplayName = packDisplayName;
         this.skinDisplayName = skinDisplayName;
         this.geometryData = geometryData;
         this.texture = texture;
         this.cape = cape;
+        this.upsideDown = upsideDown;
     }
 
     public String getSerializeName() { return serializeName; }
@@ -42,6 +48,7 @@ public class LoadedSkin {
     public com.google.gson.JsonObject getGeometryData() { return geometryData; }
     public AssetSource getTexture() { return texture; }
     public AssetSource getCape() { return cape; }
+    public boolean isUpsideDown() { return upsideDown; }
 
     // Canonical identifier for a skin (uses serializeName for the pack id)
     public String getKey() { return serializeName + ":" + skinDisplayName; }

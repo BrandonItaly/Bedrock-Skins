@@ -37,9 +37,9 @@ public abstract class MixinPlayerEntityRenderer {
 
     @Unique
     //? if >=1.21.11 {
-    private void bedrockSkins$renderArm(boolean isRightArm, PoseStack matrices, int light, Identifier skinTexture, boolean sleeveVisible, Object rendererOrQueue, ModelPart vanillaArm, CallbackInfo ci) {
+    private void bedrockSkins$renderArm(boolean isRightArm, PoseStack matrices, int light, Identifier skinTexture, boolean sleeveVisible, Object rendererOrQueue, CallbackInfo ci) {
     //?} else {
-    /*private void bedrockSkins$renderArm(boolean isRightArm, PoseStack matrices, int light, ResourceLocation skinTexture, boolean sleeveVisible, Object rendererOrQueue, ModelPart vanillaArm, CallbackInfo ci) {*/
+    /*private void bedrockSkins$renderArm(boolean isRightArm, PoseStack matrices, int light, ResourceLocation skinTexture, boolean sleeveVisible, Object rendererOrQueue, CallbackInfo ci) {*/
     //?}
         var player = Minecraft.getInstance().player;
         if (player == null) return;
@@ -66,12 +66,6 @@ public abstract class MixinPlayerEntityRenderer {
                 final var finalSleeve = sleeve;
                 boolean sleeveIsChild = finalPart.hasChild(side + "_sleeve") || finalPart.hasChild(side + "Sleeve");
 
-                // Reset parts at method start to prevent accumulation
-                finalPart.resetPose();
-                if (finalSleeve != null) {
-                    finalSleeve.resetPose();
-                }
-
                 //? if <=1.21.8 {
                 /*
                 var consumers = (MultiBufferSource) rendererOrQueue;
@@ -81,30 +75,15 @@ public abstract class MixinPlayerEntityRenderer {
                 ms.peek().getPositionMatrix().set(matrices.peek().getPositionMatrix());
                 ms.peek().getNormalMatrix().set(matrices.peek().getNormalMatrix());
 
-                // Copy vanilla arm transformations for accurate first-person positioning
-                finalPart.x = vanillaArm.x;
-                finalPart.y = vanillaArm.y;
-                finalPart.z = vanillaArm.z;
-                finalPart.xRot = vanillaArm.xRot;
-                finalPart.yRot = vanillaArm.yRot;
-                finalPart.zRot = vanillaArm.zRot;
-                finalPart.xScale = vanillaArm.xScale;
-                finalPart.yScale = vanillaArm.yScale;
-                finalPart.zScale = vanillaArm.zScale;
-                
+                float handZRot = isRightArm ? 0.1F : -0.1F;
+                finalPart.resetTransform();
+                finalPart.visible = true;
+                finalPart.zRot = handZRot;
                 if (finalSleeve != null) {
+                    finalSleeve.resetTransform();
                     finalSleeve.visible = sleeveVisible;
-                    // Only copy transformations if sleeve is NOT a child (separate part)
                     if (!sleeveIsChild) {
-                        finalSleeve.x = vanillaArm.x;
-                        finalSleeve.y = vanillaArm.y;
-                        finalSleeve.z = vanillaArm.z;
-                        finalSleeve.xRot = vanillaArm.xRot;
-                        finalSleeve.yRot = vanillaArm.yRot;
-                        finalSleeve.zRot = vanillaArm.zRot;
-                        finalSleeve.xScale = vanillaArm.xScale;
-                        finalSleeve.yScale = vanillaArm.yScale;
-                        finalSleeve.zScale = vanillaArm.zScale;
+                        finalSleeve.zRot = handZRot;
                     }
                 }
 
@@ -127,30 +106,15 @@ public abstract class MixinPlayerEntityRenderer {
                     ms.last().pose().set(entry.pose());
                     ms.last().normal().set(entry.normal());
 
-                    // Copy vanilla arm transformations for accurate first-person positioning
-                    finalPart.x = vanillaArm.x;
-                    finalPart.y = vanillaArm.y;
-                    finalPart.z = vanillaArm.z;
-                    finalPart.xRot = vanillaArm.xRot;
-                    finalPart.yRot = vanillaArm.yRot;
-                    finalPart.zRot = vanillaArm.zRot;
-                    finalPart.xScale = vanillaArm.xScale;
-                    finalPart.yScale = vanillaArm.yScale;
-                    finalPart.zScale = vanillaArm.zScale;
-                    
+                    float handZRot = isRightArm ? 0.1F : -0.1F;
+                    finalPart.resetPose();
+                    finalPart.visible = true;
+                    finalPart.zRot = handZRot;
                     if (finalSleeve != null) {
+                        finalSleeve.resetPose();
                         finalSleeve.visible = sleeveVisible;
-                        // Only copy transformations if sleeve is NOT a child (separate part)
                         if (!sleeveIsChild) {
-                            finalSleeve.x = vanillaArm.x;
-                            finalSleeve.y = vanillaArm.y;
-                            finalSleeve.z = vanillaArm.z;
-                            finalSleeve.xRot = vanillaArm.xRot;
-                            finalSleeve.yRot = vanillaArm.yRot;
-                            finalSleeve.zRot = vanillaArm.zRot;
-                            finalSleeve.xScale = vanillaArm.xScale;
-                            finalSleeve.yScale = vanillaArm.yScale;
-                            finalSleeve.zScale = vanillaArm.zScale;
+                            finalSleeve.zRot = handZRot;
                         }
                     }
 
@@ -177,7 +141,7 @@ public abstract class MixinPlayerEntityRenderer {
     private void renderHand(PoseStack matrices, MultiBufferSource consumers, int light, AbstractClientPlayer player, ModelPart arm, ModelPart sleeve, CallbackInfo ci) {
         HumanoidModel<?> model = (HumanoidModel<?>) ((AvatarRenderer)(Object)this).getModel();
         boolean isRightArm = (arm == model.rightArm);
-        bedrockSkins$renderArm(isRightArm, matrices, light, player.getSkinTextureLocation(), sleeve.visible, consumers, arm, ci);
+        bedrockSkins$renderArm(isRightArm, matrices, light, player.getSkinTextureLocation(), sleeve.visible, consumers, ci);
     }*/
     //?} else {
     @Inject(method = "extractRenderState", at = @At("RETURN"))
@@ -194,8 +158,30 @@ public abstract class MixinPlayerEntityRenderer {
     /*private void renderHand(PoseStack matrices, SubmitNodeCollector queue, int light, ResourceLocation tex, ModelPart arm, boolean sleeve, CallbackInfo ci) {*///?}
         HumanoidModel<?> model = (HumanoidModel<?>) ((AvatarRenderer)(Object)this).getModel();
         boolean isRightArm = (arm == model.rightArm);
-        bedrockSkins$renderArm(isRightArm, matrices, light, tex, sleeve, queue, arm, ci);
+        bedrockSkins$renderArm(isRightArm, matrices, light, tex, sleeve, queue, ci);
     }
+
+    //? if <=1.21.8 {
+    /*@Inject(method = "isEntityUpsideDown", at = @At("HEAD"), cancellable = true)
+    private void isEntityUpsideDown(AbstractClientPlayer player, CallbackInfoReturnable<Boolean> ci) {
+        SkinId skinId = SkinManager.getSkin(player.getUUID().toString());
+        if (skinId != null) {
+            var skin = SkinPackLoader.getLoadedSkin(skinId);
+            if (skin != null && skin.isUpsideDown()) ci.setReturnValue(true);
+        }
+    }*/
+    //?} else {
+    @Inject(method = "isEntityUpsideDown", at = @At("HEAD"), cancellable = true)
+    private void isEntityUpsideDown(Avatar player, CallbackInfoReturnable<Boolean> ci) {
+        if (player instanceof AbstractClientPlayer cp) {
+            SkinId skinId = SkinManager.getSkin(cp.getUUID().toString());
+            if (skinId != null) {
+                var skin = SkinPackLoader.getLoadedSkin(skinId);
+                if (skin != null && skin.isUpsideDown()) ci.setReturnValue(true);
+            }
+        }
+    }
+    //?}
 
     @Inject(method = "getTextureLocation", at = @At("HEAD"), cancellable = true)
     //? if >=1.21.11 {

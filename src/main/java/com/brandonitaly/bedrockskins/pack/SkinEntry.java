@@ -2,6 +2,8 @@ package com.brandonitaly.bedrockskins.pack;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.Map;
+
 public class SkinEntry {
     @SerializedName("localization_name")
     private String localizationName;
@@ -9,6 +11,7 @@ public class SkinEntry {
     private String texture;
     private String type;
     private String cape;
+    private Map<String, String> animations;
 
     public String getLocalizationName() { return localizationName; }
     public void setLocalizationName(String localizationName) { this.localizationName = localizationName; }
@@ -24,4 +27,7 @@ public class SkinEntry {
 
     public String getCape() { return cape; }
     public void setCape(String cape) { this.cape = cape; }
+
+    public Map<String, String> getAnimations() { return animations; }
+    public void setAnimations(Map<String, String> animations) { this.animations = animations; }
 }

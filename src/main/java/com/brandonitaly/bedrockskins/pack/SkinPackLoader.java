@@ -264,7 +264,8 @@ public final class SkinPackLoader {
                         entry.getLocalizationName(),
                         geometry,
                         new AssetSource.File(textureFile.getAbsolutePath()),
-                        capeFile != null ? new AssetSource.File(capeFile.getAbsolutePath()) : null
+                        capeFile != null ? new AssetSource.File(capeFile.getAbsolutePath()) : null,
+                        hasUpsideDownAnimation(entry)
                     ));
                 }
             }
@@ -328,7 +329,8 @@ public final class SkinPackLoader {
                             entry.getLocalizationName(),
                             geometry,
                             new AssetSource.Resource(textureId),
-                            capeId != null ? new AssetSource.Resource(capeId) : null
+                            capeId != null ? new AssetSource.Resource(capeId) : null,
+                            hasUpsideDownAnimation(entry)
                         ));
                     }
                 }
@@ -336,6 +338,12 @@ public final class SkinPackLoader {
                 e.printStackTrace();
             }
         });
+    }
+
+    private static boolean hasUpsideDownAnimation(SkinEntry entry) {
+        if (entry == null || entry.getAnimations() == null) return false;
+        String basePose = entry.getAnimations().get("humanoid_base_pose");
+        return "animation.player.base_pose.upside_down".equals(basePose);
     }
 
     // --- Helpers: Geometry & Assets ---
@@ -503,7 +511,8 @@ public final class SkinPackLoader {
                                 entry.getLocalizationName(),
                                 geometry,
                                 new AssetSource.Zip(pack.getAbsolutePath(), texPath),
-                                capeEntry != null ? new AssetSource.Zip(pack.getAbsolutePath(), capePath) : null
+                                capeEntry != null ? new AssetSource.Zip(pack.getAbsolutePath(), capePath) : null,
+                                hasUpsideDownAnimation(entry)
                             ));
                         }
                     }
