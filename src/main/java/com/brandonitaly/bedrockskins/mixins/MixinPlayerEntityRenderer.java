@@ -66,6 +66,12 @@ public abstract class MixinPlayerEntityRenderer {
                 final var finalSleeve = sleeve;
                 boolean sleeveIsChild = finalPart.hasChild(side + "_sleeve") || finalPart.hasChild(side + "Sleeve");
 
+                // Reset parts at method start to prevent accumulation
+                finalPart.resetPose();
+                if (finalSleeve != null) {
+                    finalSleeve.resetPose();
+                }
+
                 //? if <=1.21.8 {
                 /*
                 var consumers = (MultiBufferSource) rendererOrQueue;
@@ -75,13 +81,7 @@ public abstract class MixinPlayerEntityRenderer {
                 ms.peek().getPositionMatrix().set(matrices.peek().getPositionMatrix());
                 ms.peek().getNormalMatrix().set(matrices.peek().getNormalMatrix());
 
-                // Reset parts first to avoid accumulated transformations
-                finalPart.resetTransform();
-                if (finalSleeve != null) {
-                    finalSleeve.resetTransform();
-                }
-
-                // Copy vanilla arm transformations to Bedrock arm for accurate first-person positioning
+                // Copy vanilla arm transformations for accurate first-person positioning
                 finalPart.x = vanillaArm.x;
                 finalPart.y = vanillaArm.y;
                 finalPart.z = vanillaArm.z;
@@ -127,13 +127,7 @@ public abstract class MixinPlayerEntityRenderer {
                     ms.last().pose().set(entry.pose());
                     ms.last().normal().set(entry.normal());
 
-                    // Reset parts first to avoid accumulated transformations
-                    finalPart.resetPose();
-                    if (finalSleeve != null) {
-                        finalSleeve.resetPose();
-                    }
-
-                    // Copy vanilla arm transformations to Bedrock arm for accurate first-person positioning
+                    // Copy vanilla arm transformations for accurate first-person positioning
                     finalPart.x = vanillaArm.x;
                     finalPart.y = vanillaArm.y;
                     finalPart.z = vanillaArm.z;
