@@ -25,6 +25,9 @@
   "key.bedrockskins.toggle_hat": "Toggle Hat",
   "key.bedrockskins.swap_main_hand": "Swap Main Hand",
   "key.category.bedrockskins.controls": "Bedrock Skins",
+
   "bedrockskins.option.scan_resourcepacks": "Scan Resource Packs",
-  "bedrockskins.option.scan_resourcepacks.tooltip": "Scan all available resource packs for skin packs.\nIf disabled, only skin packs from active resource packs and local skin packs will be loaded."
+  "bedrockskins.option.scan_resourcepacks.tooltip": "Scan all available resource packs for skin packs.\nIf disabled, only skin packs from active resource packs and local skin packs will be loaded.",
+  "bedrockskins.option.enable_builtin_packs": "Enable Built-in Skin Packs",
+  "bedrockskins.option.enable_builtin_packs.tooltip": "Load the built-in skin packs that come bundled with the mod.\nDisable this to only use external skin packs."
 }

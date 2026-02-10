@@ -120,7 +120,9 @@ public final class SkinPackLoader {
         ResourceManager manager = client.getResourceManager();
 
         loadVanillaGeometry(manager);
-        loadInternalPacks(manager);
+        if (com.brandonitaly.bedrockskins.client.BedrockSkinsConfig.isEnableBuiltInSkinPacksEnabled()) {
+            loadInternalPacks(manager);
+        }
         loadPackOrder(manager);
     }
 

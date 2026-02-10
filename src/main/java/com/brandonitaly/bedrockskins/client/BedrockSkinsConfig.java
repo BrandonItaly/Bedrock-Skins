@@ -5,6 +5,9 @@ import com.google.gson.JsonObject;
 //? if fabric {
 import net.fabricmc.loader.api.FabricLoader;
 //? }
+import net.minecraft.client.OptionInstance;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.network.chat.Component;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -22,6 +25,27 @@ public class BedrockSkinsConfig {
     //? }
 
     private static boolean scanResourcePacksForSkins = true;
+    private static boolean enableBuiltInSkinPacks = true;
+
+    public static final OptionInstance<Boolean> SCAN_RESOURCE_PACKS = OptionInstance.createBoolean(
+        "bedrockskins.option.scan_resourcepacks",
+        value -> Tooltip.create(Component.translatable("bedrockskins.option.scan_resourcepacks.tooltip")),
+        isScanResourcePacksForSkinsEnabled(),
+        value -> {
+            setScanResourcePacksForSkins(value);
+            reloadSkinPacks();
+        }
+    );
+
+    public static final OptionInstance<Boolean> ENABLE_BUILT_IN_PACKS = OptionInstance.createBoolean(
+        "bedrockskins.option.enable_builtin_packs",
+        value -> Tooltip.create(Component.translatable("bedrockskins.option.enable_builtin_packs.tooltip")),
+        isEnableBuiltInSkinPacksEnabled(),
+        value -> {
+            setEnableBuiltInSkinPacks(value);
+            reloadSkinPacks();
+        }
+    );
 
     static {
         load();
@@ -36,13 +60,38 @@ public class BedrockSkinsConfig {
         save();
     }
 
+    public static synchronized boolean isEnableBuiltInSkinPacksEnabled() {
+        return enableBuiltInSkinPacks;
+    }
+
+    public static synchronized void setEnableBuiltInSkinPacks(boolean enabled) {
+        enableBuiltInSkinPacks = enabled;
+        save();
+    }
+
+    public static OptionInstance<?>[] asOptions() {
+        return new OptionInstance<?>[] { SCAN_RESOURCE_PACKS, ENABLE_BUILT_IN_PACKS };
+    }
+
+    private static void reloadSkinPacks() {
+        try {
+            com.brandonitaly.bedrockskins.pack.SkinPackLoader.loadPacks();
+            com.brandonitaly.bedrockskins.pack.SkinPackLoader.registerTextures();
+        } catch (Exception ignored) {}
+    }
+
     private static void load() {
         try {
             if (Files.exists(CONFIG_PATH)) {
                 try (Reader r = Files.newBufferedReader(CONFIG_PATH)) {
                     JsonObject obj = GSON.fromJson(r, JsonObject.class);
-                    if (obj != null && obj.has("scanResourcePacksForSkins")) {
-                        scanResourcePacksForSkins = obj.get("scanResourcePacksForSkins").getAsBoolean();
+                    if (obj != null) {
+                        if (obj.has("scanResourcePacksForSkins")) {
+                            scanResourcePacksForSkins = obj.get("scanResourcePacksForSkins").getAsBoolean();
+                        }
+                        if (obj.has("enableBuiltInSkinPacks")) {
+                            enableBuiltInSkinPacks = obj.get("enableBuiltInSkinPacks").getAsBoolean();
+                        }
                     }
                 }
             }
@@ -56,6 +105,7 @@ public class BedrockSkinsConfig {
             Files.createDirectories(CONFIG_PATH.getParent());
             JsonObject obj = new JsonObject();
             obj.addProperty("scanResourcePacksForSkins", scanResourcePacksForSkins);
+            obj.addProperty("enableBuiltInSkinPacks", enableBuiltInSkinPacks);
             try (Writer w = Files.newBufferedWriter(CONFIG_PATH)) {
                 GSON.toJson(obj, w);
             }

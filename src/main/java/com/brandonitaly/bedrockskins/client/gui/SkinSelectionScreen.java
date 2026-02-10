@@ -10,7 +10,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
-import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.OptionsList;
 import net.minecraft.client.gui.components.tabs.GridLayoutTab;
 import net.minecraft.client.gui.components.tabs.TabManager;
 import net.minecraft.client.gui.components.tabs.TabNavigationBar;
@@ -18,6 +18,7 @@ import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.options.OptionsSubScreen;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -363,6 +364,26 @@ public class SkinSelectionScreen extends Screen {
             }
         }
     }
+
+    private void createModOptionsWidgets(ScreenRectangle tabArea) {
+        if (minecraft == null) return;
+
+        ModOptionsHost host = new ModOptionsHost(this, minecraft.options);
+        host.resize(this.width, this.height);
+        host.layout.setHeaderHeight(this.layout.getHeaderHeight());
+        host.layout.setFooterHeight(this.layout.getFooterHeight());
+        host.layout.arrangeElements();
+
+        OptionsList optionsList = new OptionsList(minecraft, this.width, host);
+        optionsList.setX(0);
+        optionsList.setY(host.layout.getHeaderHeight());
+        optionsList.setWidth(this.width);
+        optionsList.setHeight(Math.max(0, host.layout.getContentHeight() - 2));
+
+        optionsList.addSmall(com.brandonitaly.bedrockskins.client.BedrockSkinsConfig.asOptions());
+        SkinSelectionScreen.this.addRenderableWidget(optionsList);
+        SkinSelectionScreen.this.customizationWidgets.add(optionsList);
+    }
     
     private Component getSkinsPanelTitle() {
         if (selectedPackId == null) return Component.translatable("bedrockskins.gui.skins");
@@ -518,8 +539,19 @@ public class SkinSelectionScreen extends Screen {
         int bottom() { return y + h; }
         int centerX() { return x + (w / 2); }
     }
-    
 
+    private static class ModOptionsHost extends OptionsSubScreen {
+        ModOptionsHost(Screen parent, net.minecraft.client.Options options) {
+            super(parent, options, Component.translatable("bedrockskins.gui.mod_options"));
+        }
+
+        @Override
+        protected void addOptions() {
+        if (this.list != null) {
+                this.list.addSmall(com.brandonitaly.bedrockskins.client.BedrockSkinsConfig.asOptions());
+            }
+        }
+    }
 
     @Override
     public void onClose() {
@@ -609,37 +641,8 @@ public class SkinSelectionScreen extends Screen {
             // Remove any existing customization widgets then build new ones positioned within the skins panel
             SkinSelectionScreen.this.clearCustomizationWidgets();
 
-            // Create Mod Options UI - single toggle for scanning resource packs
-            int PANEL_HEADER_HEIGHT = 24;
-            int PANEL_PADDING = 4;
-            
-            // Available content area
-            int contentW = rSkins.w - (PANEL_PADDING * 2);
-            int contentX = rSkins.x + PANEL_PADDING;
-            
-            int btnH = 20; // standard height
-            // Calculate optimal width: min(300, available) but check bounds
-            int btnW = Math.min(300, contentW);
-            
-            // Center the button in content area
-            int x = contentX + (contentW - btnW) / 2;
-            int y = rSkins.y + PANEL_HEADER_HEIGHT + PANEL_PADDING + 8;
-
-            CycleButton<Boolean> scanToggle = CycleButton.onOffBuilder(BedrockSkinsConfig.isScanResourcePacksForSkinsEnabled())
-                .create(x, y, btnW, btnH, Component.translatable("bedrockskins.option.scan_resourcepacks"), (button, value) -> {
-                    BedrockSkinsConfig.setScanResourcePacksForSkins(value);
-                    try {
-                        SkinPackLoader.loadPacks();
-                        SkinPackLoader.registerTextures();
-                    } catch (Exception ignored) {}
-                    SkinSelectionScreen.this.buildSkinCache();
-                    SkinSelectionScreen.this.refreshPackList();
-                    if (SkinSelectionScreen.this.selectedPackId != null) SkinSelectionScreen.this.selectPack(SkinSelectionScreen.this.selectedPackId);
-                });
-
-            SkinSelectionScreen.this.addRenderableWidget(scanToggle);
-            scanToggle.setTooltip(Tooltip.create(Component.translatable("bedrockskins.option.scan_resourcepacks.tooltip")));
-            SkinSelectionScreen.this.customizationWidgets.add(scanToggle);
+            // Create Mod Options UI
+            SkinSelectionScreen.this.createModOptionsWidgets(tabArea);
         }
     }
 }
