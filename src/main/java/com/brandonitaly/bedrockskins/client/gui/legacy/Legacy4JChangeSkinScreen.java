@@ -69,6 +69,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     private boolean queuedChangeSkinPack = false;
     private Renderable scissorStart = null;
     private Renderable scissorEnd = null;
+    private boolean hasScrolledToInitial = false;
     
     // Maintain a map of all packs so we can update Favorites dynamically
     private final Map<String, SkinPackAdapter> allPacks = new HashMap<>();
@@ -774,6 +775,13 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         updateSkinPack(0);
     }
     
+    private void scrollToFocusedPack() {
+        if (focusedPackId != null && packButtons.containsKey(focusedPackId)) {
+            Button btn = packButtons.get(focusedPackId);
+            ensureButtonVisible(btn);
+        }
+    }
+    
     void updateSkinPack(int index) {
         this.queuedChangeSkinPack = false;
 
@@ -876,6 +884,11 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             if (ref != null) {
                 updateSkinPack(ref.ordinal());
             }
+        }
+        
+        if (!hasScrolledToInitial) {
+            scrollToFocusedPack();
+            hasScrolledToInitial = true;
         }
     }
     
