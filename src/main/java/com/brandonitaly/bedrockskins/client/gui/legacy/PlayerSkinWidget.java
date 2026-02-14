@@ -23,6 +23,8 @@ import java.util.function.Supplier;
  * Widget that displays a 3D player skin model with rotation and animation.
  */
 public class PlayerSkinWidget extends AbstractWidget {
+    private static final String AUTO_SELECTED_INTERNAL_NAME = "__auto_selected__";
+
     private static final float ROTATION_SENSITIVITY = 2.5F;
     private static final float DEFAULT_ROTATION_X = -5.0F;
     private static final float DEFAULT_ROTATION_Y = 30.0F;
@@ -64,11 +66,15 @@ public class PlayerSkinWidget extends AbstractWidget {
     private boolean crouchPose = false;
     
     public PlayerSkinWidget(int width, int height, EntityModelSet entityModelSet, Supplier<SkinReference> supplier) {
+        this(width, height, entityModelSet, supplier, null);
+    }
+
+    public PlayerSkinWidget(int width, int height, EntityModelSet entityModelSet, Supplier<SkinReference> supplier, @Nullable Supplier<LoadedSkin> skinSupplier) {
         super(-9999, -9999, width, height, CommonComponents.EMPTY);
         originalWidth = width;
         originalHeight = height;
         this.skinRef = supplier;
-        this.skin = () -> {
+        this.skin = skinSupplier != null ? skinSupplier : () -> {
             SkinReference ref = this.skinRef.get();
             if (ref == null) return null;
             SkinPackAdapter pack = SkinPackAdapter.getPack(ref.packId());
@@ -205,7 +211,21 @@ public class PlayerSkinWidget extends AbstractWidget {
         if (dummyPlayer != null) {
             // Update the preview skin before rendering
             LoadedSkin loadedSkin = this.skin.get();
-            if (loadedSkin != null) {
+            if (loadedSkin != null && isAutoSelectedSkin(loadedSkin)) {
+                SkinManager.resetPreviewSkin(dummyUuid.toString());
+                if (Minecraft.getInstance().player != null) {
+                    dummyPlayer.setForcedBody(Minecraft.getInstance().player.getSkin().body());
+                    dummyPlayer.setForcedCapeTexture(Minecraft.getInstance().player.getSkin().cape());
+                    dummyPlayer.setUseLocalPlayerModel(true);
+                } else {
+                    dummyPlayer.clearForcedBody();
+                    dummyPlayer.clearForcedCape();
+                    dummyPlayer.setUseLocalPlayerModel(false);
+                }
+            } else if (loadedSkin != null) {
+                dummyPlayer.clearForcedBody();
+                dummyPlayer.clearForcedCape();
+                dummyPlayer.setUseLocalPlayerModel(false);
                 var id = loadedSkin.getSkinId();
                 if (id != null) {
                     SkinManager.setPreviewSkin(dummyUuid.toString(), id.getPack(), id.getName());
@@ -213,6 +233,11 @@ public class PlayerSkinWidget extends AbstractWidget {
                 }
                 // Set cape if provided
                 dummyPlayer.setForcedCape(loadedSkin.capeIdentifier);
+            } else {
+                SkinManager.resetPreviewSkin(dummyUuid.toString());
+                dummyPlayer.clearForcedBody();
+                dummyPlayer.setUseLocalPlayerModel(false);
+                dummyPlayer.clearForcedCape();
             }
             
             // Update tick count for animations
@@ -270,5 +295,15 @@ public class PlayerSkinWidget extends AbstractWidget {
     public void cleanup() {
         SkinManager.resetPreviewSkin(dummyUuid.toString());
         PreviewPlayer.PreviewPlayerPool.remove(dummyUuid);
+    }
+
+    public @Nullable LoadedSkin getCurrentSkin() {
+        return this.skin.get();
+    }
+
+    private boolean isAutoSelectedSkin(LoadedSkin skin) {
+        return skin != null
+            && "Standard".equals(skin.getSerializeName())
+            && AUTO_SELECTED_INTERNAL_NAME.equals(skin.getSkinDisplayName());
     }
 }

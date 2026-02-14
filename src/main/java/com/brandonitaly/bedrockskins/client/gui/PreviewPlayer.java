@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
+import net.minecraft.core.ClientAsset;
 //? if >=1.21.11 {
 import net.minecraft.resources.Identifier;
 //?} else {
@@ -28,6 +29,9 @@ public class PreviewPlayer extends RemotePlayer {
     //?} else {
     /*private ResourceLocation forcedCape = null;*/
     //?}
+    private ClientAsset.Texture forcedCapeTexture = null;
+    private ClientAsset.Texture forcedBody = null;
+    private boolean useLocalPlayerModel = false;
 
     public PreviewPlayer(ClientLevel world, GameProfile profile) {
         super(world, profile);
@@ -37,24 +41,67 @@ public class PreviewPlayer extends RemotePlayer {
     //? if >=1.21.11 {
     public void setForcedCape(Identifier cape) {
         this.forcedCape = cape;
+        this.forcedCapeTexture = null;
     }
     //?} else {
     /*public void setForcedCape(ResourceLocation cape) {
         this.forcedCape = cape;
+        this.forcedCapeTexture = null;
     }*/
     //?}
+
+    public void setForcedCapeTexture(ClientAsset.Texture capeTexture) {
+        this.forcedCapeTexture = capeTexture;
+        this.forcedCape = null;
+    }
+
+    public void clearForcedCape() {
+        this.forcedCape = null;
+        this.forcedCapeTexture = null;
+    }
+
+    public void setForcedBody(ClientAsset.Texture body) {
+        this.forcedBody = body;
+    }
+
+    public void clearForcedBody() {
+        this.forcedBody = null;
+    }
+
+    public void setUseLocalPlayerModel(boolean useLocalPlayerModel) {
+        this.useLocalPlayerModel = useLocalPlayerModel;
+    }
 
     @Override
     public PlayerSkin getSkin() {
         PlayerSkin original = super.getSkin();
+        ClientAsset.Texture body = forcedBody != null ? forcedBody : original.body();
+        var model = original.model();
+        if (useLocalPlayerModel && Minecraft.getInstance().player != null) {
+            model = Minecraft.getInstance().player.getSkin().model();
+        }
+
+        ClientAsset.Texture cape = original.cape();
+        if (forcedCapeTexture != null) {
+            cape = forcedCapeTexture;
+        }
         if (forcedCape != null) {
             // Create a new PlayerSkin with the forced cape
             ResourceTexture capeAsset = new ResourceTexture(forcedCape, forcedCape);
             return new PlayerSkin(
-                original.body(),
+                body,
                 capeAsset,
                 original.elytra(),
-                original.model(),
+                model,
+                original.secure()
+            );
+        }
+        if (forcedBody != null || useLocalPlayerModel) {
+            return new PlayerSkin(
+                body,
+                cape,
+                original.elytra(),
+                model,
                 original.secure()
             );
         }
