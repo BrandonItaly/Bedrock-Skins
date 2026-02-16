@@ -13,6 +13,7 @@ import net.minecraft.client.model.geom.EntityModelSet;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Pose;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,6 +30,15 @@ public class PlayerSkinWidget extends AbstractWidget {
     private static final float DEFAULT_ROTATION_X = -5.0F;
     private static final float DEFAULT_ROTATION_Y = 30.0F;
     private static final float ROTATION_X_LIMIT = 50.0F;
+    private static final float LEGACY_WALK_SPEED = 0.3F;
+    private static final float LEGACY_WALK_DISTANCE = 1.0F;
+    private static final long WALK_SYNC_EPOCH_MS = currentTimeMillis();
+    private static final long WALK_STEP_MS = 10L;
+    private static final int WALK_BOOTSTRAP_MOD_STEPS = 384;
+    private static final int WALK_MAX_CATCHUP_STEPS = 12;
+    private static final float WALK_STEP_SPEED = LEGACY_WALK_SPEED * (WALK_STEP_MS / 50.0F);
+    private static final long SWING_REPEAT_MS = 260L;
+    private static final long PREVIEW_TICK_MS = 50L;
     
     private PreviewPlayer dummyPlayer;
     private UUID dummyUuid = UUID.randomUUID();
@@ -62,8 +72,18 @@ public class PlayerSkinWidget extends AbstractWidget {
     private Integer snapX = null;
     private Integer snapY = null;
 
+    private enum PreviewPose {
+        STANDING,
+        SNEAKING,
+        PUNCHING
+    }
+
     // Pose state
-    private boolean crouchPose = false;
+    private PreviewPose previewPose = PreviewPose.STANDING;
+    private long lastSwingPoseTriggerMs = 0L;
+    private boolean walkAnimationInitialized = false;
+    private long lastWalkUpdateMs = 0L;
+    private long lastPreviewTickMs = currentTimeMillis();
     
     public PlayerSkinWidget(int width, int height, EntityModelSet entityModelSet, Supplier<SkinReference> supplier) {
         this(width, height, entityModelSet, supplier, null);
@@ -96,7 +116,7 @@ public class PlayerSkinWidget extends AbstractWidget {
 
     public void beginInterpolation(float targetRotationX, float targetRotationY, float targetPosX, float targetPosY, float targetScale) {
         this.progress = 0;
-        this.start = System.currentTimeMillis();
+        this.start = currentTimeMillis();
         this.prevRotationX = rotationX;
         this.prevRotationY = rotationY;
         this.targetRotationX = targetRotationX;
@@ -206,7 +226,7 @@ public class PlayerSkinWidget extends AbstractWidget {
         if (!visible) return;
 
         interpolate(progress);
-        progress = (System.currentTimeMillis() - start) / 200f;
+        progress = (currentTimeMillis() - start) / 200f;
         
         if (dummyPlayer != null) {
             // Update the preview skin before rendering
@@ -240,16 +260,15 @@ public class PlayerSkinWidget extends AbstractWidget {
                 dummyPlayer.clearForcedCape();
             }
             
-            // Update tick count for animations
-            //? if >=1.21.11 {
-            dummyPlayer.tickCount = (int)(net.minecraft.util.Util.getMillis() / 50L);
-            //?} else {
-            /*dummyPlayer.tickCount = (int)(net.minecraft.Util.getMillis() / 50L);*/
-            //?}
+            // Advance entity simulation so swing animation progresses in preview
+            advancePreviewSimulation(dummyPlayer);
 
             // Apply pose
-            dummyPlayer.setShiftKeyDown(crouchPose);
-            dummyPlayer.setPose(crouchPose ? Pose.CROUCHING : Pose.STANDING);
+            boolean crouching = previewPose == PreviewPose.SNEAKING;
+            dummyPlayer.setShiftKeyDown(crouching);
+            dummyPlayer.setPose(crouching ? Pose.CROUCHING : Pose.STANDING);
+            applyLegacyWalkAnimation(dummyPlayer);
+            applySwingPose(dummyPlayer);
             
             // Use the same rendering approach as SkinSelectionScreen/SkinPreviewPanel
             float yawOffset = this.rotationY;
@@ -263,6 +282,70 @@ public class PlayerSkinWidget extends AbstractWidget {
                 guiGraphics, dummyPlayer, yawOffset, left, top, right, bottom, sizeCap
             );
         }
+    }
+
+    private void applyLegacyWalkAnimation(PreviewPlayer player) {
+        if (player == null) return;
+
+        long now = currentTimeMillis();
+        if (!walkAnimationInitialized) {
+            int bootstrapSteps = (int) (((now - WALK_SYNC_EPOCH_MS) / WALK_STEP_MS) % WALK_BOOTSTRAP_MOD_STEPS);
+            if (bootstrapSteps < 0) bootstrapSteps += WALK_BOOTSTRAP_MOD_STEPS;
+
+            player.walkAnimation.stop();
+            for (int i = 0; i < bootstrapSteps; i++) {
+                player.walkAnimation.update(WALK_STEP_SPEED, 1.0F, LEGACY_WALK_DISTANCE);
+            }
+
+            walkAnimationInitialized = true;
+            lastWalkUpdateMs = now;
+            return;
+        }
+
+        long elapsed = now - lastWalkUpdateMs;
+        if (elapsed < WALK_STEP_MS) return;
+
+        int steps = (int) (elapsed / WALK_STEP_MS);
+        if (steps > WALK_MAX_CATCHUP_STEPS) {
+            steps = WALK_MAX_CATCHUP_STEPS;
+        }
+
+        for (int i = 0; i < steps; i++) {
+            player.walkAnimation.update(WALK_STEP_SPEED, 1.0F, LEGACY_WALK_DISTANCE);
+        }
+
+        lastWalkUpdateMs += steps * WALK_STEP_MS;
+    }
+
+    private void advancePreviewSimulation(PreviewPlayer player) {
+        long now = currentTimeMillis();
+        long elapsed = now - lastPreviewTickMs;
+        if (elapsed < PREVIEW_TICK_MS) return;
+
+        int ticks = (int) (elapsed / PREVIEW_TICK_MS);
+        if (ticks > 5) ticks = 5;
+        for (int i = 0; i < ticks; i++) {
+            player.tick();
+        }
+        lastPreviewTickMs += ticks * PREVIEW_TICK_MS;
+    }
+
+    private void applySwingPose(PreviewPlayer player) {
+        if (player == null || previewPose != PreviewPose.PUNCHING) return;
+
+        long now = currentTimeMillis();
+        if (lastSwingPoseTriggerMs == 0L || (now - lastSwingPoseTriggerMs) >= SWING_REPEAT_MS) {
+            player.swing(InteractionHand.MAIN_HAND);
+            lastSwingPoseTriggerMs = now;
+        }
+    }
+
+    private static long currentTimeMillis() {
+        //? if >=1.21.11 {
+        return net.minecraft.util.Util.getMillis();
+        //?} else {
+        /*return net.minecraft.Util.getMillis();*/
+        //?}
     }
 
     protected void onDrag(double mouseX, double mouseY, double deltaX, double deltaY) {
@@ -285,11 +368,34 @@ public class PlayerSkinWidget extends AbstractWidget {
     }
 
     public void togglePose() {
-        crouchPose = !crouchPose;
+        cyclePose();
+    }
+
+    public void toggleCrouchPose() {
+        previewPose = previewPose == PreviewPose.SNEAKING ? PreviewPose.STANDING : PreviewPose.SNEAKING;
+    }
+
+    public void toggleSwingPose() {
+        previewPose = previewPose == PreviewPose.PUNCHING ? PreviewPose.STANDING : PreviewPose.PUNCHING;
+        if (previewPose == PreviewPose.PUNCHING) {
+            lastSwingPoseTriggerMs = 0L;
+        }
+    }
+
+    public void cyclePose() {
+        previewPose = switch (previewPose) {
+            case STANDING -> PreviewPose.SNEAKING;
+            case SNEAKING -> PreviewPose.PUNCHING;
+            case PUNCHING -> PreviewPose.STANDING;
+        };
+        if (previewPose == PreviewPose.PUNCHING) {
+            lastSwingPoseTriggerMs = 0L;
+        }
     }
 
     public void resetPose() {
-        crouchPose = false;
+        previewPose = PreviewPose.STANDING;
+        lastSwingPoseTriggerMs = 0L;
     }
 
     public void cleanup() {

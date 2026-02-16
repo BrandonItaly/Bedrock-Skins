@@ -400,8 +400,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         if (playerSkinWidgetList == null || playerSkinWidgetList.element3 == null) return false;
         if (playerSkinWidgetList.element3.isInterpolating()) return false;
 
-        // Toggle pose (stand/crouch) on the focused widget
-        playerSkinWidgetList.element3.togglePose();
+        playerSkinWidgetList.element3.cyclePose();
         return true;
     }
 
