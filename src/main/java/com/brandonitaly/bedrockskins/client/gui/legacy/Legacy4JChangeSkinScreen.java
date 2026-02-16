@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -601,10 +602,66 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, packNameBox,
             tooltipBox.getX() - 5, panel.getY() + 16 + 4,
             tooltipBox.getWidth() - 18, 40);
+            
         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, skinBox,
             tooltipBox.getX() - 5, panel.getY() + 16,
             tooltipBox.getWidth() - 14, tooltipBox.getHeight() - 80);
     }
+
+    private String getFocusedPackSerializeNameLower() {
+        if (focusedPack != null && focusedPack.size() > 0) {
+            LoadedSkin firstSkin = focusedPack.getSkin(0);
+            if (firstSkin != null && firstSkin.getSerializeName() != null && !firstSkin.getSerializeName().isEmpty()) {
+                return firstSkin.getSerializeName().toLowerCase(Locale.ROOT);
+            }
+        }
+
+        if (focusedPackId != null && !focusedPackId.isEmpty()) {
+            int split = focusedPackId.lastIndexOf('.');
+            String guessedName = split >= 0 ? focusedPackId.substring(split + 1) : focusedPackId;
+            if (!guessedName.isEmpty()) {
+                return guessedName.toLowerCase(Locale.ROOT);
+            }
+        }
+
+        return "standard";
+    }
+
+    //? if >=1.21.11 {
+    private Identifier resolveFocusedPackIconSprite() {
+        String serializeName = getFocusedPackSerializeNameLower();
+        Identifier packIcon = Identifier.fromNamespaceAndPath("bedrockskins", "icons/" + serializeName);
+        if (hasSpriteTexture(packIcon)) {
+            return packIcon;
+        }
+        return Identifier.fromNamespaceAndPath("bedrockskins", "icons/standard");
+    }
+
+    private boolean hasSpriteTexture(Identifier spriteId) {
+        Identifier textureId = Identifier.fromNamespaceAndPath(
+            spriteId.getNamespace(),
+            "textures/gui/sprites/" + spriteId.getPath() + ".png"
+        );
+        return minecraft.getResourceManager().getResource(textureId).isPresent();
+    }
+    //?} else {
+    private ResourceLocation resolveFocusedPackIconSprite() {
+        String serializeName = getFocusedPackSerializeNameLower();
+        ResourceLocation packIcon = ResourceLocation.fromNamespaceAndPath("bedrockskins", "icons/" + serializeName);
+        if (hasSpriteTexture(packIcon)) {
+            return packIcon;
+        }
+        return ResourceLocation.fromNamespaceAndPath("bedrockskins", "icons/standard");
+    }
+
+    private boolean hasSpriteTexture(ResourceLocation spriteId) {
+        ResourceLocation textureId = ResourceLocation.fromNamespaceAndPath(
+            spriteId.getNamespace(),
+            "textures/gui/sprites/" + spriteId.getPath() + ".png"
+        );
+        return minecraft.getResourceManager().getResource(textureId).isPresent();
+    }
+    //?}
     
     private void renderPackName(GuiGraphics guiGraphics) {
         int x = tooltipBox.getX() - 5;
@@ -731,7 +788,11 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
                 ResourceLocation.fromNamespaceAndPath(Legacy4J.MOD_ID, "tiles/square_recessed_panel"),
                 //?}
                 panel.getX() + 34, panel.getY() + 10, 112, 112));
-        // Removed pack icon rendering
+        
+        addRenderableOnly((guiGraphics, i, j, f) ->
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, resolveFocusedPackIconSprite(),
+                panel.getX() + 35, panel.getY() + 11,
+                110, 110));
 
         tooltipBox.init("tooltipBox");
         getRenderableVList().init("renderableVList", 

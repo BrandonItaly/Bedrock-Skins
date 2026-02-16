@@ -23,6 +23,8 @@ import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.util.Mth;
 //? if >=1.21.11 {
 import net.minecraft.client.model.player.PlayerModel;
 //?} else {
@@ -39,14 +41,16 @@ public class BedrockPlayerModel extends PlayerModel {
     public float upperArmorYOffset = 0f;
     private final boolean animationArmsOutFront;
     private final boolean animationStationaryLegs;
+    private final boolean animationSingleLegAnimation;
 
-    public BedrockPlayerModel(ModelPart root, boolean thinArms, Map<String, ModelPart> partsMap, Map<String, PartTransform> defaultTransforms, boolean animationArmsOutFront, boolean animationStationaryLegs) {
+    public BedrockPlayerModel(ModelPart root, boolean thinArms, Map<String, ModelPart> partsMap, Map<String, PartTransform> defaultTransforms, boolean animationArmsOutFront, boolean animationStationaryLegs, boolean animationSingleLegAnimation) {
         super(root, thinArms);
         this.root = root;
         this.partsMap = Collections.unmodifiableMap(new HashMap<>(partsMap));
         this.defaultTransforms = Collections.unmodifiableMap(new HashMap<>(defaultTransforms));
         this.animationArmsOutFront = animationArmsOutFront;
         this.animationStationaryLegs = animationStationaryLegs;
+        this.animationSingleLegAnimation = animationSingleLegAnimation;
     }
 
     public static class PartTransform {
@@ -82,7 +86,8 @@ public class BedrockPlayerModel extends PlayerModel {
         BuildRootResult result = buildRoot(normalized);
         boolean armsOutFront = Boolean.TRUE.equals(normalized.getAnimationArmsOutFront());
         boolean stationaryLegs = Boolean.TRUE.equals(normalized.getAnimationStationaryLegs());
-        return new BedrockPlayerModel(result.root, thinArms, result.parts, result.defaults, armsOutFront, stationaryLegs);
+        boolean singleLegAnimation = Boolean.TRUE.equals(normalized.getAnimationSingleLegAnimation());
+        return new BedrockPlayerModel(result.root, thinArms, result.parts, result.defaults, armsOutFront, stationaryLegs, singleLegAnimation);
     }
 
     private static BedrockGeometry normalizeGeometry(BedrockGeometry geometry) {
@@ -386,24 +391,78 @@ public class BedrockPlayerModel extends PlayerModel {
         if (part != null) part.visible = visible;
     }
 
+    public boolean hasStationaryLegAnimation() {
+        return animationStationaryLegs;
+    }
+
+    public boolean hasSingleLegAnimation() {
+        return animationSingleLegAnimation;
+    }
+
     @Override
     public void setupAnim(AvatarRenderState state) {
         super.setupAnim(state);
         if (animationArmsOutFront) {
-            setArmAngle(resolvePart("rightArm", PartNames.RIGHT_ARM));
-            setArmAngle(resolvePart("leftArm", PartNames.LEFT_ARM));
+            applyArmsOutFront(resolvePart("rightArm", PartNames.RIGHT_ARM), resolvePart("leftArm", PartNames.LEFT_ARM), state);
         }
         if (animationStationaryLegs) {
             resetLegAngle("rightLeg", PartNames.RIGHT_LEG);
             resetLegAngle("leftLeg", PartNames.LEFT_LEG);
+        } else if (animationSingleLegAnimation) {
+            syncLegAnimations();
         }
     }
 
-    private void setArmAngle(ModelPart part) {
-        if (part == null) return;
-        part.xRot = -1.5707964f;
-        part.yRot = 0f;
-        part.zRot = 0f;
+    private void syncLegAnimations() {
+        ModelPart rightLeg = resolvePart("rightLeg", PartNames.RIGHT_LEG);
+        ModelPart leftLeg = resolvePart("leftLeg", PartNames.LEFT_LEG);
+        if (rightLeg == null || leftLeg == null) return;
+
+        leftLeg.xRot = rightLeg.xRot;
+        leftLeg.yRot = rightLeg.yRot;
+        leftLeg.zRot = rightLeg.zRot;
+    }
+
+    private void applyArmsOutFront(ModelPart rightArm, ModelPart leftArm, AvatarRenderState state) {
+        float rightWalkSwing = computeWalkSwing(state, true);
+        float leftWalkSwing = computeWalkSwing(state, false);
+
+        boolean attacking = state.attackTime > 0.0F;
+        applyArmsOutFrontToArm(rightArm, state.rightArmPose, state.ageInTicks, 1.0F, rightWalkSwing, attacking);
+        applyArmsOutFrontToArm(leftArm, state.leftArmPose, state.ageInTicks, -1.0F, leftWalkSwing, attacking);
+    }
+
+    private float computeWalkSwing(AvatarRenderState state, boolean rightArm) {
+        float speedValue = state.speedValue != 0f ? state.speedValue : 1f;
+        float walkPos = state.walkAnimationPos;
+        float walkSpeed = state.walkAnimationSpeed;
+        float walkSwingScale = 2.0F * walkSpeed * 0.5F / speedValue;
+        float phase = rightArm ? (float) Math.PI : 0f;
+        return (float) (Math.cos(walkPos * 0.6662F + phase) * walkSwingScale);
+    }
+
+    private void applyArmsOutFrontToArm(ModelPart arm, HumanoidModel.ArmPose pose, float ageInTicks, float bobDirection, float walkSwing, boolean attacking) {
+        if (arm == null || !shouldUseArmsOutPose(pose)) return;
+
+        removeIdleArmBob(arm, ageInTicks, bobDirection);
+        if (pose == HumanoidModel.ArmPose.ITEM && !attacking) {
+            arm.xRot = (arm.xRot + ((float) Math.PI / 10.0F)) * 2.0F;
+            arm.yRot = 0.0F;
+            arm.zRot = 0.0F;
+        }
+        arm.xRot -= walkSwing;
+
+        float armsOutOffset = -1.5707964f;
+        arm.xRot += armsOutOffset;
+    }
+
+    private void removeIdleArmBob(ModelPart arm, float ageInTicks, float direction) {
+        arm.zRot -= (Mth.cos(ageInTicks * 0.09F) * 0.05F + 0.05F) * direction;
+        arm.xRot -= Mth.sin(ageInTicks * 0.067F) * 0.05F * direction;
+    }
+
+    private boolean shouldUseArmsOutPose(HumanoidModel.ArmPose pose) {
+        return pose == null || pose == HumanoidModel.ArmPose.EMPTY || pose == HumanoidModel.ArmPose.ITEM;
     }
 
     private void resetLegAngle(String primaryKey, String fallbackKey) {

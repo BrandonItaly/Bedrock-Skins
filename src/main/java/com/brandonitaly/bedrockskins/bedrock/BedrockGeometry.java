@@ -15,6 +15,9 @@ public class BedrockGeometry {
     @SerializedName("animationStationaryLegs")
     private Boolean animationStationaryLegs = false;
 
+    @SerializedName("animationSingleLegAnimation")
+    private Boolean animationSingleLegAnimation = false;
+
     public GeometryDescription getDescription() { return description; }
     public void setDescription(GeometryDescription description) { this.description = description; }
 
@@ -26,4 +29,7 @@ public class BedrockGeometry {
 
     public Boolean getAnimationStationaryLegs() { return animationStationaryLegs; }
     public void setAnimationStationaryLegs(Boolean animationStationaryLegs) { this.animationStationaryLegs = animationStationaryLegs; }
+
+    public Boolean getAnimationSingleLegAnimation() { return animationSingleLegAnimation; }
+    public void setAnimationSingleLegAnimation(Boolean animationSingleLegAnimation) { this.animationSingleLegAnimation = animationSingleLegAnimation; }
 }
