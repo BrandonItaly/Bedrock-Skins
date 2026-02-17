@@ -81,8 +81,7 @@ public class PlayerSkinWidget extends AbstractWidget {
     // Pose state
     private PreviewPose previewPose = PreviewPose.STANDING;
     private long lastSwingPoseTriggerMs = 0L;
-    private boolean walkAnimationInitialized = false;
-    private long lastWalkUpdateMs = 0L;
+    private long lastWalkUpdateMs = currentTimeMillis();
     private long lastPreviewTickMs = currentTimeMillis();
     
     public PlayerSkinWidget(int width, int height, EntityModelSet entityModelSet, Supplier<SkinReference> supplier) {
@@ -107,6 +106,7 @@ public class PlayerSkinWidget extends AbstractWidget {
             String name = minecraft.player != null ? minecraft.player.getName().getString() : "Preview";
             GameProfile profile = new GameProfile(dummyUuid, name);
             dummyPlayer = PreviewPlayer.PreviewPlayerPool.get(minecraft.level, profile);
+            initializeWalkAnimationPhase(dummyPlayer);
         }
     }
 
@@ -263,6 +263,9 @@ public class PlayerSkinWidget extends AbstractWidget {
             // Advance entity simulation so swing animation progresses in preview
             advancePreviewSimulation(dummyPlayer);
 
+            // Keep age-based idle/walk arm bob active every frame
+            dummyPlayer.tickCount = (int)(currentTimeMillis() / 50L);
+
             // Apply pose
             boolean crouching = previewPose == PreviewPose.SNEAKING;
             dummyPlayer.setShiftKeyDown(crouching);
@@ -288,20 +291,6 @@ public class PlayerSkinWidget extends AbstractWidget {
         if (player == null) return;
 
         long now = currentTimeMillis();
-        if (!walkAnimationInitialized) {
-            int bootstrapSteps = (int) (((now - WALK_SYNC_EPOCH_MS) / WALK_STEP_MS) % WALK_BOOTSTRAP_MOD_STEPS);
-            if (bootstrapSteps < 0) bootstrapSteps += WALK_BOOTSTRAP_MOD_STEPS;
-
-            player.walkAnimation.stop();
-            for (int i = 0; i < bootstrapSteps; i++) {
-                player.walkAnimation.update(WALK_STEP_SPEED, 1.0F, LEGACY_WALK_DISTANCE);
-            }
-
-            walkAnimationInitialized = true;
-            lastWalkUpdateMs = now;
-            return;
-        }
-
         long elapsed = now - lastWalkUpdateMs;
         if (elapsed < WALK_STEP_MS) return;
 
@@ -314,7 +303,22 @@ public class PlayerSkinWidget extends AbstractWidget {
             player.walkAnimation.update(WALK_STEP_SPEED, 1.0F, LEGACY_WALK_DISTANCE);
         }
 
-        lastWalkUpdateMs += steps * WALK_STEP_MS;
+        lastWalkUpdateMs += (long) steps * WALK_STEP_MS;
+    }
+
+    private void initializeWalkAnimationPhase(PreviewPlayer player) {
+        if (player == null) return;
+
+        long now = currentTimeMillis();
+        int bootstrapSteps = (int) (((now - WALK_SYNC_EPOCH_MS) / WALK_STEP_MS) % WALK_BOOTSTRAP_MOD_STEPS);
+        if (bootstrapSteps < 0) bootstrapSteps += WALK_BOOTSTRAP_MOD_STEPS;
+
+        player.walkAnimation.stop();
+        for (int i = 0; i < bootstrapSteps; i++) {
+            player.walkAnimation.update(WALK_STEP_SPEED, 1.0F, LEGACY_WALK_DISTANCE);
+        }
+
+        lastWalkUpdateMs = now;
     }
 
     private void advancePreviewSimulation(PreviewPlayer player) {
