@@ -349,7 +349,10 @@ public class SkinSelectionScreen extends Screen {
             if (i < parts.length) {
                 PlayerModelPart part = parts[i];
                 CycleButton<Boolean> btn = CycleButton.onOffBuilder(options.isModelPartEnabled(part))
-                        .create(x, y, btnWidth, btnHeight, part.getName(), (button, value) -> options.setModelPart(part, value));
+                        .create(x, y, btnWidth, btnHeight, part.getName(), (button, value) -> {
+                            options.setModelPart(part, value);
+                            options.save();
+                        });
                 this.addRenderableWidget(btn);
                 customizationWidgets.add(btn);
             } else {

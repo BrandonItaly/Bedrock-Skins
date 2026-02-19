@@ -33,19 +33,15 @@ import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 
 public class BedrockPlayerModel extends PlayerModel {
-    public final ModelPart root;
     public final Map<String, ModelPart> partsMap;
     public final Map<String, PartTransform> defaultTransforms;
-    public float armorYOffset = 0f;
-    public float capeYOffset = 0f;
-    public float upperArmorYOffset = 0f;
+    public float elytraYOffset = 0f;
     private final boolean animationArmsOutFront;
     private final boolean animationStationaryLegs;
     private final boolean animationSingleLegAnimation;
 
     public BedrockPlayerModel(ModelPart root, boolean thinArms, Map<String, ModelPart> partsMap, Map<String, PartTransform> defaultTransforms, boolean animationArmsOutFront, boolean animationStationaryLegs, boolean animationSingleLegAnimation) {
         super(root, thinArms);
-        this.root = root;
         this.partsMap = Collections.unmodifiableMap(new HashMap<>(partsMap));
         this.defaultTransforms = Collections.unmodifiableMap(new HashMap<>(defaultTransforms));
         this.animationArmsOutFront = animationArmsOutFront;
@@ -231,7 +227,9 @@ public class BedrockPlayerModel extends PlayerModel {
             if (part != null) {
                 finalParts.put(boneName, part);
                 String alias = mapBoneName(boneName);
-                finalParts.put(alias, part);
+                if (!Objects.equals(alias, boneName)) {
+                    finalParts.put(alias, part);
+                }
             }
         }
 
@@ -391,14 +389,6 @@ public class BedrockPlayerModel extends PlayerModel {
         if (part != null) part.visible = visible;
     }
 
-    public boolean hasStationaryLegAnimation() {
-        return animationStationaryLegs;
-    }
-
-    public boolean hasSingleLegAnimation() {
-        return animationSingleLegAnimation;
-    }
-
     @Override
     public void setupAnim(AvatarRenderState state) {
         super.setupAnim(state);
@@ -489,19 +479,13 @@ public class BedrockPlayerModel extends PlayerModel {
         }
 
         float vanillaBodyPivotY = readInitialPoseY(vanillaModel.body);
-        float vanillaHeadPivotY = readInitialPoseY(vanillaModel.head);
 
         PartTransform bodyTransform = defaultTransforms.getOrDefault("body", defaultTransforms.get(PartNames.BODY));
-        PartTransform headTransform = defaultTransforms.getOrDefault("head", defaultTransforms.get(PartNames.HEAD));
         float bedrockBodyY = bodyTransform != null ? bodyTransform.y : 0f;
-        float bedrockHeadY = headTransform != null ? headTransform.y : bedrockBodyY;
 
-        upperArmorYOffset = ((bedrockBodyY + bedrockHeadY) * 0.5f) - ((vanillaBodyPivotY + vanillaHeadPivotY) * 0.5f);
-        armorYOffset = upperArmorYOffset;
-
-        PartTransform capeTransform = defaultTransforms.get("cape");
-        float bedrockCapeY = capeTransform != null ? capeTransform.y : bedrockBodyY;
-        capeYOffset = bedrockCapeY - vanillaBodyPivotY;
+        PartTransform elytraTransform = defaultTransforms.get("elytra");
+        float bedrockElytraY = elytraTransform != null ? elytraTransform.y : bedrockBodyY;
+        elytraYOffset = bedrockElytraY - vanillaBodyPivotY;
     }
 
     private void copyRotation(String name, ModelPart source) {

@@ -6,9 +6,9 @@
     "MixinPlayerEntityRenderer",
     "MixinLivingEntityRenderer",
     "MixinPlayerEntityRenderState",
-    "MixinArmorFeatureRenderer",
+    "MixinHumanoidModel",
     "MixinCapeFeatureRenderer",
-    "MixinElytraFeatureRenderer",
+    "MixinWingsLayer",
     "MixinPlayerListEntry",
     "MixinTranslationStorage",
     "legacy4j.HelpOptionsMixin"

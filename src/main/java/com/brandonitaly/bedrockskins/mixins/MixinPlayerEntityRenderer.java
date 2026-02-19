@@ -147,7 +147,9 @@ public abstract class MixinPlayerEntityRenderer {
     @Inject(method = "extractRenderState", at = @At("RETURN"))
     private void updateRenderState(Avatar player, AvatarRenderState state, float tickDelta, CallbackInfo ci) {
         if (player instanceof AbstractClientPlayer cp && state instanceof BedrockSkinState skinState) {
-            skinState.setUniqueId(cp.getUUID());
+            java.util.UUID uuid = cp.getUUID();
+            skinState.setUniqueId(uuid);
+            skinState.setBedrockSkinId(SkinManager.getSkin(uuid.toString()));
         }
     }
 
