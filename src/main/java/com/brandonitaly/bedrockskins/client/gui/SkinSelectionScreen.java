@@ -19,6 +19,7 @@ import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.OptionsSubScreen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -56,7 +57,6 @@ public class SkinSelectionScreen extends Screen {
     private int activeTab = 0;
     
     private String selectedPackId;
-    private boolean wasMousePressed = false;
     
     private final Map<String, List<LoadedSkin>> skinCache = new HashMap<>();
 
@@ -474,24 +474,8 @@ public class SkinSelectionScreen extends Screen {
             GuiUtils.drawPanelChrome(gui, rPacks.x, rPacks.y, rPacks.w, rPacks.h, Component.translatable("bedrockskins.gui.packs"), font);
             GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h, getSkinsPanelTitle(), font);
         }
-        
-        // Handle mouse events for preview panel
-        boolean mousePressed = org.lwjgl.glfw.GLFW.glfwGetMouseButton(
-            org.lwjgl.glfw.GLFW.glfwGetCurrentContext(),
-            org.lwjgl.glfw.GLFW.glfwGetCurrentContext() != 0 ? org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT : 0
-        ) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
             
         if (previewPanel != null) {
-            // Detect mouse click
-            if (mousePressed && !wasMousePressed) {
-                previewPanel.mouseClicked(mouseX, mouseY, 0);
-            }
-            // Detect mouse release
-            if (!mousePressed && wasMousePressed) {
-                previewPanel.mouseReleased(mouseX, mouseY, 0);
-            }
-            wasMousePressed = mousePressed;
-            
             previewPanel.render(gui, mouseX, mouseY);
         }
         
@@ -504,6 +488,20 @@ public class SkinSelectionScreen extends Screen {
         
         // Draw footer separator
         gui.blit(RenderPipelines.GUI_TEXTURED, Screen.FOOTER_SEPARATOR, 0, this.height - this.layout.getFooterHeight() - 2, 0.0F, 0.0F, this.width, 2, 32, 2);
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean alreadyHandled) {
+        if (!alreadyHandled && previewPanel != null && previewPanel.mouseClicked(event.x(), event.y(), event.button())) {
+            return true;
+        }
+        return super.mouseClicked(event, alreadyHandled);
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent event) {
+        boolean handled = previewPanel != null && previewPanel.mouseReleased(event.x(), event.y(), event.button());
+        return handled || super.mouseReleased(event);
     }
     
     @Override
