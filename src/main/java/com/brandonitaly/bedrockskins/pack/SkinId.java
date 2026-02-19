@@ -1,8 +1,11 @@
 package com.brandonitaly.bedrockskins.pack;
 
+import com.mojang.serialization.Codec;
 import java.util.Objects;
 
 public final class SkinId {
+    public static final Codec<SkinId> CODEC = Codec.STRING.xmap(SkinId::parse, SkinId::toString);
+
     private final String pack;
     private final String name;
 

@@ -1,10 +1,30 @@
 package com.brandonitaly.bedrockskins.pack;
 
 import com.google.gson.annotations.SerializedName;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import java.util.Map;
 
 public class SkinEntry {
+    public static final Codec<SkinEntry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+        Codec.STRING.fieldOf("localization_name").forGetter(SkinEntry::getLocalizationName),
+        Codec.STRING.fieldOf("geometry").forGetter(SkinEntry::getGeometry),
+        Codec.STRING.fieldOf("texture").forGetter(SkinEntry::getTexture),
+        Codec.STRING.optionalFieldOf("type", "free").forGetter(SkinEntry::getType),
+        Codec.STRING.optionalFieldOf("cape").forGetter(entry -> java.util.Optional.ofNullable(entry.getCape())),
+        Codec.unboundedMap(Codec.STRING, Codec.STRING).optionalFieldOf("animations", java.util.Map.of()).forGetter(entry -> entry.getAnimations() == null ? java.util.Map.of() : entry.getAnimations())
+    ).apply(instance, (localizationName, geometry, texture, type, cape, animations) -> {
+        SkinEntry entry = new SkinEntry();
+        entry.setLocalizationName(localizationName);
+        entry.setGeometry(geometry);
+        entry.setTexture(texture);
+        entry.setType(type);
+        entry.setCape(cape.orElse(null));
+        entry.setAnimations(animations);
+        return entry;
+    }));
+
     @SerializedName("localization_name")
     private String localizationName;
     private String geometry;

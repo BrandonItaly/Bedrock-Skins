@@ -1,6 +1,6 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
-import com.brandonitaly.bedrockskins.BedrockSkinsNetworking;
+import com.brandonitaly.bedrockskins.client.ClientSkinSync;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.client.StateManager;
@@ -9,19 +9,13 @@ import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.mojang.authlib.GameProfile;
-//? if fabric {
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-//? }
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.network.chat.Component;
 //? if >=1.21.11 {
 import net.minecraft.resources.Identifier;
@@ -30,11 +24,7 @@ import net.minecraft.util.Util;
 /*import net.minecraft.resources.ResourceLocation;
 import net.minecraft.Util;*/
 //?}
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.PlayerSkin;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -273,17 +263,7 @@ public class SkinPreviewPanel {
             if (minecraft.player != null) {
                 SkinManager.setSkin(minecraft.player.getUUID().toString(), pack, name);
                 if (data.length > 0) {
-                    //? if fabric {
-                    ClientPlayNetworking.send(new BedrockSkinsNetworking.SetSkinPayload(
-                        id, selectedSkin.getGeometryData().toString(), data
-                    ));
-                    //? } else if neoforge {
-                    /*net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                        new BedrockSkinsNetworking.SetSkinPayload(
-                            id, selectedSkin.getGeometryData().toString(), data
-                        )
-                    );*/
-                    //? }
+                    ClientSkinSync.sendSetSkinPayload(id, selectedSkin.getGeometryData().toString(), data);
                 }
             } else {
                 StateManager.saveState(FavoritesManager.getFavoriteKeys(), key);
@@ -300,13 +280,7 @@ public class SkinPreviewPanel {
         currentSkinId = null;
         if (minecraft.player != null) {
             SkinManager.resetSkin(minecraft.player.getUUID().toString());
-            //? if fabric {
-            ClientPlayNetworking.send(new BedrockSkinsNetworking.SetSkinPayload(null, "", new byte[0]));
-            //? } else if neoforge {
-            /*net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                new BedrockSkinsNetworking.SetSkinPayload(null, "", new byte[0])
-            );*/
-            //? }
+            ClientSkinSync.sendResetSkinPayload();
             safeResetPreview(this.dummyUuid.toString());
             this.dummyUuid = minecraft.player.getUUID();
             updatePreviewModel(this.dummyUuid, null);

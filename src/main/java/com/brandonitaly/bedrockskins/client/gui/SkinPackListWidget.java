@@ -5,12 +5,17 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ObjectSelectionList;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.SkinPackEntry> {
     public SkinPackListWidget(Minecraft client, int width, int height, int y, int itemHeight,
-                              java.util.function.Consumer<String> onSelect,
-                              java.util.function.Predicate<String> isSelected,
+                              Consumer<String> onSelect,
+                              Predicate<String> isSelected,
                               Font textRenderer) {
         super(client, width, height, y, itemHeight);
         this.onSelect = onSelect;
@@ -18,8 +23,8 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
         this.textRenderer = textRenderer;
     }
 
-    private final java.util.function.Consumer<String> onSelect;
-    private final java.util.function.Predicate<String> isSelected;
+    private final Consumer<String> onSelect;
+    private final Predicate<String> isSelected;
     private final Font textRenderer;
 
     @Override
@@ -35,13 +40,13 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
         private final String packId;
         private final String translationKey;
         private final String fallbackName;
-        private final java.util.function.Consumer<String> onSelect;
-        private final java.util.function.Supplier<Boolean> isSelectedFn;
+        private final Consumer<String> onSelect;
+        private final Supplier<Boolean> isSelectedFn;
         private final Font textRenderer;
 
         public SkinPackEntry(String packId, String translationKey, String fallbackName,
-                             java.util.function.Consumer<String> onSelect,
-                             java.util.function.Supplier<Boolean> isSelectedFn,
+                             Consumer<String> onSelect,
+                             Supplier<Boolean> isSelectedFn,
                              Font textRenderer) {
             this.packId = packId;
             this.translationKey = translationKey;
@@ -84,7 +89,7 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
             renderCommon(context, getX(), getY(), hovered);
         }
 
-        public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
+        public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
             return clickCommon();
         }
         //?}

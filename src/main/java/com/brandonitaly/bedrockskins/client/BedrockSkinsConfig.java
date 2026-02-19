@@ -1,7 +1,7 @@
 package com.brandonitaly.bedrockskins.client;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 //? if fabric {
 import net.fabricmc.loader.api.FabricLoader;
 //? }
@@ -9,14 +9,10 @@ import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class BedrockSkinsConfig {
-    private static final Gson GSON = new Gson();
     //? if fabric {
     private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("bedrockskins.json");
     //? }
@@ -26,6 +22,16 @@ public class BedrockSkinsConfig {
 
     private static boolean scanResourcePacksForSkins = true;
     private static boolean enableBuiltInSkinPacks = true;
+
+    private record ConfigData(boolean scanResourcePacksForSkins, boolean enableBuiltInSkinPacks) {
+    }
+
+    private static final ConfigData DEFAULTS = new ConfigData(true, true);
+
+    private static final Codec<ConfigData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+        Codec.BOOL.optionalFieldOf("scanResourcePacksForSkins", DEFAULTS.scanResourcePacksForSkins()).forGetter(ConfigData::scanResourcePacksForSkins),
+        Codec.BOOL.optionalFieldOf("enableBuiltInSkinPacks", DEFAULTS.enableBuiltInSkinPacks()).forGetter(ConfigData::enableBuiltInSkinPacks)
+    ).apply(instance, ConfigData::new));
 
     public static final OptionInstance<Boolean> SCAN_RESOURCE_PACKS = OptionInstance.createBoolean(
         "bedrockskins.option.scan_resourcepacks",
@@ -81,36 +87,13 @@ public class BedrockSkinsConfig {
     }
 
     private static void load() {
-        try {
-            if (Files.exists(CONFIG_PATH)) {
-                try (Reader r = Files.newBufferedReader(CONFIG_PATH)) {
-                    JsonObject obj = GSON.fromJson(r, JsonObject.class);
-                    if (obj != null) {
-                        if (obj.has("scanResourcePacksForSkins")) {
-                            scanResourcePacksForSkins = obj.get("scanResourcePacksForSkins").getAsBoolean();
-                        }
-                        if (obj.has("enableBuiltInSkinPacks")) {
-                            enableBuiltInSkinPacks = obj.get("enableBuiltInSkinPacks").getAsBoolean();
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.out.println("BedrockSkinsConfig: failed to load config: " + e);
-        }
+        ConfigData data = JsonCodecFileStore.read(CONFIG_PATH, CODEC, DEFAULTS, "BedrockSkinsConfig");
+        scanResourcePacksForSkins = data.scanResourcePacksForSkins();
+        enableBuiltInSkinPacks = data.enableBuiltInSkinPacks();
     }
 
     private static void save() {
-        try {
-            Files.createDirectories(CONFIG_PATH.getParent());
-            JsonObject obj = new JsonObject();
-            obj.addProperty("scanResourcePacksForSkins", scanResourcePacksForSkins);
-            obj.addProperty("enableBuiltInSkinPacks", enableBuiltInSkinPacks);
-            try (Writer w = Files.newBufferedWriter(CONFIG_PATH)) {
-                GSON.toJson(obj, w);
-            }
-        } catch (IOException e) {
-            System.out.println("BedrockSkinsConfig: failed to save config: " + e);
-        }
+        ConfigData data = new ConfigData(scanResourcePacksForSkins, enableBuiltInSkinPacks);
+        JsonCodecFileStore.write(CONFIG_PATH, CODEC, data, "BedrockSkinsConfig");
     }
 }

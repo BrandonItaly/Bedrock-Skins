@@ -45,8 +45,8 @@ public class BedrockSkins implements ModInitializer {
                 ServerPlayNetworking.send(handler.player, new BedrockSkinsNetworking.SkinUpdatePayload(
                     uuid,
                     skinData.getSkinId(),
-                    skinData.geometry,
-                    skinData.textureData
+                    skinData.getGeometry(),
+                    skinData.getTextureData()
                 ));
             });
         });
@@ -104,15 +104,22 @@ public class BedrockSkins implements ModInitializer {
 
         logger.info("Player {} set skin to {}", player.getName().getString(), (skinId == null ? "RESET" : skinId.toString()));
 
+        PlayerSkinData data = null;
         if (skinId == null) {
             ServerSkinManager.removeSkin(uuid);
         } else {
-            final PlayerSkinData data = new PlayerSkinData(skinId, geometry, textureData);
+            try {
+                data = new PlayerSkinData(skinId, geometry, textureData);
+            } catch (IllegalArgumentException e) {
+                logger.warn("Player {} sent invalid geometry payload.", player.getName().getString());
+                return;
+            }
             ServerSkinManager.setSkin(uuid, data);
         }
 
         // Broadcast to all players
-        final BedrockSkinsNetworking.SkinUpdatePayload updatePayload = new BedrockSkinsNetworking.SkinUpdatePayload(uuid, skinId, geometry, textureData);
+        final String geometryOut = data != null ? data.getGeometry() : geometry;
+        final BedrockSkinsNetworking.SkinUpdatePayload updatePayload = new BedrockSkinsNetworking.SkinUpdatePayload(uuid, skinId, geometryOut, textureData);
         server.getPlayerList().getPlayers().forEach(p -> ServerPlayNetworking.send(p, updatePayload));
         
         lastSkinChange.put(uuid, now);
@@ -187,16 +194,23 @@ public class BedrockSkins {
 
         logger.info("Player {} set skin to {}", player.getName().getString(), (skinId == null ? "RESET" : skinId.toString()));
 
+        PlayerSkinData data = null;
         if (skinId == null) {
             ServerSkinManager.removeSkin(uuid);
         } else {
-            final PlayerSkinData data = new PlayerSkinData(skinId, geometry, textureData);
+            try {
+                data = new PlayerSkinData(skinId, geometry, textureData);
+            } catch (IllegalArgumentException e) {
+                logger.warn("Player {} sent invalid geometry payload.", player.getName().getString());
+                return;
+            }
             ServerSkinManager.setSkin(uuid, data);
         }
         
         lastSkinChange.put(uuid, now);
 
-        final BedrockSkinsNetworking.SkinUpdatePayload updatePayload = new BedrockSkinsNetworking.SkinUpdatePayload(uuid, skinId, geometry, textureData);
+        final String geometryOut = data != null ? data.getGeometry() : geometry;
+        final BedrockSkinsNetworking.SkinUpdatePayload updatePayload = new BedrockSkinsNetworking.SkinUpdatePayload(uuid, skinId, geometryOut, textureData);
         PacketDistributor.sendToAllPlayers(updatePayload);
     }
 
@@ -207,8 +221,8 @@ public class BedrockSkins {
                 PacketDistributor.sendToPlayer(serverPlayer, new BedrockSkinsNetworking.SkinUpdatePayload(
                     uuid,
                     skinData.getSkinId(),
-                    skinData.geometry,
-                    skinData.textureData
+                    skinData.getGeometry(),
+                    skinData.getTextureData()
                 ));
             });
         }

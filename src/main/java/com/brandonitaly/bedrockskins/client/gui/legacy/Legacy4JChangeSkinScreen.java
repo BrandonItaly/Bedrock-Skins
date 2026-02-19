@@ -2,7 +2,7 @@ package com.brandonitaly.bedrockskins.client.gui.legacy;
 
 //? if legacy4j {
 /*
-import com.brandonitaly.bedrockskins.BedrockSkinsNetworking;
+import com.brandonitaly.bedrockskins.client.ClientSkinSync;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.AssetSource;
@@ -12,9 +12,6 @@ import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.StringUtils;
 import com.mojang.blaze3d.platform.InputConstants;
-//? if fabric {
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-//? }
 //? if <1.21.11 {
 import net.minecraft.Util;
 //?}
@@ -244,8 +241,12 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
 
     // Keyboard input handled by default; controller handling via bindingStateTick.
 
+    private boolean hasSelectedSkinWidget() {
+        return this.playerSkinWidgetList != null && this.playerSkinWidgetList.element3 != null;
+    }
+
     private void selectSkin() {
-        if (this.playerSkinWidgetList != null && this.playerSkinWidgetList.element3 != null) {
+        if (hasSelectedSkinWidget()) {
             LoadedSkin skin = this.playerSkinWidgetList.element3.getCurrentSkin();
             if (skin == null) return;
 
@@ -261,21 +262,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
                 // Load texture data
                 byte[] textureData = loadTextureData(skin);
 
-                //? if fabric {
-                ClientPlayNetworking.send(new BedrockSkinsNetworking.SetSkinPayload(
-                    skinId,
-                    skin.getGeometryData().toString(),
-                    textureData
-                ));
-                //? } else if neoforge {
-                net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new BedrockSkinsNetworking.SetSkinPayload(
-                        skinId,
-                        skin.getGeometryData().toString(),
-                        textureData
-                    )
-                );
-                //? }
+                ClientSkinSync.sendSetSkinPayload(skinId, skin.getGeometryData().toString(), textureData);
 
                 playUISound();
             } catch (Exception e) {
@@ -287,13 +274,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     private void resetSkin() {
         if (minecraft.player != null) {
             SkinManager.resetSkin(minecraft.player.getUUID().toString());
-            //? if fabric {
-            ClientPlayNetworking.send(new BedrockSkinsNetworking.SetSkinPayload(null, "", new byte[0]));
-            //? } else if neoforge {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                new BedrockSkinsNetworking.SetSkinPayload(null, "", new byte[0])
-            );
-            //? }
+            ClientSkinSync.sendResetSkinPayload();
             playUISound();
         }
     }
@@ -397,7 +378,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
 
     boolean handlePoseChange(boolean left, boolean right) {
         if (!(left || right)) return false;
-        if (playerSkinWidgetList == null || playerSkinWidgetList.element3 == null) return false;
+        if (!hasSelectedSkinWidget()) return false;
         if (playerSkinWidgetList.element3.isInterpolating()) return false;
 
         playerSkinWidgetList.element3.cyclePose();
@@ -428,7 +409,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             if (handlePoseChange(true, false)) return;
         }
         // --- Controller right stick rotation for preview ---
-        if (playerSkinWidgetList != null && playerSkinWidgetList.element3 != null) {
+        if (hasSelectedSkinWidget()) {
             PlayerSkinWidget widget = playerSkinWidgetList.element3;
             // Use BindingState.Axis for stick input
             if (state.is(ControllerBinding.RIGHT_STICK) && state instanceof BindingState.Axis stick) {
@@ -444,7 +425,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     }
 
     private void favorite() {
-        if (this.playerSkinWidgetList != null && this.playerSkinWidgetList.element3 != null) {
+        if (hasSelectedSkinWidget()) {
             LoadedSkin skin = this.playerSkinWidgetList.element3.getCurrentSkin();
             if (skin == null) return;
 
@@ -509,7 +490,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
                 ControlTooltip.getKeyIcon(InputConstants.KEY_F) : 
                 ControllerBinding.UP_BUTTON.bindingState.getIcon(), 
             () -> {
-                if (playerSkinWidgetList != null && playerSkinWidgetList.element3 != null) {
+                if (hasSelectedSkinWidget()) {
                     LoadedSkin s = playerSkinWidgetList.element3.getCurrentSkin();
                     if (s != null) {
                         if (FavoritesManager.isFavorite(s)) {
@@ -552,7 +533,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         }
         
         // Render skin name and info
-        if (playerSkinWidgetList != null && playerSkinWidgetList.element3 != null) {
+        if (hasSelectedSkinWidget()) {
             renderSkinInfo(guiGraphics);
         }
     }
@@ -983,7 +964,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     protected void init() {
         super.init();
         
-        if (playerSkinWidgetList != null && playerSkinWidgetList.element3 != null) {
+        if (hasSelectedSkinWidget()) {
             SkinReference ref = playerSkinWidgetList.element3.skinRef.get();
             if (ref != null) {
                 updateSkinPack(ref.ordinal());
@@ -1054,7 +1035,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         double mouseX = event.x();
         double mouseY = event.y();
         int button = event.button();
-        if (button == 0 && playerSkinWidgetList != null && playerSkinWidgetList.element3 != null) {
+        if (button == 0 && hasSelectedSkinWidget()) {
             PlayerSkinWidget widget = playerSkinWidgetList.element3;
             if (mouseX >= widget.getX() && mouseX < widget.getX() + widget.getWidth() &&
                 mouseY >= widget.getY() && mouseY < widget.getY() + widget.getHeight()) {
@@ -1079,7 +1060,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double deltaX, double deltaY) {
         double mouseX = event.x();
         double mouseY = event.y();
-            if (isDraggingPreview && playerSkinWidgetList != null && playerSkinWidgetList.element3 != null) {
+            if (isDraggingPreview && hasSelectedSkinWidget()) {
                 PlayerSkinWidget widget = playerSkinWidgetList.element3;
                 double delta = lastMouseX - mouseX;
                 // Ignore tiny deltas to prevent drift

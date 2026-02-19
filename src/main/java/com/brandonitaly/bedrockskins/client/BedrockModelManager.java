@@ -17,27 +17,16 @@ public final class BedrockModelManager {
     public static BedrockPlayerModel getModel(SkinId skinId) {
         if (skinId == null) return null;
 
-        if (bedrockModels.containsKey(skinId)) {
-            var cached = bedrockModels.get(skinId);
-            var skin = SkinPackLoader.getLoadedSkin(skinId);
-            if (skin != null && skin.identifier == null) {
-                try {
-                    SkinPackLoader.registerTextureFor(skinId);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            return cached;
-        }
-
         var skin = SkinPackLoader.getLoadedSkin(skinId);
         if (skin == null) return null;
 
-        try {
-            SkinPackLoader.registerTextureFor(skinId);
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (bedrockModels.containsKey(skinId)) {
+            var cached = bedrockModels.get(skinId);
+            ensureTextureRegistered(skinId, skin);
+            return cached;
         }
+
+        ensureTextureRegistered(skinId, skin);
 
         try {
             BedrockFile bedrockFile = gson.fromJson(skin.geometryData, BedrockFile.class);
@@ -49,10 +38,19 @@ public final class BedrockModelManager {
                 return model;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            BedrockSkinsLog.error("BedrockModelManager: failed to build model for " + skinId, e);
         }
 
         return null;
+    }
+
+    private static void ensureTextureRegistered(SkinId skinId, com.brandonitaly.bedrockskins.pack.LoadedSkin skin) {
+        if (skin.identifier != null) return;
+        try {
+            SkinPackLoader.registerTextureFor(skinId);
+        } catch (Exception e) {
+            BedrockSkinsLog.error("BedrockModelManager: failed to register texture for " + skinId, e);
+        }
     }
 
     public static void clearAllModels() {

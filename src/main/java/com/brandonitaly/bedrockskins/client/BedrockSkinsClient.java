@@ -318,7 +318,7 @@ class CommonLogic {
             BedrockModelManager.clearAllModels();
             if (client.player != null) {
                 String localUuid = client.player.getUUID().toString();
-                SkinId id = SkinManager.getSkin(localUuid);
+                SkinId id = SkinManager.getSkin(client.player.getUUID());
                 if (id != null) {
                     String pack = id.getPack() == null || id.getPack().isEmpty() ? "Remote" : id.getPack();
                     String name = id.getName() == null || id.getName().isEmpty() ? id.toString() : id.getName();
@@ -336,24 +336,16 @@ class CommonLogic {
             String savedKey = state.getSelected();
             if (savedKey == null || client.player == null) return;
 
-            String[] parts = savedKey.split(":", 2);
-            String pack = parts.length == 2 ? parts[0] : "Remote";
-            String name = parts.length == 2 ? parts[1] : savedKey;
+            SkinId savedSkinId = SkinId.parse(savedKey);
+            String pack = savedSkinId == null || savedSkinId.getPack().isEmpty() ? "Remote" : savedSkinId.getPack();
+            String name = savedSkinId == null || savedSkinId.getName().isEmpty() ? savedKey : savedSkinId.getName();
             SkinManager.setSkin(client.player.getUUID().toString(), pack, name);
 
-            LoadedSkin loadedSkin = SkinPackLoader.getLoadedSkin(SkinId.parse(savedKey));
+            LoadedSkin loadedSkin = SkinPackLoader.getLoadedSkin(savedSkinId);
             if (loadedSkin != null) {
                 byte[] textureData = loadTextureData(client, loadedSkin);
                 if (textureData.length > 0) {
-                    var packet = new BedrockSkinsNetworking.SetSkinPayload(SkinId.parse(savedKey), loadedSkin.getGeometryData().toString(), textureData);
-                    
-                    //? if fabric {
-                    ClientPlayNetworking.send(packet);
-                    //? } else if neoforge {
-                    /*if (client.getConnection() != null) {
-                        client.getConnection().send(new ServerboundCustomPayloadPacket(packet));
-                    }*/
-                    //? }
+                    ClientSkinSync.sendSetSkinPayload(savedSkinId, loadedSkin.getGeometryData().toString(), textureData);
                     
                     System.out.println("BedrockSkinsClient: Synced skin " + savedKey);
                 }

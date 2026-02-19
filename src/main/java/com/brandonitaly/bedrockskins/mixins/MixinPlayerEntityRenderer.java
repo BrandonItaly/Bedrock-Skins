@@ -44,7 +44,7 @@ public abstract class MixinPlayerEntityRenderer {
         var player = Minecraft.getInstance().player;
         if (player == null) return;
         var uuid = player.getUUID();
-        var skinId = SkinManager.getSkin(uuid.toString());
+        var skinId = SkinManager.getSkin(uuid);
         var bedrockModel = skinId == null ? null : BedrockModelManager.getModel(skinId);
 
         if (bedrockModel != null) {
@@ -149,7 +149,7 @@ public abstract class MixinPlayerEntityRenderer {
         if (player instanceof AbstractClientPlayer cp && state instanceof BedrockSkinState skinState) {
             java.util.UUID uuid = cp.getUUID();
             skinState.setUniqueId(uuid);
-            skinState.setBedrockSkinId(SkinManager.getSkin(uuid.toString()));
+            skinState.setBedrockSkinId(SkinManager.getSkin(uuid));
         }
     }
 
@@ -176,7 +176,7 @@ public abstract class MixinPlayerEntityRenderer {
     @Inject(method = "isEntityUpsideDown", at = @At("HEAD"), cancellable = true)
     private void isEntityUpsideDown(Avatar player, CallbackInfoReturnable<Boolean> ci) {
         if (player instanceof AbstractClientPlayer cp) {
-            SkinId skinId = SkinManager.getSkin(cp.getUUID().toString());
+            SkinId skinId = SkinManager.getSkin(cp.getUUID());
             if (skinId != null) {
                 var skin = SkinPackLoader.getLoadedSkin(skinId);
                 if (skin != null && skin.isUpsideDown()) ci.setReturnValue(true);
@@ -194,7 +194,7 @@ public abstract class MixinPlayerEntityRenderer {
         if (state instanceof BedrockSkinState skinState) {
             java.util.UUID uuid = skinState.getUniqueId();
             if (uuid != null) {
-                SkinId skinId = SkinManager.getSkin(uuid.toString());
+                SkinId skinId = SkinManager.getSkin(uuid);
                 if (skinId != null) {
                     var skin = SkinPackLoader.getLoadedSkin(skinId);
                     if (skin != null && skin.identifier != null) ci.setReturnValue(skin.identifier);

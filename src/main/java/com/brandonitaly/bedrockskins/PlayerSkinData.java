@@ -1,23 +1,52 @@
 package com.brandonitaly.bedrockskins;
 
 import com.brandonitaly.bedrockskins.pack.SkinId;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import java.util.Arrays;
 import java.util.Objects;
 
-public class PlayerSkinData {
-    public final SkinId skinId;
-    public final String geometry;
-    public final byte[] textureData;
+public final class PlayerSkinData {
+    private final SkinId skinId;
+    private final String geometry;
+    private final byte[] textureData;
+    private final JsonObject geometryJson;
 
     public PlayerSkinData(SkinId skinId, String geometry, byte[] textureData) {
         this.skinId = skinId;
-        this.geometry = geometry;
+        this.geometry = geometry == null ? "" : geometry;
         this.textureData = textureData == null ? new byte[0] : textureData;
+        this.geometryJson = parseGeometry(this.geometry);
     }
 
-    public SkinId getSkinId() { return skinId; }
-    public String getGeometry() { return geometry; }
-    public byte[] getTextureData() { return textureData; }
+    public SkinId getSkinId() {
+        return skinId;
+    }
+
+    public String getGeometry() {
+        return geometry;
+    }
+
+    public JsonObject getGeometryJson() {
+        return geometryJson;
+    }
+
+    public byte[] getTextureData() {
+        return textureData;
+    }
+
+    private static JsonObject parseGeometry(String geometry) {
+        try {
+            var element = JsonParser.parseString(geometry);
+            if (!element.isJsonObject()) {
+                throw new IllegalArgumentException("Geometry must be a JSON object");
+            }
+            return element.getAsJsonObject();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid geometry JSON", e);
+        }
+    }
 
     @Override
     public boolean equals(Object o) {

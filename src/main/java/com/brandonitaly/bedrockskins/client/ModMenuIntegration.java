@@ -4,7 +4,6 @@ import com.brandonitaly.bedrockskins.client.gui.BedrockSkinsOptionsScreen;
 //? if fabric {
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
-import net.fabricmc.loader.api.FabricLoader;
 //? } else if neoforge {
 //? }
 import net.minecraft.client.gui.screens.Screen;

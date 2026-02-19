@@ -39,7 +39,7 @@ public abstract class MixinHumanoidModel<T extends HumanoidRenderState> {
         SkinId skinId = skinState.getBedrockSkinId();
         if (skinId == null) {
             UUID uuid = skinState.getUniqueId();
-            skinId = uuid == null ? null : SkinManager.getSkin(uuid.toString());
+            skinId = SkinManager.getSkin(uuid);
         }
         if (skinId == null) return;
 

@@ -1,9 +1,11 @@
 package com.brandonitaly.bedrockskins.pack;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.JsonOps;
 import com.mojang.blaze3d.platform.NativeImage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -27,7 +29,7 @@ public final class SkinPackLoader {
     private SkinPackLoader() {}
 
     private static JsonObject vanillaGeometryJson = null;
-    private static final Gson gson = new Gson();
+    private static final Codec<List<String>> PACK_ORDER_CODEC = Codec.list(Codec.STRING);
 
     public static final Map<SkinId, LoadedSkin> loadedSkins = Collections.synchronizedMap(new LinkedHashMap<>());
     private static final File skinPacksDir = new File("skin_packs");
@@ -231,7 +233,11 @@ public final class SkinPackLoader {
             File geoFile = new File(packDir, "geometry.json");
             if (geoFile.exists()) geometryJson = JsonParser.parseReader(new FileReader(geoFile)).getAsJsonObject();
 
-            SkinPackManifest manifest = gson.fromJson(new FileReader(skinsFile), SkinPackManifest.class);
+            SkinPackManifest manifest;
+            try (Reader reader = new FileReader(skinsFile)) {
+                manifest = decodeManifest(reader, skinsFile.getAbsolutePath());
+            }
+            if (manifest == null) return;
             loadExternalTranslations(packDir);
 
             // Store packType by packId (serializeName), default to 'skin_pack' except for Favorites and Standard
@@ -287,8 +293,9 @@ public final class SkinPackLoader {
 
                 SkinPackManifest manifest;
                 try (InputStream ris = resource.open(); InputStreamReader rr = new InputStreamReader(ris)) {
-                    manifest = gson.fromJson(rr, SkinPackManifest.class);
+                    manifest = decodeManifest(rr, id.toString());
                 }
+                if (manifest == null) return;
                 // Store packType by packId (serializeName) for internal packs, default to 'skin_pack' except for Favorites and Standard
                 if (manifest.getSerializeName() != null) {
                     String packId = "skinpack." + manifest.getSerializeName();
@@ -478,8 +485,9 @@ public final class SkinPackLoader {
 
                     SkinPackManifest manifest;
                     try (InputStream is = zf.getInputStream(skinsEntry); InputStreamReader r = new InputStreamReader(is)) {
-                        manifest = gson.fromJson(r, SkinPackManifest.class);
+                        manifest = decodeManifest(r, skinsEntry.getName());
                     }
+                    if (manifest == null) continue;
 
                     loadExternalTranslationsFromZip(zf, dir);
 
@@ -591,11 +599,25 @@ public final class SkinPackLoader {
         try {
             manager.getResource(createIdentifier("bedrockskins", "order_overrides.json")).ifPresent(res -> {
                 try (InputStream is = res.open()) {
-                    String[] arr = gson.fromJson(new InputStreamReader(is), String[].class);
-                    packOrder = Arrays.asList(arr);
+                    JsonElement element = JsonParser.parseReader(new InputStreamReader(is));
+                    packOrder = PACK_ORDER_CODEC.parse(JsonOps.INSTANCE, element)
+                        .resultOrPartial(msg -> System.out.println("SkinPackLoader: Failed decoding order_overrides.json: " + msg))
+                        .orElse(Collections.emptyList());
                 } catch (Exception ignored) {}
             });
         } catch (Exception ignored) {}
+    }
+
+    private static SkinPackManifest decodeManifest(Reader reader, String source) {
+        try {
+            JsonElement element = JsonParser.parseReader(reader);
+            return SkinPackManifest.CODEC.parse(JsonOps.INSTANCE, element)
+                .resultOrPartial(msg -> System.out.println("SkinPackLoader: Failed decoding manifest " + source + ": " + msg))
+                .orElse(null);
+        } catch (Exception e) {
+            System.out.println("SkinPackLoader: Error reading manifest " + source + ": " + e);
+            return null;
+        }
     }
 
     private static boolean validateRemoteData(String key, byte[] data, String geo) {

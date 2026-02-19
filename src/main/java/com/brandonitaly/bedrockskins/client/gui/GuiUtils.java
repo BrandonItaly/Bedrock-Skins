@@ -4,12 +4,14 @@ import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.LivingEntity;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import net.minecraft.world.entity.LivingEntity;
 
 public final class GuiUtils {
     private GuiUtils() {}
@@ -91,7 +93,7 @@ public final class GuiUtils {
         return skin != null && skin.isUpsideDown();
     }
 
-    public static void drawPanelChrome(GuiGraphics gui, int x, int y, int w, int h, net.minecraft.network.chat.Component title, net.minecraft.client.gui.Font font) {
+    public static void drawPanelChrome(GuiGraphics gui, int x, int y, int w, int h, Component title, Font font) {
         int PANEL_HEADER_HEIGHT = 24;
         int right = x + w;
         int bottom = y + h;
