@@ -7,7 +7,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
+import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.core.ClientAsset;
+import com.brandonitaly.bedrockskins.client.dummy.DummyClientLevel;
 //? if >=1.21.11 {
 import net.minecraft.resources.Identifier;
 //?} else {
@@ -15,13 +17,20 @@ import net.minecraft.resources.Identifier;
 //?}
 import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.world.entity.player.PlayerSkin;
+import net.minecraft.world.level.GameType;
 import net.minecraft.core.ClientAsset.ResourceTexture;
 
 public class PreviewPlayer extends RemotePlayer {
 
+    private boolean showNameTag = false;
+
     @Override
     public boolean shouldShowName() {
-        return false;
+        return showNameTag || this.isCustomNameVisible();
+    }
+
+    public void setShowNameTag(boolean showNameTag) {
+        this.showNameTag = showNameTag;
     }
 
     //? if >=1.21.11 {
@@ -31,6 +40,7 @@ public class PreviewPlayer extends RemotePlayer {
     //?}
     private ClientAsset.Texture forcedCapeTexture = null;
     private ClientAsset.Texture forcedBody = null;
+    private PlayerSkin forcedProfileSkin = null;
     private boolean useLocalPlayerModel = false;
 
     public PreviewPlayer(ClientLevel world, GameProfile profile) {
@@ -68,17 +78,39 @@ public class PreviewPlayer extends RemotePlayer {
         this.forcedBody = null;
     }
 
+    public void setForcedProfileSkin(PlayerSkin skin) {
+        this.forcedProfileSkin = skin;
+    }
+
+    public void clearForcedProfileSkin() {
+        this.forcedProfileSkin = null;
+    }
+
     public void setUseLocalPlayerModel(boolean useLocalPlayerModel) {
         this.useLocalPlayerModel = useLocalPlayerModel;
     }
 
     @Override
+    public GameType gameMode() {
+        return GameType.SURVIVAL;
+    }
+
+    @Override
     public PlayerSkin getSkin() {
-        PlayerSkin original = super.getSkin();
+        Minecraft minecraft = Minecraft.getInstance();
+        PlayerSkin original;
+        if (forcedProfileSkin != null) {
+            original = forcedProfileSkin;
+        } else if (minecraft.getConnection() == null) {
+            original = minecraft.player != null ? minecraft.player.getSkin() : DefaultPlayerSkin.get(this.getUUID());
+        } else {
+            original = super.getSkin();
+        }
+
         ClientAsset.Texture body = forcedBody != null ? forcedBody : original.body();
         var model = original.model();
-        if (useLocalPlayerModel && Minecraft.getInstance().player != null) {
-            model = Minecraft.getInstance().player.getSkin().model();
+        if (useLocalPlayerModel && minecraft.player != null) {
+            model = minecraft.player.getSkin().model();
         }
 
         ClientAsset.Texture cape = original.cape();
@@ -125,8 +157,18 @@ public class PreviewPlayer extends RemotePlayer {
         public static PreviewPlayer get(ClientLevel world, GameProfile profile) {
             UUID id = profile.id();
             if (id == null) id = UUID.randomUUID();
+            final GameProfile finalProfile = profile;
 
-            return pool.computeIfAbsent(id, k -> new PreviewPlayer(world, profile));
+            return pool.compute(id, (k, existing) -> {
+                if (existing != null && existing.level() == world) {
+                    return existing;
+                }
+                return new PreviewPlayer(world, finalProfile);
+            });
+        }
+
+        public static PreviewPlayer get(GameProfile profile) {
+            return get(DummyClientLevel.getPreviewLevel(), profile);
         }
 
         public static void remove(UUID id) { pool.remove(id); }

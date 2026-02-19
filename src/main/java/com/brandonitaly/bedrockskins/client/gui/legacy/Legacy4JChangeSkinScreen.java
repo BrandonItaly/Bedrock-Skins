@@ -5,6 +5,7 @@ package com.brandonitaly.bedrockskins.client.gui.legacy;
 import com.brandonitaly.bedrockskins.client.ClientSkinSync;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
+import com.brandonitaly.bedrockskins.client.StateManager;
 import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
@@ -257,12 +258,20 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
 
             try {
                 SkinId skinId = skin.getSkinId();
-                SkinManager.setSkin(minecraft.player.getUUID().toString(), skin.getSerializeName(), skin.getSkinDisplayName());
+                if (minecraft.player != null) {
+                    SkinManager.setSkin(minecraft.player.getUUID().toString(), skin.getSerializeName(), skin.getSkinDisplayName());
+                } else {
+                    if (skinId == null) {
+                        skinId = SkinId.of(skin.getSerializeName(), skin.getSkinDisplayName());
+                    }
+                    StateManager.saveState(FavoritesManager.getFavoriteKeys(), skinId == null ? null : skinId.toString());
+                }
 
                 // Load texture data
                 byte[] textureData = loadTextureData(skin);
-
-                ClientSkinSync.sendSetSkinPayload(skinId, skin.getGeometryData().toString(), textureData);
+                if (minecraft.player != null) {
+                    ClientSkinSync.sendSetSkinPayload(skinId, skin.getGeometryData().toString(), textureData);
+                }
 
                 playUISound();
             } catch (Exception e) {
@@ -275,8 +284,10 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         if (minecraft.player != null) {
             SkinManager.resetSkin(minecraft.player.getUUID().toString());
             ClientSkinSync.sendResetSkinPayload();
-            playUISound();
+        } else {
+            StateManager.saveState(FavoritesManager.getFavoriteKeys(), null);
         }
+        playUISound();
     }
 
     @Override

@@ -191,7 +191,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
         public class SkinCell {
             private final LoadedSkin skin;
             private PreviewPlayer player;
-            private final UUID uuid = UUID.randomUUID();
+            private final UUID uuid;
             private final String name;
 
             // Hover rotation state
@@ -210,21 +210,19 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
 
             public SkinCell(LoadedSkin skin) {
                 this.skin = skin;
+                this.uuid = UUID.randomUUID();
                 // Assumes getters exist for safeSkinName and skinDisplayName
                 String translated = SkinPackLoader.getTranslation(skin.getSafeSkinName()); 
                 this.name = translated != null ? translated : skin.getSkinDisplayName();
 
-                ClientLevel world = Minecraft.getInstance().level;
-                if (world != null) {
-                    var id = skin.getSkinId();
-                    if (id != null) {
-                        try {
-                            registerTextureFor.accept(id.toString());
-                            setPreviewSkin.set(uuid.toString(), id.getPack(), id.getName());
-                            this.player = PreviewPlayerPool.get(world, new GameProfile(uuid, ""));
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                var id = skin.getSkinId();
+                if (id != null) {
+                    try {
+                        registerTextureFor.accept(id.toString());
+                        setPreviewSkin.set(uuid.toString(), id.getPack(), id.getName());
+                        this.player = PreviewPlayerPool.get(new GameProfile(uuid, ""));
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
             }

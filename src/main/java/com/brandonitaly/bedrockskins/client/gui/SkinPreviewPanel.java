@@ -194,11 +194,6 @@ public class SkinPreviewPanel {
             updatePreviewModel(dummyUuid, currentKey);
             updateFavoriteButton(); // Enable buttons for current skin
         } else {
-            if (minecraft.player != null) {
-                this.dummyUuid = minecraft.player.getUUID();
-            } else {
-                this.dummyUuid = UUID.randomUUID();
-            }
             this.currentSkinId = null;
             updatePreviewModel(dummyUuid, null);
             updateFavoriteButton();
@@ -215,38 +210,58 @@ public class SkinPreviewPanel {
         if (resetButton != null) resetButton.active = true;
         updateActionButtons();
         if (skin != null) {
-            if (minecraft.player != null && this.dummyUuid.equals(minecraft.player.getUUID())) {
-                safeResetPreview(this.dummyUuid.toString());
-                this.dummyUuid = UUID.randomUUID();
-            }
             updatePreviewModel(dummyUuid, skin.getSkinId());
         }
     }
 
     private void updatePreviewModel(UUID uuid, SkinId skinId) {
-        if (minecraft.level == null) return;
-        
         if (!this.dummyUuid.equals(uuid)) {
             safeResetPreview(this.dummyUuid.toString());
         }
         this.dummyUuid = uuid;
         
-        if (skinId != null) {
-            String pack = skinId.getPack();
-            String name = skinId.getName();
-            SkinManager.setPreviewSkin(uuid.toString(), pack, name);
-            safeRegisterTexture(skinId.toString());
-        }
-        
         String name = minecraft.player != null ? minecraft.player.getName().getString() : "Preview";
         GameProfile profile = new GameProfile(uuid, name);
-        dummyPlayer = PreviewPlayer.PreviewPlayerPool.get(minecraft.level, profile);
+        dummyPlayer = PreviewPlayer.PreviewPlayerPool.get(profile);
 
-        // --- CAPE LOGIC ---
-        // Only show capes provided by the selected skin
-        var capeToUse = (selectedSkin != null) ? selectedSkin.capeIdentifier : null;
-        // Always set, including null, to ensure clearing when skin has no cape
-        dummyPlayer.setForcedCape(capeToUse);
+        if (skinId == null) {
+            applyAutoSelectedSkinBehavior();
+        } else {
+            String pack = skinId.getPack();
+            String skinName = skinId.getName();
+            SkinManager.setPreviewSkin(uuid.toString(), pack, skinName);
+            safeRegisterTexture(skinId.toString());
+            dummyPlayer.clearForcedProfileSkin();
+            dummyPlayer.clearForcedBody();
+            dummyPlayer.clearForcedCape();
+            dummyPlayer.setUseLocalPlayerModel(false);
+            var capeToUse = (selectedSkin != null) ? selectedSkin.capeIdentifier : null;
+            dummyPlayer.setForcedCape(capeToUse);
+        }
+    }
+
+    private void applyAutoSelectedSkinBehavior() {
+        if (dummyPlayer == null) return;
+
+        SkinManager.resetPreviewSkin(dummyUuid.toString());
+        if (minecraft.player != null) {
+            dummyPlayer.clearForcedProfileSkin();
+            dummyPlayer.setForcedBody(minecraft.player.getSkin().body());
+            dummyPlayer.setForcedCapeTexture(minecraft.player.getSkin().cape());
+            dummyPlayer.setUseLocalPlayerModel(true);
+        } else {
+            dummyPlayer.clearForcedBody();
+            dummyPlayer.clearForcedCape();
+            var profile = minecraft.getGameProfile();
+            if (profile != null) {
+                dummyPlayer.setForcedProfileSkin(
+                        minecraft.getSkinManager().createLookup(profile, false).get()
+                );
+            } else {
+                dummyPlayer.clearForcedProfileSkin();
+            }
+            dummyPlayer.setUseLocalPlayerModel(false);
+        }
     }
 
     private void applySkin() {
@@ -282,7 +297,6 @@ public class SkinPreviewPanel {
             SkinManager.resetSkin(minecraft.player.getUUID().toString());
             ClientSkinSync.sendResetSkinPayload();
             safeResetPreview(this.dummyUuid.toString());
-            this.dummyUuid = minecraft.player.getUUID();
             updatePreviewModel(this.dummyUuid, null);
         } else {
             StateManager.saveState(FavoritesManager.getFavoriteKeys(), null);
@@ -373,6 +387,10 @@ public class SkinPreviewPanel {
         int uiStartY = y + height - PANEL_PADDING - (btnH * 2) - 8 - font.lineHeight - 4;
 
         if (dummyPlayer != null) {
+            if (currentSkinId == null && selectedSkin == null) {
+                applyAutoSelectedSkinBehavior();
+            }
+
             dummyPlayer.tickCount = (int)(Util.getMillis() / 50L);
             
             // Update rotation when dragging

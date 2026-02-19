@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.EntityAttachment;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -47,6 +48,10 @@ public final class GuiUtils {
         EntityRenderDispatcher entityRenderDispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
         var entityRenderer = entityRenderDispatcher.getRenderer(entity);
         var entityRenderState = entityRenderer.createRenderState(entity, 1.0F);
+        if (entity instanceof PreviewPlayer previewPlayer && previewPlayer.shouldShowName()) {
+            entityRenderState.nameTag = entity.getDisplayName();
+            entityRenderState.nameTagAttachment = entity.getAttachments().getNullable(EntityAttachment.NAME_TAG, 0, entity.getYRot());
+        }
         entityRenderState.lightCoords = 15728880;
         entityRenderState.boundingBoxHeight = 0;
         entityRenderState.boundingBoxWidth = 0;

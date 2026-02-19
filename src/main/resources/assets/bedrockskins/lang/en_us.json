@@ -29,6 +29,16 @@
 
   "bedrockskins.option.scan_resourcepacks": "Scan Resource Packs",
   "bedrockskins.option.scan_resourcepacks.tooltip": "Scan all available resource packs for skin packs.\nIf disabled, only skin packs from active resource packs and local skin packs will be loaded.",
-  "bedrockskins.option.enable_builtin_packs": "Enable Built-in Skin Packs",
-  "bedrockskins.option.enable_builtin_packs.tooltip": "Load the built-in skin packs that come bundled with the mod.\nDisable this to only use external skin packs."
+  "bedrockskins.option.enable_builtin_packs": "Built-in Skin Packs",
+  "bedrockskins.option.enable_builtin_packs.tooltip": "Load the built-in skin packs that come bundled with the mod.\nDisable this to only use external skin packs.",
+  "bedrockskins.option.show_paper_doll": "Paper Doll",
+  "bedrockskins.option.show_paper_doll.tooltip": "Choose where the paper doll preview and change skin button appear.",
+  "bedrockskins.option.show_paper_doll.none": "None",
+  "bedrockskins.option.show_paper_doll.both": "Both",
+  "bedrockskins.option.show_paper_doll.main_menu": "Main Menu",
+  "bedrockskins.option.show_paper_doll.pause_screen": "Pause Screen",
+    "bedrockskins.option.paper_doll_side": "Paper Doll Position",
+    "bedrockskins.option.paper_doll_side.tooltip": "Choose whether the paper doll appears on the left or right side of the screen.",
+    "bedrockskins.option.paper_doll_side.left": "Left",
+    "bedrockskins.option.paper_doll_side.right": "Right"
 }

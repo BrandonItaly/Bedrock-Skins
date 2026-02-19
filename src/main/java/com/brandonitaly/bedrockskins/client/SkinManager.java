@@ -31,8 +31,16 @@ public final class SkinManager {
 
     public static SkinId getLocalSelectedKey() {
         var localUuid = getLocalPlayerUuid();
-        if (localUuid == null) return null;
-        return playerSkins.get(localUuid);
+        if (localUuid != null) {
+            return playerSkins.get(localUuid);
+        }
+        try {
+            var selected = StateManager.readState().getSelected();
+            return (selected == null || selected.isEmpty()) ? null : SkinId.parse(selected);
+        } catch (Exception e) {
+            BedrockSkinsLog.error("SkinManager: failed to read local selected skin from state", e);
+            return null;
+        }
     }
 
     public static void setSkin(String uuid, String packName, String skinName) {

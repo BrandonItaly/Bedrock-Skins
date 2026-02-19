@@ -11,6 +11,8 @@
     "MixinWingsLayer",
     "MixinPlayerListEntry",
     "MixinTranslationStorage",
+    "MixinTitleScreen",
+    "MixinPauseScreen",
     "legacy4j.HelpOptionsMixin"
   ],
   "injectors": {

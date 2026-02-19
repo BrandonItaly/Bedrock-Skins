@@ -102,12 +102,10 @@ public class PlayerSkinWidget extends AbstractWidget {
         
         // Initialize preview player
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level != null) {
-            String name = minecraft.player != null ? minecraft.player.getName().getString() : "Preview";
-            GameProfile profile = new GameProfile(dummyUuid, name);
-            dummyPlayer = PreviewPlayer.PreviewPlayerPool.get(minecraft.level, profile);
-            initializeWalkAnimationPhase(dummyPlayer);
-        }
+        String name = minecraft.player != null ? minecraft.player.getName().getString() : "Preview";
+        GameProfile profile = new GameProfile(dummyUuid, name);
+        dummyPlayer = PreviewPlayer.PreviewPlayerPool.get(profile);
+        initializeWalkAnimationPhase(dummyPlayer);
     }
 
     public boolean isInterpolating() {
@@ -234,15 +232,25 @@ public class PlayerSkinWidget extends AbstractWidget {
             if (loadedSkin != null && isAutoSelectedSkin(loadedSkin)) {
                 SkinManager.resetPreviewSkin(dummyUuid.toString());
                 if (Minecraft.getInstance().player != null) {
+                    dummyPlayer.clearForcedProfileSkin();
                     dummyPlayer.setForcedBody(Minecraft.getInstance().player.getSkin().body());
                     dummyPlayer.setForcedCapeTexture(Minecraft.getInstance().player.getSkin().cape());
                     dummyPlayer.setUseLocalPlayerModel(true);
                 } else {
                     dummyPlayer.clearForcedBody();
                     dummyPlayer.clearForcedCape();
+                    var profile = Minecraft.getInstance().getGameProfile();
+                    if (profile != null) {
+                        dummyPlayer.setForcedProfileSkin(
+                            Minecraft.getInstance().getSkinManager().createLookup(profile, false).get()
+                        );
+                    } else {
+                        dummyPlayer.clearForcedProfileSkin();
+                    }
                     dummyPlayer.setUseLocalPlayerModel(false);
                 }
             } else if (loadedSkin != null) {
+                dummyPlayer.clearForcedProfileSkin();
                 dummyPlayer.clearForcedBody();
                 dummyPlayer.clearForcedCape();
                 dummyPlayer.setUseLocalPlayerModel(false);
@@ -254,6 +262,7 @@ public class PlayerSkinWidget extends AbstractWidget {
                 // Set cape if provided
                 dummyPlayer.setForcedCape(loadedSkin.capeIdentifier);
             } else {
+                dummyPlayer.clearForcedProfileSkin();
                 SkinManager.resetPreviewSkin(dummyUuid.toString());
                 dummyPlayer.clearForcedBody();
                 dummyPlayer.setUseLocalPlayerModel(false);
