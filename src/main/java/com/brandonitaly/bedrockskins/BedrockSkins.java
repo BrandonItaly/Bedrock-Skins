@@ -6,7 +6,7 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
-//? } else if neoforge {
+//?} else if neoforge {
 /*import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -16,7 +16,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.loading.FMLLoader;*/
-//? }
+//?}
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,7 +125,7 @@ public class BedrockSkins implements ModInitializer {
         lastSkinChange.put(uuid, now);
     }
 }
-//? } else if neoforge {
+//?} else if neoforge {
 /*@Mod("bedrockskins")
 public class BedrockSkins {
     public static final Logger logger = LoggerFactory.getLogger("bedrockskins");
@@ -228,4 +228,4 @@ public class BedrockSkins {
         }
     }
 }*/
-//? }
+//?}

@@ -178,7 +178,7 @@ public class BedrockPlayerModel extends PlayerModel {
             this.pivotZ = bPz;
             this.rotX = toRadiansNeg(getListValue(bone.getRotation(), 0));
             this.rotY = toRadiansNeg(getListValue(bone.getRotation(), 1));
-            this.rotZ = (float) Math.toRadians(getListValue(bone.getRotation(), 2));
+            this.rotZ = toRadiansNeg(getListValue(bone.getRotation(), 2));
             this.inflate = bone.getInflate();
             this.mirror = bone.getMirror();
             this.cubes = bone.getCubes() != null ? bone.getCubes() : Collections.emptyList();
@@ -249,13 +249,13 @@ public class BedrockPlayerModel extends PlayerModel {
         PartDefinition body = root.addOrReplaceChild(PartNames.BODY, CubeListBuilder.create(), PartPose.ZERO);
         body.addOrReplaceChild(PartNames.JACKET, CubeListBuilder.create(), PartPose.ZERO);
 
-        PartDefinition rightArm = root.addOrReplaceChild(PartNames.RIGHT_ARM, CubeListBuilder.create(), PartPose.offset(-5.0F, 2.0F, 0.0F));
-        PartDefinition leftArm = root.addOrReplaceChild(PartNames.LEFT_ARM, CubeListBuilder.create(), PartPose.offset(5.0F, 2.0F, 0.0F));
+        PartDefinition rightArm = root.addOrReplaceChild(PartNames.RIGHT_ARM, CubeListBuilder.create(), PartPose.ZERO);
+        PartDefinition leftArm = root.addOrReplaceChild(PartNames.LEFT_ARM, CubeListBuilder.create(), PartPose.ZERO);
         rightArm.addOrReplaceChild("right_sleeve", CubeListBuilder.create(), PartPose.ZERO);
         leftArm.addOrReplaceChild("left_sleeve", CubeListBuilder.create(), PartPose.ZERO);
 
-        PartDefinition rightLeg = root.addOrReplaceChild(PartNames.RIGHT_LEG, CubeListBuilder.create(), PartPose.offset(-1.9F, 12.0F, 0.0F));
-        PartDefinition leftLeg = root.addOrReplaceChild(PartNames.LEFT_LEG, CubeListBuilder.create(), PartPose.offset(1.9F, 12.0F, 0.0F));
+        PartDefinition rightLeg = root.addOrReplaceChild(PartNames.RIGHT_LEG, CubeListBuilder.create(), PartPose.ZERO);
+        PartDefinition leftLeg = root.addOrReplaceChild(PartNames.LEFT_LEG, CubeListBuilder.create(), PartPose.ZERO);
         rightLeg.addOrReplaceChild("right_pants", CubeListBuilder.create(), PartPose.ZERO);
         leftLeg.addOrReplaceChild("left_pants", CubeListBuilder.create(), PartPose.ZERO);
     }

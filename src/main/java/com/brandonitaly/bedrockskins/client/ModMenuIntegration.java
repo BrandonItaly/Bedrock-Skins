@@ -4,8 +4,7 @@ import com.brandonitaly.bedrockskins.client.gui.BedrockSkinsOptionsScreen;
 //? if fabric {
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
-//? } else if neoforge {
-//? }
+//?}
 import net.minecraft.client.gui.screens.Screen;
 
 //? if fabric {
@@ -15,5 +14,4 @@ public class ModMenuIntegration implements ModMenuApi {
         return parent -> new BedrockSkinsOptionsScreen((Screen) parent);
     }
 }
-//? } else if neoforge {
-//? }
+//?}

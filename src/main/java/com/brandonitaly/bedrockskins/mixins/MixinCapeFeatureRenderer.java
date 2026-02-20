@@ -48,5 +48,4 @@ public abstract class MixinCapeFeatureRenderer {
         return RenderType.entityTranslucent(texture);
     }*/
     //?}
-
 }

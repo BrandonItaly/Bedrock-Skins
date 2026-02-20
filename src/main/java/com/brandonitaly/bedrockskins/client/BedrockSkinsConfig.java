@@ -4,7 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 //? if fabric {
 import net.fabricmc.loader.api.FabricLoader;
-//? }
+//?}
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
@@ -16,10 +16,10 @@ import java.util.Arrays;
 public class BedrockSkinsConfig {
     //? if fabric {
     private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("bedrockskins.json");
-    //? }
+    //?}
     //? if neoforge {
     // private static final Path CONFIG_PATH = net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get().resolve("bedrockskins.json");
-    //? }
+    //?}
 
     private static boolean scanResourcePacksForSkins = true;
     private static boolean enableBuiltInSkinPacks = true;

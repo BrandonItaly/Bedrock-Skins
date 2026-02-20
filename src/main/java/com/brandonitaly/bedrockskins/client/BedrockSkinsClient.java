@@ -17,7 +17,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-//? } else if neoforge {
+//?} else if neoforge {
 /*import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.bus.api.IEventBus;
@@ -29,7 +29,7 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.common.NeoForge;
 import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;*/
-//? }
+//?}
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 //? if >=1.21.11 {
@@ -184,7 +184,7 @@ public class BedrockSkinsClient implements ClientModInitializer {
         }
     }
 }
-//? } else if neoforge {
+//?} else if neoforge {
 /*public class BedrockSkinsClient {
     private static KeyMapping toggleCapeKey;
     private static KeyMapping toggleJacketKey;
@@ -289,7 +289,7 @@ public class BedrockSkinsClient implements ClientModInitializer {
         }
     }
 }*/
-//? }
+//?}
 
 // Shared Logic Container
 class CommonLogic {
