@@ -37,16 +37,20 @@ public class BedrockPlayerModel extends PlayerModel {
     public final Map<String, PartTransform> defaultTransforms;
     public float elytraYOffset = 0f;
     private final boolean animationArmsOutFront;
+    private final boolean animationSingleArmAnimation;
     private final boolean animationStationaryLegs;
     private final boolean animationSingleLegAnimation;
+    private final boolean animationDontShowArmor;
 
-    public BedrockPlayerModel(ModelPart root, boolean thinArms, Map<String, ModelPart> partsMap, Map<String, PartTransform> defaultTransforms, boolean animationArmsOutFront, boolean animationStationaryLegs, boolean animationSingleLegAnimation) {
+    public BedrockPlayerModel(ModelPart root, boolean thinArms, Map<String, ModelPart> partsMap, Map<String, PartTransform> defaultTransforms, boolean animationArmsOutFront, boolean animationSingleArmAnimation, boolean animationStationaryLegs, boolean animationSingleLegAnimation, boolean animationDontShowArmor) {
         super(root, thinArms);
         this.partsMap = Collections.unmodifiableMap(new HashMap<>(partsMap));
         this.defaultTransforms = Collections.unmodifiableMap(new HashMap<>(defaultTransforms));
         this.animationArmsOutFront = animationArmsOutFront;
+        this.animationSingleArmAnimation = animationSingleArmAnimation;
         this.animationStationaryLegs = animationStationaryLegs;
         this.animationSingleLegAnimation = animationSingleLegAnimation;
+        this.animationDontShowArmor = animationDontShowArmor;
     }
 
     public static class PartTransform {
@@ -81,9 +85,11 @@ public class BedrockPlayerModel extends PlayerModel {
         ensureRequiredBones(normalized);
         BuildRootResult result = buildRoot(normalized);
         boolean armsOutFront = Boolean.TRUE.equals(normalized.getAnimationArmsOutFront());
+        boolean singleArmAnimation = Boolean.TRUE.equals(normalized.getAnimationSingleArmAnimation());
         boolean stationaryLegs = Boolean.TRUE.equals(normalized.getAnimationStationaryLegs());
         boolean singleLegAnimation = Boolean.TRUE.equals(normalized.getAnimationSingleLegAnimation());
-        return new BedrockPlayerModel(result.root, thinArms, result.parts, result.defaults, armsOutFront, stationaryLegs, singleLegAnimation);
+        boolean dontShowArmor = Boolean.TRUE.equals(normalized.getAnimationDontShowArmor());
+        return new BedrockPlayerModel(result.root, thinArms, result.parts, result.defaults, armsOutFront, singleArmAnimation, stationaryLegs, singleLegAnimation, dontShowArmor);
     }
 
     private static BedrockGeometry normalizeGeometry(BedrockGeometry geometry) {
@@ -394,6 +400,8 @@ public class BedrockPlayerModel extends PlayerModel {
         super.setupAnim(state);
         if (animationArmsOutFront) {
             applyArmsOutFront(resolvePart("rightArm", PartNames.RIGHT_ARM), resolvePart("leftArm", PartNames.LEFT_ARM), state);
+        } else if (animationSingleArmAnimation) {
+            syncArmWalkPhase(state);
         }
         if (animationStationaryLegs) {
             resetLegAngle("rightLeg", PartNames.RIGHT_LEG);
@@ -401,6 +409,14 @@ public class BedrockPlayerModel extends PlayerModel {
         } else if (animationSingleLegAnimation) {
             syncLegAnimations();
         }
+    }
+
+    private void syncArmWalkPhase(AvatarRenderState state) {
+        ModelPart leftArm = resolvePart("leftArm", PartNames.LEFT_ARM);
+        if (leftArm == null) return;
+
+        float leftWalkSwing = computeWalkSwing(state, false);
+        leftArm.xRot -= leftWalkSwing * 2.0F;
     }
 
     private void syncLegAnimations() {
@@ -486,6 +502,10 @@ public class BedrockPlayerModel extends PlayerModel {
         PartTransform elytraTransform = defaultTransforms.get("elytra");
         float bedrockElytraY = elytraTransform != null ? elytraTransform.y : bedrockBodyY;
         elytraYOffset = bedrockElytraY - vanillaBodyPivotY;
+    }
+
+    public boolean shouldHideArmor() {
+        return animationDontShowArmor;
     }
 
     private void copyRotation(String name, ModelPart source) {

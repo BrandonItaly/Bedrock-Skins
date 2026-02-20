@@ -18,6 +18,12 @@ public class BedrockGeometry {
     @SerializedName("animationSingleLegAnimation")
     private Boolean animationSingleLegAnimation = false;
 
+    @SerializedName("animationSingleArmAnimation")
+    private Boolean animationSingleArmAnimation = false;
+
+    @SerializedName("animationDontShowArmor")
+    private Boolean animationDontShowArmor = false;
+
     public GeometryDescription getDescription() { return description; }
     public void setDescription(GeometryDescription description) { this.description = description; }
 
@@ -32,4 +38,10 @@ public class BedrockGeometry {
 
     public Boolean getAnimationSingleLegAnimation() { return animationSingleLegAnimation; }
     public void setAnimationSingleLegAnimation(Boolean animationSingleLegAnimation) { this.animationSingleLegAnimation = animationSingleLegAnimation; }
+
+    public Boolean getAnimationSingleArmAnimation() { return animationSingleArmAnimation; }
+    public void setAnimationSingleArmAnimation(Boolean animationSingleArmAnimation) { this.animationSingleArmAnimation = animationSingleArmAnimation; }
+
+    public Boolean getAnimationDontShowArmor() { return animationDontShowArmor; }
+    public void setAnimationDontShowArmor(Boolean animationDontShowArmor) { this.animationDontShowArmor = animationDontShowArmor; }
 }
