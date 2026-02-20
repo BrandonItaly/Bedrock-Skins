@@ -37,8 +37,8 @@
   "bedrockskins.option.show_paper_doll.both": "Both",
   "bedrockskins.option.show_paper_doll.main_menu": "Main Menu",
   "bedrockskins.option.show_paper_doll.pause_screen": "Pause Screen",
-    "bedrockskins.option.paper_doll_side": "Paper Doll Position",
-    "bedrockskins.option.paper_doll_side.tooltip": "Choose whether the paper doll appears on the left or right side of the screen.",
-    "bedrockskins.option.paper_doll_side.left": "Left",
-    "bedrockskins.option.paper_doll_side.right": "Right"
+  "bedrockskins.option.paper_doll_side": "Paper Doll Position",
+  "bedrockskins.option.paper_doll_side.tooltip": "Choose whether the paper doll appears on the left or right side of the screen.",
+  "bedrockskins.option.paper_doll_side.left": "Left",
+  "bedrockskins.option.paper_doll_side.right": "Right"
 }

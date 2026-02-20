@@ -341,7 +341,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         }
         if (control(keyCode == InputConstants.KEY_LBRACKET, keyCode == InputConstants.KEY_RBRACKET)) return true;
         if (control(keyCode == InputConstants.KEY_LEFT, keyCode == InputConstants.KEY_RIGHT)) return true;
-        if (handlePoseChange(keyCode == InputConstants.KEY_LSHIFT, keyCode == InputConstants.KEY_RSHIFT)) return true;
+        if (handlePoseChange(keyCode == InputConstants.KEY_RSHIFT, keyCode == InputConstants.KEY_LSHIFT)) return true;
 
         return super.keyPressed(event);
     }
@@ -392,7 +392,11 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         if (!hasSelectedSkinWidget()) return false;
         if (playerSkinWidgetList.element3.isInterpolating()) return false;
 
-        playerSkinWidgetList.element3.cyclePose();
+        if (right) {
+            playerSkinWidgetList.element3.cyclePose(true);
+        } else if (left) {
+            playerSkinWidgetList.element3.cyclePose(false);
+        }
         return true;
     }
 
@@ -417,6 +421,8 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             favorite();
         }
         if (state.is(ControllerBinding.RIGHT_STICK_DOWN) && state.justPressed) {
+            if (handlePoseChange(false, true)) return;
+        } else if (state.is(ControllerBinding.RIGHT_STICK_UP) && state.justPressed) {
             if (handlePoseChange(true, false)) return;
         }
         // --- Controller right stick rotation for preview ---

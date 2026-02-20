@@ -27,17 +27,13 @@ public class PlayerSkinWidget extends AbstractWidget {
     private static final String AUTO_SELECTED_INTERNAL_NAME = "__auto_selected__";
 
     private static final float ROTATION_SENSITIVITY = 2.5F;
-    private static final float DEFAULT_ROTATION_X = -5.0F;
-    private static final float DEFAULT_ROTATION_Y = 30.0F;
     private static final float ROTATION_X_LIMIT = 50.0F;
     private static final float LEGACY_WALK_SPEED = 0.3F;
     private static final float LEGACY_WALK_DISTANCE = 1.0F;
     private static final long WALK_SYNC_EPOCH_MS = currentTimeMillis();
-    private static final long WALK_STEP_MS = 10L;
+    private static final long WALK_STEP_MS = 16L;
     private static final int WALK_BOOTSTRAP_MOD_STEPS = 384;
-    private static final int WALK_MAX_CATCHUP_STEPS = 12;
     private static final float WALK_STEP_SPEED = LEGACY_WALK_SPEED * (WALK_STEP_MS / 50.0F);
-    private static final long SWING_REPEAT_MS = 260L;
     private static final long PREVIEW_TICK_MS = 50L;
     
     private PreviewPlayer dummyPlayer;
@@ -272,9 +268,6 @@ public class PlayerSkinWidget extends AbstractWidget {
             // Advance entity simulation so swing animation progresses in preview
             advancePreviewSimulation(dummyPlayer);
 
-            // Keep age-based idle/walk arm bob active every frame
-            dummyPlayer.tickCount = (int)(currentTimeMillis() / 50L);
-
             // Apply pose
             boolean crouching = previewPose == PreviewPose.SNEAKING;
             dummyPlayer.setShiftKeyDown(crouching);
@@ -288,7 +281,7 @@ public class PlayerSkinWidget extends AbstractWidget {
             int top = this.getY();
             int right = this.getX() + this.getWidth();
             int bottom = this.getY() + this.getHeight();
-            int sizeCap = 110; // Increased for larger preview models
+            int sizeCap = 110;
             
             com.brandonitaly.bedrockskins.client.gui.GuiUtils.renderEntityInRect(
                 guiGraphics, dummyPlayer, yawOffset, left, top, right, bottom, sizeCap
@@ -300,19 +293,15 @@ public class PlayerSkinWidget extends AbstractWidget {
         if (player == null) return;
 
         long now = currentTimeMillis();
-        long elapsed = now - lastWalkUpdateMs;
-        if (elapsed < WALK_STEP_MS) return;
+        long elapsed = now - WALK_SYNC_EPOCH_MS;
+        int totalSteps = (int) (elapsed / WALK_STEP_MS);
 
-        int steps = (int) (elapsed / WALK_STEP_MS);
-        if (steps > WALK_MAX_CATCHUP_STEPS) {
-            steps = WALK_MAX_CATCHUP_STEPS;
-        }
-
-        for (int i = 0; i < steps; i++) {
+        player.walkAnimation.stop();
+        for (int i = 0; i < totalSteps; i++) {
             player.walkAnimation.update(WALK_STEP_SPEED, 1.0F, LEGACY_WALK_DISTANCE);
         }
 
-        lastWalkUpdateMs += (long) steps * WALK_STEP_MS;
+        lastWalkUpdateMs = now;
     }
 
     private void initializeWalkAnimationPhase(PreviewPlayer player) {
@@ -347,10 +336,15 @@ public class PlayerSkinWidget extends AbstractWidget {
         if (player == null || previewPose != PreviewPose.PUNCHING) return;
 
         long now = currentTimeMillis();
-        if (lastSwingPoseTriggerMs == 0L || (now - lastSwingPoseTriggerMs) >= SWING_REPEAT_MS) {
-            player.swing(InteractionHand.MAIN_HAND);
-            lastSwingPoseTriggerMs = now;
-        }
+        float swingDuration = 6.0F;
+        float swingTimeMs = swingDuration * 50.0F;
+        float timeSinceStart = (now - WALK_SYNC_EPOCH_MS) % (int)swingTimeMs;
+        float swingProgress = timeSinceStart / swingTimeMs;
+
+        player.swinging = true;
+        player.swingTime = (int)(swingProgress * swingDuration);
+        player.swingingArm = InteractionHand.MAIN_HAND;
+        player.attackAnim = swingProgress;
     }
 
     private static long currentTimeMillis() {
@@ -380,10 +374,6 @@ public class PlayerSkinWidget extends AbstractWidget {
         return false;
     }
 
-    public void togglePose() {
-        cyclePose();
-    }
-
     public void toggleCrouchPose() {
         previewPose = previewPose == PreviewPose.SNEAKING ? PreviewPose.STANDING : PreviewPose.SNEAKING;
     }
@@ -395,12 +385,20 @@ public class PlayerSkinWidget extends AbstractWidget {
         }
     }
 
-    public void cyclePose() {
-        previewPose = switch (previewPose) {
-            case STANDING -> PreviewPose.SNEAKING;
-            case SNEAKING -> PreviewPose.PUNCHING;
-            case PUNCHING -> PreviewPose.STANDING;
-        };
+    public void cyclePose(boolean forward) {
+        if (forward) {
+            previewPose = switch (previewPose) {
+                case STANDING -> PreviewPose.SNEAKING;
+                case SNEAKING -> PreviewPose.PUNCHING;
+                case PUNCHING -> PreviewPose.STANDING;
+            };
+        } else {
+            previewPose = switch (previewPose) {
+                case STANDING -> PreviewPose.PUNCHING;
+                case SNEAKING -> PreviewPose.STANDING;
+                case PUNCHING -> PreviewPose.SNEAKING;
+            };
+        }
         if (previewPose == PreviewPose.PUNCHING) {
             lastSwingPoseTriggerMs = 0L;
         }
