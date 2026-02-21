@@ -63,7 +63,7 @@ public abstract class MixinTitleScreen extends Screen {
     @Unique
     private static final int BEDROCKSKINS_BUTTON_SIZE = 20;
     @Unique
-    private static final int BEDROCKSKINS_BUTTON_GAP = -8;
+    private static final int BEDROCKSKINS_BUTTON_GAP = -16;
     @Unique
     private static final float BEDROCKSKINS_ROTATION_SENSITIVITY = 1.6F;
     @Unique
