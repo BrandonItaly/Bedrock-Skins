@@ -49,7 +49,6 @@ public abstract class MixinHumanoidModel<T extends HumanoidRenderState> {
         copyPose(bedrockModel.head, this.head);
         copyPose(bedrockModel.hat, this.hat);
         copyPose(bedrockModel.body, this.body);
-        syncCapePivots(bedrockModel);
         copyPose(bedrockModel.rightArm, this.rightArm);
         copyPose(bedrockModel.leftArm, this.leftArm);
         copyPose(bedrockModel.rightLeg, this.rightLeg);
@@ -89,16 +88,6 @@ public abstract class MixinHumanoidModel<T extends HumanoidRenderState> {
         } catch (Throwable ignored) {
             return false;
         }
-    }
-
-    private void syncCapePivots(BedrockPlayerModel bedrockModel) {
-        if (this.body == null || bedrockModel == null) return;
-
-        ModelPart sourceCape = bedrockModel.partsMap.get("cape");
-        if (sourceCape != null) copyChildIfPresent(sourceCape, this.body, "cape");
-
-        ModelPart sourceElytra = bedrockModel.partsMap.get("elytra");
-        if (sourceElytra != null) copyChildIfPresent(sourceElytra, this.body, "elytra");
     }
 
     private static void copyChildIfPresent(ModelPart sourcePart, ModelPart targetParent, String childName) {

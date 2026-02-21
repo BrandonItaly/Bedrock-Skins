@@ -9,7 +9,7 @@
     "MixinHumanoidModel",
     "MixinHumanoidArmorLayer",
     "MixinCapeFeatureRenderer",
-    "MixinWingsLayer",
+    "MixinElytraModel",
     "MixinPlayerListEntry",
     "MixinTranslationStorage",
     "MixinTitleScreen",
