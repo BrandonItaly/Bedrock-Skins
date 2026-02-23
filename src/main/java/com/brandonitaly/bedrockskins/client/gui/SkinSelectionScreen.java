@@ -10,6 +10,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.tabs.GridLayoutTab;
 import net.minecraft.client.gui.components.tabs.TabManager;
 import net.minecraft.client.gui.components.tabs.TabNavigationBar;
@@ -116,6 +117,7 @@ public class SkinSelectionScreen extends Screen {
         }
         openPacksButton.setX(width / 2 - 154); openPacksButton.setY(btnY);
         openPacksButton.setWidth(btnW); openPacksButton.setHeight(btnH);
+        openPacksButton.setTooltip(Tooltip.create(Component.translatable("pack.folderInfo")));
 
         if (doneButton == null) {
             doneButton = Button.builder(CommonComponents.GUI_DONE, b -> onClose()).build();

@@ -319,9 +319,6 @@ public class SkinPreviewPanel {
             if (hasDesc) {
                 gui.drawCenteredString(font, descToRender, centerX, currentTextY, 0xFFAAAAAA);
             }
-        } else {
-            int centerY = contentTop + (contentHeight / 2) - (font.lineHeight / 2);
-            gui.drawCenteredString(font, Component.translatable("bedrockskins.preview.unavailable"), centerX, centerY, 0xFFAAAAAA);
         }
     }
     

@@ -30,7 +30,7 @@ public class BedrockSkinsConfig {
         NONE("bedrockskins.option.show_paper_doll.none"),
         BOTH("bedrockskins.option.show_paper_doll.both"),
         MAIN_MENU("bedrockskins.option.show_paper_doll.main_menu"),
-        PAUSE_SCREEN("bedrockskins.option.show_paper_doll.pause_screen");
+        PAUSE_MENU("bedrockskins.option.show_paper_doll.pause_menu");
 
         private final String translationKey;
 
@@ -143,7 +143,7 @@ public class BedrockSkinsConfig {
     }
 
     public static synchronized boolean isShowPaperDollOnPauseScreen() {
-        return paperDollMode == PaperDollMode.BOTH || paperDollMode == PaperDollMode.PAUSE_SCREEN;
+        return paperDollMode == PaperDollMode.BOTH || paperDollMode == PaperDollMode.PAUSE_MENU;
     }
 
     public static synchronized boolean isPaperDollLeftSideEnabled() {
