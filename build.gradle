@@ -248,8 +248,7 @@ tasks.register('renameJarForPublication', Zip) {
 
 assemble.dependsOn renameJarForPublication
 
-var modPlatformName = loader.capitalize()
-
+def modPlatformName = loader == "neoforge" ? "NeoForge" : loader.capitalize()
 
 publishing {
     publications {
