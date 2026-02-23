@@ -8,9 +8,15 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.EntityAttachment;
+//? if >=1.21.11 {
+import net.minecraft.resources.Identifier;
+//?} else {
+/*import net.minecraft.resources.ResourceLocation;*/
+//?}
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -98,26 +104,16 @@ public final class GuiUtils {
         return skin != null && skin.isUpsideDown();
     }
 
+    //? if >=1.21.11 {
+    private static final Identifier PANEL_SPRITE = Identifier.fromNamespaceAndPath("bedrockskins", "container/skin_panel");
+    //?} else {
+    /*private static final ResourceLocation PANEL_SPRITE = ResourceLocation.fromNamespaceAndPath("bedrockskins", "container/skin_panel");*/
+    //?}
+
     public static void drawPanelChrome(GuiGraphics gui, int x, int y, int w, int h, Component title, Font font) {
-        int PANEL_HEADER_HEIGHT = 24;
-        int right = x + w;
-        int bottom = y + h;
+        gui.blitSprite(RenderPipelines.GUI_TEXTURED, PANEL_SPRITE, x-1, y-1, w+2, h+2);
 
-        int COL_PANEL_BG = 0xE6181818;
-        int COL_PANEL_HEADER = 0xFF252525;
-        int COL_BORDER_OUTER = 0xFF000000;
-        int COL_BORDER_INNER = 0xFF383838;
         int COL_TEXT_TITLE = 0xFFFFFFFF;
-
-        gui.fill(x - 1, y - 1, right + 1, bottom + 1, COL_BORDER_OUTER);
-        gui.fill(x, y, right, bottom, COL_PANEL_BG);
-        gui.fill(x, y, right, y + PANEL_HEADER_HEIGHT, COL_PANEL_HEADER);
-        gui.fill(x, y + PANEL_HEADER_HEIGHT, right, y + PANEL_HEADER_HEIGHT + 1, COL_BORDER_INNER);
         gui.drawCenteredString(font, title, x + (w / 2), y + 8, COL_TEXT_TITLE);
-
-        gui.fill(x, y, right, y + 1, COL_BORDER_INNER);
-        gui.fill(x, bottom - 1, right, bottom, COL_BORDER_INNER);
-        gui.fill(x, y, x + 1, bottom, COL_BORDER_INNER);
-        gui.fill(right - 1, y, right, bottom, COL_BORDER_INNER);
     }
 }
