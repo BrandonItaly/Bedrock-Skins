@@ -246,37 +246,81 @@ public class SkinPreviewPanel {
 
     public void render(GuiGraphics gui, int mouseX, int mouseY) {
         GuiUtils.drawPanelChrome(gui, x, y, width, height, Component.translatable("bedrockskins.gui.preview"), font);
+
+        int PANEL_HEADER_HEIGHT = 24;
+        int BUTTONS_RESERVED_HEIGHT = 60; 
         
-        int PANEL_HEADER_HEIGHT = 24, buttonsHeight = 90;
-        int entityH = height - PANEL_HEADER_HEIGHT - buttonsHeight;
-        
-        int rotateW = Math.max(30, Math.min((int)(width * 0.3f), 90));
-        int rotateH = (int)Math.ceil(rotateW * (7.0f / 45.0f)); 
-        
-        int rotateGap = 6;
-        int availableHeight = Math.max(entityH - (rotateH + rotateGap), 0);
+        int contentTop = y + PANEL_HEADER_HEIGHT;
+        int contentBottom = y + height - BUTTONS_RESERVED_HEIGHT;
+        int contentHeight = Math.max(0, contentBottom - contentTop);
         int centerX = x + width / 2;
-        int centerY = y + PANEL_HEADER_HEIGHT + availableHeight / 2 + 15;
-        int uiStartY = y + height - 4 - 40 - 8 - font.lineHeight - 4; // text Y placement
+
+        int rotateW = Math.max(30, Math.min((int)(width * 0.3f), 90));
+        int rotateH = (int)Math.ceil(rotateW * (7.0f / 45.0f));
 
         if (dummyPlayer != null) {
             if (currentSkinId == null && selectedSkin == null) applyAutoSelectedSkinBehavior();
             dummyPlayer.tickCount = (int)(Util.getMillis() / 50L);
-            
-            if (isDraggingPreview) rotationX -= (mouseX - lastMouseX) * 0.5f;
+
+            if (isDraggingPreview) {
+                rotationX -= (mouseX - lastMouseX) * 0.5f;
+            }
             lastMouseX = mouseX;
+
+            // Gather text dependencies
+            boolean hasSkin = selectedSkin != null;
+            String nameToRender = null;
+            String descToRender = null;
+
+            if (hasSkin) {
+                nameToRender = SkinPackLoader.getTranslation(selectedSkin.getSafeSkinName());
+                if (nameToRender == null) nameToRender = selectedSkin.getSkinDisplayName();
+
+                String descKey = selectedSkin.getSafeSkinName() + ".description";
+                descToRender = SkinPackLoader.getTranslation(descKey);
+            }
+
+            boolean hasName = nameToRender != null && !nameToRender.isEmpty();
+            boolean hasDesc = descToRender != null && !descToRender.isEmpty();
+
+            // Reserve fixed space for text at the very bottom
+            int textGap = 4;
+            int maxTextHeight = (font.lineHeight * 2) + textGap; 
+            int textY = contentBottom - maxTextHeight;
+
+            // Calculate Model Space
+            int modelAreaHeight = Math.max(0, textY - contentTop);
             
-            renderRotatableEntity(gui, centerX, centerY, width, availableHeight, dummyPlayer);
+            // Calculate scale
+            int scale = Math.max((int)(modelAreaHeight * 0.40f), 20); 
+            
+            // Shift the center slightly up so the player + rotate sprite are visually centered
+            int centerY = contentTop + (modelAreaHeight / 2) - (rotateH / 2);
 
-            int rotateY = Math.max(previewBottom + (uiStartY - previewBottom - rotateH) / 2, previewBottom + rotateGap);
+            // Render Entity
+            renderRotatableEntity(gui, centerX, centerY, width - 16, modelAreaHeight, scale, dummyPlayer);
+
+            // Render Rotate Sprite
+            int rotateY = (int)(centerY + (scale * 0.95f)); 
+            
+            // Safeguard: Ensure the sprite never overlaps the text area if window gets too small
+            rotateY = Math.min(rotateY, textY - rotateH - 4);
+
             gui.blitSprite(RenderPipelines.GUI_TEXTURED, ROTATE_SPRITE, centerX - (rotateW / 2), rotateY, rotateW, rotateH);
-        } else {
-            gui.drawCenteredString(font, Component.translatable("bedrockskins.preview.unavailable"), centerX, y + PANEL_HEADER_HEIGHT + (availableHeight / 2) - (font.lineHeight / 2), 0xFFAAAAAA);
-        }
+            
+            // Render Text Elements anchored to the bottom
+            int currentTextY = textY;
 
-        if (selectedSkin != null) {
-            String name = SkinPackLoader.getTranslation(selectedSkin.getSafeSkinName());
-            gui.drawCenteredString(font, name != null ? name : selectedSkin.getSkinDisplayName(), centerX, uiStartY, 0xFFAAAAAA);
+            if (hasName) {
+                gui.drawCenteredString(font, nameToRender, centerX, currentTextY, 0xFFAAAAAA);
+                currentTextY += font.lineHeight + textGap;
+            }
+            if (hasDesc) {
+                gui.drawCenteredString(font, descToRender, centerX, currentTextY, 0xFFAAAAAA);
+            }
+        } else {
+            int centerY = contentTop + (contentHeight / 2) - (font.lineHeight / 2);
+            gui.drawCenteredString(font, Component.translatable("bedrockskins.preview.unavailable"), centerX, centerY, 0xFFAAAAAA);
         }
     }
     
@@ -296,9 +340,11 @@ public class SkinPreviewPanel {
         return false;
     }
     
-    private void renderRotatableEntity(GuiGraphics gui, int x, int y, int width, int height, LivingEntity entity) {
-        int scale = Math.max((int)(height * 0.43f), 20);
-        GuiUtils.renderEntityInRect(gui, entity, rotationX * 3, x - width, y - height, x + width, y + height, scale);
+    private void renderRotatableEntity(GuiGraphics gui, int centerX, int centerY, int boxWidth, int boxHeight, int scale, LivingEntity entity) {
+        int halfW = boxWidth / 2;
+        int halfH = boxHeight / 2;
+        
+        GuiUtils.renderEntityInRect(gui, entity, rotationX * 3, centerX - halfW, centerY - halfH, centerX + halfW, centerY + halfH, scale);
     }
     
     public void setButtonsVisible(boolean visible) {

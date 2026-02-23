@@ -67,6 +67,10 @@ public class BedrockSkinsConfig {
         Codec.BOOL.optionalFieldOf("paperDollLeftSide", DEFAULTS.paperDollLeftSide()).forGetter(ConfigData::paperDollLeftSide)
     ).apply(instance, ConfigData::new));
 
+    static {
+        load();
+    }
+
     public static final OptionInstance<Boolean> SCAN_RESOURCE_PACKS = OptionInstance.createBoolean(
         "bedrockskins.option.scan_resourcepacks",
         value -> Tooltip.create(Component.translatable("bedrockskins.option.scan_resourcepacks.tooltip")),
@@ -106,10 +110,6 @@ public class BedrockSkinsConfig {
         isPaperDollLeftSideEnabled(),
         BedrockSkinsConfig::setPaperDollLeftSide
     );
-
-    static {
-        load();
-    }
 
     public static synchronized boolean isScanResourcePacksForSkinsEnabled() {
         return scanResourcePacksForSkins;

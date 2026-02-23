@@ -119,10 +119,17 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
         // --- Shared Logic ---
 
         private void renderCommon(GuiGraphics context, int x, int y, int mouseX, int mouseY, float tickDelta) {
+            // Calculate grid widget bounds
+            int gridLeft = SkinGridWidget.this.getX();
+            int gridTop = SkinGridWidget.this.getY();
+            int gridRight = gridLeft + SkinGridWidget.this.width;
+            int gridBottom = gridTop + SkinGridWidget.this.height;
+            boolean mouseInGrid = mouseX >= gridLeft && mouseX < gridRight && mouseY >= gridTop && mouseY < gridBottom;
             for (int i = 0; i < cells.size(); i++) {
                 SkinCell cell = cells.get(i);
                 int cx = x + (i * (CELL_WIDTH + CELL_PADDING));
-                boolean isHovered = mouseX >= cx && mouseX < cx + CELL_WIDTH && mouseY >= y && mouseY < y + CELL_HEIGHT;
+                // Only allow hover if mouse is inside grid widget
+                boolean isHovered = mouseInGrid && mouseX >= cx && mouseX < cx + CELL_WIDTH && mouseY >= y && mouseY < y + CELL_HEIGHT;
                 cell.render(context, cx, y, CELL_WIDTH, CELL_HEIGHT, isHovered, tickDelta, mouseX, mouseY);
             }
         }

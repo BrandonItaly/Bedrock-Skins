@@ -684,19 +684,29 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             if (packDisplayName == null) packDisplayName = fallbackName;
         }
 
-        int nameY = panel.getY() + 16 + 4 + 7;
+        var stack = guiGraphics.pose();
+
+        // Render skin pack name
+        stack.pushMatrix();
+        stack.translate(middle, panel.getY() + 16 + 4 + 7);
+        stack.scale(1.5f, 1.5f);
         guiGraphics.drawCenteredString(
             minecraft.font,
             Component.literal(packDisplayName),
-            middle,
-            nameY,
+            0,
+            0,
             0xffffffff
         );
+        stack.popMatrix();
 
-        // Draw subtitle below pack name using Component.translatable so Minecraft handles translation
+        // Draw subtitle below pack name
         if (focusedPack != null && focusedPack.getPackType() != null && !focusedPack.getPackType().isEmpty()) {
+            stack.pushMatrix();
+            stack.translate(middle, panel.getY() + 16 + 4 + 25);
+            stack.scale(1f, 1f);
             String key = "bedrockskins.packType." + focusedPack.getPackType();
-            guiGraphics.drawCenteredString(minecraft.font, Component.translatable(key), middle, nameY + 12, 0xFFAAAAAA);
+            guiGraphics.drawCenteredString(minecraft.font, Component.translatable(key), 0, 0, 0xffffffff);
+            stack.popMatrix();
         }
     }
     
@@ -704,7 +714,6 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         LoadedSkin skin = playerSkinWidgetList.element3.getCurrentSkin();
         if (skin == null) return;
         
-        // Render skin name
         int x = tooltipBox.getX() - 5;
         int width = tooltipBox.getWidth() - 18;
         int middle = x + width / 2;
@@ -717,7 +726,26 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             if (skinName == null) skinName = skin.getSkinDisplayName();
             skinNameComponent = Component.literal(skinName);
         }
-        guiGraphics.drawCenteredString(minecraft.font, skinNameComponent, middle, panel.getY() + tooltipBox.getHeight() - 59 + 10, 0xffffffff);
+
+        var stack = guiGraphics.pose();
+
+        // Render skin name
+        stack.pushMatrix();
+        stack.translate(middle, panel.getY() + tooltipBox.getHeight() - 59 + 10);
+        stack.scale(1.5f, 1.5f);
+        guiGraphics.drawCenteredString(minecraft.font, skinNameComponent, 0, 0, 0xffffffff);
+        stack.popMatrix();
+
+        // Render description if available
+        String descKey = skin.getSafeSkinName() + ".description";
+        String desc = SkinPackLoader.getTranslation(descKey);
+        if (desc != null && !desc.isEmpty()) {
+            stack.pushMatrix();
+            stack.translate(middle, panel.getY() + tooltipBox.getHeight() - 59 + 35);
+            stack.scale(1.5f, 1.5f);
+            guiGraphics.drawCenteredString(minecraft.font, Component.literal(desc), 0, 0, 0xffffffff);
+            stack.popMatrix();
+        }
         
         // Render checkmark if this skin is currently selected
         SkinId currentSkinKey = SkinManager.getLocalSelectedKey();
