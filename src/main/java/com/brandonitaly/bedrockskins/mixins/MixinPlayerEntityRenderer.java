@@ -66,33 +66,6 @@ public abstract class MixinPlayerEntityRenderer {
                 final var finalSleeve = sleeve;
                 boolean sleeveIsChild = finalPart.hasChild(side + "_sleeve") || finalPart.hasChild(side + "Sleeve");
 
-                //? if <=1.21.8 {
-                /*
-                var consumers = (MultiBufferSource) rendererOrQueue;
-                var layer = RenderLayer.getEntityTranslucent(texture);
-                
-                MatrixStack ms = new MatrixStack();
-                ms.peek().getPositionMatrix().set(matrices.peek().getPositionMatrix());
-                ms.peek().getNormalMatrix().set(matrices.peek().getNormalMatrix());
-
-                float handZRot = isRightArm ? 0.1F : -0.1F;
-                finalPart.resetTransform();
-                finalPart.visible = true;
-                finalPart.zRot = handZRot;
-                if (finalSleeve != null) {
-                    finalSleeve.resetTransform();
-                    finalSleeve.visible = sleeveVisible;
-                    if (!sleeveIsChild) {
-                        finalSleeve.zRot = handZRot;
-                    }
-                }
-
-                finalPart.render(ms, consumers.getBuffer(layer), light, OverlayTexture.DEFAULT_UV);
-                if (finalSleeve != null && !sleeveIsChild && sleeveVisible) {
-                    finalSleeve.render(ms, consumers.getBuffer(layer), light, OverlayTexture.DEFAULT_UV);
-                }
-                */
-                //?} else {
                 var queue = (SubmitNodeCollector) rendererOrQueue;
                 
                 //? if <1.21.11 {
@@ -124,26 +97,11 @@ public abstract class MixinPlayerEntityRenderer {
                         finalSleeve.render(ms, consumer, light, OverlayTexture.NO_OVERLAY);
                     }
                 });
-                //?}
                 ci.cancel();
             }
         }
     }
 
-    //? if <=1.21.8 {
-    /*
-    @Inject(method = "updateRenderState", at = @At("RETURN"))
-    private void updateRenderState(AbstractClientPlayer player, net.minecraft.client.renderer.entity.state.PlayerRenderState state, float tickDelta, CallbackInfo ci) {
-        if (state instanceof BedrockSkinState skinState) skinState.setUniqueId(player.getUUID());
-    }
-
-    @Inject(method = "renderHand", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/model/geom/ModelPart;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;II)V"), cancellable = true)
-    private void renderHand(PoseStack matrices, MultiBufferSource consumers, int light, AbstractClientPlayer player, ModelPart arm, ModelPart sleeve, CallbackInfo ci) {
-        HumanoidModel<?> model = (HumanoidModel<?>) ((AvatarRenderer)(Object)this).getModel();
-        boolean isRightArm = (arm == model.rightArm);
-        bedrockSkins$renderArm(isRightArm, matrices, light, player.getSkinTextureLocation(), sleeve.visible, consumers, ci);
-    }*/
-    //?} else {
     @Inject(method = "extractRenderState", at = @At("RETURN"))
     private void updateRenderState(Avatar player, AvatarRenderState state, float tickDelta, CallbackInfo ci) {
         if (player instanceof AbstractClientPlayer cp && state instanceof BedrockSkinState skinState) {
@@ -163,16 +121,6 @@ public abstract class MixinPlayerEntityRenderer {
         bedrockSkins$renderArm(isRightArm, matrices, light, tex, sleeve, queue, ci);
     }
 
-    //? if <=1.21.8 {
-    /*@Inject(method = "isEntityUpsideDown", at = @At("HEAD"), cancellable = true)
-    private void isEntityUpsideDown(AbstractClientPlayer player, CallbackInfoReturnable<Boolean> ci) {
-        SkinId skinId = SkinManager.getSkin(player.getUUID().toString());
-        if (skinId != null) {
-            var skin = SkinPackLoader.getLoadedSkin(skinId);
-            if (skin != null && skin.isUpsideDown()) ci.setReturnValue(true);
-        }
-    }*/
-    //?} else {
     @Inject(method = "isEntityUpsideDown", at = @At("HEAD"), cancellable = true)
     private void isEntityUpsideDown(Avatar player, CallbackInfoReturnable<Boolean> ci) {
         if (player instanceof AbstractClientPlayer cp) {
@@ -183,7 +131,6 @@ public abstract class MixinPlayerEntityRenderer {
             }
         }
     }
-    //?}
 
     @Inject(method = "getTextureLocation", at = @At("HEAD"), cancellable = true)
     //? if >=1.21.11 {

@@ -74,17 +74,6 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
             return true;
         }
 
-        //? if <=1.21.8 {
-        /*
-        public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-            renderCommon(context, x, y, hovered);
-        }
-
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            return clickCommon();
-        }
-        */
-        //?} else {
         public void renderContent(GuiGraphics context, int mouseX, int mouseY, boolean hovered, float tickDelta) {
             renderCommon(context, getX(), getY(), hovered);
         }
@@ -92,7 +81,6 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
         public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
             return clickCommon();
         }
-        //?}
 
         public Component getNarration() { return Component.literal(packId); }
     }

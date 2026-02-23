@@ -83,15 +83,8 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
         return this.getX() + this.width - 6;
     }
 
-    //? if <=1.21.8 {
-    /*
-    @Override
-    protected void renderSelection(DrawContext context, int startX, int startY, int width, int height, int color) {}
-    */
-    //?} else {
     @Override
     protected void renderSelection(GuiGraphics context, SkinRowEntry entry, int color) {}
-    //?}
 
     public void addEntryPublic(SkinRowEntry entry) {
         super.addEntry(entry);
@@ -161,19 +154,6 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
 
         // --- Version Specific Wrappers ---
 
-        //? if <=1.21.8 {
-        /*
-        @Override
-        public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-            renderCommon(context, x, y, mouseX, mouseY, tickDelta);
-        }
-
-        @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            return clickCommon((int)(mouseX - SkinGridWidget.this.getX()), false);
-        }
-        */
-        //?} else {
         public void renderContent(GuiGraphics context, int mouseX, int mouseY, boolean hovered, float tickDelta) {
             renderCommon(context, getX(), getY(), mouseX, mouseY, tickDelta);
         }
@@ -181,7 +161,6 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
         public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
             return clickCommon((int) (click.x() - getX()), doubled);
         }
-        //?}
 
         @Override
         public Component getNarration() {

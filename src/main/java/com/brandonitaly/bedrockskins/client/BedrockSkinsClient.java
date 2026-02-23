@@ -56,36 +56,17 @@ public class BedrockSkinsClient implements ClientModInitializer {
     public static KeyMapping toggleCapeKey, toggleJacketKey, toggleLeftSleeveKey, toggleRightSleeveKey,
                            toggleLeftPantsKey, toggleRightPantsKey, toggleHatKey, toggleMainHandKey, openKey;
     
-    //? if >1.21.8 {
     private static KeyMapping.Category keybindCategory;
-    //?}
 
     public static void createKeybinds() {
-        //? if >1.21.8 {
         //? if >=1.21.11 {
         keybindCategory = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("bedrockskins", "controls"));
         //?} else {
         /*keybindCategory = KeyMapping.Category.register(ResourceLocation.fromNamespaceAndPath("bedrockskins", "controls"));*/
         //?}
-        //?}
         
-        //? if <=1.21.8 {
-        /*String cat = "bedrockskins.controls";*/
-        //?} else {
         KeyMapping.Category cat = keybindCategory;
-        //?}
 
-        //? if <=1.21.8 {
-        /*openKey = new KeyBinding("key.bedrockskins.open", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_K, cat);
-        toggleCapeKey = new KeyBinding("key.bedrockskins.toggle_cape", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), cat);
-        toggleJacketKey = new KeyBinding("key.bedrockskins.toggle_jacket", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), cat);
-        toggleLeftSleeveKey = new KeyBinding("key.bedrockskins.toggle_left_sleeve", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), cat);
-        toggleRightSleeveKey = new KeyBinding("key.bedrockskins.toggle_right_sleeve", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), cat);
-        toggleLeftPantsKey = new KeyBinding("key.bedrockskins.toggle_left_pants", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), cat);
-        toggleRightPantsKey = new KeyBinding("key.bedrockskins.toggle_right_pants", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), cat);
-        toggleHatKey = new KeyBinding("key.bedrockskins.toggle_hat", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), cat);
-        toggleMainHandKey = new KeyBinding("key.bedrockskins.swap_main_hand", InputUtil.Type.KEYSYM, InputUtil.UNKNOWN_KEY.getCode(), cat);*/
-        //?} else {
         openKey = new KeyMapping("key.bedrockskins.open", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_K, cat);
         toggleCapeKey = new KeyMapping("key.bedrockskins.toggle_cape", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), cat);
         toggleJacketKey = new KeyMapping("key.bedrockskins.toggle_jacket", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), cat);
@@ -95,7 +76,6 @@ public class BedrockSkinsClient implements ClientModInitializer {
         toggleRightPantsKey = new KeyMapping("key.bedrockskins.toggle_right_pants", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), cat);
         toggleHatKey = new KeyMapping("key.bedrockskins.toggle_hat", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), cat);
         toggleMainHandKey = new KeyMapping("key.bedrockskins.swap_main_hand", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), cat);
-        //?}
     }
 
     public static Screen getAppropriateSkinScreen(Screen parent) {

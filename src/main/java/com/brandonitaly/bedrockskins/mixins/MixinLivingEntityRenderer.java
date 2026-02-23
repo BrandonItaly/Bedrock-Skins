@@ -69,17 +69,6 @@ public abstract class MixinLivingEntityRenderer {
 
     // --- Injectors ---
 
-    //? if <=1.21.8 {
-    /*@Inject(method = "render", at = @At("HEAD"))
-    private void onRenderHead(LivingEntityRenderState state, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
-        bedrockSkins$swapModel(state);
-    }
-
-    @Inject(method = "render", at = @At("RETURN"))
-    private void onRenderReturn(LivingEntityRenderState state, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
-        bedrockSkins$restoreModel();
-    }*/
-    //?} else {
     @Inject(method = "submit", at = @At("HEAD"))
     private void onRenderHead(LivingEntityRenderState state, PoseStack matrices, SubmitNodeCollector queue, CameraRenderState camera, CallbackInfo ci) {
         bedrockSkins$swapModel(state);
@@ -89,5 +78,4 @@ public abstract class MixinLivingEntityRenderer {
     private void onRenderReturn(LivingEntityRenderState state, PoseStack matrices, SubmitNodeCollector queue, CameraRenderState camera, CallbackInfo ci) {
         bedrockSkins$restoreModel();
     }
-    //?}
 }
