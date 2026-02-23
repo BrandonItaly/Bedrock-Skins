@@ -12,7 +12,7 @@ import com.mojang.authlib.GameProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -55,7 +55,7 @@ public abstract class MixinTitleScreen extends Screen {
     @Unique
     private UUID bedrockskins$menuPreviewUuid = UUID.randomUUID();
     @Unique
-    private Button bedrockskins$openSkinButton;
+    private SpriteIconButton bedrockskins$openSkinButton;
     @Unique
     private static final int BEDROCKSKINS_PREVIEW_WIDTH = 78;
     @Unique
@@ -107,11 +107,7 @@ public abstract class MixinTitleScreen extends Screen {
         }
 
         var accountProfile = minecraft.getGameProfile();
-        if (accountProfile != null && accountProfile.id() != null) {
-            bedrockskins$menuPreviewUuid = UUID.randomUUID();
-        } else {
-            bedrockskins$menuPreviewUuid = UUID.randomUUID();
-        }
+        bedrockskins$menuPreviewUuid = UUID.randomUUID();
 
         String previewName = accountProfile != null && accountProfile.name() != null
             ? accountProfile.name()
@@ -127,11 +123,13 @@ public abstract class MixinTitleScreen extends Screen {
         int buttonX = bedrockskins$getButtonX();
         int buttonY = bedrockskins$getButtonY();
 
-        bedrockskins$openSkinButton = Button.builder(net.minecraft.network.chat.Component.empty(), b -> {
-                    minecraft.setScreen(BedrockSkinsClient.getAppropriateSkinScreen(this));
-                })
-                .bounds(buttonX, buttonY, BEDROCKSKINS_BUTTON_SIZE, BEDROCKSKINS_BUTTON_SIZE)
-                .build();
+        bedrockskins$openSkinButton = SpriteIconButton.builder(
+                Component.empty(),
+                b -> minecraft.setScreen(BedrockSkinsClient.getAppropriateSkinScreen(this)),
+                true)
+            .size(BEDROCKSKINS_BUTTON_SIZE, BEDROCKSKINS_BUTTON_SIZE)
+            .sprite(BEDROCKSKINS_MENU_BUTTON_SPRITE, 16, 16)
+            .build();
         addRenderableWidget(bedrockskins$openSkinButton);
 
         bedrockskins$applyCurrentEquippedPreviewBehavior();
@@ -169,13 +167,8 @@ public abstract class MixinTitleScreen extends Screen {
         GuiUtils.renderEntityInRect(guiGraphics, bedrockskins$menuPreviewPlayer, bedrockskins$previewYaw, left, top - namePaddingTop, right, bottom, 56);
 
         if (bedrockskins$openSkinButton != null && bedrockskins$openSkinButton.visible) {
-            int buttonX = bedrockskins$getButtonX();
-            int buttonY = bedrockskins$getButtonY();
-            bedrockskins$openSkinButton.setX(buttonX);
-            bedrockskins$openSkinButton.setY(buttonY);
-            int iconX = bedrockskins$openSkinButton.getX() + 2;
-            int iconY = bedrockskins$openSkinButton.getY() + 2;
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BEDROCKSKINS_MENU_BUTTON_SPRITE, iconX, iconY, 16, 16);
+            bedrockskins$openSkinButton.setX(bedrockskins$getButtonX());
+            bedrockskins$openSkinButton.setY(bedrockskins$getButtonY());
         }
     }
 

@@ -12,6 +12,7 @@ import com.mojang.authlib.GameProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -23,12 +24,12 @@ import net.minecraft.util.Util;
 /*import net.minecraft.resources.ResourceLocation;
 import net.minecraft.Util;*/
 //?}
-import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.UUID;
 
@@ -52,7 +53,7 @@ public abstract class MixinPauseScreen extends Screen {
     @Unique
     private UUID bedrockskins$pausePreviewUuid = UUID.randomUUID();
     @Unique
-    private Button bedrockskins$openSkinButton;
+    private SpriteIconButton bedrockskins$openSkinButton;
     @Unique
     private static final int BEDROCKSKINS_PREVIEW_WIDTH = 78;
     @Unique
@@ -124,11 +125,14 @@ public abstract class MixinPauseScreen extends Screen {
         int buttonX = bedrockskins$getButtonX();
         int buttonY = bedrockskins$getButtonY();
 
-        bedrockskins$openSkinButton = Button.builder(Component.empty(), b ->
-                        minecraft.setScreen(BedrockSkinsClient.getAppropriateSkinScreen(this)))
-                .bounds(buttonX, buttonY, BEDROCKSKINS_BUTTON_SIZE, BEDROCKSKINS_BUTTON_SIZE)
-                .build();
-        this.addRenderableWidget(bedrockskins$openSkinButton);
+        bedrockskins$openSkinButton = SpriteIconButton.builder(
+                Component.empty(),
+                b -> minecraft.setScreen(BedrockSkinsClient.getAppropriateSkinScreen(this)),
+                true)
+            .size(BEDROCKSKINS_BUTTON_SIZE, BEDROCKSKINS_BUTTON_SIZE)
+            .sprite(BEDROCKSKINS_PAUSE_BUTTON_SPRITE, 16, 16)
+            .build();
+        addRenderableWidget(bedrockskins$openSkinButton);
 
         bedrockskins$applyCurrentEquippedPreviewBehavior();
     }
@@ -180,9 +184,6 @@ public abstract class MixinPauseScreen extends Screen {
         if (bedrockskins$openSkinButton != null && bedrockskins$openSkinButton.visible) {
             bedrockskins$openSkinButton.setX(buttonX);
             bedrockskins$openSkinButton.setY(buttonY);
-            int iconX = bedrockskins$openSkinButton.getX() + 2;
-            int iconY = bedrockskins$openSkinButton.getY() + 2;
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BEDROCKSKINS_PAUSE_BUTTON_SPRITE, iconX, iconY, 16, 16);
         }
     }
 

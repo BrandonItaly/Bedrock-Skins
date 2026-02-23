@@ -14,6 +14,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
@@ -389,7 +390,7 @@ public class SkinPreviewPanel {
     }
     
     private static class FavoriteHeartButton {
-        private final Button button;
+        private final SpriteIconButton button;
         //? if >=1.21.11 {
         private final Identifier containerSprite, fullSprite;
         public FavoriteHeartButton(int x, int y, int size, Identifier containerSprite, Identifier fullSprite, Button.OnPress onPress) {
@@ -399,22 +400,22 @@ public class SkinPreviewPanel {
         //?}
             this.containerSprite = containerSprite;
             this.fullSprite = fullSprite;
-            this.button = Button.builder(Component.empty(), onPress).bounds(x, y, size, size).build();
+            this.button = SpriteIconButton.builder(Component.empty(), onPress, true)
+                    .size(size, size)
+                    .sprite(containerSprite, 12, 12)
+                    .build();
         }
-        
+
         public AbstractWidget getButton() { return button; }
         public void setSelected(boolean selected) { this.isFavorited = selected; }
         public void setActive(boolean active) { button.active = active; }
         public void setTooltip(Component tooltip) { button.setTooltip(Tooltip.create(tooltip)); }
-        
+
         private boolean isFavorited = false;
-        
+
         public void renderSprites(GuiGraphics graphics) {
-            if (button.visible) {
-                graphics.blitSprite(RenderPipelines.GUI_TEXTURED, containerSprite, button.getX() + 4, button.getY() + 4, 12, 12);
-                if (isFavorited) {
-                    graphics.blitSprite(RenderPipelines.GUI_TEXTURED, fullSprite, button.getX() + 4, button.getY() + 4, 12, 12);
-                }
+            if (button.visible && isFavorited) {
+                graphics.blitSprite(RenderPipelines.GUI_TEXTURED, fullSprite, button.getX() + 4, button.getY() + 4, 12, 12);
             }
         }
     }
