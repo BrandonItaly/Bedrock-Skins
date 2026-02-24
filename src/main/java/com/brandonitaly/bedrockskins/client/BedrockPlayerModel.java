@@ -366,6 +366,8 @@ public class BedrockPlayerModel extends PlayerModel {
 
     public boolean shouldHideArmor() { return animationDontShowArmor; }
 
+    public boolean isStationaryLegs() { return animationStationaryLegs; }
+
     private void copyRotation(String name, ModelPart source) {
         if (source == null) return;
         ModelPart dest = resolvePart(name);
