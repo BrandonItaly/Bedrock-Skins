@@ -21,24 +21,15 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-//? if >=1.21.11 {
-import net.minecraft.resources.Identifier;
-import net.minecraft.util.Util;
-//?} else {
-/*import net.minecraft.resources.ResourceLocation;
-import net.minecraft.Util;*/
-//?}
+import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
+import net.minecraft./*? if <1.21.11 {*//**//*?} else {*/util./*?}*/Util;
 import net.minecraft.world.entity.player.PlayerModelPart;
 
 import java.io.File;
 import java.util.*;
 
 public class SkinSelectionScreen extends Screen {
-    //? if >=1.21.11 {
-    public static final Identifier TAB_HEADER_BACKGROUND = Identifier.withDefaultNamespace("textures/gui/tab_header_background.png");
-    //?} else {
-    /*public static final ResourceLocation TAB_HEADER_BACKGROUND = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/gui/tab_header_background.png");*/
-    //?}
+    public static final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ TAB_HEADER_BACKGROUND = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.withDefaultNamespace("textures/gui/tab_header_background.png");
 
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);

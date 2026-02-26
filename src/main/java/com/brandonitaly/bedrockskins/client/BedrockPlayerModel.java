@@ -108,7 +108,7 @@ public class BedrockPlayerModel extends PlayerModel {
         BoneNode(BedrockBone bone) {
             this(bone.getName(), bone.getParent(),
                  getListValue(bone.getPivot(), 0), getListValue(bone.getPivot(), 1), getListValue(bone.getPivot(), 2),
-                 toRadiansNeg(getListValue(bone.getRotation(), 0)), toRadiansNeg(getListValue(bone.getRotation(), 1)), toRadiansNeg(getListValue(bone.getRotation(), 2)),
+                 toRadiansNeg(getListValue(bone.getRotation(), 0)), toRadiansNeg(getListValue(bone.getRotation(), 1)), (float) Math.toRadians(getListValue(bone.getRotation(), 2)),
                  bone.getInflate(), bone.getMirror(),
                  bone.getCubes() != null ? bone.getCubes() : List.of());
         }

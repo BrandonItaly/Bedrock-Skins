@@ -6,11 +6,7 @@ import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.core.ClientAsset;
-//? if >=1.21.11 {
-import net.minecraft.resources.Identifier;
-//?} else {
-/*import net.minecraft.resources.ResourceLocation;*/
-//?}
+import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
 import net.minecraft.world.entity.player.PlayerSkin;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -30,11 +26,7 @@ public abstract class MixinPlayerListEntry {
         java.util.UUID id = profile.id();
         if (id == null) return;
 
-        //? if >=1.21.11 {
-        Identifier capeId = null;
-        //?} else {
-        /*ResourceLocation capeId = null;*/
-        //?}
+        /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ capeId = null;
 
         // Check for a Custom Bedrock Skin Cape first
         SkinId skinId = SkinManager.getSkin(id.toString());
@@ -51,11 +43,7 @@ public abstract class MixinPlayerListEntry {
         ClientAsset.Texture capeAsset;
         ClientAsset.Texture elytraAsset;
 
-        //? if >=1.21.11 {
-        Identifier elytraId = Identifier.fromNamespaceAndPath("minecraft", "textures/entity/equipment/wings/elytra.png");
-        //?} else {
-        /*ResourceLocation elytraId = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/entity/equipment/wings/elytra.png");*/
-        //?}
+        /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ elytraId = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("minecraft", "textures/entity/equipment/wings/elytra.png");
 
         // Priority logic for cape and elytra selection
         boolean hasBedrockCape = skinId != null && capeId != null;

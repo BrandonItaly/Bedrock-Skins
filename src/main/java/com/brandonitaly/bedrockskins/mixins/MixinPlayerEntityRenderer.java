@@ -15,12 +15,11 @@ import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 
+import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
 //? if >=1.21.11 {
-import net.minecraft.resources.Identifier;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 //?} else {
-/*import net.minecraft.resources.ResourceLocation;
-import net.minecraft.client.renderer.MultiBufferSource;
+/*import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;*/
 //?}
 
@@ -36,11 +35,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class MixinPlayerEntityRenderer {
 
     @Unique
-    //? if >=1.21.11 {
-    private void bedrockSkins$renderArm(boolean isRightArm, PoseStack matrices, int light, Identifier skinTexture, boolean sleeveVisible, Object rendererOrQueue, CallbackInfo ci) {
-    //?} else {
-    /*private void bedrockSkins$renderArm(boolean isRightArm, PoseStack matrices, int light, ResourceLocation skinTexture, boolean sleeveVisible, Object rendererOrQueue, CallbackInfo ci) {*/
-    //?}
+    private void bedrockSkins$renderArm(boolean isRightArm, PoseStack matrices, int light, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ skinTexture, boolean sleeveVisible, Object rendererOrQueue, CallbackInfo ci) {
         var player = Minecraft.getInstance().player;
         if (player == null) return;
         var uuid = player.getUUID();
@@ -112,10 +107,7 @@ public abstract class MixinPlayerEntityRenderer {
     }
 
     @Inject(method = "renderHand", at = @At("HEAD"), cancellable = true)
-    //? if >=1.21.11 {
-    private void renderHand(PoseStack matrices, SubmitNodeCollector queue, int light, Identifier tex, ModelPart arm, boolean sleeve, CallbackInfo ci) {
-    //?} else {
-    /*private void renderHand(PoseStack matrices, SubmitNodeCollector queue, int light, ResourceLocation tex, ModelPart arm, boolean sleeve, CallbackInfo ci) {*///?}
+    private void renderHand(PoseStack matrices, SubmitNodeCollector queue, int light, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ tex, ModelPart arm, boolean sleeve, CallbackInfo ci) {
         HumanoidModel<?> model = (HumanoidModel<?>) ((AvatarRenderer)(Object)this).getModel();
         boolean isRightArm = (arm == model.rightArm);
         bedrockSkins$renderArm(isRightArm, matrices, light, tex, sleeve, queue, ci);
@@ -133,11 +125,7 @@ public abstract class MixinPlayerEntityRenderer {
     }
 
     @Inject(method = "getTextureLocation", at = @At("HEAD"), cancellable = true)
-    //? if >=1.21.11 {
-    private void getTexture(AvatarRenderState state, CallbackInfoReturnable<Identifier> ci) {
-    //?} else {
-    /*private void getTexture(AvatarRenderState state, CallbackInfoReturnable<ResourceLocation> ci) {*/
-    //?}
+    private void getTexture(AvatarRenderState state, CallbackInfoReturnable</*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/> ci) {
         if (state instanceof BedrockSkinState skinState) {
             java.util.UUID uuid = skinState.getUniqueId();
             if (uuid != null) {

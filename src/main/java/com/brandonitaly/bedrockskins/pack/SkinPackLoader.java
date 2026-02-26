@@ -16,11 +16,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-//? if >=1.21.11 {
-import net.minecraft.resources.Identifier;
-//?} else {
-/*import net.minecraft.resources.ResourceLocation;*/
-//?}
+import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 
@@ -36,15 +32,9 @@ public final class SkinPackLoader {
 
     private SkinPackLoader() {}
 
-    //? if >=1.21.11 {
-    private static Identifier createIdentifier(String namespace, String path) {
-        return Identifier.fromNamespaceAndPath(namespace, path);
+    private static /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ createIdentifier(String namespace, String path) {
+        return /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath(namespace, path);
     }
-    //?} else {
-    /*private static ResourceLocation createIdentifier(String namespace, String path) {
-        return ResourceLocation.fromNamespaceAndPath(namespace, path);
-    }*/
-    //?}
 
     // --- Public API ---
 
@@ -142,11 +132,7 @@ public final class SkinPackLoader {
         }
     }
 
-    //? if >=1.21.11 {
-    public static Identifier registerTextureFor(SkinId id) {
-    //?} else {
-    /*public static ResourceLocation registerTextureFor(SkinId id) {*/
-    //?}
+    public static /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ registerTextureFor(SkinId id) {
         LoadedSkin skin = getLoadedSkin(id);
         if (skin == null) return null;
         if (skin.getIdentifier() != null) return skin.getIdentifier();
@@ -271,11 +257,7 @@ public final class SkinPackLoader {
                     var textureId = createIdentifier(id.getNamespace(), (packPath + "/" + entry.getTexture()).toLowerCase(Locale.ROOT));
                     if (manager.getResource(textureId).isEmpty()) continue;
 
-                    //? if >=1.21.11 {
-                    Identifier capeId = null;
-                    //?} else {
-                    /*ResourceLocation capeId = null;*/
-                    //?}
+                    /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ capeId = null;
                     
                     if (entry.getCape() != null) {
                         var candidate = createIdentifier(id.getNamespace(), (packPath + "/" + entry.getCape()).toLowerCase(Locale.ROOT));

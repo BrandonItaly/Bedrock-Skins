@@ -12,11 +12,7 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.EntityAttachment;
-//? if >=1.21.11 {
-import net.minecraft.resources.Identifier;
-//?} else {
-/*import net.minecraft.resources.ResourceLocation;*/
-//?}
+import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -104,11 +100,7 @@ public final class GuiUtils {
         return skin != null && skin.isUpsideDown();
     }
 
-    //? if >=1.21.11 {
-    private static final Identifier PANEL_SPRITE = Identifier.fromNamespaceAndPath("bedrockskins", "container/skin_panel");
-    //?} else {
-    /*private static final ResourceLocation PANEL_SPRITE = ResourceLocation.fromNamespaceAndPath("bedrockskins", "container/skin_panel");*/
-    //?}
+    private static final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ PANEL_SPRITE = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "container/skin_panel");
 
     public static void drawPanelChrome(GuiGraphics gui, int x, int y, int w, int h, Component title, Font font) {
         gui.blitSprite(RenderPipelines.GUI_TEXTURED, PANEL_SPRITE, x-1, y-1, w+2, h+2);

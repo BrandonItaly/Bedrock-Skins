@@ -805,6 +805,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
                 //?}
                 panel.getX() + 7, panel.getY() + 7 + 130 - 8,
                 panel.getWidth() - 14, panel.getHeight() - 14 - 135 + 1 + 8));
+                
         addRenderableOnly((guiGraphics, i, j, f) ->
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED,
                 //? if >=1.21.11 {
@@ -814,10 +815,17 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
                 //?}
                 panel.getX() + 34, panel.getY() + 10, 112, 112));
         
-        addRenderableOnly((guiGraphics, i, j, f) ->
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, resolveFocusedPackIconSprite(),
-                panel.getX() + 35, panel.getY() + 11,
-                110, 110));
+        addRenderableOnly((guiGraphics, i, j, f) -> {
+            if (this.focusedPack == null) return;
+
+            guiGraphics.pose().pushMatrix(); 
+            
+            guiGraphics.pose().translate(panel.getX() + 35.4f, panel.getY() + 11.4f);
+
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, resolveFocusedPackIconSprite(), 0, 0, 109, 109);
+
+            guiGraphics.pose().popMatrix();
+        });
 
         tooltipBox.init("tooltipBox");
         getRenderableVList().init("renderableVList", 

@@ -20,13 +20,8 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.client.renderer.RenderPipelines;
-//? if >=1.21.11 {
-import net.minecraft.resources.Identifier;
-import net.minecraft.util.Util;
-//?} else {
-/*import net.minecraft.resources.ResourceLocation;
-import net.minecraft.Util;*/
-//?}
+import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
+import net.minecraft./*? if <1.21.11 {*//**//*?} else {*/util./*?}*/Util;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import org.joml.Quaternionf;
@@ -182,17 +177,9 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
 
             // Hover rotation state
             private float hoverYaw = 0f; // degrees
-            //? if >=1.21.11 {
             private long lastHoverTime = Util.getMillis();
-            //?} else {
-            /*private long lastHoverTime = Util.getMillis();*/
-            //?}
 
-            //? if >=1.21.11 {
-            private static final Identifier EQUIPPED_BORDER = Identifier.fromNamespaceAndPath("bedrockskins", "container/equipped_item_border");
-            //?} else {
-            /*private static final ResourceLocation EQUIPPED_BORDER = ResourceLocation.fromNamespaceAndPath("bedrockskins", "container/equipped_item_border");*/
-            //?}
+            private static final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ EQUIPPED_BORDER = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "container/equipped_item_border");
 
             public SkinCell(LoadedSkin skin) {
                 this.skin = skin;

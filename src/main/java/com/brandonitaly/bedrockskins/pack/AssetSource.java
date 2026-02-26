@@ -1,10 +1,6 @@
 package com.brandonitaly.bedrockskins.pack;
 
-//? if >=1.21.11 {
-import net.minecraft.resources.Identifier;
-//?} else {
-/*import net.minecraft.resources.ResourceLocation;*/
-//?}
+import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
 
 public abstract class AssetSource {
     private AssetSource() {}
@@ -15,19 +11,11 @@ public abstract class AssetSource {
         public String getPath() { return path; }
     }
 
-    //? if >=1.21.11 {
     public static final class Resource extends AssetSource {
-        private final Identifier id;
-        public Resource(Identifier id) { this.id = id; }
-        public Identifier getId() { return id; }
+        private final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ id;
+        public Resource(/*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ id) { this.id = id; }
+        public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ getId() { return id; }
     }
-    //?} else {
-    /*public static final class Resource extends AssetSource {
-        private final ResourceLocation id;
-        public Resource(ResourceLocation id) { this.id = id; }
-        public ResourceLocation getId() { return id; }
-    }*/
-    //?}
 
     public static final class Remote extends AssetSource {
         public static final Remote INSTANCE = new Remote();

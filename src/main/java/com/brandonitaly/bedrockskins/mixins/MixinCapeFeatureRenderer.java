@@ -5,13 +5,12 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import net.minecraft.client.renderer.entity.layers.CapeLayer;
+import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
 //? if >=1.21.11 {
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
-import net.minecraft.resources.Identifier;
 //?} else {
-/*import net.minecraft.client.renderer.RenderType;
-import net.minecraft.resources.ResourceLocation;*/
+/*import net.minecraft.client.renderer.RenderType;*/
 //?}
 
 @Mixin(CapeLayer.class)

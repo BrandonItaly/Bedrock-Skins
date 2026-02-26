@@ -10,11 +10,7 @@ import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.core.ClientAsset;
 import com.brandonitaly.bedrockskins.client.dummy.DummyClientLevel;
-//? if >=1.21.11 {
-import net.minecraft.resources.Identifier;
-//?} else {
-/*import net.minecraft.resources.ResourceLocation;*/
-//?}
+import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
 import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.world.entity.player.PlayerSkin;
 import net.minecraft.world.level.GameType;
@@ -33,11 +29,7 @@ public class PreviewPlayer extends RemotePlayer {
         this.showNameTag = showNameTag;
     }
 
-    //? if >=1.21.11 {
-    private Identifier forcedCape = null;
-    //?} else {
-    /*private ResourceLocation forcedCape = null;*/
-    //?}
+    private /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ forcedCape = null;
     private ClientAsset.Texture forcedCapeTexture = null;
     private ClientAsset.Texture forcedBody = null;
     private PlayerSkin forcedProfileSkin = null;
@@ -48,17 +40,10 @@ public class PreviewPlayer extends RemotePlayer {
     }
 
     // Sets a cape to be forced on the player preview
-    //? if >=1.21.11 {
-    public void setForcedCape(Identifier cape) {
+    public void setForcedCape(/*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ cape) {
         this.forcedCape = cape;
         this.forcedCapeTexture = null;
     }
-    //?} else {
-    /*public void setForcedCape(ResourceLocation cape) {
-        this.forcedCape = cape;
-        this.forcedCapeTexture = null;
-    }*/
-    //?}
 
     public void setForcedCapeTexture(ClientAsset.Texture capeTexture) {
         this.forcedCapeTexture = capeTexture;

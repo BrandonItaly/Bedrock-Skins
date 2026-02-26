@@ -18,13 +18,9 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-//? if >=1.21.11 {
-import net.minecraft.resources.Identifier;
-import net.minecraft.util.Util;
-//?} else {
-/*import net.minecraft.resources.ResourceLocation;
-import net.minecraft.Util;*/
-//?}
+import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
+import net.minecraft./*? if <1.21.11 {*//**//*?} else {*/util./*?}*/Util;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -42,13 +38,8 @@ public abstract class MixinTitleScreen extends Screen {
         super(title);
     }
 
-    //? if >=1.21.11 {
     @Unique
-    private static final Identifier BEDROCKSKINS_MENU_BUTTON_SPRITE = Identifier.fromNamespaceAndPath("bedrockskins", "container/icon_hangar");
-    //?} else {
-    /*@Unique
-    private static final ResourceLocation BEDROCKSKINS_MENU_BUTTON_SPRITE = ResourceLocation.fromNamespaceAndPath("bedrockskins", "container/icon_hangar");*/
-    //?}
+    private static final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ BEDROCKSKINS_MENU_BUTTON_SPRITE = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "container/icon_hangar");
 
     @Unique
     private PreviewPlayer bedrockskins$menuPreviewPlayer;

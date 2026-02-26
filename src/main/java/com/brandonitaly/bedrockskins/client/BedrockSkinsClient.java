@@ -32,11 +32,7 @@ import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;*/
 //?}
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-//? if >=1.21.11 {
-import net.minecraft.resources.Identifier;
-//?} else {
-/*import net.minecraft.resources.ResourceLocation;*/
-//?}
+import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -48,22 +44,14 @@ import java.io.File;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-//? if fabric {
-public class BedrockSkinsClient implements ClientModInitializer {
-//?} else if neoforge {
-/*public class BedrockSkinsClient {*/
-//?}
+public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitializer /*?}*/ {
     public static KeyMapping toggleCapeKey, toggleJacketKey, toggleLeftSleeveKey, toggleRightSleeveKey,
                            toggleLeftPantsKey, toggleRightPantsKey, toggleHatKey, toggleMainHandKey, openKey;
     
     private static KeyMapping.Category keybindCategory;
 
     public static void createKeybinds() {
-        //? if >=1.21.11 {
-        keybindCategory = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("bedrockskins", "controls"));
-        //?} else {
-        /*keybindCategory = KeyMapping.Category.register(ResourceLocation.fromNamespaceAndPath("bedrockskins", "controls"));*/
-        //?}
+        keybindCategory = KeyMapping.Category.register(/*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "controls"));
         
         KeyMapping.Category cat = keybindCategory;
 
@@ -125,11 +113,7 @@ public class BedrockSkinsClient implements ClientModInitializer {
 
     private final class Reloader implements IdentifiableResourceReloadListener, ResourceManagerReloadListener {
         @Override
-        //? if >=1.21.11 {
-        public Identifier getFabricId() { return Identifier.fromNamespaceAndPath("bedrockskins", "reloader"); }
-        //?} else {
-        /*public ResourceLocation getFabricId() { return ResourceLocation.fromNamespaceAndPath("bedrockskins", "reloader"); }*/
-        //?}
+        public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ getFabricId() { return /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "reloader"); }
         @Override
         public void onResourceManagerReload(ResourceManager manager) {
             CommonLogic.reloadResources(Minecraft.getInstance());

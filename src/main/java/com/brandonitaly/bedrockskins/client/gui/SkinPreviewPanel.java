@@ -18,13 +18,8 @@ import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-//? if >=1.21.11 {
-import net.minecraft.resources.Identifier;
-import net.minecraft.util.Util;
-//?} else {
-/*import net.minecraft.resources.ResourceLocation;
-import net.minecraft.Util;*/
-//?}
+import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
+import net.minecraft./*? if <1.21.11 {*//**//*?} else {*/util./*?}*/Util;
 import net.minecraft.world.entity.LivingEntity;
 
 import java.io.File;
@@ -38,11 +33,7 @@ public class SkinPreviewPanel {
     private final Minecraft minecraft;
     private final Font font;
     private final Runnable onFavoritesChanged;
-    //? if >=1.21.11 {
-    private static final Identifier ROTATE_SPRITE = Identifier.fromNamespaceAndPath("bedrockskins", "container/rotate");
-    //?} else {
-    /*private static final ResourceLocation ROTATE_SPRITE = ResourceLocation.fromNamespaceAndPath("bedrockskins", "container/rotate");*/
-    //?}
+    private static final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ ROTATE_SPRITE = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "container/rotate");
     
     // State
     private int x, y, width, height;
@@ -71,13 +62,8 @@ public class SkinPreviewPanel {
         selectButton = Button.builder(Component.translatable("bedrockskins.button.select"), b -> applySkin()).bounds(0, 0, 10, 20).build();
         widgetAdder.accept(selectButton);
 
-        //? if >=1.21.11 {
-        Identifier heartEmpty = Identifier.fromNamespaceAndPath("minecraft", "hud/heart/container");
-        Identifier heartFull = Identifier.fromNamespaceAndPath("minecraft", "hud/heart/full");
-        //?} else {
-        /*ResourceLocation heartEmpty = ResourceLocation.fromNamespaceAndPath("minecraft", "hud/heart/container");
-        ResourceLocation heartFull = ResourceLocation.fromNamespaceAndPath("minecraft", "hud/heart/full");*/
-        //?}
+        /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ heartEmpty = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("minecraft", "hud/heart/container");
+        /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ heartFull = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("minecraft", "hud/heart/full");
         favoriteButton = new FavoriteHeartButton(0, 0, 20, heartEmpty, heartFull, b -> toggleFavorite());
         widgetAdder.accept(favoriteButton.getButton());
 
@@ -388,13 +374,8 @@ public class SkinPreviewPanel {
     
     private static class FavoriteHeartButton {
         private final SpriteIconButton button;
-        //? if >=1.21.11 {
-        private final Identifier containerSprite, fullSprite;
-        public FavoriteHeartButton(int x, int y, int size, Identifier containerSprite, Identifier fullSprite, Button.OnPress onPress) {
-        //?} else {
-        /*private final ResourceLocation containerSprite, fullSprite;
-        public FavoriteHeartButton(int x, int y, int size, ResourceLocation containerSprite, ResourceLocation fullSprite, Button.OnPress onPress) {*/
-        //?}
+        private final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ containerSprite, fullSprite;
+        public FavoriteHeartButton(int x, int y, int size, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ containerSprite, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ fullSprite, Button.OnPress onPress) {
             this.containerSprite = containerSprite;
             this.fullSprite = fullSprite;
             this.button = SpriteIconButton.builder(Component.empty(), onPress, true)
