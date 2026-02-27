@@ -9,7 +9,6 @@ public class PlayerSkinWidgetList {
     // Fields accessed by screen or logic
     public PlayerSkinWidget element3; // Center
 
-    // Keeping other fields for potential debug/legacy access, though mostly internal to sortForIndex now
     public PlayerSkinWidget element0;
     public PlayerSkinWidget element1;
     public PlayerSkinWidget element2;
@@ -17,7 +16,6 @@ public class PlayerSkinWidgetList {
     public PlayerSkinWidget element5;
     public PlayerSkinWidget element6;
 
-    // Constants
     private static final int VERTICAL_OFFSET = 10;
     private static final int OFFSET = 80;
     private static final float FACING_FROM_LEFT = -45f;
@@ -33,41 +31,56 @@ public class PlayerSkinWidgetList {
         return new PlayerSkinWidgetList(x, y, widgets);
     }
 
-    public void sortForIndex(int index) {
+    public void sortForIndex(int newIndex) {
+        sortForIndex(newIndex, null, null);
+    }
+
+    public void sortForIndex(int newIndex, Float forcedRotX, Float forcedRotY) {
         if (widgets.isEmpty()) {
             this.index = 0;
             return;
         }
 
-        // Loop the index properly
+        PlayerSkinWidget.PreviewPose currentPose = PlayerSkinWidget.PreviewPose.STANDING;
+        if (this.element3 != null) {
+            currentPose = this.element3.getPreviewPose();
+        }
+
         int n = widgets.size();
-        this.index = ((index % n) + n) % n;
         
+        int oldIndex = this.index;
+        int targetIndex = ((newIndex % n) + n) % n;
+        
+        int delta = targetIndex - oldIndex;
+        if (delta > n / 2) delta -= n;
+        if (delta < -n / 2) delta += n;
+        
+        this.index = targetIndex;
         this.element3 = widgets.get(this.index);
         
         Set<PlayerSkinWidget> usedWidgets = new HashSet<>();
-        
-        // Priority list: Center, then Left (-1), then Right (1), expanding outwards.
         int[] offsets = {0, -1, 1, -2, 2, -3, 3, -4, 4};
         
         for (int offset : offsets) {
             PlayerSkinWidget w = getWrapped(this.index + offset);
             if (w == null) continue;
-            
-            if (usedWidgets.contains(w)) {
-                continue; // Skip if already placed
-            }
+            if (usedWidgets.contains(w)) continue; 
             
             usedWidgets.add(w);
             
-            // Only reset pose for non-center elements. 
-            if (offset != 0) {
+            if (offset == 0) {
+                if (delta != 0) {
+                    w.setPendingPose(currentPose);
+                    w.setPreviewPose(PlayerSkinWidget.PreviewPose.STANDING);
+                } else {
+                    w.setPreviewPose(currentPose);
+                }
+            } else {
                 w.resetPose();
             }
 
-            setupSlot(w, offset);
+            setupSlot(w, offset, delta, forcedRotX, forcedRotY);
             
-            // Assign to named fields
             if (offset == 0) this.element3 = w;
             else if (offset == -1) this.element2 = w;
             else if (offset == -2) this.element1 = w;
@@ -77,7 +90,6 @@ public class PlayerSkinWidgetList {
             else if (offset == 3) this.element6 = w;
         }
 
-        // Now we hide the widgets that were NOT used in this layout
         for (PlayerSkinWidget w : widgets) {
             if (!usedWidgets.contains(w)) {
                 w.invisible();
@@ -85,7 +97,7 @@ public class PlayerSkinWidgetList {
             }
         }
     }
-    
+
     private PlayerSkinWidget getWrapped(int i) {
          if (widgets.isEmpty()) return null;
          int n = widgets.size();
@@ -94,18 +106,24 @@ public class PlayerSkinWidgetList {
          return widgets.get(wrapped);
     }
 
-    private void setupSlot(PlayerSkinWidget w, int offset) {
+    private void setupSlot(PlayerSkinWidget w, int offset, int delta, Float forcedRotX, Float forcedRotY) {
         float rotX = 0;
         float rotY = 0;
         int targetPosX = x;
         int targetPosY = y;
         float scale = 1.0f;
         
-        // Calculate target positions based on offset
         switch (offset) {
             case 0: // Center
                 w.interactable = true;
-                rotY = 0;
+                // Explicitly inject the forced rotation if it exists, otherwise snap to 0
+                if (forcedRotX != null && forcedRotY != null) {
+                    rotX = forcedRotX;
+                    rotY = forcedRotY;
+                } else {
+                    rotX = 0;
+                    rotY = 0;
+                }
                 targetPosX = x + 8;
                 targetPosY = y + 20;
                 scale = 0.85f;
@@ -171,29 +189,28 @@ public class PlayerSkinWidgetList {
                 return;
         }
         
-        // Wrap detection
-        // Standard slot-to-slot move is ~80px. A wrap is usually > 120px.
         int currentX = w.getX();
         
-        if (w.visible && Math.abs(currentX - targetPosX) > 120) {
-            // It's a wrap. 
-            int virtualTargetX;
-            if (targetPosX > currentX) {
-                // Moving Right (Wrapping Left->Right)
-                // Simulate moving further Left
-                virtualTargetX = currentX - OFFSET;
-            } else {
-                // Moving Left (Wrapping Right->Left)
-                // Simulate moving further Right
-                virtualTargetX = currentX + OFFSET;
+        boolean isWrap = false;
+        if (w.visible && delta != 0) {
+            if (delta > 0 && targetPosX > currentX + 50) { 
+                isWrap = true;
+            } else if (delta < 0 && targetPosX < currentX - 50) { 
+                isWrap = true;
             }
-            
+        }
+
+        if (isWrap) {
+            int virtualTargetX;
+            if (delta > 0) {
+                virtualTargetX = currentX - OFFSET * Math.abs(delta);
+            } else {
+                virtualTargetX = currentX + OFFSET * Math.abs(delta);
+            }
             w.visible();
             w.beginInterpolation(rotX, rotY, virtualTargetX, targetPosY, scale);
-            // Snap to the REAL target after animation
             w.snapTo(targetPosX, targetPosY);
         } else {
-            // Normal movement
             w.visible();
             w.beginInterpolation(rotX, rotY, targetPosX, targetPosY, scale);
         }

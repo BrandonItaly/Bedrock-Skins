@@ -2,6 +2,7 @@ package com.brandonitaly.bedrockskins.client.gui;
 
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
+import com.brandonitaly.bedrockskins.client.gui.BedrockSkinsSprites;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.pack.SkinId;
@@ -29,8 +30,6 @@ import java.io.File;
 import java.util.*;
 
 public class SkinSelectionScreen extends Screen {
-    public static final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ TAB_HEADER_BACKGROUND = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.withDefaultNamespace("textures/gui/tab_header_background.png");
-
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
     private TabNavigationBar tabNavigationBar;
@@ -304,11 +303,7 @@ public class SkinSelectionScreen extends Screen {
     private void openSkinPacksFolder() {
         File dir = new File(minecraft.gameDirectory, "skin_packs");
         if (!dir.exists()) dir.mkdirs();
-        //? if >=1.21.11 {
         Util.getPlatform().openFile(dir);
-        //?} else {
-        /*Util.getPlatform().openFile(dir);*/
-        //?}
     }
 
     private void safeRegisterTexture(String key) { GuiUtils.safeRegisterTexture(key); }
@@ -342,7 +337,7 @@ public class SkinSelectionScreen extends Screen {
     
     @Override
     protected void renderMenuBackground(GuiGraphics graphics) {
-        graphics.blit(RenderPipelines.GUI_TEXTURED, TAB_HEADER_BACKGROUND, 0, 0, 0.0F, 0.0F, width, layout.getHeaderHeight(), 16, 16);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.TAB_HEADER_BACKGROUND, 0, 0, 0.0F, 0.0F, width, layout.getHeaderHeight(), 16, 16);
         this.renderMenuBackground(graphics, 0, layout.getHeaderHeight(), width, height);
     }
 

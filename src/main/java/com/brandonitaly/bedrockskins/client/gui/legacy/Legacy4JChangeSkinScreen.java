@@ -6,30 +6,25 @@ import com.brandonitaly.bedrockskins.client.ClientSkinSync;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.client.StateManager;
+import com.brandonitaly.bedrockskins.client.gui.BedrockSkinsSprites;
 import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
-import com.brandonitaly.bedrockskins.pack.SkinId;
-import com.brandonitaly.bedrockskins.pack.StringUtils;
 import com.mojang.blaze3d.platform.InputConstants;
 //? if <1.21.11 {
 import net.minecraft.Util;
+import net.minecraft.resources.ResourceLocation;
+//?} else {
+import net.minecraft.resources.Identifier;
 //?}
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
-//? if >=1.21.11 {
-import net.minecraft.resources.Identifier;
-//?} else {
-import net.minecraft.resources.ResourceLocation;
-//?}
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.ChatFormatting;
 import wily.legacy.Legacy4J;
 import wily.legacy.client.ControlType;
 import wily.legacy.client.controller.BindingState;
@@ -47,17 +42,13 @@ import net.minecraft.client.renderer.RenderPipelines;
 
 import java.io.File;
 import java.nio.file.Files;
-
-import java.util.List;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Locale;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Controller.Event, ControlTooltip.Event {
     private static final String STANDARD_PACK_ID = "skinpack.Standard";
+    private static final String FAVORITES_PACK_ID = "skinpack.Favorites";
     private static final String AUTO_SELECTED_TRANSLATION_KEY = "bedrockskins.skin.auto_selected";
     private static final String AUTO_SELECTED_INTERNAL_NAME = "__auto_selected__";
 
@@ -73,11 +64,8 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     private Renderable scissorStart = null;
     private Renderable scissorEnd = null;
     private boolean hasScrolledToInitial = false;
-    
-    // Maintain a map of all packs so we can update Favorites dynamically
     private final Map<String, SkinPackAdapter> allPacks = new HashMap<>();
 
-    // --- Rotation state for preview ---
     private boolean isDraggingPreview = false;
     private double lastMouseX = 0;
     private double lastMouseY = 0;
@@ -87,94 +75,66 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         renderableVList.layoutSpacing(l -> 0);
         minecraft = Minecraft.getInstance();
         
-        // Load initial packs
-        Map<String, SkinPackAdapter> initialPacks = SkinPackAdapter.getAllPacks();
-        this.allPacks.putAll(initialPacks);
+        allPacks.putAll(SkinPackAdapter.getAllPacks());
         injectAutoSelectedIntoStandardPack();
         
-        // Sort packs using packOrder
         sortedPackIds = new ArrayList<>(allPacks.keySet());
         sortedPackIds.sort((k1, k2) -> {
             int i1 = SkinPackLoader.packOrder.indexOf(k1);
             int i2 = SkinPackLoader.packOrder.indexOf(k2);
             if (i1 != -1 && i2 != -1) return Integer.compare(i1, i2);
-            if (i1 != -1) return -1;
-            if (i2 != -1) return 1;
-            return k1.compareToIgnoreCase(k2);
+            return (i1 != -1) ? -1 : (i2 != -1) ? 1 : k1.compareToIgnoreCase(k2);
         });
-        // Always add Favorites pack after the default skin pack
-        sortedPackIds.add(1, "skinpack.Favorites");
         
-        // Create favorites pack by collecting favorited skins
+        sortedPackIds.add(1, FAVORITES_PACK_ID);
         rebuildFavoritesPack();
         
         for (String packId : sortedPackIds) {
-            SkinPackAdapter pack;
-            String displayName;
-            String translationKey;
-            String fallbackName;
+            SkinPackAdapter pack = allPacks.get(packId);
+            if (pack == null || (!FAVORITES_PACK_ID.equals(packId) && pack.isEmpty())) continue;
             
-            // We use a supplier or look up from allPacks dynamically in the button action
-            // to ensure we always get the latest version of the pack (crucial for Favorites)
+            String displayName = resolvePackDisplayName(packId, pack);
             
-            if ("skinpack.Favorites".equals(packId)) {
-                pack = allPacks.get(packId); // Initial get
-                displayName = Component.translatable("bedrockskins.gui.favorites").getString();
-                translationKey = displayName;
-                fallbackName = displayName;
-            } else {
-                pack = allPacks.get(packId);
-                if (pack == null || pack.isEmpty()) continue;
-                
-                // Use the safe pack name from the first skin for translation
-                translationKey = packId;
-                fallbackName = packId;
-                if (pack.size() > 0) {
-                    LoadedSkin firstSkin = pack.getSkin(0);
-                    if (firstSkin != null) {
-                        translationKey = firstSkin.getSafePackName();
-                        fallbackName = firstSkin.getPackDisplayName();
-                    }
-                }
-                displayName = SkinPackLoader.getTranslation(translationKey);
-                if (displayName == null) displayName = fallbackName;
-            }
-            
-            final String btnLabel = displayName;
-            final String currentPackId = packId;
-            
-            Button button = Button.builder(Component.literal(btnLabel), b -> {
-                if (focusedPackId != null && focusedPackId.equals(currentPackId)) return;
-                
-                Legacy4JChangeSkinScreen.this.focusedPackId = currentPackId;
-                // Look up the pack from the map to ensure we get the freshest version (for Favorites)
-                Legacy4JChangeSkinScreen.this.focusedPack = Legacy4JChangeSkinScreen.this.allPacks.get(currentPackId);
-                
+            Button button = Button.builder(Component.literal(displayName), b -> {
+                if (focusedPackId != null && focusedPackId.equals(packId)) return;
+                this.focusedPackId = packId;
+                this.focusedPack = this.allPacks.get(packId);
                 queuedChangeSkinPack = true;
-            })
-                .pos(0, 0)
-                .size(260, 20)
-                .build();
+            }).pos(0, 0).size(260, 20).build();
+            
             packButtons.put(packId, button);
             renderableVList.addRenderable(button);
         }
         
         openToCurrentSkin();
-        // Mouse drag state reset
         isDraggingPreview = false;
     }
-    
+
+    private String resolvePackDisplayName(String packId, SkinPackAdapter pack) {
+        if (FAVORITES_PACK_ID.equals(packId)) {
+            return Component.translatable("bedrockskins.gui.favorites").getString();
+        }
+        String translationKey = packId, fallbackName = packId;
+        if (pack != null && pack.size() > 0) {
+            LoadedSkin firstSkin = pack.getSkin(0);
+            if (firstSkin != null) {
+                translationKey = firstSkin.getSafePackName();
+                fallbackName = firstSkin.getPackDisplayName();
+            }
+        }
+        String displayName = SkinPackLoader.getTranslation(translationKey);
+        return displayName != null ? displayName : fallbackName;
+    }
+
     private void rebuildFavoritesPack() {
         List<LoadedSkin> favs = new ArrayList<>();
         for (String key : FavoritesManager.getFavoriteKeys()) {
             SkinId skinId = SkinId.parse(key);
             LoadedSkin s = SkinPackLoader.getLoadedSkin(skinId);
-            if (s == null && isAutoSelectedSkinId(skinId)) {
-                s = resolveAutoSelectedSkinForFavorites();
-            }
+            if (s == null && isAutoSelectedSkinId(skinId)) s = resolveAutoSelectedSkinForFavorites();
             if (s != null) favs.add(s);
         }
-        allPacks.put("skinpack.Favorites", new SkinPackAdapter("skinpack.Favorites", favs));
+        allPacks.put(FAVORITES_PACK_ID, new SkinPackAdapter(FAVORITES_PACK_ID, favs));
     }
 
     private void injectAutoSelectedIntoStandardPack() {
@@ -183,13 +143,10 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
 
         List<LoadedSkin> merged = new ArrayList<>();
         LoadedSkin autoSkin = createAutoSelectedSkin(standardPack);
-        if (autoSkin != null) {
-            merged.add(autoSkin);
-        }
+        if (autoSkin != null) merged.add(autoSkin);
+
         for (LoadedSkin skin : standardPack.getSkins()) {
-            if (!isAutoSelectedSkin(skin)) {
-                merged.add(skin);
-            }
+            if (!isAutoSelectedSkin(skin)) merged.add(skin);
         }
 
         allPacks.put(STANDARD_PACK_ID, new SkinPackAdapter(STANDARD_PACK_ID, merged, standardPack.getPackType()));
@@ -197,28 +154,16 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
 
     private LoadedSkin createAutoSelectedSkin(SkinPackAdapter standardPack) {
         LoadedSkin template = standardPack.getSkin(0);
-        if (template == null) return null;
-        return new LoadedSkin(
-            "Standard",
-            "Standard",
-            AUTO_SELECTED_INTERNAL_NAME,
-            template.getGeometryData(),
-            template.getTexture(),
-            null,
-            false
-        );
+        return template == null ? null : new LoadedSkin("Standard", "Standard", AUTO_SELECTED_INTERNAL_NAME, 
+                template.getGeometryData(), template.getTexture(), null, false);
     }
 
     private boolean isAutoSelectedSkin(LoadedSkin skin) {
-        return skin != null
-            && "Standard".equals(skin.getSerializeName())
-            && AUTO_SELECTED_INTERNAL_NAME.equals(skin.getSkinDisplayName());
+        return skin != null && "Standard".equals(skin.getSerializeName()) && AUTO_SELECTED_INTERNAL_NAME.equals(skin.getSkinDisplayName());
     }
 
     private boolean isAutoSelectedSkinId(SkinId skinId) {
-        return skinId != null
-            && "Standard".equals(skinId.getPack())
-            && AUTO_SELECTED_INTERNAL_NAME.equals(skinId.getName());
+        return skinId != null && "Standard".equals(skinId.getPack()) && AUTO_SELECTED_INTERNAL_NAME.equals(skinId.getName());
     }
 
     private LoadedSkin resolveAutoSelectedSkinForFavorites() {
@@ -231,52 +176,36 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     }
 
     private SkinPackAdapter getPackForUi(String packId) {
-        if (packId == null) return null;
-        if (STANDARD_PACK_ID.equals(packId)) {
-            injectAutoSelectedIntoStandardPack();
-        }
+        if (STANDARD_PACK_ID.equals(packId)) injectAutoSelectedIntoStandardPack();
         SkinPackAdapter pack = allPacks.get(packId);
-        if (pack != null) return pack;
-        return SkinPackAdapter.getPack(packId);
+        return pack != null ? pack : SkinPackAdapter.getPack(packId);
     }
-
-    // Keyboard input handled by default; controller handling via bindingStateTick.
 
     private boolean hasSelectedSkinWidget() {
         return this.playerSkinWidgetList != null && this.playerSkinWidgetList.element3 != null;
     }
 
     private void selectSkin() {
-        if (hasSelectedSkinWidget()) {
-            LoadedSkin skin = this.playerSkinWidgetList.element3.getCurrentSkin();
-            if (skin == null) return;
+        if (!hasSelectedSkinWidget()) return;
+        LoadedSkin skin = this.playerSkinWidgetList.element3.getCurrentSkin();
+        if (skin == null) return;
 
-            if (isAutoSelectedSkin(skin)) {
-                resetSkin();
-                return;
+        if (isAutoSelectedSkin(skin)) {
+            resetSkin();
+            return;
+        }
+
+        try {
+            SkinId skinId = skin.getSkinId() != null ? skin.getSkinId() : SkinId.of(skin.getSerializeName(), skin.getSkinDisplayName());
+            if (minecraft.player != null) {
+                SkinManager.setSkin(minecraft.player.getUUID().toString(), skin.getSerializeName(), skin.getSkinDisplayName());
+                ClientSkinSync.sendSetSkinPayload(skinId, skin.getGeometryData().toString(), loadTextureData(skin));
+            } else {
+                StateManager.saveState(FavoritesManager.getFavoriteKeys(), skinId.toString());
             }
-
-            try {
-                SkinId skinId = skin.getSkinId();
-                if (minecraft.player != null) {
-                    SkinManager.setSkin(minecraft.player.getUUID().toString(), skin.getSerializeName(), skin.getSkinDisplayName());
-                } else {
-                    if (skinId == null) {
-                        skinId = SkinId.of(skin.getSerializeName(), skin.getSkinDisplayName());
-                    }
-                    StateManager.saveState(FavoritesManager.getFavoriteKeys(), skinId == null ? null : skinId.toString());
-                }
-
-                // Load texture data
-                byte[] textureData = loadTextureData(skin);
-                if (minecraft.player != null) {
-                    ClientSkinSync.sendSetSkinPayload(skinId, skin.getGeometryData().toString(), textureData);
-                }
-
-                playUISound();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            playUISound();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -294,29 +223,23 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
         int keyCode = InputConstants.getKey(event).getValue();
 
-        // Handle pack list navigation (up/down) with legacy parity
+        boolean isUp = keyCode == InputConstants.KEY_UP || keyCode == InputConstants.KEY_W;
+        boolean isDown = keyCode == InputConstants.KEY_DOWN || keyCode == InputConstants.KEY_S;
+        boolean isLeft = keyCode == InputConstants.KEY_LEFT || keyCode == InputConstants.KEY_A;
+        boolean isRight = keyCode == InputConstants.KEY_RIGHT || keyCode == InputConstants.KEY_D;
+
         if (focusedPackId != null && !sortedPackIds.isEmpty()) {
             int currentIndex = sortedPackIds.indexOf(focusedPackId);
-            if (keyCode == InputConstants.KEY_UP) {
-                int newIndex = (currentIndex > 0) ? currentIndex - 1 : sortedPackIds.size() - 1; // loop to bottom
-                String newPackId = sortedPackIds.get(newIndex);
-                focusedPackId = newPackId;
-                focusedPack = allPacks.get(newPackId);
+            if (isUp || isDown) {
+                int newIndex = isUp 
+                        ? (currentIndex > 0 ? currentIndex - 1 : sortedPackIds.size() - 1)
+                        : (currentIndex < sortedPackIds.size() - 1 ? currentIndex + 1 : 0);
+                
+                focusedPackId = sortedPackIds.get(newIndex);
+                focusedPack = allPacks.get(focusedPackId);
                 queuedChangeSkinPack = true;
-                Button btn = packButtons.get(newPackId);
-                if (btn != null) {
-                    setFocused(btn);
-                    ensureButtonVisible(btn);
-                }
-                playFocusSound();
-                return true;
-            } else if (keyCode == InputConstants.KEY_DOWN) {
-                int newIndex = (currentIndex < sortedPackIds.size() - 1) ? currentIndex + 1 : 0; // loop to top
-                String newPackId = sortedPackIds.get(newIndex);
-                focusedPackId = newPackId;
-                focusedPack = allPacks.get(newPackId);
-                queuedChangeSkinPack = true;
-                Button btn = packButtons.get(newPackId);
+                
+                Button btn = packButtons.get(focusedPackId);
                 if (btn != null) {
                     setFocused(btn);
                     ensureButtonVisible(btn);
@@ -331,205 +254,105 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             if (focused != null) setFocused(focused);
         }
 
-        if (keyCode == InputConstants.KEY_RETURN) {
-            selectSkin();
-            return true;
-        }
-        if (keyCode == InputConstants.KEY_F) {
-            favorite();
-            return true;
-        }
+        if (keyCode == InputConstants.KEY_RETURN) { selectSkin(); return true; }
+        if (keyCode == InputConstants.KEY_F) { favorite(); return true; }
         if (control(keyCode == InputConstants.KEY_LBRACKET, keyCode == InputConstants.KEY_RBRACKET)) return true;
-        if (control(keyCode == InputConstants.KEY_LEFT, keyCode == InputConstants.KEY_RIGHT)) return true;
+        if (control(isLeft, isRight)) return true;
         if (handlePoseChange(keyCode == InputConstants.KEY_RSHIFT, keyCode == InputConstants.KEY_LSHIFT)) return true;
 
         return super.keyPressed(event);
     }
 
     private void ensureButtonVisible(Button button) {
-        // Ensure the highlighted button is always visible, including when looping
-        int safety = 0;
         if (!packButtons.containsValue(button)) return;
-        // Try to scroll down until visible, then up if not found, then loop
-        boolean found = false;
-        for (int i = 0; i < 500; i++) {
-            if (this.children().contains(button)) {
-                found = true;
-                break;
-            }
+        
+        int MAX_SCROLLS = 100; // Safeguard against infinite loops
+        int scrolls = 0;
+        
+        // Scroll down to find
+        while (!this.children().contains(button) && scrolls++ < MAX_SCROLLS) {
             renderableVList.mouseScrolled(true);
         }
-        if (!found) {
-            // Try scrolling up if not found
-            for (int i = 0; i < 500; i++) {
-                if (this.children().contains(button)) {
-                    found = true;
-                    break;
-                }
-                renderableVList.mouseScrolled(false);
-            }
-        }
-        // If still not found, forcibly scroll to top or bottom and try again (looping)
-        if (!found) {
-            // Scroll to top
-            for (int i = 0; i < 500; i++) renderableVList.mouseScrolled(false);
-            // Try to scroll down to find the button
-            for (int i = 0; i < 500; i++) {
-                if (this.children().contains(button)) break;
-                renderableVList.mouseScrolled(true);
-            }
+        // Scroll up to find if we went the wrong way
+        scrolls = 0;
+        while (!this.children().contains(button) && scrolls++ < MAX_SCROLLS * 2) {
+            renderableVList.mouseScrolled(false);
         }
     }
 
-    // Click handling moved to keyboard/controller; avoids API mismatch on 1.21.10
-    
     private boolean isInBounds(double mouseX, double mouseY, int x, int y, int width, int height) {
         return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
     }
 
     boolean handlePoseChange(boolean left, boolean right) {
-        if (!(left || right)) return false;
-        if (!hasSelectedSkinWidget()) return false;
-        if (playerSkinWidgetList.element3.isInterpolating()) return false;
-
-        if (right) {
-            playerSkinWidgetList.element3.cyclePose(true);
-        } else if (left) {
-            playerSkinWidgetList.element3.cyclePose(false);
-        }
+        if (!(left || right) || !hasSelectedSkinWidget() || playerSkinWidgetList.element3.isInterpolating()) return false;
+        playerSkinWidgetList.element3.cyclePose(right);
         return true;
     }
 
     boolean control(boolean left, boolean right) {
-        if ((left || right)) {
-            if (this.playerSkinWidgetList != null) {
-                if (this.playerSkinWidgetList.widgets.stream().anyMatch(a -> a.progress <= 1)) return true;
-                int offset = 0;
-                if (left) offset--;
-                if (right) offset++;
-                this.playerSkinWidgetList.sortForIndex(this.playerSkinWidgetList.index + offset);
-                playScrollSound();
-                return true;
-            }
+        if ((left || right) && this.playerSkinWidgetList != null) {
+            if (this.playerSkinWidgetList.widgets.stream().anyMatch(a -> a.progress <= 1)) return true;
+            int offset = left ? -1 : 1;
+            this.playerSkinWidgetList.sortForIndex(this.playerSkinWidgetList.index + offset);
+            playScrollSound();
+            return true;
         }
         return false;
     }
 
     @Override
     public void bindingStateTick(BindingState state) {
-        if (state.is(ControllerBinding.UP_BUTTON) && state.released) {
-            favorite();
-        }
-        if (state.is(ControllerBinding.RIGHT_STICK_DOWN) && state.justPressed) {
-            if (handlePoseChange(false, true)) return;
-        } else if (state.is(ControllerBinding.RIGHT_STICK_UP) && state.justPressed) {
-            if (handlePoseChange(true, false)) return;
-        }
-        // --- Controller right stick rotation for preview ---
-        if (hasSelectedSkinWidget()) {
-            PlayerSkinWidget widget = playerSkinWidgetList.element3;
-            // Use BindingState.Axis for stick input
-            if (state.is(ControllerBinding.RIGHT_STICK) && state instanceof BindingState.Axis stick) {
-                double sensitivity = 0.15d;
-                double deltaX = stick.getDeadZone() > Math.abs(stick.x) ? 0 : -(double)stick.x * sensitivity;
-                // Only rotate if stick is moved
-                if (Math.abs(deltaX) > 0.01) {
-                    widget.onDrag(widget.getX(), widget.getY(), deltaX, 0);
-                }
-                state.block();
-            }
+        if (state.is(ControllerBinding.UP_BUTTON) && state.released) favorite();
+        if (state.is(ControllerBinding.RIGHT_STICK_DOWN) && state.justPressed) { if (handlePoseChange(false, true)) return; }
+        else if (state.is(ControllerBinding.RIGHT_STICK_UP) && state.justPressed) { if (handlePoseChange(true, false)) return; }
+        
+        if (hasSelectedSkinWidget() && state.is(ControllerBinding.RIGHT_STICK) && state instanceof BindingState.Axis stick) {
+            double deltaX = stick.getDeadZone() > Math.abs(stick.x) ? 0 : -(double)stick.x * 0.15d;
+            if (Math.abs(deltaX) > 0.01) playerSkinWidgetList.element3.onDrag(playerSkinWidgetList.element3.getX(), playerSkinWidgetList.element3.getY(), deltaX, 0);
+            state.block();
         }
     }
 
     private void favorite() {
-        if (hasSelectedSkinWidget()) {
-            LoadedSkin skin = this.playerSkinWidgetList.element3.getCurrentSkin();
-            if (skin == null) return;
+        if (!hasSelectedSkinWidget()) return;
+        LoadedSkin skin = this.playerSkinWidgetList.element3.getCurrentSkin();
+        if (skin == null) return;
 
-            boolean wasFavorite = FavoritesManager.isFavorite(skin);
-            int oldIndex = playerSkinWidgetList != null ? playerSkinWidgetList.index : 0;
-            if (wasFavorite) {
-                FavoritesManager.removeFavorite(skin);
-            } else {
-                FavoritesManager.addFavorite(skin);
-            }
-            
-            // Rebuild the favorites pack in the map
-            rebuildFavoritesPack();
+        boolean wasFavorite = FavoritesManager.isFavorite(skin);
+        int oldIndex = playerSkinWidgetList != null ? playerSkinWidgetList.index : 0;
+        
+        if (wasFavorite) FavoritesManager.removeFavorite(skin);
+        else FavoritesManager.addFavorite(skin);
+        
+        rebuildFavoritesPack();
 
-            // Instantly update the Favorites tab if it's currently active
-            if ("skinpack.Favorites".equals(focusedPackId)) {
-                // Update our local reference to the new pack
-                this.focusedPack = allPacks.get("skinpack.Favorites");
-                
-                int favCount = this.focusedPack.size();
-                int newIndex = oldIndex;
-                
-                if (!wasFavorite) {
-                    // If we just added a favorite, we might want to select it
-                    // But usually staying put or going to end is fine. 
-                    // Logic: If added, it goes to end of list.
-                    newIndex = favCount - 1;
-                } else {
-                    // If we just removed, try to keep the same index, but clamp
-                    if (favCount == 0) {
-                        newIndex = 0;
-                    } else if (newIndex >= favCount) {
-                        newIndex = favCount - 1;
-                    }
-                }
-                updateSkinPack(newIndex);
-            }
-
-            playUISound();
+        if (FAVORITES_PACK_ID.equals(focusedPackId)) {
+            this.focusedPack = allPacks.get(FAVORITES_PACK_ID);
+            int favCount = this.focusedPack.size();
+            int newIndex = !wasFavorite ? favCount - 1 : (favCount == 0 ? 0 : Math.min(oldIndex, favCount - 1));
+            updateSkinPack(newIndex);
         }
+        playUISound();
     }
 
     @Override
     public void addControlTooltips(ControlTooltip.Renderer renderer) {
         // Select
-        renderer.add(
-            () -> ControlType.getActiveType().isKbm() ? 
-                ControlTooltip.getKeyIcon(InputConstants.KEY_RETURN) : 
-                ControllerBinding.DOWN_BUTTON.bindingState.getIcon(), 
-            () -> Component.translatable("bedrockskins.button.select")
-        );
+        boolean isKbm = ControlType.getActiveType().isKbm();
+        renderer.add(() -> isKbm ? ControlTooltip.getKeyIcon(InputConstants.KEY_RETURN) : ControllerBinding.DOWN_BUTTON.bindingState.getIcon(), () -> Component.translatable("bedrockskins.button.select"));
         // Cancel
-        renderer.add(
-            () -> ControlType.getActiveType().isKbm() ? 
-                ControlTooltip.getKeyIcon(InputConstants.KEY_ESCAPE) : 
-                ControllerBinding.RIGHT_BUTTON.bindingState.getIcon(), 
-            () -> Component.translatable("gui.cancel")
-        );
+        renderer.add(() -> isKbm ? ControlTooltip.getKeyIcon(InputConstants.KEY_ESCAPE) : ControllerBinding.RIGHT_BUTTON.bindingState.getIcon(), () -> Component.translatable("gui.cancel"));
         // Favorite/Unfavorite
-        renderer.add(
-            () -> ControlType.getActiveType().isKbm() ? 
-                ControlTooltip.getKeyIcon(InputConstants.KEY_F) : 
-                ControllerBinding.UP_BUTTON.bindingState.getIcon(), 
-            () -> {
-                if (hasSelectedSkinWidget()) {
-                    LoadedSkin s = playerSkinWidgetList.element3.getCurrentSkin();
-                    if (s != null) {
-                        if (FavoritesManager.isFavorite(s)) {
-                            return Component.translatable("bedrockskins.button.unfavorite");
-                        } else {
-                            return Component.translatable("bedrockskins.button.favorite");
-                        }
-                    }
-                }
-                return Component.translatable("bedrockskins.button.favorite");
+        renderer.add(() -> isKbm ? ControlTooltip.getKeyIcon(InputConstants.KEY_F) : ControllerBinding.UP_BUTTON.bindingState.getIcon(), () -> {
+            if (hasSelectedSkinWidget()) {
+                LoadedSkin s = playerSkinWidgetList.element3.getCurrentSkin();
+                if (s != null) return Component.translatable(FavoritesManager.isFavorite(s) ? "bedrockskins.button.unfavorite" : "bedrockskins.button.favorite");
             }
-        );
+            return Component.translatable("bedrockskins.button.favorite");
+        });
         // Compound left/right navigation icon
-        renderer.add(
-            () -> ControlType.getActiveType().isKbm() ? 
-                ControlTooltip.COMPOUND_ICON_FUNCTION.apply(new ControlTooltip.Icon[]{
-                    ControlTooltip.getKeyIcon(InputConstants.KEY_LEFT),
-                    ControlTooltip.SPACE_ICON,
-                    ControlTooltip.getKeyIcon(InputConstants.KEY_RIGHT)
-                }) : ControllerBinding.LEFT_STICK.bindingState.getIcon(),
-            () -> Component.translatable("bedrockskins.menu.navigate")
-        );
+        renderer.add(() -> isKbm ? ControlTooltip.COMPOUND_ICON_FUNCTION.apply(new ControlTooltip.Icon[]{ControlTooltip.getKeyIcon(InputConstants.KEY_LEFT), ControlTooltip.SPACE_ICON, ControlTooltip.getKeyIcon(InputConstants.KEY_RIGHT)}) : ControllerBinding.LEFT_STICK.bindingState.getIcon(), () -> Component.translatable("bedrockskins.menu.navigate"));
     }
 
     @Override
@@ -543,66 +366,22 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         
         // Render background panels
         renderBackgroundPanels(guiGraphics);
-        
         // Render pack name
-        if (focusedPackId != null) {
-            renderPackName(guiGraphics);
-        }
-        
+        if (focusedPackId != null) renderPackName(guiGraphics);
         // Render skin name and info
-        if (hasSelectedSkinWidget()) {
-            renderSkinInfo(guiGraphics);
-        }
+        if (hasSelectedSkinWidget()) renderSkinInfo(guiGraphics);
     }
     
     private void renderBackgroundPanels(GuiGraphics guiGraphics) {
-        // Render using blitSprite for nine-slice sprite atlas
-        //? if >=1.21.11 {
-        var skinPanel = Identifier.fromNamespaceAndPath("bedrockskins", "tiles/skin_panel");
-        var panelFiller = Identifier.fromNamespaceAndPath("bedrockskins", "tiles/panel_filler");
-        var recessedPanel = Identifier.fromNamespaceAndPath(Legacy4J.MOD_ID, "tiles/square_recessed_panel");
-        var packNameBox = Identifier.fromNamespaceAndPath("bedrockskins", "tiles/pack_name_box");
-        var skinBox = Identifier.fromNamespaceAndPath("bedrockskins", "tiles/skin_box");
-        //?} else {
-        var skinPanel = ResourceLocation.fromNamespaceAndPath("bedrockskins", "tiles/skin_panel");
-        var panelFiller = ResourceLocation.fromNamespaceAndPath("bedrockskins", "tiles/panel_filler");
-        var recessedPanel = ResourceLocation.fromNamespaceAndPath(Legacy4J.MOD_ID, "tiles/square_recessed_panel");
-        var packNameBox = ResourceLocation.fromNamespaceAndPath("bedrockskins", "tiles/pack_name_box");
-        var skinBox = ResourceLocation.fromNamespaceAndPath("bedrockskins", "tiles/skin_box");
-        //?}
+        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.SKIN_PANEL, tooltipBox.getX() - 10, panel.getY() + 7, tooltipBox.getWidth(), tooltipBox.getHeight() - 2);
+        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.PANEL_FILLER, tooltipBox.getX() - 5, panel.getY() + 16 + tooltipBox.getHeight() - 80, tooltipBox.getWidth() - 14, 60);
+        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, LegacySprites.SQUARE_RECESSED_PANEL , tooltipBox.getX() - 1, panel.getY() + tooltipBox.getHeight() - 59, tooltipBox.getWidth() - 55, 55);
 
-        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, skinPanel,
-            tooltipBox.getX() - 10, panel.getY() + 7,
-            tooltipBox.getWidth(), tooltipBox.getHeight() - 2);
-        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, panelFiller,
-            tooltipBox.getX() - 5, panel.getY() + 16 + tooltipBox.getHeight() - 80,
-            tooltipBox.getWidth() - 14, 60);
-        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, recessedPanel,
-            tooltipBox.getX() - 1, panel.getY() + tooltipBox.getHeight() - 59,
-            tooltipBox.getWidth() - 55, 55);
+        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, LegacySprites.ICON_HOLDER, tooltipBox.getX() + tooltipBox.getWidth() - 50, panel.getY() + tooltipBox.getHeight() - 60 + 3, 24, 24);
+        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, LegacySprites.ICON_HOLDER, tooltipBox.getX() + tooltipBox.getWidth() - 50, panel.getY() + tooltipBox.getHeight() - 60 + 30, 24, 24);
 
-        // Icons background
-        //? if >=1.21.11 {
-        var iconHolder = Identifier.fromNamespaceAndPath(Legacy4J.MOD_ID, "container/sizeable_icon_holder");
-        //?} else {
-        var iconHolder = ResourceLocation.fromNamespaceAndPath(Legacy4J.MOD_ID, "container/sizeable_icon_holder");
-        //?}
-        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, iconHolder,
-            tooltipBox.getX() + tooltipBox.getWidth() - 50,
-            panel.getY() + tooltipBox.getHeight() - 60 + 3,
-            24, 24);
-        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, iconHolder,
-            tooltipBox.getX() + tooltipBox.getWidth() - 50,
-            panel.getY() + tooltipBox.getHeight() - 60 + 30,
-            24, 24);
-
-        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, packNameBox,
-            tooltipBox.getX() - 5, panel.getY() + 16 + 4,
-            tooltipBox.getWidth() - 18, 40);
-            
-        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, skinBox,
-            tooltipBox.getX() - 5, panel.getY() + 16,
-            tooltipBox.getWidth() - 14, tooltipBox.getHeight() - 80);
+        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.PACK_NAME_BOX, tooltipBox.getX() - 5, panel.getY() + 16 + 4, tooltipBox.getWidth() - 18, 40);
+        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.SKIN_BOX, tooltipBox.getX() - 5, panel.getY() + 16, tooltipBox.getWidth() - 14, tooltipBox.getHeight() - 80);
     }
 
     private String getFocusedPackSerializeNameLower() {
@@ -612,77 +391,35 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
                 return firstSkin.getSerializeName().toLowerCase(Locale.ROOT);
             }
         }
-
         if (focusedPackId != null && !focusedPackId.isEmpty()) {
             int split = focusedPackId.lastIndexOf('.');
             String guessedName = split >= 0 ? focusedPackId.substring(split + 1) : focusedPackId;
-            if (!guessedName.isEmpty()) {
-                return guessedName.toLowerCase(Locale.ROOT);
-            }
+            if (!guessedName.isEmpty()) return guessedName.toLowerCase(Locale.ROOT);
         }
-
         return "standard";
     }
 
     //? if >=1.21.11 {
     private Identifier resolveFocusedPackIconSprite() {
-        String serializeName = getFocusedPackSerializeNameLower();
-        Identifier packIcon = Identifier.fromNamespaceAndPath("bedrockskins", "icons/" + serializeName);
-        if (hasSpriteTexture(packIcon)) {
-            return packIcon;
-        }
-        return Identifier.fromNamespaceAndPath("bedrockskins", "icons/standard");
+        Identifier packIcon = Identifier.fromNamespaceAndPath("bedrockskins", "icons/" + getFocusedPackSerializeNameLower());
+        return hasSpriteTexture(packIcon) ? packIcon : Identifier.fromNamespaceAndPath("bedrockskins", "icons/standard");
     }
-
     private boolean hasSpriteTexture(Identifier spriteId) {
-        Identifier textureId = Identifier.fromNamespaceAndPath(
-            spriteId.getNamespace(),
-            "textures/gui/sprites/" + spriteId.getPath() + ".png"
-        );
-        return minecraft.getResourceManager().getResource(textureId).isPresent();
+        return minecraft.getResourceManager().getResource(Identifier.fromNamespaceAndPath(spriteId.getNamespace(), "textures/gui/sprites/" + spriteId.getPath() + ".png")).isPresent();
     }
     //?} else {
     private ResourceLocation resolveFocusedPackIconSprite() {
-        String serializeName = getFocusedPackSerializeNameLower();
-        ResourceLocation packIcon = ResourceLocation.fromNamespaceAndPath("bedrockskins", "icons/" + serializeName);
-        if (hasSpriteTexture(packIcon)) {
-            return packIcon;
-        }
-        return ResourceLocation.fromNamespaceAndPath("bedrockskins", "icons/standard");
+        ResourceLocation packIcon = ResourceLocation.fromNamespaceAndPath("bedrockskins", "icons/" + getFocusedPackSerializeNameLower());
+        return hasSpriteTexture(packIcon) ? packIcon : ResourceLocation.fromNamespaceAndPath("bedrockskins", "icons/standard");
     }
-
     private boolean hasSpriteTexture(ResourceLocation spriteId) {
-        ResourceLocation textureId = ResourceLocation.fromNamespaceAndPath(
-            spriteId.getNamespace(),
-            "textures/gui/sprites/" + spriteId.getPath() + ".png"
-        );
-        return minecraft.getResourceManager().getResource(textureId).isPresent();
+        return minecraft.getResourceManager().getResource(ResourceLocation.fromNamespaceAndPath(spriteId.getNamespace(), "textures/gui/sprites/" + spriteId.getPath() + ".png")).isPresent();
     }
     //?}
     
     private void renderPackName(GuiGraphics guiGraphics) {
-        int x = tooltipBox.getX() - 5;
-        int width = tooltipBox.getWidth() - 18;
-        int middle = x + width / 2;
-        
-        String packDisplayName;
-        
-        // Special handling for Favorites pack
-        if ("skinpack.Favorites".equals(focusedPackId)) {
-            packDisplayName = Component.translatable("bedrockskins.gui.favorites").getString();
-        } else {
-            String translationKey = focusedPackId;
-            String fallbackName = focusedPackId;
-            if (focusedPack != null && focusedPack.size() > 0) {
-                LoadedSkin firstSkin = focusedPack.getSkin(0);
-                if (firstSkin != null) {
-                    translationKey = firstSkin.getSafePackName();
-                    fallbackName = firstSkin.getPackDisplayName();
-                }
-            }
-            packDisplayName = SkinPackLoader.getTranslation(translationKey);
-            if (packDisplayName == null) packDisplayName = fallbackName;
-        }
+        int middle = tooltipBox.getX() - 5 + (tooltipBox.getWidth() - 18) / 2;
+        String packDisplayName = resolvePackDisplayName(focusedPackId, focusedPack);
 
         var stack = guiGraphics.pose();
 
@@ -690,22 +427,14 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         stack.pushMatrix();
         stack.translate(middle, panel.getY() + 16 + 4 + 7);
         stack.scale(1.5f, 1.5f);
-        guiGraphics.drawCenteredString(
-            minecraft.font,
-            Component.literal(packDisplayName),
-            0,
-            0,
-            0xffffffff
-        );
+        guiGraphics.drawCenteredString(minecraft.font, Component.literal(packDisplayName), 0, 0, 0xffffffff);
         stack.popMatrix();
 
         // Draw subtitle below pack name
         if (focusedPack != null && focusedPack.getPackType() != null && !focusedPack.getPackType().isEmpty()) {
             stack.pushMatrix();
             stack.translate(middle, panel.getY() + 16 + 4 + 25);
-            stack.scale(1f, 1f);
-            String key = "bedrockskins.packType." + focusedPack.getPackType();
-            guiGraphics.drawCenteredString(minecraft.font, Component.translatable(key), 0, 0, 0xffffffff);
+            guiGraphics.drawCenteredString(minecraft.font, Component.translatable("bedrockskins.packType." + focusedPack.getPackType()), 0, 0, 0xffffffff);
             stack.popMatrix();
         }
     }
@@ -714,21 +443,10 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         LoadedSkin skin = playerSkinWidgetList.element3.getCurrentSkin();
         if (skin == null) return;
         
-        int x = tooltipBox.getX() - 5;
-        int width = tooltipBox.getWidth() - 18;
-        int middle = x + width / 2;
-        
-        Component skinNameComponent;
-        if (isAutoSelectedSkin(skin)) {
-            skinNameComponent = Component.translatable(AUTO_SELECTED_TRANSLATION_KEY);
-        } else {
-            String skinName = SkinPackLoader.getTranslation(skin.getSafeSkinName());
-            if (skinName == null) skinName = skin.getSkinDisplayName();
-            skinNameComponent = Component.literal(skinName);
-        }
+        int middle = tooltipBox.getX() - 5 + (tooltipBox.getWidth() - 18) / 2;
+        Component skinNameComponent = isAutoSelectedSkin(skin) ? Component.translatable(AUTO_SELECTED_TRANSLATION_KEY) : Component.literal(SkinPackLoader.getTranslation(skin.getSafeSkinName()) != null ? SkinPackLoader.getTranslation(skin.getSafeSkinName()) : skin.getSkinDisplayName());
 
         var stack = guiGraphics.pose();
-
         // Render skin name
         stack.pushMatrix();
         stack.translate(middle, panel.getY() + tooltipBox.getHeight() - 59 + 10);
@@ -737,8 +455,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         stack.popMatrix();
 
         // Render description if available
-        String descKey = skin.getSafeSkinName() + ".description";
-        String desc = SkinPackLoader.getTranslation(descKey);
+        String desc = SkinPackLoader.getTranslation(skin.getSafeSkinName() + ".description");
         if (desc != null && !desc.isEmpty()) {
             stack.pushMatrix();
             stack.translate(middle, panel.getY() + tooltipBox.getHeight() - 59 + 35);
@@ -749,106 +466,49 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         
         // Render checkmark if this skin is currently selected
         SkinId currentSkinKey = SkinManager.getLocalSelectedKey();
-        boolean isSelected = isAutoSelectedSkin(skin)
-            ? currentSkinKey == null
-            : (currentSkinKey != null && java.util.Objects.equals(currentSkinKey, skin.getSkinId()));
-        if (isSelected) {
-            //? if >=1.21.11 {
-            var beaconCheck = Identifier.fromNamespaceAndPath(Legacy4J.MOD_ID, "container/beacon_check");
-            //?} else {
-            var beaconCheck = ResourceLocation.fromNamespaceAndPath(Legacy4J.MOD_ID, "container/beacon_check");
-            //?}
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, beaconCheck,
-                tooltipBox.getX() + tooltipBox.getWidth() - 50,
-                panel.getY() + tooltipBox.getHeight() - 60 + 3,
-                24, 24);
+        if (isAutoSelectedSkin(skin) ? currentSkinKey == null : Objects.equals(currentSkinKey, skin.getSkinId())) {
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, LegacySprites.BEACON_CONFIRM, tooltipBox.getX() + tooltipBox.getWidth() - 50, panel.getY() + tooltipBox.getHeight() - 60 + 3, 24, 24);
         }
         
         // Render heart if this skin is favorited
         if (FavoritesManager.isFavorite(skin)) {
-            //? if >=1.21.11 {
-            var heartContainer = Identifier.fromNamespaceAndPath("minecraft", "hud/heart/container");
-            var heartFull = Identifier.fromNamespaceAndPath("minecraft", "hud/heart/full");
-            //?} else {
-            var heartContainer = ResourceLocation.fromNamespaceAndPath("minecraft", "hud/heart/container");
-            var heartFull = ResourceLocation.fromNamespaceAndPath("minecraft", "hud/heart/full");
-            //?}
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, heartContainer,
-                tooltipBox.getX() + tooltipBox.getWidth() - 50 + 4,
-                panel.getY() + tooltipBox.getHeight() - 60 + 30 + 4,
-                16, 16);
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, heartFull,
-                tooltipBox.getX() + tooltipBox.getWidth() - 50 + 4,
-                panel.getY() + tooltipBox.getHeight() - 60 + 30 + 4,
-                16, 16);
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.HEART_CONTAINER, tooltipBox.getX() + tooltipBox.getWidth() - 50 + 4, panel.getY() + tooltipBox.getHeight() - 60 + 30 + 4, 16, 16);
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.HEART_FULL, tooltipBox.getX() + tooltipBox.getWidth() - 50 + 4, panel.getY() + tooltipBox.getHeight() - 60 + 30 + 4, 16, 16);
         }
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        boolean hovered = isInBounds(mouseX, mouseY, tooltipBox.getX(), panel.getY(), tooltipBox.getWidth(), tooltipBox.getHeight());
-        if ((hovered || !ControlType.getActiveType().isKbm()) && 
-            scrollableRenderer.mouseScrolled(scrollY)) {
-            return true;
-        }
+        if ((isInBounds(mouseX, mouseY, tooltipBox.getX(), panel.getY(), tooltipBox.getWidth(), tooltipBox.getHeight()) || !ControlType.getActiveType().isKbm()) && scrollableRenderer.mouseScrolled(scrollY)) return true;
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
     public void renderableVListInit() {
-        addRenderableOnly((guiGraphics, i, j, f) ->
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED,
-                //? if >=1.21.11 {
-                Identifier.fromNamespaceAndPath(Legacy4J.MOD_ID, "tiles/square_recessed_panel"),
-                //?} else {
-                ResourceLocation.fromNamespaceAndPath(Legacy4J.MOD_ID, "tiles/square_recessed_panel"),
-                //?}
-                panel.getX() + 7, panel.getY() + 7 + 130 - 8,
-                panel.getWidth() - 14, panel.getHeight() - 14 - 135 + 1 + 8));
-                
-        addRenderableOnly((guiGraphics, i, j, f) ->
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED,
-                //? if >=1.21.11 {
-                Identifier.fromNamespaceAndPath(Legacy4J.MOD_ID, "tiles/square_recessed_panel"),
-                //?} else {
-                ResourceLocation.fromNamespaceAndPath(Legacy4J.MOD_ID, "tiles/square_recessed_panel"),
-                //?}
-                panel.getX() + 34, panel.getY() + 10, 112, 112));
-        
         addRenderableOnly((guiGraphics, i, j, f) -> {
-            if (this.focusedPack == null) return;
-
-            guiGraphics.pose().pushMatrix(); 
-            
-            guiGraphics.pose().translate(panel.getX() + 35.4f, panel.getY() + 11.4f);
-
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, resolveFocusedPackIconSprite(), 0, 0, 109, 109);
-
-            guiGraphics.pose().popMatrix();
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, LegacySprites.SQUARE_RECESSED_PANEL , panel.getX() + 7, panel.getY() + 7 + 130 - 8, panel.getWidth() - 14, panel.getHeight() - 14 - 135 + 1 + 8);
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, LegacySprites.SQUARE_RECESSED_PANEL , panel.getX() + 34, panel.getY() + 10, 112, 112);
+            if (this.focusedPack != null) {
+                guiGraphics.pose().pushMatrix(); 
+                guiGraphics.pose().translate(panel.getX() + 35.4f, panel.getY() + 11.4f);
+                guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, resolveFocusedPackIconSprite(), 0, 0, 109, 109);
+                guiGraphics.pose().popMatrix();
+            }
         });
 
         tooltipBox.init("tooltipBox");
-        getRenderableVList().init("renderableVList", 
-            panel.getX() + 11, panel.getY() + 132, 
-            panel.getWidth() - 22, panel.getHeight() - 135 + 10 - 22);
+        getRenderableVList().init("renderableVList", panel.getX() + 11, panel.getY() + 132, panel.getWidth() - 22, panel.getHeight() - 135 + 10 - 22);
     }
 
     void openToCurrentSkin() {
         injectAutoSelectedIntoStandardPack();
         SkinId currentSkinKey = SkinManager.getLocalSelectedKey();
-        if (currentSkinKey == null) {
-            // Default to Standard pack if available, else first available pack
-            String defaultPackId = "skinpack.Standard";
-            SkinPackAdapter defaultPack = getPackForUi(defaultPackId);
-            if (defaultPack != null) {
-                focusedPackId = defaultPackId;
-                focusedPack = defaultPack;
-                queuedChangeSkinPack = true;
-                updateSkinPack(0);
-            } else if (!SkinPackAdapter.getAllPacks().isEmpty()) {
-                String firstPackId = SkinPackAdapter.getAllPacks().keySet().iterator().next();
-                focusedPackId = firstPackId;
-                focusedPack = SkinPackAdapter.getPack(firstPackId);
+        
+        if (currentSkinKey == null || SkinPackLoader.getLoadedSkin(currentSkinKey) == null) {
+            String targetPackId = getPackForUi(STANDARD_PACK_ID) != null ? STANDARD_PACK_ID : (SkinPackAdapter.getAllPacks().isEmpty() ? null : SkinPackAdapter.getAllPacks().keySet().iterator().next());
+            if (targetPackId != null) {
+                focusedPackId = targetPackId;
+                focusedPack = getPackForUi(targetPackId);
                 queuedChangeSkinPack = true;
                 updateSkinPack(0);
             }
@@ -856,83 +516,38 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         }
 
         LoadedSkin currentSkin = SkinPackLoader.getLoadedSkin(currentSkinKey);
-        if (currentSkin == null) {
-            // Default to Standard pack if available, else first available pack
-            String defaultPackId = "skinpack.Standard";
-            SkinPackAdapter defaultPack = getPackForUi(defaultPackId);
-            if (defaultPack != null) {
-                focusedPackId = defaultPackId;
-                focusedPack = defaultPack;
-                queuedChangeSkinPack = true;
-                updateSkinPack(0);
-            } else if (!SkinPackAdapter.getAllPacks().isEmpty()) {
-                String firstPackId = SkinPackAdapter.getAllPacks().keySet().iterator().next();
-                focusedPackId = firstPackId;
-                focusedPack = SkinPackAdapter.getPack(firstPackId);
-                queuedChangeSkinPack = true;
-                updateSkinPack(0);
-            }
-            return;
-        }
-
-        String packId = currentSkin.getId();
-        SkinPackAdapter pack = getPackForUi(packId);
-        if (pack == null) {
-            // Default to Standard pack if available, else first available pack
-            String defaultPackId = "skinpack.Standard";
-            SkinPackAdapter defaultPack = getPackForUi(defaultPackId);
-            if (defaultPack != null) {
-                focusedPackId = defaultPackId;
-                focusedPack = defaultPack;
-                queuedChangeSkinPack = true;
-                updateSkinPack(0);
-            } else if (!SkinPackAdapter.getAllPacks().isEmpty()) {
-                String firstPackId = SkinPackAdapter.getAllPacks().keySet().iterator().next();
-                focusedPackId = firstPackId;
-                focusedPack = SkinPackAdapter.getPack(firstPackId);
-                queuedChangeSkinPack = true;
-                updateSkinPack(0);
-            }
-            return;
-        }
-
-        int skinIndex = pack.indexOf(currentSkin);
-
-        focusedPackId = packId;
-        focusedPack = pack;
-        queuedChangeSkinPack = true;
-        updateSkinPack(skinIndex);
-
-        if (packButtons.containsKey(packId)) {
-            setFocused(packButtons.get(packId));
+        SkinPackAdapter pack = getPackForUi(currentSkin.getId());
+        if (pack != null) {
+            focusedPackId = currentSkin.getId();
+            focusedPack = pack;
+            queuedChangeSkinPack = true;
+            updateSkinPack(pack.indexOf(currentSkin));
+            if (packButtons.containsKey(focusedPackId)) setFocused(packButtons.get(focusedPackId));
         }
     }
 
-    void updateSkinPack() {
-        updateSkinPack(0);
-    }
+    void updateSkinPack() { updateSkinPack(0); }
     
     private void scrollToFocusedPack() {
-        if (focusedPackId != null && packButtons.containsKey(focusedPackId)) {
-            Button btn = packButtons.get(focusedPackId);
-            ensureButtonVisible(btn);
-        }
+        if (focusedPackId != null && packButtons.containsKey(focusedPackId)) ensureButtonVisible(packButtons.get(focusedPackId));
     }
     
     void updateSkinPack(int index) {
         this.queuedChangeSkinPack = false;
+        if (focusedPackId != null && packButtons.containsKey(focusedPackId)) setFocused(packButtons.get(focusedPackId));
 
-        // Always ensure focusedPackId matches the selected button if possible
-        if (focusedPackId != null && packButtons.containsKey(focusedPackId)) {
-            setFocused(packButtons.get(focusedPackId));
+        // Capture the current pose and rotation before clearing the old widgets
+        PlayerSkinWidget.PreviewPose savedPose = PlayerSkinWidget.PreviewPose.STANDING;
+        float savedRotX = 0f;
+        float savedRotY = 0f;
+        if (hasSelectedSkinWidget()) {
+            savedPose = playerSkinWidgetList.element3.getPreviewPose();
+            savedRotX = playerSkinWidgetList.element3.getRotationX();
+            savedRotY = playerSkinWidgetList.element3.getRotationY();
         }
 
-        // Clear existing widgets
         if (playerSkinWidgetList != null) {
-            for (PlayerSkinWidget widget : playerSkinWidgetList.widgets) {
-                widget.cleanup();
-                removeWidget(widget);
-            }
+            playerSkinWidgetList.widgets.forEach(w -> { w.cleanup(); removeWidget(w); });
         }
 
         if (focusedPack == null || focusedPack.isEmpty()) {
@@ -940,200 +555,146 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             return;
         }
 
-        // Calculate visual bounds based on skinBox (the background panel)
-        int boxX = tooltipBox.getX() - 5;
-        int boxWidth = tooltipBox.getWidth() - 14;
-        int boxY = panel.getY() + 16;
-        int boxHeight = tooltipBox.getHeight() - 80;
+        int boxX = tooltipBox.getX() - 5, boxWidth = tooltipBox.getWidth() - 14;
+        int boxY = panel.getY() + 16, boxHeight = tooltipBox.getHeight() - 80;
+        int centerX = boxX + boxWidth / 2, centerY = boxY + boxHeight / 2;
 
-        // The absolute visual center for the widget list
-        int centerX = boxX + boxWidth / 2;
-        int centerY = boxY + boxHeight / 2;
-
-        // Determine Scissor area
-        int scissorLeft = boxX + 7;
-        int scissorRight = boxX + boxWidth - 5;
-        int scissorTop = boxY + 4;
-        int scissorBottom = boxY + boxHeight - 4;
-
-        // Add scissor start - enable clipping for player models
         scissorStart = addRenderableOnly((guiGraphics, i, j, f) -> {
-            if (playerSkinWidgetList != null) {
-                guiGraphics.enableScissor(scissorLeft, scissorTop, scissorRight, scissorBottom);
-            }
+            if (playerSkinWidgetList != null) guiGraphics.enableScissor(boxX + 7, boxY + 4, boxX + boxWidth - 5, boxY + boxHeight - 4);
         });
 
-        // Create skin widgets
         List<PlayerSkinWidget> widgets = new ArrayList<>();
         for (int i = 0; i < focusedPack.size(); i++) {
-            final int skinIndex = i;
             final LoadedSkin skin = focusedPack.getSkin(i);
-
-            // For favorites pack, we need to get the actual skin from its original pack
-            // For normal packs, we can use the ordinal directly
-            final SkinReference finalRef;
-            if ("skinpack.Favorites".equals(focusedPackId) && skin != null) {
-                // Get the skin's original pack ID and find its ordinal in that pack
-                String originalPackId = skin.getId();
-                SkinPackAdapter originalPack = SkinPackAdapter.getPack(originalPackId);
-                int originalOrdinal = originalPack.indexOf(skin);
-                finalRef = new SkinReference(originalPackId, originalOrdinal);
-            } else {
-                finalRef = new SkinReference(focusedPackId, skinIndex);
-            }
-
-            PlayerSkinWidget widget = addRenderableWidget(new PlayerSkinWidget(
-                130, 160,
-                minecraft.getEntityModels(),
-                () -> finalRef,
-                () -> skin
-            ));
-            widgets.add(widget);
+            final SkinReference finalRef = (FAVORITES_PACK_ID.equals(focusedPackId) && skin != null) 
+                ? new SkinReference(skin.getId(), SkinPackAdapter.getPack(skin.getId()).indexOf(skin)) 
+                : new SkinReference(focusedPackId, i);
+            
+            widgets.add(addRenderableWidget(new PlayerSkinWidget(130, 160, minecraft.getEntityModels(), () -> finalRef, () -> skin)));
         }
 
-        // Initialize the list using the precise visual center
-        // -130/2 ensures the center widget is exactly centered at centerX
-        playerSkinWidgetList = PlayerSkinWidgetList.of(
-            centerX - 130 / 2,
-            centerY - 130 / 2,
-            widgets.toArray(new PlayerSkinWidget[0])
-        );
-        playerSkinWidgetList.sortForIndex(index);
+        playerSkinWidgetList = PlayerSkinWidgetList.of(centerX - 65, centerY - 65, widgets.toArray(new PlayerSkinWidget[0]));
+        
+        int n = widgets.size();
+        int targetIndex = ((index % n) + n) % n;
+        
+        playerSkinWidgetList.index = targetIndex; 
+        
+        // Pre-set the center element and its pose
+        playerSkinWidgetList.element3 = widgets.get(targetIndex); 
+        playerSkinWidgetList.element3.setPreviewPose(savedPose);
 
-        // After updating the skin pack, ensure the focused button matches the pack
-        if (focusedPackId != null && packButtons.containsKey(focusedPackId)) {
-            setFocused(packButtons.get(focusedPackId));
-        }
+        playerSkinWidgetList.sortForIndex(targetIndex, savedRotX, savedRotY);
 
-        // Add scissor end - disable clipping
-        scissorEnd = addRenderableOnly((guiGraphics, i, j, f) -> {
-            if (playerSkinWidgetList != null) {
-                guiGraphics.disableScissor();
-            }
-        });
+        scissorEnd = addRenderableOnly((guiGraphics, i, j, f) -> { if (playerSkinWidgetList != null) guiGraphics.disableScissor(); });
     }
 
     @Override
     protected void init() {
         super.init();
-        
-        if (hasSelectedSkinWidget()) {
+        if (hasSelectedSkinWidget() && playerSkinWidgetList.element3.skinRef.get() != null) {
             SkinReference ref = playerSkinWidgetList.element3.skinRef.get();
-            if (ref != null) {
+            if (ref.packId().equals(focusedPackId)) {
                 updateSkinPack(ref.ordinal());
             }
         }
-        
-        if (!hasScrolledToInitial) {
-            scrollToFocusedPack();
-            hasScrolledToInitial = true;
+        if (!hasScrolledToInitial) { 
+            scrollToFocusedPack(); 
+            hasScrolledToInitial = true; 
         }
     }
     
-    private void playUISound() {
-        minecraft.getSoundManager().play(
-            net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                SoundEvents.UI_BUTTON_CLICK.value(), 1.0f
-            )
-        );
-    }
-    
-    private void playScrollSound() {
-        minecraft.getSoundManager().play(
-            net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                LegacyRegistries.SCROLL.get(), 1.0f
-            )
-        );
-    }
-
-    private void playFocusSound() {
-        minecraft.getSoundManager().play(
-            net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                LegacyRegistries.FOCUS.get(), 1.0f
-            )
-        );
-    }
+    private void playUISound() { minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0f)); }
+    private void playScrollSound() { minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(LegacyRegistries.SCROLL.get(), 1.0f)); }
+    private void playFocusSound() { minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(LegacyRegistries.FOCUS.get(), 1.0f)); }
 
     private byte[] loadTextureData(LoadedSkin skin) {
         try {
             AssetSource src = skin.getTexture();
-            if (src instanceof AssetSource.Resource) {
-                var resOpt = minecraft.getResourceManager().getResource(((AssetSource.Resource) src).getId());
-                if (resOpt.isPresent()) {
-                    return resOpt.get().open().readAllBytes();
-                }
-                return new byte[0];
-            } else if (src instanceof AssetSource.File) {
-                File f = new File(((AssetSource.File) src).getPath());
-                return Files.readAllBytes(f.toPath());
-            } else if (src instanceof AssetSource.Zip) {
-                AssetSource.Zip z = (AssetSource.Zip) src;
+            if (src instanceof AssetSource.Resource res) {
+                return minecraft.getResourceManager().getResource(res.getId()).map(r -> {
+                    try { return r.open().readAllBytes(); } catch (Exception e) { return new byte[0]; }
+                }).orElse(new byte[0]);
+            } else if (src instanceof AssetSource.File fSrc) {
+                return Files.readAllBytes(new File(fSrc.getPath()).toPath());
+            } else if (src instanceof AssetSource.Zip z) {
                 try (ZipFile zip = new ZipFile(z.getZipPath())) {
                     ZipEntry entry = zip.getEntry(z.getInternalPath());
                     if (entry != null) {
-                        try (var is = zip.getInputStream(entry)) {
-                            return is.readAllBytes();
-                        }
+                        try (var is = zip.getInputStream(entry)) { return is.readAllBytes(); }
                     }
                 }
-            } else {
-                return new byte[0];
             }
         } catch (Exception ignored) {}
         return new byte[0];
     }
 
-    // --- Mouse drag for preview rotation ---
+    @Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubled) {
-        double mouseX = event.x();
-        double mouseY = event.y();
-        int button = event.button();
-        if (button == 0 && hasSelectedSkinWidget()) {
-            PlayerSkinWidget widget = playerSkinWidgetList.element3;
-            if (mouseX >= widget.getX() && mouseX < widget.getX() + widget.getWidth() &&
-                mouseY >= widget.getY() && mouseY < widget.getY() + widget.getHeight()) {
-                isDraggingPreview = true;
-                lastMouseX = mouseX;
-                lastMouseY = mouseY;
-                return true;
+        if (event.button() == 0 && playerSkinWidgetList != null) {
+            double mouseX = event.x();
+            double mouseY = event.y();
+
+            // Calculate the visible scissor bounds (same math used in updateSkinPack)
+            int boxX = tooltipBox.getX() - 5;
+            int boxWidth = tooltipBox.getWidth() - 14;
+            int boxY = panel.getY() + 16;
+            int boxHeight = tooltipBox.getHeight() - 80;
+
+            int scissorLeft = boxX + 7;
+            int scissorRight = boxX + boxWidth - 5;
+            int scissorTop = boxY + 4;
+            int scissorBottom = boxY + boxHeight - 4;
+
+            // Only process skin clicks if the mouse is inside the  panel
+            if (mouseX >= scissorLeft && mouseX <= scissorRight && mouseY >= scissorTop && mouseY <= scissorBottom) {
+                
+                // Check if clicking the center widget (for rotation drag)
+                if (hasSelectedSkinWidget() && isInBounds(mouseX, mouseY, playerSkinWidgetList.element3.getX(), playerSkinWidgetList.element3.getY(), playerSkinWidgetList.element3.getWidth(), playerSkinWidgetList.element3.getHeight())) {
+                    isDraggingPreview = true;
+                    lastMouseX = mouseX;
+                    lastMouseY = mouseY;
+                    return true;
+                }
+
+                // Check if clicking any other visible widget in the carousel
+                if (playerSkinWidgetList.widgets.stream().noneMatch(w -> w.progress <= 1)) {
+                    for (int i = 0; i < playerSkinWidgetList.widgets.size(); i++) {
+                        PlayerSkinWidget w = playerSkinWidgetList.widgets.get(i);
+                        
+                        if (w.visible && w != playerSkinWidgetList.element3) {
+                            if (isInBounds(mouseX, mouseY, w.getX(), w.getY(), w.getWidth(), w.getHeight())) {
+                                playScrollSound();
+                                playerSkinWidgetList.sortForIndex(i);
+                                return true;
+                            }
+                        }
+                    }
+                }
             }
         }
         return super.mouseClicked(event, doubled);
     }
 
     public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
-        int button = event.button();
-        if (button == 0 && isDraggingPreview) {
-            isDraggingPreview = false;
-            return true;
-        }
+        if (event.button() == 0 && isDraggingPreview) { isDraggingPreview = false; return true; }
         return super.mouseReleased(event);
     }
 
     public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double deltaX, double deltaY) {
-        double mouseX = event.x();
-        double mouseY = event.y();
-            if (isDraggingPreview && hasSelectedSkinWidget()) {
-                PlayerSkinWidget widget = playerSkinWidgetList.element3;
-                double delta = lastMouseX - mouseX;
-                // Ignore tiny deltas to prevent drift
-                if (Math.abs(delta) > 0.01) {
-                    widget.onDrag(mouseX, 0, delta, 0);
-                }
-            lastMouseX = mouseX;
-            lastMouseY = mouseY;
-                return true;
-            }
+        if (isDraggingPreview && hasSelectedSkinWidget()) {
+            double delta = lastMouseX - event.x();
+            if (Math.abs(delta) > 0.01) playerSkinWidgetList.element3.onDrag(event.x(), 0, delta, 0);
+            lastMouseX = event.x();
+            lastMouseY = event.y();
+            return true;
+        }
         return super.mouseDragged(event, deltaX, deltaY);
     }
 
     @Override
     public void onClose() {
-        if (playerSkinWidgetList != null) {
-            for (PlayerSkinWidget widget : playerSkinWidgetList.widgets) {
-                widget.cleanup();
-            }
-        }
+        if (playerSkinWidgetList != null) playerSkinWidgetList.widgets.forEach(PlayerSkinWidget::cleanup);
         super.onClose();
     }
 }*/
