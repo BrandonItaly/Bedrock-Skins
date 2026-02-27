@@ -41,6 +41,7 @@ import net.minecraft.world.entity.player.PlayerModelPart;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.File;
+import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -203,8 +204,9 @@ class CommonLogic {
             BedrockModelManager.clearAllModels();
             
             if (client.player != null) {
-                SkinId id = SkinManager.getSkin(client.player.getUUID());
-                if (id != null) setSafeSkin(client.player.getUUID().toString(), id, id.toString());
+                UUID playerUuid = client.player.getUUID();
+                SkinId id = SkinManager.getSkin(playerUuid);
+                if (id != null) setSafeSkin(playerUuid, id, id.toString());
             }
         } catch (Exception e) { e.printStackTrace(); }
     }
@@ -215,7 +217,9 @@ class CommonLogic {
             if (savedKey == null || client.player == null) return;
 
             SkinId savedSkinId = SkinId.parse(savedKey);
-            setSafeSkin(client.player.getUUID().toString(), savedSkinId, savedKey);
+            UUID playerUuid = client.player.getUUID();
+            
+            setSafeSkin(playerUuid, savedSkinId, savedKey);
 
             LoadedSkin loadedSkin = SkinPackLoader.getLoadedSkin(savedSkinId);
             if (loadedSkin != null) {
@@ -230,17 +234,17 @@ class CommonLogic {
 
     static void handleSkinUpdate(BedrockSkinsNetworking.SkinUpdatePayload p) {
         SkinId id = p.getSkinId();
-        String uuidStr = p.getUuid().toString();
+        UUID playerUuid = p.getUuid();
 
         if (id == null) {
-            SkinManager.resetSkin(uuidStr);
+            SkinManager.resetSkin(playerUuid);
         } else {
             SkinPackLoader.registerRemoteSkin(id.toString(), p.getGeometry(), p.getTextureData());
-            setSafeSkin(uuidStr, id, id.toString());
+            setSafeSkin(playerUuid, id, id.toString());
         }
     }
     
-    private static void setSafeSkin(String uuid, SkinId id, String fallbackName) {
+    private static void setSafeSkin(UUID uuid, SkinId id, String fallbackName) {
         String pack = id == null || id.getPack() == null || id.getPack().isEmpty() ? "Remote" : id.getPack();
         String name = id == null || id.getName() == null || id.getName().isEmpty() ? fallbackName : id.getName();
         SkinManager.setSkin(uuid, pack, name);

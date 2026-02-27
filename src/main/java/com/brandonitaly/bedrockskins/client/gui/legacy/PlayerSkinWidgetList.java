@@ -6,9 +6,9 @@ public class PlayerSkinWidgetList {
     public final int x, y;
     public final List<PlayerSkinWidget> widgets;
     public int index;
+    
     // Fields accessed by screen or logic
     public PlayerSkinWidget element3; // Center
-
     public PlayerSkinWidget element0;
     public PlayerSkinWidget element1;
     public PlayerSkinWidget element2;
@@ -20,6 +20,32 @@ public class PlayerSkinWidgetList {
     private static final int OFFSET = 80;
     private static final float FACING_FROM_LEFT = -45f;
     private static final float FACING_FROM_RIGHT = 45f;
+
+    private static final int[] OFFSETS = {0, -1, 1, -2, 2, -3, 3, -4, 4};
+    private static final SlotConfig[] SLOT_CONFIGS = new SlotConfig[9];
+
+    static {
+        // Mapped by (offset + 4) -> index 0 to 8
+        SLOT_CONFIGS[0] = new SlotConfig(-OFFSET * 4 + 80, VERTICAL_OFFSET + 10, 0.4f, FACING_FROM_LEFT, false); // Offset -4
+        SLOT_CONFIGS[1] = new SlotConfig(-OFFSET * 3, VERTICAL_OFFSET + 33, 0.4f, FACING_FROM_LEFT, false);      // Offset -3
+        SLOT_CONFIGS[2] = new SlotConfig(-OFFSET - 45, VERTICAL_OFFSET + 25, 0.55f, FACING_FROM_LEFT, false);    // Offset -2
+        SLOT_CONFIGS[3] = new SlotConfig(-OFFSET + 18, VERTICAL_OFFSET + 17, 0.7f, FACING_FROM_LEFT, false);     // Offset -1
+        SLOT_CONFIGS[4] = new SlotConfig(8, 20, 0.85f, 0f, true);                                                // Offset  0 (Center)
+        SLOT_CONFIGS[5] = new SlotConfig(OFFSET + 20, VERTICAL_OFFSET + 17, 0.7f, FACING_FROM_RIGHT, false);     // Offset  1
+        SLOT_CONFIGS[6] = new SlotConfig(OFFSET * 2 + 18, VERTICAL_OFFSET + 25, 0.55f, FACING_FROM_RIGHT, false);// Offset  2
+        SLOT_CONFIGS[7] = new SlotConfig(OFFSET * 3 + 35, VERTICAL_OFFSET + 33, 0.4f, FACING_FROM_RIGHT, false); // Offset  3
+        SLOT_CONFIGS[8] = new SlotConfig(OFFSET * 4, VERTICAL_OFFSET * 4 + 20, 0.4f, FACING_FROM_RIGHT, false);  // Offset  4
+    }
+
+    private static class SlotConfig {
+        final int dx, dy;
+        final float scale, rotY;
+        final boolean interactable;
+
+        SlotConfig(int dx, int dy, float scale, float rotY, boolean interactable) {
+            this.dx = dx; this.dy = dy; this.scale = scale; this.rotY = rotY; this.interactable = interactable;
+        }
+    }
 
     private PlayerSkinWidgetList(int x, int y, PlayerSkinWidget[] widgets) {
         this.x = x;
@@ -41,15 +67,15 @@ public class PlayerSkinWidgetList {
             return;
         }
 
+        int n = widgets.size();
+        
         PlayerSkinWidget.PreviewPose currentPose = PlayerSkinWidget.PreviewPose.STANDING;
         if (this.element3 != null) {
             currentPose = this.element3.getPreviewPose();
         }
 
-        int n = widgets.size();
-        
         int oldIndex = this.index;
-        int targetIndex = ((newIndex % n) + n) % n;
+        int targetIndex = getWrappedIndex(newIndex, n);
         
         int delta = targetIndex - oldIndex;
         if (delta > n / 2) delta -= n;
@@ -58,15 +84,15 @@ public class PlayerSkinWidgetList {
         this.index = targetIndex;
         this.element3 = widgets.get(this.index);
         
-        Set<PlayerSkinWidget> usedWidgets = new HashSet<>();
-        int[] offsets = {0, -1, 1, -2, 2, -3, 3, -4, 4};
+        boolean[] usedWidgets = new boolean[n];
         
-        for (int offset : offsets) {
-            PlayerSkinWidget w = getWrapped(this.index + offset);
-            if (w == null) continue;
-            if (usedWidgets.contains(w)) continue; 
+        for (int offset : OFFSETS) {
+            int wIndex = getWrappedIndex(this.index + offset, n);
             
-            usedWidgets.add(w);
+            if (usedWidgets[wIndex]) continue;
+            usedWidgets[wIndex] = true;
+            
+            PlayerSkinWidget w = widgets.get(wIndex);
             
             if (offset == 0) {
                 if (delta != 0) {
@@ -81,132 +107,57 @@ public class PlayerSkinWidgetList {
 
             setupSlot(w, offset, delta, forcedRotX, forcedRotY);
             
-            if (offset == 0) this.element3 = w;
-            else if (offset == -1) this.element2 = w;
-            else if (offset == -2) this.element1 = w;
-            else if (offset == -3) this.element0 = w;
-            else if (offset == 1) this.element4 = w;
-            else if (offset == 2) this.element5 = w;
-            else if (offset == 3) this.element6 = w;
+            switch (offset) {
+                case  0 -> this.element3 = w;
+                case -1 -> this.element2 = w;
+                case -2 -> this.element1 = w;
+                case -3 -> this.element0 = w;
+                case  1 -> this.element4 = w;
+                case  2 -> this.element5 = w;
+                case  3 -> this.element6 = w;
+            }
         }
 
-        for (PlayerSkinWidget w : widgets) {
-            if (!usedWidgets.contains(w)) {
+        // Hide and reset any widgets that weren't placed in the visible offsets
+        for (int i = 0; i < n; i++) {
+            if (!usedWidgets[i]) {
+                PlayerSkinWidget w = widgets.get(i);
                 w.invisible();
                 w.resetPose();
             }
         }
     }
 
-    private PlayerSkinWidget getWrapped(int i) {
-         if (widgets.isEmpty()) return null;
-         int n = widgets.size();
-         int wrapped = (i % n);
-         if (wrapped < 0) wrapped += n;
-         return widgets.get(wrapped);
+    private int getWrappedIndex(int i, int n) {
+        return ((i % n) + n) % n;
     }
 
     private void setupSlot(PlayerSkinWidget w, int offset, int delta, Float forcedRotX, Float forcedRotY) {
-        float rotX = 0;
-        float rotY = 0;
-        int targetPosX = x;
-        int targetPosY = y;
-        float scale = 1.0f;
+        // Map offset (-4 to 4) to array index (0 to 8)
+        SlotConfig config = SLOT_CONFIGS[offset + 4];
         
-        switch (offset) {
-            case 0: // Center
-                w.interactable = true;
-                // Explicitly inject the forced rotation if it exists, otherwise snap to 0
-                if (forcedRotX != null && forcedRotY != null) {
-                    rotX = forcedRotX;
-                    rotY = forcedRotY;
-                } else {
-                    rotX = 0;
-                    rotY = 0;
-                }
-                targetPosX = x + 8;
-                targetPosY = y + 20;
-                scale = 0.85f;
-                break;
-            case -1: // Left 1
-                w.interactable = false;
-                rotY = FACING_FROM_LEFT;
-                targetPosX = x - OFFSET + 18;
-                targetPosY = y + VERTICAL_OFFSET + 17;
-                scale = 0.7f;
-                break;
-            case 1: // Right 1
-                w.interactable = false;
-                rotY = FACING_FROM_RIGHT;
-                targetPosX = x + OFFSET + 20;
-                targetPosY = y + VERTICAL_OFFSET + 17;
-                scale = 0.7f;
-                break;
-            case -2: // Left 2
-                w.interactable = false;
-                rotY = FACING_FROM_LEFT;
-                targetPosX = x - OFFSET - 45;
-                targetPosY = y + VERTICAL_OFFSET + 25;
-                scale = 0.55f;
-                break;
-            case 2: // Right 2
-                w.interactable = false;
-                rotY = FACING_FROM_RIGHT;
-                targetPosX = x + OFFSET * 2 + 18;
-                targetPosY = y + VERTICAL_OFFSET + 25;
-                scale = 0.55f;
-                break;
-            case -3: // Left 3
-                w.interactable = false;
-                rotY = FACING_FROM_LEFT;
-                targetPosX = x - OFFSET * 3;
-                targetPosY = y + VERTICAL_OFFSET + 33;
-                scale = 0.4f;
-                break;
-            case 3: // Right 3
-                w.interactable = false;
-                rotY = FACING_FROM_RIGHT;
-                targetPosX = x + OFFSET * 3 + 35;
-                targetPosY = y + VERTICAL_OFFSET + 33;
-                scale = 0.4f;
-                break;
-            case -4: // Left 4
-                w.interactable = false;
-                rotY = FACING_FROM_LEFT;
-                targetPosX = x - OFFSET * 4 + 80;
-                targetPosY = y + VERTICAL_OFFSET + 10;
-                scale = 0.4f;
-                break;
-            case 4: // Right 4
-                w.interactable = false;
-                rotY = FACING_FROM_RIGHT;
-                targetPosX = x + OFFSET * 4;
-                targetPosY = y + VERTICAL_OFFSET * 4 + 20;
-                scale = 0.4f;
-                break;
-            default:
-                w.invisible();
-                return;
+        w.interactable = config.interactable;
+        float rotX = 0f;
+        float rotY = config.rotY;
+        
+        if (offset == 0 && forcedRotX != null && forcedRotY != null) {
+            rotX = forcedRotX;
+            rotY = forcedRotY;
         }
+
+        int targetPosX = this.x + config.dx;
+        int targetPosY = this.y + config.dy;
+        float scale = config.scale;
         
         int currentX = w.getX();
         
-        boolean isWrap = false;
-        if (w.visible && delta != 0) {
-            if (delta > 0 && targetPosX > currentX + 50) { 
-                isWrap = true;
-            } else if (delta < 0 && targetPosX < currentX - 50) { 
-                isWrap = true;
-            }
-        }
+        boolean isWrap = w.visible && delta != 0 && (
+            (delta > 0 && targetPosX > currentX + 50) || 
+            (delta < 0 && targetPosX < currentX - 50)
+        );
 
         if (isWrap) {
-            int virtualTargetX;
-            if (delta > 0) {
-                virtualTargetX = currentX - OFFSET * Math.abs(delta);
-            } else {
-                virtualTargetX = currentX + OFFSET * Math.abs(delta);
-            }
+            int virtualTargetX = currentX + (delta > 0 ? -OFFSET : OFFSET) * Math.abs(delta);
             w.visible();
             w.beginInterpolation(rotX, rotY, virtualTargetX, targetPosY, scale);
             w.snapTo(targetPosX, targetPosY);

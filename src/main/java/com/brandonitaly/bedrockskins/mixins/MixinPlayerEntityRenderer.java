@@ -1,7 +1,7 @@
 package com.brandonitaly.bedrockskins.mixins;
 
 import com.brandonitaly.bedrockskins.client.BedrockModelManager;
-import com.brandonitaly.bedrockskins.client.BedrockSkinState;
+import com.brandonitaly.bedrockskins.client.BedrockRenderStateAccessor;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.pack.SkinId;
@@ -99,7 +99,7 @@ public abstract class MixinPlayerEntityRenderer {
 
     @Inject(method = "extractRenderState", at = @At("RETURN"))
     private void updateRenderState(Avatar player, AvatarRenderState state, float tickDelta, CallbackInfo ci) {
-        if (player instanceof AbstractClientPlayer cp && state instanceof BedrockSkinState skinState) {
+        if (player instanceof AbstractClientPlayer cp && state instanceof BedrockRenderStateAccessor skinState) {
             java.util.UUID uuid = cp.getUUID();
             skinState.setUniqueId(uuid);
             skinState.setBedrockSkinId(SkinManager.getSkin(uuid));
@@ -126,7 +126,7 @@ public abstract class MixinPlayerEntityRenderer {
 
     @Inject(method = "getTextureLocation", at = @At("HEAD"), cancellable = true)
     private void getTexture(AvatarRenderState state, CallbackInfoReturnable</*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/> ci) {
-        if (state instanceof BedrockSkinState skinState) {
+        if (state instanceof BedrockRenderStateAccessor skinState) {
             java.util.UUID uuid = skinState.getUniqueId();
             if (uuid != null) {
                 SkinId skinId = SkinManager.getSkin(uuid);

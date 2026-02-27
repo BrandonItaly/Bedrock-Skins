@@ -2,7 +2,7 @@ package com.brandonitaly.bedrockskins.mixins;
 
 import com.brandonitaly.bedrockskins.client.BedrockModelManager;
 import com.brandonitaly.bedrockskins.client.BedrockPlayerModel;
-import com.brandonitaly.bedrockskins.client.BedrockSkinState;
+import com.brandonitaly.bedrockskins.client.BedrockRenderStateAccessor;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -20,7 +20,7 @@ public abstract class MixinHumanoidArmorLayer {
 
     @Inject(method = "submit", at = @At("HEAD"), cancellable = true)
     private void bedrockSkins$hideArmor(PoseStack matrices, SubmitNodeCollector queue, int light, HumanoidRenderState state, float limbAngle, float limbDistance, CallbackInfo ci) {
-        if (!(state instanceof BedrockSkinState skinState)) return;
+        if (!(state instanceof BedrockRenderStateAccessor skinState)) return;
 
         SkinId skinId = skinState.getBedrockSkinId();
         if (skinId == null) {

@@ -3,6 +3,7 @@ package com.brandonitaly.bedrockskins.client;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
@@ -10,19 +11,17 @@ import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 public final class SkinManager {
     private SkinManager() {}
 
-    private static final Map<String, SkinId> playerSkins = new HashMap<>();
-    private static final Map<String, SkinId> previewSkins = new HashMap<>();
+    private static final Map<UUID, SkinId> playerSkins = new HashMap<>();
+    private static final Map<UUID, SkinId> previewSkins = new HashMap<>();
 
     public static void load() {
         playerSkins.clear();
         previewSkins.clear();
         try {
-            var state = StateManager.readState();
-            var selected = state.getSelected();
-            var client = Minecraft.getInstance();
-            var player = client.player;
+            var selected = StateManager.readState().getSelected();
+            var player = Minecraft.getInstance().player;
             if (selected != null && !selected.isEmpty() && player != null) {
-                playerSkins.put(player.getUUID().toString(), SkinId.parse(selected));
+                playerSkins.put(player.getUUID(), SkinId.parse(selected));
             }
         } catch (Exception e) {
             BedrockSkinsLog.error("SkinManager: load failed", e);
@@ -30,7 +29,7 @@ public final class SkinManager {
     }
 
     public static SkinId getLocalSelectedKey() {
-        var localUuid = getLocalPlayerUuid();
+        UUID localUuid = getLocalPlayerUuid();
         if (localUuid != null) {
             return playerSkins.get(localUuid);
         }
@@ -43,24 +42,28 @@ public final class SkinManager {
         }
     }
 
-    public static void setSkin(String uuid, String packName, String skinName) {
+    public static void setSkin(UUID uuid, String packName, String skinName) {
         SkinId id = SkinId.of(packName, skinName);
         SkinId previous = playerSkins.put(uuid, id);
+        
         if (!Objects.equals(previous, id)) {
             releaseIfUnused(previous);
         }
-        var localUuid = getLocalPlayerUuid();
-        if (localUuid != null && localUuid.equals(uuid)) {
+        
+        if (uuid.equals(getLocalPlayerUuid())) {
             try {
-                var favorites = FavoritesManager.getFavoriteKeys();
-                StateManager.saveState(favorites, id == null ? null : id.toString());
+                StateManager.saveState(FavoritesManager.getFavoriteKeys(), id == null ? null : id.toString());
             } catch (Exception e) {
                 BedrockSkinsLog.error("SkinManager: failed to save selected skin", e);
             }
         }
     }
 
-    public static void setPreviewSkin(String uuid, String packName, String skinName) {
+    public static void setPreviewSkin(String uuidStr, String packName, String skinName) {
+        setPreviewSkin(UUID.fromString(uuidStr), packName, skinName);
+    }
+
+    public static void setPreviewSkin(UUID uuid, String packName, String skinName) {
         SkinId id = SkinId.of(packName, skinName);
         SkinId previous = previewSkins.put(uuid, id);
         if (!Objects.equals(previous, id)) {
@@ -68,28 +71,35 @@ public final class SkinManager {
         }
     }
 
-    public static void resetPreviewSkin(String uuid) {
+    public static void resetPreviewSkin(String uuidStr) {
+        resetPreviewSkin(UUID.fromString(uuidStr));
+    }
+
+    public static void resetPreviewSkin(UUID uuid) {
         SkinId previous = previewSkins.remove(uuid);
         releaseIfUnused(previous);
     }
 
-    public static SkinId getSkin(String uuid) {
+    public static SkinId getSkin(String uuidStr) {
+        return uuidStr == null ? null : getSkin(UUID.fromString(uuidStr));
+    }
+
+    public static SkinId getSkin(UUID uuid) {
+        if (uuid == null) return null;
         SkinId preview = previewSkins.get(uuid);
         return preview != null ? preview : playerSkins.get(uuid);
     }
 
-    public static SkinId getSkin(java.util.UUID uuid) {
-        return uuid == null ? null : getSkin(uuid.toString());
+    public static void resetSkin(String uuidStr) {
+        resetSkin(UUID.fromString(uuidStr));
     }
 
-    public static void resetSkin(String uuid) {
+    public static void resetSkin(UUID uuid) {
         SkinId previous = playerSkins.remove(uuid);
         if (previous != null) {
-            var localUuid = getLocalPlayerUuid();
-            if (localUuid != null && localUuid.equals(uuid)) {
+            if (uuid.equals(getLocalPlayerUuid())) {
                 try {
-                    var favorites = FavoritesManager.getFavoriteKeys();
-                    StateManager.saveState(favorites, null);
+                    StateManager.saveState(FavoritesManager.getFavoriteKeys(), null);
                 } catch (Exception e) {
                     BedrockSkinsLog.error("SkinManager: failed to clear selected skin", e);
                 }
@@ -98,9 +108,9 @@ public final class SkinManager {
         }
     }
 
-    private static String getLocalPlayerUuid() {
-        var client = Minecraft.getInstance();
-        return client.player != null ? client.player.getUUID().toString() : null;
+    private static UUID getLocalPlayerUuid() {
+        var player = Minecraft.getInstance().player;
+        return player != null ? player.getUUID() : null;
     }
 
     private static void releaseIfUnused(SkinId id) {

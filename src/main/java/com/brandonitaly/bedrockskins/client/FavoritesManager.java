@@ -4,8 +4,8 @@ import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public final class FavoritesManager {
     private FavoritesManager() {}
@@ -15,53 +15,57 @@ public final class FavoritesManager {
     public static void load() {
         favoriteIds.clear();
         try {
-            BedrockSkinsState state = StateManager.readState();
+            LocalSkinConfig state = StateManager.readState();
             if (state.getFavorites() != null) {
-                for (String k : state.getFavorites()) {
-                    var id = SkinId.parse(k);
-                    if (id != null) favoriteIds.add(id);
-                }
+                state.getFavorites().stream()
+                    .map(SkinId::parse)
+                    .filter(Objects::nonNull)
+                    .forEach(favoriteIds::add);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            BedrockSkinsLog.error("FavoritesManager: failed to load favorites", e);
         }
     }
 
     public static void save() {
         try {
             SkinId selected = SkinManager.getLocalSelectedKey();
-            List<String> keys = new ArrayList<>();
-            for (SkinId id : favoriteIds) keys.add(id.toString());
-            StateManager.saveState(keys, selected == null ? null : selected.toString());
+            StateManager.saveState(getFavoriteKeys(), selected == null ? null : selected.toString());
         } catch (Exception e) {
-            e.printStackTrace();
+            BedrockSkinsLog.error("FavoritesManager: failed to save favorites", e);
         }
     }
 
     public static boolean isFavorite(LoadedSkin skin) {
-        return favoriteIds.contains(skin.getSkinId());
+        return skin != null && favoriteIds.contains(skin.getSkinId());
     }
 
     public static void addFavorite(LoadedSkin skin) {
-        var id = skin.getSkinId();
+        if (skin == null) return;
+        
+        SkinId id = skin.getSkinId();
         if (id != null && !favoriteIds.contains(id)) {
-            favoriteIds.add(0, id);
+            favoriteIds.add(0, id); // Add to the front
             save();
         }
     }
 
     public static void removeFavorite(LoadedSkin skin) {
-        var id = skin.getSkinId();
-        if (id != null && favoriteIds.remove(id)) save();
+        if (skin == null) return;
+        
+        SkinId id = skin.getSkinId();
+        if (id != null && favoriteIds.remove(id)) {
+            save();
+        }
     }
 
     public static List<String> getFavoriteKeys() {
-        List<String> out = new ArrayList<>();
-        for (var id : favoriteIds) out.add(id.toString());
-        return Collections.unmodifiableList(out);
+        return favoriteIds.stream()
+            .map(SkinId::toString)
+            .toList(); // Natively returns an unmodifiable list
     }
 
     public static List<SkinId> getFavoriteIds() {
-        return Collections.unmodifiableList(new ArrayList<>(favoriteIds));
+        return List.copyOf(favoriteIds); // Natively returns an unmodifiable copy
     }
 }

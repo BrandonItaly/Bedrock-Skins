@@ -7,22 +7,22 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public class BedrockSkinsState {
-    public static final BedrockSkinsState DEFAULT = new BedrockSkinsState(Collections.emptyList(), null);
+public class LocalSkinConfig {
+    public static final LocalSkinConfig DEFAULT = new LocalSkinConfig(Collections.emptyList(), null);
 
-    public static final Codec<BedrockSkinsState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-        Codec.list(Codec.STRING).optionalFieldOf("favorites", Collections.emptyList()).forGetter(BedrockSkinsState::getFavorites),
+    public static final Codec<LocalSkinConfig> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+        Codec.list(Codec.STRING).optionalFieldOf("favorites", Collections.emptyList()).forGetter(LocalSkinConfig::getFavorites),
         Codec.STRING.optionalFieldOf("selected").forGetter(state -> Optional.ofNullable(state.getSelected()))
-    ).apply(instance, (favorites, selected) -> new BedrockSkinsState(favorites, selected.orElse(null))));
+    ).apply(instance, (favorites, selected) -> new LocalSkinConfig(favorites, selected.orElse(null))));
 
     private List<String> favorites;
     private String selected;
 
-    public BedrockSkinsState() {
+    public LocalSkinConfig() {
         this(Collections.emptyList(), null);
     }
 
-    public BedrockSkinsState(List<String> favorites, String selected) {
+    public LocalSkinConfig(List<String> favorites, String selected) {
         this.favorites = favorites == null ? new ArrayList<>() : new ArrayList<>(favorites);
         this.selected = selected;
     }

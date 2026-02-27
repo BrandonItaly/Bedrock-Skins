@@ -1,5 +1,6 @@
 package com.brandonitaly.bedrockskins.client;
 
+import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 //? if fabric {
@@ -9,22 +10,22 @@ import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Locale;
 
 public class BedrockSkinsConfig {
     //? if fabric {
     private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("bedrockskins.json");
     //?}
     //? if neoforge {
-    // private static final Path CONFIG_PATH = net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get().resolve("bedrockskins.json");
+    /*private static final Path CONFIG_PATH = net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get().resolve("bedrockskins.json");*/
     //?}
 
-    private static boolean scanResourcePacksForSkins = true;
-    private static boolean enableBuiltInSkinPacks = true;
-    private static PaperDollMode paperDollMode = PaperDollMode.BOTH;
-    private static boolean paperDollLeftSide = false;
+    private static volatile boolean scanResourcePacksForSkins;
+    private static volatile boolean enableBuiltInSkinPacks;
+    private static volatile PaperDollMode paperDollMode;
+    private static volatile boolean paperDollLeftSide;
 
     public enum PaperDollMode {
         NONE("bedrockskins.option.show_paper_doll.none"),
@@ -44,19 +45,17 @@ public class BedrockSkinsConfig {
 
         public static final Codec<PaperDollMode> CODEC = Codec.STRING.xmap(
             value -> {
-                for (PaperDollMode mode : values()) {
-                    if (mode.name().equalsIgnoreCase(value)) {
-                        return mode;
-                    }
+                try {
+                    return valueOf(value.toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException | NullPointerException e) {
+                    return BOTH;
                 }
-                return BOTH;
             },
             PaperDollMode::name
         );
     }
 
-    private record ConfigData(boolean scanResourcePacksForSkins, boolean enableBuiltInSkinPacks, PaperDollMode paperDollMode, boolean paperDollLeftSide) {
-    }
+    private record ConfigData(boolean scanResourcePacksForSkins, boolean enableBuiltInSkinPacks, PaperDollMode paperDollMode, boolean paperDollLeftSide) {}
 
     private static final ConfigData DEFAULTS = new ConfigData(true, true, PaperDollMode.BOTH, false);
 
@@ -67,6 +66,7 @@ public class BedrockSkinsConfig {
         Codec.BOOL.optionalFieldOf("paperDollLeftSide", DEFAULTS.paperDollLeftSide()).forGetter(ConfigData::paperDollLeftSide)
     ).apply(instance, ConfigData::new));
 
+    // Ensure load happens BEFORE OptionInstances are created
     static {
         load();
     }
@@ -103,54 +103,52 @@ public class BedrockSkinsConfig {
     public static final OptionInstance<Boolean> PAPER_DOLL_LEFT_SIDE = new OptionInstance<>(
         "bedrockskins.option.paper_doll_side",
         value -> Tooltip.create(Component.translatable("bedrockskins.option.paper_doll_side.tooltip")),
-        (caption, value) -> Component.translatable(value
-            ? "bedrockskins.option.paper_doll_side.left"
-            : "bedrockskins.option.paper_doll_side.right"),
+        (caption, value) -> Component.translatable(value ? "bedrockskins.option.paper_doll_side.left" : "bedrockskins.option.paper_doll_side.right"),
         OptionInstance.BOOLEAN_VALUES,
         isPaperDollLeftSideEnabled(),
         BedrockSkinsConfig::setPaperDollLeftSide
     );
 
-    public static synchronized boolean isScanResourcePacksForSkinsEnabled() {
+    public static boolean isScanResourcePacksForSkinsEnabled() {
         return scanResourcePacksForSkins;
     }
 
-    public static synchronized void setScanResourcePacksForSkins(boolean enabled) {
+    public static void setScanResourcePacksForSkins(boolean enabled) {
         scanResourcePacksForSkins = enabled;
         save();
     }
 
-    public static synchronized boolean isEnableBuiltInSkinPacksEnabled() {
+    public static boolean isEnableBuiltInSkinPacksEnabled() {
         return enableBuiltInSkinPacks;
     }
 
-    public static synchronized void setEnableBuiltInSkinPacks(boolean enabled) {
+    public static void setEnableBuiltInSkinPacks(boolean enabled) {
         enableBuiltInSkinPacks = enabled;
         save();
     }
 
-    public static synchronized PaperDollMode getPaperDollMode() {
+    public static PaperDollMode getPaperDollMode() {
         return paperDollMode;
     }
 
-    public static synchronized void setPaperDollMode(PaperDollMode mode) {
+    public static void setPaperDollMode(PaperDollMode mode) {
         paperDollMode = mode == null ? PaperDollMode.BOTH : mode;
         save();
     }
 
-    public static synchronized boolean isShowPaperDollOnMainMenu() {
+    public static boolean isShowPaperDollOnMainMenu() {
         return paperDollMode == PaperDollMode.BOTH || paperDollMode == PaperDollMode.MAIN_MENU;
     }
 
-    public static synchronized boolean isShowPaperDollOnPauseScreen() {
+    public static boolean isShowPaperDollOnPauseScreen() {
         return paperDollMode == PaperDollMode.BOTH || paperDollMode == PaperDollMode.PAUSE_MENU;
     }
 
-    public static synchronized boolean isPaperDollLeftSideEnabled() {
+    public static boolean isPaperDollLeftSideEnabled() {
         return paperDollLeftSide;
     }
 
-    public static synchronized void setPaperDollLeftSide(boolean enabled) {
+    public static void setPaperDollLeftSide(boolean enabled) {
         paperDollLeftSide = enabled;
         save();
     }
@@ -161,8 +159,8 @@ public class BedrockSkinsConfig {
 
     private static void reloadSkinPacks() {
         try {
-            com.brandonitaly.bedrockskins.pack.SkinPackLoader.loadPacks();
-            com.brandonitaly.bedrockskins.pack.SkinPackLoader.registerTextures();
+            SkinPackLoader.loadPacks();
+            SkinPackLoader.registerTextures();
         } catch (Exception ignored) {}
     }
 

@@ -33,7 +33,6 @@ public class SkinPreviewPanel {
     private final Minecraft minecraft;
     private final Font font;
     private final Runnable onFavoritesChanged;
-    private static final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ ROTATE_SPRITE = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "container/rotate");
     
     // State
     private int x, y, width, height;
@@ -54,17 +53,13 @@ public class SkinPreviewPanel {
         this.onFavoritesChanged = onFavoritesChanged;
     }
     
-    public LoadedSkin getSelectedSkin() {
-        return selectedSkin;
-    }
+    public LoadedSkin getSelectedSkin() { return selectedSkin; }
 
     public void init(int x, int y, int w, int h, Consumer<AbstractWidget> widgetAdder) {
         selectButton = Button.builder(Component.translatable("bedrockskins.button.select"), b -> applySkin()).bounds(0, 0, 10, 20).build();
         widgetAdder.accept(selectButton);
 
-        /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ heartEmpty = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("minecraft", "hud/heart/container");
-        /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ heartFull = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("minecraft", "hud/heart/full");
-        favoriteButton = new FavoriteHeartButton(0, 0, 20, heartEmpty, heartFull, b -> toggleFavorite());
+        favoriteButton = new FavoriteHeartButton(0, 0, 20, BedrockSkinsSprites.HEART_CONTAINER, BedrockSkinsSprites.HEART_FULL, b -> toggleFavorite());
         widgetAdder.accept(favoriteButton.getButton());
 
         resetButton = Button.builder(Component.translatable("bedrockskins.button.reset"), b -> resetSkin()).bounds(0, 0, 10, 20).build();
@@ -110,7 +105,6 @@ public class SkinPreviewPanel {
             this.dummyUuid = UUID.randomUUID();
             this.currentSkinId = currentKey;
             this.selectedSkin = SkinPackLoader.getLoadedSkin(currentKey);
-            
             updatePreviewModel(dummyUuid, currentKey);
         } else {
             this.currentSkinId = null;
@@ -127,7 +121,7 @@ public class SkinPreviewPanel {
     }
 
     private void updatePreviewModel(UUID uuid, SkinId skinId) {
-        if (!this.dummyUuid.equals(uuid)) safeResetPreview(this.dummyUuid.toString());
+        if (!this.dummyUuid.equals(uuid)) SkinManager.resetPreviewSkin(this.dummyUuid);
         this.dummyUuid = uuid;
         
         String name = minecraft.player != null ? minecraft.player.getName().getString() : "Preview";
@@ -136,8 +130,8 @@ public class SkinPreviewPanel {
         if (skinId == null) {
             applyAutoSelectedSkinBehavior();
         } else {
-            SkinManager.setPreviewSkin(uuid.toString(), skinId.getPack(), skinId.getName());
-            safeRegisterTexture(skinId.toString());
+            SkinManager.setPreviewSkin(uuid, skinId.pack(), skinId.name());
+            SkinPackLoader.registerTextureFor(skinId);
             dummyPlayer.clearForcedProfileSkin();
             dummyPlayer.clearForcedBody();
             dummyPlayer.setForcedCape(selectedSkin != null ? selectedSkin.capeIdentifier : null);
@@ -147,41 +141,27 @@ public class SkinPreviewPanel {
 
     private void applyAutoSelectedSkinBehavior() {
         if (dummyPlayer == null) return;
-        SkinManager.resetPreviewSkin(dummyUuid.toString());
-        
-        if (minecraft.player != null) {
-            dummyPlayer.clearForcedProfileSkin();
-            dummyPlayer.setForcedBody(minecraft.player.getSkin().body());
-            dummyPlayer.setForcedCapeTexture(minecraft.player.getSkin().cape());
-            dummyPlayer.setUseLocalPlayerModel(true);
-        } else {
-            dummyPlayer.clearForcedBody();
-            dummyPlayer.clearForcedCape();
-            var profile = minecraft.getGameProfile();
-            if (profile != null) {
-                dummyPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(profile, false).get());
-            } else {
-                dummyPlayer.clearForcedProfileSkin();
-            }
-            dummyPlayer.setUseLocalPlayerModel(false);
-        }
+        SkinManager.resetPreviewSkin(dummyUuid);
+        dummyPlayer.clearForcedBody();
+        dummyPlayer.clearForcedCape();
+        var profile = minecraft.getGameProfile();
+        if (profile != null) dummyPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(profile, false).get());
+        else dummyPlayer.clearForcedProfileSkin();
+        dummyPlayer.setUseLocalPlayerModel(false);
     }
 
     private void applySkin() {
         if (selectedSkin == null) return;
         try {
             SkinId id = selectedSkin.getSkinId();
-            String key = id.toString();
-            String pack = id.getPack() == null || id.getPack().isEmpty() ? "Remote" : id.getPack();
-            
-            safeRegisterTexture(key);
+            SkinPackLoader.registerTextureFor(id);
             
             if (minecraft.player != null) {
-                SkinManager.setSkin(minecraft.player.getUUID().toString(), pack, id.getName());
+                SkinManager.setSkin(minecraft.player.getUUID(), id.pack(), id.name());
                 byte[] data = loadTextureData(selectedSkin);
                 if (data.length > 0) ClientSkinSync.sendSetSkinPayload(id, selectedSkin.getGeometryData().toString(), data);
             } else {
-                StateManager.saveState(FavoritesManager.getFavoriteKeys(), key);
+                StateManager.saveState(FavoritesManager.getFavoriteKeys(), id.toString());
                 updatePreviewModel(dummyUuid, id);
                 updateActionButtons();
             }
@@ -192,14 +172,13 @@ public class SkinPreviewPanel {
         selectedSkin = null;
         currentSkinId = null;
         if (minecraft.player != null) {
-            SkinManager.resetSkin(minecraft.player.getUUID().toString());
+            SkinManager.resetSkin(minecraft.player.getUUID());
             ClientSkinSync.sendResetSkinPayload();
-            safeResetPreview(this.dummyUuid.toString());
-            updatePreviewModel(this.dummyUuid, null);
         } else {
             StateManager.saveState(FavoritesManager.getFavoriteKeys(), null);
-            safeResetPreview(dummyUuid.toString());
         }
+        SkinManager.resetPreviewSkin(dummyUuid);
+        updatePreviewModel(dummyUuid, null);
         updateFavoriteButton();
     }
 
@@ -254,55 +233,34 @@ public class SkinPreviewPanel {
             }
             lastMouseX = mouseX;
 
-            // Gather text dependencies
-            boolean hasSkin = selectedSkin != null;
             String nameToRender = null;
             String descToRender = null;
 
-            if (hasSkin) {
+            if (selectedSkin != null) {
                 nameToRender = SkinPackLoader.getTranslation(selectedSkin.getSafeSkinName());
                 if (nameToRender == null) nameToRender = selectedSkin.getSkinDisplayName();
-
-                String descKey = selectedSkin.getSafeSkinName() + ".description";
-                descToRender = SkinPackLoader.getTranslation(descKey);
+                descToRender = SkinPackLoader.getTranslation(selectedSkin.getSafeSkinName() + ".description");
             }
 
-            boolean hasName = nameToRender != null && !nameToRender.isEmpty();
-            boolean hasDesc = descToRender != null && !descToRender.isEmpty();
-
-            // Reserve fixed space for text at the very bottom
             int textGap = 4;
             int maxTextHeight = (font.lineHeight * 2) + textGap; 
             int textY = contentBottom - maxTextHeight;
 
-            // Calculate Model Space
             int modelAreaHeight = Math.max(0, textY - contentTop);
-            
-            // Calculate scale
             int scale = Math.max((int)(modelAreaHeight * 0.40f), 20); 
-            
-            // Shift the center slightly up so the player + rotate sprite are visually centered
             int centerY = contentTop + (modelAreaHeight / 2) - (rotateH / 2);
 
-            // Render Entity
             renderRotatableEntity(gui, centerX, centerY, width - 16, modelAreaHeight, scale, dummyPlayer);
 
-            // Render Rotate Sprite
-            int rotateY = (int)(centerY + (scale * 0.95f)); 
+            int rotateY = Math.min((int)(centerY + (scale * 0.95f)), textY - rotateH - 4);
+            gui.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.ROTATE_SPRITE, centerX - (rotateW / 2), rotateY, rotateW, rotateH);
             
-            // Safeguard: Ensure the sprite never overlaps the text area if window gets too small
-            rotateY = Math.min(rotateY, textY - rotateH - 4);
-
-            gui.blitSprite(RenderPipelines.GUI_TEXTURED, ROTATE_SPRITE, centerX - (rotateW / 2), rotateY, rotateW, rotateH);
-            
-            // Render Text Elements anchored to the bottom
             int currentTextY = textY;
-
-            if (hasName) {
+            if (nameToRender != null && !nameToRender.isEmpty()) {
                 gui.drawCenteredString(font, nameToRender, centerX, currentTextY, 0xFFAAAAAA);
                 currentTextY += font.lineHeight + textGap;
             }
-            if (hasDesc) {
+            if (descToRender != null && !descToRender.isEmpty()) {
                 gui.drawCenteredString(font, descToRender, centerX, currentTextY, 0xFFAAAAAA);
             }
         }
@@ -325,9 +283,7 @@ public class SkinPreviewPanel {
     }
     
     private void renderRotatableEntity(GuiGraphics gui, int centerX, int centerY, int boxWidth, int boxHeight, int scale, LivingEntity entity) {
-        int halfW = boxWidth / 2;
-        int halfH = boxHeight / 2;
-        
+        int halfW = boxWidth / 2, halfH = boxHeight / 2;
         GuiUtils.renderEntityInRect(gui, entity, rotationX * 3, centerX - halfW, centerY - halfH, centerX + halfW, centerY + halfH, scale);
     }
     
@@ -342,25 +298,24 @@ public class SkinPreviewPanel {
     }
 
     public void cleanup() {
-        safeResetPreview(this.dummyUuid.toString());
+        SkinManager.resetPreviewSkin(this.dummyUuid);
         PreviewPlayer.PreviewPlayerPool.remove(this.dummyUuid);
         this.dummyPlayer = null;
     }
 
-    private void safeResetPreview(String uuid) { GuiUtils.safeResetPreview(uuid); }
-    private void safeRegisterTexture(String key) { GuiUtils.safeRegisterTexture(key); }
-    
     private byte[] loadTextureData(LoadedSkin skin) {
         try {
             AssetSource src = skin.getTexture();
             if (src instanceof AssetSource.Resource res) {
-                var opt = minecraft.getResourceManager().getResource(res.getId());
-                if (opt.isPresent()) {
-                    try (var is = opt.get().open()) { return is.readAllBytes(); }
-                }
-            } else if (src instanceof AssetSource.File f) {
+                return minecraft.getResourceManager().getResource(res.getId()).map(r -> {
+                    try (var is = r.open()) { return is.readAllBytes(); } 
+                    catch (Exception e) { return new byte[0]; }
+                }).orElse(new byte[0]);
+            } 
+            if (src instanceof AssetSource.File f) {
                 return Files.readAllBytes(new File(f.getPath()).toPath());
-            } else if (src instanceof AssetSource.Zip z) {
+            } 
+            if (src instanceof AssetSource.Zip z) {
                 try (ZipFile zip = new ZipFile(z.getZipPath())) {
                     ZipEntry entry = zip.getEntry(z.getInternalPath());
                     if (entry != null) {
@@ -374,22 +329,19 @@ public class SkinPreviewPanel {
     
     private static class FavoriteHeartButton {
         private final SpriteIconButton button;
-        private final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ containerSprite, fullSprite;
+        private final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ fullSprite;
+        private boolean isFavorited = false;
+
         public FavoriteHeartButton(int x, int y, int size, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ containerSprite, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ fullSprite, Button.OnPress onPress) {
-            this.containerSprite = containerSprite;
             this.fullSprite = fullSprite;
             this.button = SpriteIconButton.builder(Component.empty(), onPress, true)
-                    .size(size, size)
-                    .sprite(containerSprite, 12, 12)
-                    .build();
+                    .size(size, size).sprite(containerSprite, 12, 12).build();
         }
 
         public AbstractWidget getButton() { return button; }
         public void setSelected(boolean selected) { this.isFavorited = selected; }
         public void setActive(boolean active) { button.active = active; }
         public void setTooltip(Component tooltip) { button.setTooltip(Tooltip.create(tooltip)); }
-
-        private boolean isFavorited = false;
 
         public void renderSprites(GuiGraphics graphics) {
             if (button.visible && isFavorited) {

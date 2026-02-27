@@ -7,23 +7,28 @@ public class LoadedSkin {
     public final String serializeName;
     public final String packDisplayName;
     public final String skinDisplayName;
-    public final com.google.gson.JsonObject geometryData;
+    public final JsonObject geometryData;
     public final AssetSource texture;
     public final AssetSource cape; // nullable
     public final boolean upsideDown;
 
+    private final SkinId skinId;
+    private final String safePackName;
+    private final String safeSkinName;
+    private final String packId;
+
     public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ identifier;
     public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ capeIdentifier;
 
-    public LoadedSkin(String serializeName, String packDisplayName, String skinDisplayName, com.google.gson.JsonObject geometryData, AssetSource texture) {
+    public LoadedSkin(String serializeName, String packDisplayName, String skinDisplayName, JsonObject geometryData, AssetSource texture) {
         this(serializeName, packDisplayName, skinDisplayName, geometryData, texture, null, false);
     }
 
-    public LoadedSkin(String serializeName, String packDisplayName, String skinDisplayName, com.google.gson.JsonObject geometryData, AssetSource texture, AssetSource cape) {
+    public LoadedSkin(String serializeName, String packDisplayName, String skinDisplayName, JsonObject geometryData, AssetSource texture, AssetSource cape) {
         this(serializeName, packDisplayName, skinDisplayName, geometryData, texture, cape, false);
     }
 
-    public LoadedSkin(String serializeName, String packDisplayName, String skinDisplayName, com.google.gson.JsonObject geometryData, AssetSource texture, AssetSource cape, boolean upsideDown) {
+    public LoadedSkin(String serializeName, String packDisplayName, String skinDisplayName, JsonObject geometryData, AssetSource texture, AssetSource cape, boolean upsideDown) {
         this.serializeName = serializeName;
         this.packDisplayName = packDisplayName;
         this.skinDisplayName = skinDisplayName;
@@ -31,29 +36,29 @@ public class LoadedSkin {
         this.texture = texture;
         this.cape = cape;
         this.upsideDown = upsideDown;
+
+        // Pre-calculate
+        this.skinId = SkinId.of(serializeName, skinDisplayName);
+        this.safePackName = StringUtils.sanitize("skinpack." + packDisplayName);
+        this.safeSkinName = StringUtils.sanitize("skin." + packDisplayName + "." + skinDisplayName);
+        this.packId = "skinpack." + serializeName;
     }
 
     public String getSerializeName() { return serializeName; }
     public String getPackDisplayName() { return packDisplayName; }
     public String getSkinDisplayName() { return skinDisplayName; }
-    public com.google.gson.JsonObject getGeometryData() { return geometryData; }
+    public JsonObject getGeometryData() { return geometryData; }
     public AssetSource getTexture() { return texture; }
     public AssetSource getCape() { return cape; }
     public boolean isUpsideDown() { return upsideDown; }
 
-    // Canonical identifier for a skin (uses serializeName for the pack id)
-    public String getKey() { return serializeName + ":" + skinDisplayName; }
-    public String getId() { return "skinpack." + serializeName; }
-
-    public String getSafePackName() { return StringUtils.sanitize("skinpack." + packDisplayName); }
-    public String getSafeSkinName() { return StringUtils.sanitize("skin." + packDisplayName + "." + skinDisplayName); }
-
-    // New: strongly-typed ID (pack uses serializeName)
-    public SkinId getSkinId() { return SkinId.of(serializeName, skinDisplayName); }
-
+    public String getKey() { return skinId.toString(); }
+    public String getId() { return packId; }
+    public String getSafePackName() { return safePackName; }
+    public String getSafeSkinName() { return safeSkinName; }
+    public SkinId getSkinId() { return skinId; }
     public boolean isInternal() { return texture instanceof AssetSource.Resource; }
 
-    public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ getIdentifier() { return this.identifier; }
-    public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ getCapeIdentifier() { return this.capeIdentifier; }
+    public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ getIdentifier() { return identifier; }
+    public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ getCapeIdentifier() { return capeIdentifier; }
 }
-

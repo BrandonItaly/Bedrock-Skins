@@ -2,7 +2,7 @@ package com.brandonitaly.bedrockskins.mixins;
 
 import com.brandonitaly.bedrockskins.client.BedrockModelManager;
 import com.brandonitaly.bedrockskins.client.BedrockPlayerModel;
-import com.brandonitaly.bedrockskins.client.BedrockSkinState;
+import com.brandonitaly.bedrockskins.client.BedrockRenderStateAccessor;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import net.minecraft.client.model.geom.ModelPart;
@@ -29,7 +29,7 @@ public abstract class MixinElytraModel {
 
     @Inject(method = "setupAnim", at = @At("RETURN"))
     private void bedrockSkins$syncElytraPivots(HumanoidRenderState state, CallbackInfo ci) {
-        if (!(state instanceof BedrockSkinState skinState)) return;
+        if (!(state instanceof BedrockRenderStateAccessor skinState)) return;
 
         SkinId skinId = skinState.getBedrockSkinId();
         if (skinId == null) {

@@ -20,9 +20,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-/**
- * Widget that displays a 3D player skin model with rotation and animation.
- */
 public class PlayerSkinWidget extends AbstractWidget {
     private static final String AUTO_SELECTED_INTERNAL_NAME = "__auto_selected__";
 
@@ -71,7 +68,6 @@ public class PlayerSkinWidget extends AbstractWidget {
     private long lastWalkUpdateMs = currentTimeMillis();
     private long lastPreviewTickMs = currentTimeMillis();
     
-    // Performance optimization: prevent doing heavy texture setup every frame
     private boolean skinSetupComplete = false;
 
     public enum PreviewPose {
@@ -210,7 +206,7 @@ public class PlayerSkinWidget extends AbstractWidget {
         dummyPlayer.clearForcedCape();
 
         if (loadedSkin != null && isAutoSelectedSkin(loadedSkin)) {
-            SkinManager.resetPreviewSkin(dummyUuid.toString());
+            SkinManager.resetPreviewSkin(dummyUuid);
             var profile = minecraft.getGameProfile();
             if (profile != null) {
                 dummyPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(profile, false).get());
@@ -220,12 +216,12 @@ public class PlayerSkinWidget extends AbstractWidget {
             dummyPlayer.setUseLocalPlayerModel(false);
             var id = loadedSkin.getSkinId();
             if (id != null) {
-                SkinManager.setPreviewSkin(dummyUuid.toString(), id.getPack(), id.getName());
+                SkinManager.setPreviewSkin(dummyUuid, id.pack(), id.name());
                 SkinPackLoader.registerTextureFor(id);
             }
             dummyPlayer.setForcedCape(loadedSkin.capeIdentifier);
         } else {
-            SkinManager.resetPreviewSkin(dummyUuid.toString());
+            SkinManager.resetPreviewSkin(dummyUuid);
             dummyPlayer.setUseLocalPlayerModel(false);
         }
     }
@@ -241,6 +237,12 @@ public class PlayerSkinWidget extends AbstractWidget {
             if (!skinSetupComplete) {
                 setupDummyPlayerSkin();
                 skinSetupComplete = true;
+            }
+
+            LoadedSkin loadedSkin = this.skin.get();
+            Minecraft mc = Minecraft.getInstance();
+            if (loadedSkin != null && isAutoSelectedSkin(loadedSkin) && mc.getGameProfile() != null) {
+                dummyPlayer.setForcedProfileSkin(mc.getSkinManager().createLookup(mc.getGameProfile(), false).get());
             }
             
             advancePreviewSimulation(dummyPlayer);
@@ -369,7 +371,7 @@ public class PlayerSkinWidget extends AbstractWidget {
     }
 
     public void cleanup() {
-        SkinManager.resetPreviewSkin(dummyUuid.toString());
+        SkinManager.resetPreviewSkin(dummyUuid);
         PreviewPlayer.PreviewPlayerPool.remove(dummyUuid);
     }
 

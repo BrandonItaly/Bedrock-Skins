@@ -5,28 +5,24 @@ import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.client.gui.GuiUtils;
 import com.brandonitaly.bedrockskins.client.gui.PreviewPlayer;
+import com.brandonitaly.bedrockskins.client.gui.BedrockSkinsSprites;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
 import net.minecraft./*? if <1.21.11 {*//**//*?} else {*/util./*?}*/Util;
-
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.UUID;
@@ -34,212 +30,137 @@ import java.util.UUID;
 @Mixin(TitleScreen.class)
 public abstract class MixinTitleScreen extends Screen {
 
-    protected MixinTitleScreen(Component title) {
-        super(title);
-    }
+    protected MixinTitleScreen(Component title) { super(title); }
 
     @Unique
-    private static final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ BEDROCKSKINS_MENU_BUTTON_SPRITE = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "container/icon_hangar");
+    private static final int PREVIEW_W = 78, PREVIEW_H = 112, BTN_SIZE = 20, BTN_GAP = -16;
 
     @Unique
     private PreviewPlayer bedrockskins$menuPreviewPlayer;
     @Unique
-    private UUID bedrockskins$menuPreviewUuid = UUID.randomUUID();
+    private final UUID bedrockskins$menuPreviewUuid = UUID.randomUUID();
     @Unique
     private SpriteIconButton bedrockskins$openSkinButton;
-    @Unique
-    private static final int BEDROCKSKINS_PREVIEW_WIDTH = 78;
-    @Unique
-    private static final int BEDROCKSKINS_PREVIEW_HEIGHT = 112;
-    @Unique
-    private static final int BEDROCKSKINS_BUTTON_SIZE = 20;
-    @Unique
-    private static final int BEDROCKSKINS_BUTTON_GAP = -16;
-    @Unique
-    private static final float BEDROCKSKINS_ROTATION_SENSITIVITY = 1.6F;
     @Unique
     private float bedrockskins$previewYaw = 0.0F;
     @Unique
     private boolean bedrockskins$draggingPreview = false;
     @Unique
+    private boolean bedrockskins$leftMouseDown = false;
+    @Unique
     private double bedrockskins$lastMouseX = 0.0;
 
     @Unique
-    private int bedrockskins$getPreviewLeft() {
-        int columnCenterX = BedrockSkinsConfig.isPaperDollLeftSideEnabled()
-                ? (this.width / 6)
-                : ((this.width * 5) / 6);
-        return columnCenterX - (BEDROCKSKINS_PREVIEW_WIDTH / 2);
+    private int bedrockskins$getLeft() {
+        return (BedrockSkinsConfig.isPaperDollLeftSideEnabled() ? (width / 6) : (width * 5 / 6)) - (PREVIEW_W / 2);
     }
 
     @Unique
-    private int bedrockskins$getPreviewTop() {
-        return (this.height - BEDROCKSKINS_PREVIEW_HEIGHT) / 2;
-    }
-
-    @Unique
-    private int bedrockskins$getButtonX() {
-        int left = bedrockskins$getPreviewLeft();
-        return left + (BEDROCKSKINS_PREVIEW_WIDTH - BEDROCKSKINS_BUTTON_SIZE) / 2;
-    }
-
-    @Unique
-    private int bedrockskins$getButtonY() {
-        int top = bedrockskins$getPreviewTop();
-        return top + BEDROCKSKINS_PREVIEW_HEIGHT + BEDROCKSKINS_BUTTON_GAP;
-    }
+    private int bedrockskins$getTop() { return (height - PREVIEW_H) / 2; }
 
     @Inject(method = "init", at = @At("TAIL"))
     private void bedrockskins$initMainMenuPreview(CallbackInfo ci) {
-        if (minecraft == null) return;
-        if (!BedrockSkinsConfig.isShowPaperDollOnMainMenu()) {
-            if (bedrockskins$openSkinButton != null) bedrockskins$openSkinButton.visible = false;
-            return;
-        }
+        if (minecraft == null || !BedrockSkinsConfig.isShowPaperDollOnMainMenu()) return;
 
-        var accountProfile = minecraft.getGameProfile();
-        bedrockskins$menuPreviewUuid = UUID.randomUUID();
+        bedrockskins$draggingPreview = false;
+        bedrockskins$leftMouseDown = false;
 
-        String previewName = accountProfile != null && accountProfile.name() != null
-            ? accountProfile.name()
-                : "Preview";
-        GameProfile previewProfile = new GameProfile(bedrockskins$menuPreviewUuid, previewName);
-        bedrockskins$menuPreviewPlayer = PreviewPlayer.PreviewPlayerPool.get(previewProfile);
+        // Initialize Player
+        String name = minecraft.getGameProfile() != null ? minecraft.getGameProfile().name() : "Preview";
+        bedrockskins$menuPreviewPlayer = PreviewPlayer.PreviewPlayerPool.get(new GameProfile(bedrockskins$menuPreviewUuid, name));
         bedrockskins$menuPreviewPlayer.setShowNameTag(true);
-        bedrockskins$menuPreviewPlayer.setCustomName(Component.literal(previewName));
+        bedrockskins$menuPreviewPlayer.setCustomName(Component.literal(name));
         bedrockskins$menuPreviewPlayer.setCustomNameVisible(true);
 
-        int previewX = bedrockskins$getPreviewLeft();
-        int previewY = bedrockskins$getPreviewTop();
-        int buttonX = bedrockskins$getButtonX();
-        int buttonY = bedrockskins$getButtonY();
+        // Setup Skin
+        bedrockskins$updatePreviewSkin();
 
-        bedrockskins$openSkinButton = SpriteIconButton.builder(
-                Component.empty(),
-                b -> minecraft.setScreen(BedrockSkinsClient.getAppropriateSkinScreen(this)),
-                true)
-            .size(BEDROCKSKINS_BUTTON_SIZE, BEDROCKSKINS_BUTTON_SIZE)
-            .sprite(BEDROCKSKINS_MENU_BUTTON_SPRITE, 16, 16)
-            .build();
+        // Setup Button
+        bedrockskins$openSkinButton = SpriteIconButton.builder(Component.empty(), b -> minecraft.setScreen(BedrockSkinsClient.getAppropriateSkinScreen(this)), true)
+            .size(BTN_SIZE, BTN_SIZE).sprite(BedrockSkinsSprites.HANGAR_ICON, 16, 16).build();
+        
+        bedrockskins$updateLayout();
         addRenderableWidget(bedrockskins$openSkinButton);
+    }
 
-        bedrockskins$applyCurrentEquippedPreviewBehavior();
+    @Unique
+    private void bedrockskins$updateLayout() {
+        if (bedrockskins$openSkinButton != null) {
+            bedrockskins$openSkinButton.setX(bedrockskins$getLeft() + (PREVIEW_W - BTN_SIZE) / 2);
+            bedrockskins$openSkinButton.setY(bedrockskins$getTop() + PREVIEW_H + BTN_GAP);
+        }
+    }
+
+    @Unique
+    private void bedrockskins$updatePreviewSkin() {
+        SkinId selected = SkinManager.getLocalSelectedKey();
+        if (selected != null) {
+            SkinManager.setPreviewSkin(bedrockskins$menuPreviewUuid, selected.getPack(), selected.getName());
+            SkinPackLoader.registerTextureFor(selected);
+            bedrockskins$menuPreviewPlayer.clearForcedProfileSkin();
+            bedrockskins$menuPreviewPlayer.clearForcedBody();
+            bedrockskins$menuPreviewPlayer.clearForcedCape();
+
+            LoadedSkin loaded = SkinPackLoader.getLoadedSkin(selected);
+            if (loaded != null) bedrockskins$menuPreviewPlayer.setForcedCape(loaded.capeIdentifier);
+        } else {
+            SkinManager.resetPreviewSkin(bedrockskins$menuPreviewUuid);
+            bedrockskins$menuPreviewPlayer.clearForcedBody();
+            bedrockskins$menuPreviewPlayer.clearForcedCape();
+            var profile = minecraft.getGameProfile();
+            if (profile != null) bedrockskins$menuPreviewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(profile, false).get());
+            else bedrockskins$menuPreviewPlayer.clearForcedProfileSkin();
+        }
+        bedrockskins$menuPreviewPlayer.setUseLocalPlayerModel(false);
+    }
+
+    @Unique
+    private boolean bedrockskins$isMouseOverPreview(double mouseX, double mouseY) {
+        int l = bedrockskins$getLeft(), t = bedrockskins$getTop();
+        return mouseX >= l && mouseX <= l + PREVIEW_W && mouseY >= t && mouseY <= t + PREVIEW_H;
     }
 
     @Inject(method = "render", at = @At("TAIL"))
     private void bedrockskins$renderMainMenuPreview(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-        if (!BedrockSkinsConfig.isShowPaperDollOnMainMenu()) {
-            if (bedrockskins$openSkinButton != null) bedrockskins$openSkinButton.visible = false;
-            return;
-        }
-        if (bedrockskins$menuPreviewPlayer == null) return;
+        if (bedrockskins$menuPreviewPlayer == null || !BedrockSkinsConfig.isShowPaperDollOnMainMenu()) return;
 
-        int left = bedrockskins$getPreviewLeft();
-        int top = bedrockskins$getPreviewTop();
-        int right = left + BEDROCKSKINS_PREVIEW_WIDTH;
-        int bottom = top + BEDROCKSKINS_PREVIEW_HEIGHT;
+        if (SkinManager.getLocalSelectedKey() == null && minecraft != null && minecraft.getGameProfile() != null) {
+            bedrockskins$menuPreviewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(minecraft.getGameProfile(), false).get());
+        }
 
         long window = minecraft != null ? minecraft.getWindow().handle() : 0L;
         boolean leftDown = window != 0L && GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
 
-        if (!leftDown) {
-            bedrockskins$draggingPreview = false;
-        }
+        boolean insidePreview = bedrockskins$isMouseOverPreview(mouseX, mouseY);
+        
+        // Prevent clicking the button from initiating a drag
+        boolean insideButton = bedrockskins$openSkinButton != null && bedrockskins$openSkinButton.isHovered();
 
-        if (bedrockskins$draggingPreview && leftDown) {
+        if (leftDown && !bedrockskins$leftMouseDown && insidePreview && !insideButton) {
+            bedrockskins$draggingPreview = true;
+            bedrockskins$lastMouseX = mouseX;
+        }
+        bedrockskins$leftMouseDown = leftDown;
+
+        if (!leftDown) bedrockskins$draggingPreview = false;
+
+        if (bedrockskins$draggingPreview) {
             double deltaX = mouseX - bedrockskins$lastMouseX;
-            bedrockskins$previewYaw -= (float) deltaX * BEDROCKSKINS_ROTATION_SENSITIVITY;
+            bedrockskins$previewYaw -= (float) deltaX * 1.6F;
         }
         bedrockskins$lastMouseX = mouseX;
 
-        bedrockskins$applyCurrentEquippedPreviewBehavior();
         bedrockskins$menuPreviewPlayer.tickCount = (int) (Util.getMillis() / 50L);
-        int namePaddingTop = 14;
-        GuiUtils.renderEntityInRect(guiGraphics, bedrockskins$menuPreviewPlayer, bedrockskins$previewYaw, left, top - namePaddingTop, right, bottom, 56);
-
-        if (bedrockskins$openSkinButton != null && bedrockskins$openSkinButton.visible) {
-            bedrockskins$openSkinButton.setX(bedrockskins$getButtonX());
-            bedrockskins$openSkinButton.setY(bedrockskins$getButtonY());
-        }
-    }
-
-    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
-    private void bedrockskins$mouseClicked(MouseButtonEvent event, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
-        if (event.button() != 0) return;
-
-        int left = bedrockskins$getPreviewLeft();
-        int top = bedrockskins$getPreviewTop();
-        int right = left + BEDROCKSKINS_PREVIEW_WIDTH;
-        int bottom = top + BEDROCKSKINS_PREVIEW_HEIGHT;
-
-        int buttonX = bedrockskins$getButtonX();
-        int buttonY = bedrockskins$getButtonY();
-        int buttonRight = buttonX + BEDROCKSKINS_BUTTON_SIZE;
-        int buttonBottom = buttonY + BEDROCKSKINS_BUTTON_SIZE;
-        if (event.x() >= buttonX && event.x() <= buttonRight && event.y() >= buttonY && event.y() <= buttonBottom) {
-            return;
-        }
-
-        if (event.x() >= left && event.x() <= right && event.y() >= top && event.y() <= bottom) {
-            bedrockskins$draggingPreview = true;
-            bedrockskins$lastMouseX = event.x();
-            cir.setReturnValue(true);
-        }
+        GuiUtils.renderEntityInRect(guiGraphics, bedrockskins$menuPreviewPlayer, bedrockskins$previewYaw, 
+            bedrockskins$getLeft(), bedrockskins$getTop() - 14, bedrockskins$getLeft() + PREVIEW_W, bedrockskins$getTop() + PREVIEW_H, 56);
     }
 
     @Inject(method = "removed", at = @At("TAIL"))
     private void bedrockskins$cleanupMainMenuPreview(CallbackInfo ci) {
-        if (bedrockskins$menuPreviewUuid != null) {
-            PreviewPlayer.PreviewPlayerPool.remove(bedrockskins$menuPreviewUuid);
-            SkinManager.resetPreviewSkin(bedrockskins$menuPreviewUuid.toString());
-        }
+        PreviewPlayer.PreviewPlayerPool.remove(bedrockskins$menuPreviewUuid);
+        SkinManager.resetPreviewSkin(bedrockskins$menuPreviewUuid);
         bedrockskins$menuPreviewPlayer = null;
         bedrockskins$openSkinButton = null;
         bedrockskins$draggingPreview = false;
-    }
-
-    @Unique
-    private void bedrockskins$applyCurrentEquippedPreviewBehavior() {
-        if (bedrockskins$menuPreviewPlayer == null || minecraft == null) return;
-
-        SkinId selectedSkinId = SkinManager.getLocalSelectedKey();
-        if (selectedSkinId != null) {
-            SkinManager.setPreviewSkin(
-                    bedrockskins$menuPreviewUuid.toString(),
-                    selectedSkinId.getPack(),
-                    selectedSkinId.getName()
-            );
-            SkinPackLoader.registerTextureFor(selectedSkinId);
-            bedrockskins$menuPreviewPlayer.clearForcedProfileSkin();
-            bedrockskins$menuPreviewPlayer.clearForcedBody();
-            bedrockskins$menuPreviewPlayer.clearForcedCape();
-            bedrockskins$menuPreviewPlayer.setUseLocalPlayerModel(false);
-
-            LoadedSkin selectedSkin = SkinPackLoader.getLoadedSkin(selectedSkinId);
-            if (selectedSkin != null) {
-                bedrockskins$menuPreviewPlayer.setForcedCape(selectedSkin.capeIdentifier);
-            }
-            return;
-        }
-
-        SkinManager.resetPreviewSkin(bedrockskins$menuPreviewUuid.toString());
-        if (minecraft.player != null) {
-            bedrockskins$menuPreviewPlayer.clearForcedProfileSkin();
-            bedrockskins$menuPreviewPlayer.setForcedBody(minecraft.player.getSkin().body());
-            bedrockskins$menuPreviewPlayer.setForcedCapeTexture(minecraft.player.getSkin().cape());
-            bedrockskins$menuPreviewPlayer.setUseLocalPlayerModel(true);
-        } else {
-            bedrockskins$menuPreviewPlayer.clearForcedBody();
-            bedrockskins$menuPreviewPlayer.clearForcedCape();
-            var profile = minecraft.getGameProfile();
-            if (profile != null) {
-                bedrockskins$menuPreviewPlayer.setForcedProfileSkin(
-                        minecraft.getSkinManager().createLookup(profile, false).get()
-                );
-            } else {
-                bedrockskins$menuPreviewPlayer.clearForcedProfileSkin();
-            }
-            bedrockskins$menuPreviewPlayer.setUseLocalPlayerModel(false);
-        }
     }
 }

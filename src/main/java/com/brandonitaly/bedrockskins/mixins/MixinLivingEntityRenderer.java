@@ -1,7 +1,7 @@
 package com.brandonitaly.bedrockskins.mixins;
 
 import com.brandonitaly.bedrockskins.client.BedrockModelManager;
-import com.brandonitaly.bedrockskins.client.BedrockSkinState;
+import com.brandonitaly.bedrockskins.client.BedrockRenderStateAccessor;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.client.BedrockPlayerModel;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -36,7 +36,7 @@ public abstract class MixinLivingEntityRenderer {
 
     @Unique
     private void bedrockSkins$swapModel(LivingEntityRenderState state) {
-        if (state instanceof AvatarRenderState && state instanceof BedrockSkinState skinState) {
+        if (state instanceof AvatarRenderState && state instanceof BedrockRenderStateAccessor skinState) {
             java.util.UUID uuid = skinState.getUniqueId();
             if (uuid != null) {
                 var skinId = SkinManager.getSkin(uuid.toString());

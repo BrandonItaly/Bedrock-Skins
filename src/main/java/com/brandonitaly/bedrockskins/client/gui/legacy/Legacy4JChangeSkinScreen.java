@@ -198,7 +198,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         try {
             SkinId skinId = skin.getSkinId() != null ? skin.getSkinId() : SkinId.of(skin.getSerializeName(), skin.getSkinDisplayName());
             if (minecraft.player != null) {
-                SkinManager.setSkin(minecraft.player.getUUID().toString(), skin.getSerializeName(), skin.getSkinDisplayName());
+                SkinManager.setSkin(minecraft.player.getUUID(), skin.getSerializeName(), skin.getSkinDisplayName());
                 ClientSkinSync.sendSetSkinPayload(skinId, skin.getGeometryData().toString(), loadTextureData(skin));
             } else {
                 StateManager.saveState(FavoritesManager.getFavoriteKeys(), skinId.toString());
@@ -635,7 +635,26 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             double mouseX = event.x();
             double mouseY = event.y();
 
-            // Calculate the visible scissor bounds (same math used in updateSkinPack)
+            // Check if clicking the action icons
+            if (hasSelectedSkinWidget()) {
+                int iconX = tooltipBox.getX() + tooltipBox.getWidth() - 50;
+                int checkY = panel.getY() + tooltipBox.getHeight() - 60 + 3;
+                int heartY = panel.getY() + tooltipBox.getHeight() - 60 + 30;
+
+                // Clicked Select/Checkmark icon holder
+                if (isInBounds(mouseX, mouseY, iconX, checkY, 24, 24)) {
+                    selectSkin();
+                    return true;
+                }
+
+                // Clicked Favorite/Heart icon holder
+                if (isInBounds(mouseX, mouseY, iconX, heartY, 24, 24)) {
+                    favorite();
+                    return true;
+                }
+            }
+
+            // Calculate the visible scissor bounds
             int boxX = tooltipBox.getX() - 5;
             int boxWidth = tooltipBox.getWidth() - 14;
             int boxY = panel.getY() + 16;

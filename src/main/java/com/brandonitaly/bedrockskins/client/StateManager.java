@@ -9,12 +9,12 @@ public final class StateManager {
 
     private static final File stateFile = new File(Minecraft.getInstance().gameDirectory, "bedrock_skins_state.json");
 
-    public static BedrockSkinsState readState() {
-        return JsonCodecFileStore.read(stateFile.toPath(), BedrockSkinsState.CODEC, BedrockSkinsState.DEFAULT, "StateManager");
+    public static LocalSkinConfig readState() {
+        return JsonCodecFileStore.read(stateFile.toPath(), LocalSkinConfig.CODEC, LocalSkinConfig.DEFAULT, "StateManager");
     }
 
     public static void saveState(List<String> favorites, String selected) {
-        BedrockSkinsState state = new BedrockSkinsState(favorites, selected);
-        JsonCodecFileStore.writeAtomic(stateFile.toPath(), BedrockSkinsState.CODEC, state, "StateManager");
+        LocalSkinConfig state = new LocalSkinConfig(favorites, selected);
+        JsonCodecFileStore.writeAtomic(stateFile.toPath(), LocalSkinConfig.CODEC, state, "StateManager");
     }
 }

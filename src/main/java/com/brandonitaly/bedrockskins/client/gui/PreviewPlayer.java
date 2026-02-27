@@ -19,6 +19,14 @@ import net.minecraft.core.ClientAsset.ResourceTexture;
 public class PreviewPlayer extends RemotePlayer {
 
     private boolean showNameTag = false;
+    private ClientAsset.Texture forcedCapeTexture = null;
+    private ClientAsset.Texture forcedBody = null;
+    private PlayerSkin forcedProfileSkin = null;
+    private boolean useLocalPlayerModel = false;
+
+    public PreviewPlayer(ClientLevel world, GameProfile profile) {
+        super(world, profile);
+    }
 
     @Override
     public boolean shouldShowName() {
@@ -29,29 +37,16 @@ public class PreviewPlayer extends RemotePlayer {
         this.showNameTag = showNameTag;
     }
 
-    private /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ forcedCape = null;
-    private ClientAsset.Texture forcedCapeTexture = null;
-    private ClientAsset.Texture forcedBody = null;
-    private PlayerSkin forcedProfileSkin = null;
-    private boolean useLocalPlayerModel = false;
-
-    public PreviewPlayer(ClientLevel world, GameProfile profile) {
-        super(world, profile);
-    }
-
     // Sets a cape to be forced on the player preview
     public void setForcedCape(/*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ cape) {
-        this.forcedCape = cape;
-        this.forcedCapeTexture = null;
+        this.forcedCapeTexture = cape != null ? new ResourceTexture(cape, cape) : null;
     }
 
     public void setForcedCapeTexture(ClientAsset.Texture capeTexture) {
         this.forcedCapeTexture = capeTexture;
-        this.forcedCape = null;
     }
 
     public void clearForcedCape() {
-        this.forcedCape = null;
         this.forcedCapeTexture = null;
     }
 
@@ -82,73 +77,56 @@ public class PreviewPlayer extends RemotePlayer {
 
     @Override
     public PlayerSkin getSkin() {
-        Minecraft minecraft = Minecraft.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         PlayerSkin original;
+
         if (forcedProfileSkin != null) {
             original = forcedProfileSkin;
-        } else if (minecraft.getConnection() == null) {
-            original = minecraft.player != null ? minecraft.player.getSkin() : DefaultPlayerSkin.get(this.getUUID());
-        } else {
+        } else if (mc.getConnection() != null) {
             original = super.getSkin();
+        } else if (mc.player != null) {
+            original = mc.player.getSkin();
+        } else {
+            original = DefaultPlayerSkin.get(this.getUUID());
         }
 
-        ClientAsset.Texture body = forcedBody != null ? forcedBody : original.body();
-        var model = original.model();
-        if (useLocalPlayerModel && minecraft.player != null) {
-            model = minecraft.player.getSkin().model();
+        ClientAsset.Texture finalBody = forcedBody != null ? forcedBody : original.body();
+        ClientAsset.Texture finalCape = forcedCapeTexture != null ? forcedCapeTexture : original.cape();
+        
+        var finalModel = (useLocalPlayerModel && mc.player != null) 
+            ? mc.player.getSkin().model() 
+            : original.model();
+
+        // Only allocate a new PlayerSkin if something actually changed.
+        if (finalBody == original.body() && finalCape == original.cape() && finalModel == original.model()) {
+            return original;
         }
 
-        ClientAsset.Texture cape = original.cape();
-        if (forcedCapeTexture != null) {
-            cape = forcedCapeTexture;
-        }
-        if (forcedCape != null) {
-            // Create a new PlayerSkin with the forced cape
-            ResourceTexture capeAsset = new ResourceTexture(forcedCape, forcedCape);
-            return new PlayerSkin(
-                body,
-                capeAsset,
-                original.elytra(),
-                model,
-                original.secure()
-            );
-        }
-        if (forcedBody != null || useLocalPlayerModel) {
-            return new PlayerSkin(
-                body,
-                cape,
-                original.elytra(),
-                model,
-                original.secure()
-            );
-        }
-        return original;
+        return new PlayerSkin(finalBody, finalCape, original.elytra(), finalModel, original.secure());
     }
 
     // Forces outer skin layers to render
     @Override
     public boolean isModelPartShown(PlayerModelPart part) {
         // Respect the client's options so changes update the preview instantly
-        try {
-            return Minecraft.getInstance().options.isModelPartEnabled(part);
-        } catch (Exception e) {
-            return true;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc != null && mc.options != null) {
+            return mc.options.isModelPartEnabled(part);
         }
+        return true;
     }
 
     public static final class PreviewPlayerPool {
         private static final Map<UUID, PreviewPlayer> pool = new ConcurrentHashMap<>();
 
         public static PreviewPlayer get(ClientLevel world, GameProfile profile) {
-            UUID id = profile.id();
-            if (id == null) id = UUID.randomUUID();
-            final GameProfile finalProfile = profile;
+            UUID id = profile.id() != null ? profile.id() : UUID.randomUUID();
 
             return pool.compute(id, (k, existing) -> {
                 if (existing != null && existing.level() == world) {
                     return existing;
                 }
-                return new PreviewPlayer(world, finalProfile);
+                return new PreviewPlayer(world, profile);
             });
         }
 
