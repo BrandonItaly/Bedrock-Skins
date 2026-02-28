@@ -102,12 +102,17 @@ public class PlayerSkinWidget extends AbstractWidget {
     }
 
     public void beginInterpolation(float targetRotationX, float targetRotationY, float targetPosX, float targetPosY, float targetScale) {
+        if (this.snapX != null && this.snapY != null) {
+            this.setX(this.snapX);
+            this.setY(this.snapY);
+        }
+
         this.progress = 0;
         this.start = currentTimeMillis();
         this.prevRotationX = rotationX;
         this.prevRotationY = rotationY;
         this.targetRotationX = targetRotationX;
-        this.targetRotationY = targetRotationY;
+        this.targetRotationY = targetRotationY;        
         this.prevPosX = getX();
         this.prevPosY = getY();
         this.targetPosX = targetPosX;
@@ -125,6 +130,15 @@ public class PlayerSkinWidget extends AbstractWidget {
             this.setY((int) targetPosY);
             this.scale = targetScale;
             updateBounds();
+            
+            // Overwrite the previous coordinates
+            this.prevPosX = targetPosX;
+            this.prevPosY = targetPosY;
+            this.prevRotationX = targetRotationX;
+            this.prevRotationY = targetRotationY;
+            this.prevScale = targetScale;
+            
+            this.start = currentTimeMillis() - 200L;
             this.progress = 2;
             if (this.visible) this.wasHidden = false;
         }
@@ -230,8 +244,8 @@ public class PlayerSkinWidget extends AbstractWidget {
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (!visible) return;
 
-        interpolate(progress);
         progress = (currentTimeMillis() - start) / 200f;
+        interpolate(progress);
         
         if (dummyPlayer != null) {
             if (!skinSetupComplete) {
@@ -253,8 +267,9 @@ public class PlayerSkinWidget extends AbstractWidget {
             applyLegacyWalkAnimation(dummyPlayer);
             applySwingPose(dummyPlayer);
             
+            float headYawOffset = crouching ? 5.0F : 0.0F;
             com.brandonitaly.bedrockskins.client.gui.GuiUtils.renderEntityInRect(
-                guiGraphics, dummyPlayer, this.rotationY, 
+                guiGraphics, dummyPlayer, this.rotationY, headYawOffset,
                 this.getX(), this.getY(), this.getX() + this.getWidth(), this.getY() + this.getHeight(), 110
             );
         }
@@ -352,7 +367,9 @@ public class PlayerSkinWidget extends AbstractWidget {
         pendingPose = null;
     }
 
-    public PreviewPose getPreviewPose() { return this.previewPose; }
+    public PreviewPose getPreviewPose() { 
+        return this.pendingPose != null ? this.pendingPose : this.previewPose; 
+    }
 
     public void setPreviewPose(PreviewPose pose) {
         this.previewPose = pose != null ? pose : PreviewPose.STANDING;

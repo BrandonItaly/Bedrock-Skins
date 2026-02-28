@@ -16,14 +16,24 @@ import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else 
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
+import java.util.UUID;
+
 public final class GuiUtils {
     private GuiUtils() {}
 
     /**
-     * Render a living entity inside the given rectangle using submitEntityRenderState.
-     * yawOffset is added to the base 180 degrees orientation. sizeCap caps the computed render size.
+     * Standard rendering for basic preview boxes.
+     * Locks the head to the body rotation.
      */
     public static void renderEntityInRect(GuiGraphics gui, LivingEntity entity, float yawOffset, int left, int top, int right, int bottom, int sizeCap) {
+        renderEntityInRect(gui, entity, yawOffset, 0.0F, left, top, right, bottom, sizeCap);
+    }
+
+    /**
+     * Advanced rendering for full customization screens.
+     * Allows an independent headYawOffset.
+     */
+    public static void renderEntityInRect(GuiGraphics gui, LivingEntity entity, float yawOffset, float headYawOffset, int left, int top, int right, int bottom, int sizeCap) {
         // Save entity state
         float yBodyRot = entity.yBodyRot;
         float yRot = entity.getYRot();
@@ -43,8 +53,10 @@ public final class GuiUtils {
         entity.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
         entity.setXRot(0);
         entity.xRotO = entity.getXRot();
-        entity.yHeadRot = entity.getYRot();
-        entity.yHeadRotO = entity.getYRot();
+        
+        // Apply the independent head offset
+        entity.yHeadRot = entity.getYRot() + headYawOffset;
+        entity.yHeadRotO = entity.yHeadRot;
 
         // Get renderer and state
         EntityRenderDispatcher entityRenderDispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
@@ -94,7 +106,7 @@ public final class GuiUtils {
     public static void safeResetPreview(String uuid) { try { com.brandonitaly.bedrockskins.client.SkinManager.resetPreviewSkin(uuid); } catch (Exception ignored) {} }
 
     private static boolean isUpsideDown(LivingEntity entity) {
-        SkinId id = SkinManager.getSkin(entity.getUUID().toString());
+        SkinId id = SkinManager.getSkin(entity.getUUID());
         if (id == null) return false;
         LoadedSkin skin = SkinPackLoader.getLoadedSkin(id);
         return skin != null && skin.isUpsideDown();
@@ -104,8 +116,6 @@ public final class GuiUtils {
 
     public static void drawPanelChrome(GuiGraphics gui, int x, int y, int w, int h, Component title, Font font) {
         gui.blitSprite(RenderPipelines.GUI_TEXTURED, PANEL_SPRITE, x-1, y-1, w+2, h+2);
-
-        int COL_TEXT_TITLE = 0xFFFFFFFF;
-        gui.drawCenteredString(font, title, x + (w / 2), y + 8, COL_TEXT_TITLE);
+        gui.drawCenteredString(font, title, x + (w / 2), y + 8, 0xFFFFFFFF);
     }
 }
