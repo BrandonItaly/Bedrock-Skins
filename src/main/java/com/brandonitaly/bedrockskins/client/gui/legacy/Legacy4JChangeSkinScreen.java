@@ -89,6 +89,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             return (i1 != -1) ? -1 : ((i2 != -1) ? 1 : k1.compareToIgnoreCase(k2));
         });
         
+        sortedPackIds.remove(FAVORITES_PACK_ID);
         sortedPackIds.add(1, FAVORITES_PACK_ID);
         
         for (String packId : sortedPackIds) {
