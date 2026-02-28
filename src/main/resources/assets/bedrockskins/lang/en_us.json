@@ -39,5 +39,7 @@
   "bedrockskins.option.paper_doll_side": "Paper Doll Position",
   "bedrockskins.option.paper_doll_side.tooltip": "Choose whether the paper doll appears on the left or right side of the screen",
   "bedrockskins.option.paper_doll_side.left": "Left",
-  "bedrockskins.option.paper_doll_side.right": "Right"
+  "bedrockskins.option.paper_doll_side.right": "Right",
+  "bedrockskins.option.skin_animations": "Skin Animations",
+  "bedrockskins.option.skin_animations.tooltip": "Choose whether skins with unique animations will use their animations or not.\nIf disabled, all skins will use their default animations."
 }

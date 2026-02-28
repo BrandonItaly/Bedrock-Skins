@@ -292,6 +292,9 @@ public class BedrockPlayerModel extends PlayerModel {
     public void setupAnim(AvatarRenderState state) {
         super.setupAnim(state);
         
+        // Bail out if user has disabled custom Bedrock skin animations
+        if (!BedrockSkinsConfig.isSkinAnimationsEnabled()) return;
+        
         if (animationArmsOutFront) {
             applyArmsOutFront(resolvePart("rightArm", PartNames.RIGHT_ARM), resolvePart("leftArm", PartNames.LEFT_ARM), state);
         } else if (animationSingleArmAnimation) {
@@ -358,11 +361,13 @@ public class BedrockPlayerModel extends PlayerModel {
         copyRotation("body", vanillaModel.body);
         copyRotation("hat", vanillaModel.hat);
 
-        if (!animationArmsOutFront) {
+        boolean animsEnabled = BedrockSkinsConfig.isSkinAnimationsEnabled();
+
+        if (!animationArmsOutFront || !animsEnabled) {
             copyRotation("rightArm", vanillaModel.rightArm);
             copyRotation("leftArm", vanillaModel.leftArm);
         }
-        if (!animationStationaryLegs) {
+        if (!animationStationaryLegs || !animsEnabled) {
             copyRotation("rightLeg", vanillaModel.rightLeg);
             copyRotation("leftLeg", vanillaModel.leftLeg);
         }
@@ -370,7 +375,9 @@ public class BedrockPlayerModel extends PlayerModel {
 
     public boolean shouldHideArmor() { return animationDontShowArmor; }
 
-    public boolean isStationaryLegs() { return animationStationaryLegs; }
+    public boolean isStationaryLegs() { 
+        return animationStationaryLegs && BedrockSkinsConfig.isSkinAnimationsEnabled(); 
+    }
 
     private void copyRotation(String name, ModelPart source) {
         if (source == null) return;

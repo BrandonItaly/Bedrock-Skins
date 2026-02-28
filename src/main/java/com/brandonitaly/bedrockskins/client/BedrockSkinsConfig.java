@@ -26,6 +26,7 @@ public class BedrockSkinsConfig {
     private static volatile boolean enableBuiltInSkinPacks;
     private static volatile PaperDollMode paperDollMode;
     private static volatile boolean paperDollLeftSide;
+    private static volatile boolean skinAnimations;
 
     public enum PaperDollMode {
         NONE("bedrockskins.option.show_paper_doll.none"),
@@ -55,15 +56,16 @@ public class BedrockSkinsConfig {
         );
     }
 
-    private record ConfigData(boolean scanResourcePacksForSkins, boolean enableBuiltInSkinPacks, PaperDollMode paperDollMode, boolean paperDollLeftSide) {}
+    private record ConfigData(boolean scanResourcePacksForSkins, boolean enableBuiltInSkinPacks, PaperDollMode paperDollMode, boolean paperDollLeftSide, boolean skinAnimations) {}
 
-    private static final ConfigData DEFAULTS = new ConfigData(true, true, PaperDollMode.BOTH, false);
+    private static final ConfigData DEFAULTS = new ConfigData(true, true, PaperDollMode.BOTH, false, true);
 
     private static final Codec<ConfigData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         Codec.BOOL.optionalFieldOf("scanResourcePacksForSkins", DEFAULTS.scanResourcePacksForSkins()).forGetter(ConfigData::scanResourcePacksForSkins),
         Codec.BOOL.optionalFieldOf("enableBuiltInSkinPacks", DEFAULTS.enableBuiltInSkinPacks()).forGetter(ConfigData::enableBuiltInSkinPacks),
         PaperDollMode.CODEC.optionalFieldOf("showPaperDoll", DEFAULTS.paperDollMode()).forGetter(ConfigData::paperDollMode),
-        Codec.BOOL.optionalFieldOf("paperDollLeftSide", DEFAULTS.paperDollLeftSide()).forGetter(ConfigData::paperDollLeftSide)
+        Codec.BOOL.optionalFieldOf("paperDollLeftSide", DEFAULTS.paperDollLeftSide()).forGetter(ConfigData::paperDollLeftSide),
+        Codec.BOOL.optionalFieldOf("skinAnimations", DEFAULTS.skinAnimations()).forGetter(ConfigData::skinAnimations)
     ).apply(instance, ConfigData::new));
 
     // Ensure load happens BEFORE OptionInstances are created
@@ -107,6 +109,13 @@ public class BedrockSkinsConfig {
         OptionInstance.BOOLEAN_VALUES,
         isPaperDollLeftSideEnabled(),
         BedrockSkinsConfig::setPaperDollLeftSide
+    );
+
+    public static final OptionInstance<Boolean> SKIN_ANIMATIONS = OptionInstance.createBoolean(
+        "bedrockskins.option.skin_animations",
+        value -> Tooltip.create(Component.translatable("bedrockskins.option.skin_animations.tooltip")),
+        isSkinAnimationsEnabled(),
+        BedrockSkinsConfig::setSkinAnimations
     );
 
     public static boolean isScanResourcePacksForSkinsEnabled() {
@@ -153,8 +162,17 @@ public class BedrockSkinsConfig {
         save();
     }
 
+    public static boolean isSkinAnimationsEnabled() {
+        return skinAnimations;
+    }
+
+    public static void setSkinAnimations(boolean enabled) {
+        skinAnimations = enabled;
+        save();
+    }
+
     public static OptionInstance<?>[] asOptions() {
-        return new OptionInstance<?>[] { SCAN_RESOURCE_PACKS, ENABLE_BUILT_IN_PACKS, SHOW_PAPER_DOLL, PAPER_DOLL_LEFT_SIDE };
+        return new OptionInstance<?>[] { SCAN_RESOURCE_PACKS, ENABLE_BUILT_IN_PACKS, SHOW_PAPER_DOLL, PAPER_DOLL_LEFT_SIDE, SKIN_ANIMATIONS };
     }
 
     private static void reloadSkinPacks() {
@@ -170,10 +188,11 @@ public class BedrockSkinsConfig {
         enableBuiltInSkinPacks = data.enableBuiltInSkinPacks();
         paperDollMode = data.paperDollMode();
         paperDollLeftSide = data.paperDollLeftSide();
+        skinAnimations = data.skinAnimations();
     }
 
     private static void save() {
-        ConfigData data = new ConfigData(scanResourcePacksForSkins, enableBuiltInSkinPacks, paperDollMode, paperDollLeftSide);
+        ConfigData data = new ConfigData(scanResourcePacksForSkins, enableBuiltInSkinPacks, paperDollMode, paperDollLeftSide, skinAnimations);
         JsonCodecFileStore.write(CONFIG_PATH, CODEC, data, "BedrockSkinsConfig");
     }
 }
