@@ -1,12 +1,13 @@
 package com.brandonitaly.bedrockskins.client;
 
 import com.brandonitaly.bedrockskins.BedrockSkinsNetworking;
-import com.brandonitaly.bedrockskins.pack.AssetSource;
-import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
-import com.brandonitaly.bedrockskins.pack.SkinId;
-import com.brandonitaly.bedrockskins.pack.LoadedSkin;
-import com.mojang.blaze3d.platform.InputConstants;
 import com.brandonitaly.bedrockskins.client.gui.SkinSelectionScreen;
+import com.brandonitaly.bedrockskins.client.util.ExternalAssetUtil;
+import com.brandonitaly.bedrockskins.pack.AssetSource;
+import com.brandonitaly.bedrockskins.pack.LoadedSkin;
+import com.brandonitaly.bedrockskins.pack.SkinId;
+import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
+import com.mojang.blaze3d.platform.InputConstants;
 //? if fabric {
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
@@ -40,10 +41,7 @@ import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.player.PlayerModelPart;
 import org.lwjgl.glfw.GLFW;
 
-import java.io.File;
 import java.util.UUID;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitializer /*?}*/ {
     public static KeyMapping toggleCapeKey, toggleJacketKey, toggleLeftSleeveKey, toggleRightSleeveKey,
@@ -223,7 +221,7 @@ class CommonLogic {
 
             LoadedSkin loadedSkin = SkinPackLoader.getLoadedSkin(savedSkinId);
             if (loadedSkin != null) {
-                byte[] textureData = loadTextureData(client, loadedSkin);
+                byte[] textureData = ExternalAssetUtil.loadTextureData(loadedSkin, client);
                 if (textureData.length > 0) {
                     ClientSkinSync.sendSetSkinPayload(savedSkinId, loadedSkin.getGeometryData().toString(), textureData);
                     System.out.println("BedrockSkinsClient: Synced skin " + savedKey);
@@ -248,27 +246,5 @@ class CommonLogic {
         String pack = id == null || id.getPack() == null || id.getPack().isEmpty() ? "Remote" : id.getPack();
         String name = id == null || id.getName() == null || id.getName().isEmpty() ? fallbackName : id.getName();
         SkinManager.setSkin(uuid, pack, name);
-    }
-
-    static byte[] loadTextureData(Minecraft client, LoadedSkin skin) {
-        try {
-            AssetSource src = skin.getTexture();
-            if (src instanceof AssetSource.Resource res) {
-                var opt = client.getResourceManager().getResource(res.getId());
-                if (opt.isPresent()) {
-                    try (var is = opt.get().open()) { return is.readAllBytes(); }
-                }
-            } else if (src instanceof AssetSource.File f) {
-                return java.nio.file.Files.readAllBytes(new File(f.getPath()).toPath());
-            } else if (src instanceof AssetSource.Zip z) {
-                try (ZipFile zip = new ZipFile(z.getZipPath())) {
-                    ZipEntry entry = zip.getEntry(z.getInternalPath());
-                    if (entry != null) {
-                        try (var is = zip.getInputStream(entry)) { return is.readAllBytes(); }
-                    }
-                }
-            }
-        } catch (Exception ignored) {}
-        return new byte[0];
     }
 }

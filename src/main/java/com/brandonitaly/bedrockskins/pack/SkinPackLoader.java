@@ -1,6 +1,7 @@
 package com.brandonitaly.bedrockskins.pack;
 
 import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
+import com.brandonitaly.bedrockskins.client.util.ExternalAssetUtil;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -415,26 +416,15 @@ public final class SkinPackLoader {
     }
 
     private static NativeImage loadNativeImage(AssetSource source) {
+        byte[] data = ExternalAssetUtil.loadTextureData(source, Minecraft.getInstance());
+        if (data.length == 0) return null;
+        
         try {
-            if (source instanceof AssetSource.Resource resSource) {
-                Resource res = Minecraft.getInstance().getResourceManager().getResource(resSource.getId()).orElse(null);
-                if (res != null) {
-                    try (InputStream is = res.open()) { return NativeImage.read(is); }
-                }
-            } else if (source instanceof AssetSource.File fileSource) {
-                try (InputStream is = new FileInputStream(fileSource.getPath())) { return NativeImage.read(is); }
-            } else if (source instanceof AssetSource.Zip zs) {
-                try (ZipFile zf = new ZipFile(zs.getZipPath())) {
-                    ZipEntry ze = zf.getEntry(zs.getInternalPath());
-                    if (ze != null) {
-                        try (InputStream is = zf.getInputStream(ze)) { return NativeImage.read(is); }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Failed to load image (" + source + "): " + e.getMessage());
+            return NativeImage.read(new ByteArrayInputStream(data));
+        } catch (IOException e) {
+            System.err.println("Failed to parse NativeImage from AssetSource: " + e.getMessage());
+            return null;
         }
-        return null;
     }
 
     // --- Helpers: Translations & Misc ---

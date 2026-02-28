@@ -4,10 +4,11 @@ import com.brandonitaly.bedrockskins.client.ClientSkinSync;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.client.StateManager;
+import com.brandonitaly.bedrockskins.client.util.ExternalAssetUtil;
 import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
-import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.pack.SkinId;
+import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -22,10 +23,6 @@ import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else 
 import net.minecraft./*? if <1.21.11 {*//**//*?} else {*/util./*?}*/Util;
 import net.minecraft.world.entity.LivingEntity;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -158,7 +155,7 @@ public class SkinPreviewPanel {
             
             if (minecraft.player != null) {
                 SkinManager.setSkin(minecraft.player.getUUID(), id.pack(), id.name());
-                byte[] data = loadTextureData(selectedSkin);
+                byte[] data = ExternalAssetUtil.loadTextureData(selectedSkin, minecraft);
                 if (data.length > 0) ClientSkinSync.sendSetSkinPayload(id, selectedSkin.getGeometryData().toString(), data);
             } else {
                 StateManager.saveState(FavoritesManager.getFavoriteKeys(), id.toString());
@@ -301,30 +298,6 @@ public class SkinPreviewPanel {
         SkinManager.resetPreviewSkin(this.dummyUuid);
         PreviewPlayer.PreviewPlayerPool.remove(this.dummyUuid);
         this.dummyPlayer = null;
-    }
-
-    private byte[] loadTextureData(LoadedSkin skin) {
-        try {
-            AssetSource src = skin.getTexture();
-            if (src instanceof AssetSource.Resource res) {
-                return minecraft.getResourceManager().getResource(res.getId()).map(r -> {
-                    try (var is = r.open()) { return is.readAllBytes(); } 
-                    catch (Exception e) { return new byte[0]; }
-                }).orElse(new byte[0]);
-            } 
-            if (src instanceof AssetSource.File f) {
-                return Files.readAllBytes(new File(f.getPath()).toPath());
-            } 
-            if (src instanceof AssetSource.Zip z) {
-                try (ZipFile zip = new ZipFile(z.getZipPath())) {
-                    ZipEntry entry = zip.getEntry(z.getInternalPath());
-                    if (entry != null) {
-                        try (var is = zip.getInputStream(entry)) { return is.readAllBytes(); }
-                    }
-                }
-            }
-        } catch (Exception ignored) {}
-        return new byte[0];
     }
     
     private static class FavoriteHeartButton {
