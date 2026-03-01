@@ -5,7 +5,7 @@ import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.client.gui.GuiUtils;
 import com.brandonitaly.bedrockskins.client.gui.PreviewPlayer;
-import com.brandonitaly.bedrockskins.client.gui.BedrockSkinsSprites;
+import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;

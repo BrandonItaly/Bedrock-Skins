@@ -1,7 +1,7 @@
 package com.brandonitaly.bedrockskins.pack;
 
 import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
-import com.brandonitaly.bedrockskins.client.util.ExternalAssetUtil;
+import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -54,7 +54,18 @@ public final class SkinPackLoader {
     }
 
     public static void loadPacks() {
-        loadedSkins.clear();
+        Map<SkinId, LoadedSkin> preservedRemoteSkins = new HashMap<>();
+        synchronized (loadedSkins) {
+            for (Map.Entry<SkinId, LoadedSkin> entry : loadedSkins.entrySet()) {
+                if (entry.getValue().getTexture() instanceof AssetSource.Remote) {
+                    preservedRemoteSkins.put(entry.getKey(), entry.getValue());
+                }
+            }
+            
+            loadedSkins.clear();
+            loadedSkins.putAll(preservedRemoteSkins);
+        }
+
         translations.clear();
         packTypesByPackId.clear();
 
@@ -92,7 +103,7 @@ public final class SkinPackLoader {
                             }
                         } else if (pack.isFile()) {
                             String name = pack.getName().toLowerCase(Locale.ROOT);
-                            if (name.endsWith(".zip") || name.endsWith(".mcpack")) {
+                            if (name.endsWith(".zip")) {
                                 loadSkinsFromResourcePackZip(pack);
                             }
                         }

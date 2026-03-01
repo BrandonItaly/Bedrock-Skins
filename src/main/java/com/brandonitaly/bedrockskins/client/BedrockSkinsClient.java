@@ -1,8 +1,12 @@
 package com.brandonitaly.bedrockskins.client;
 
+//? if legacy4j { 
+/*import wily.factoryapi.base.client.UIDefinitionManager;
+import com.brandonitaly.bedrockskins.client.gui.legacy.Legacy4JStoreScreen;*/
+//?}
 import com.brandonitaly.bedrockskins.BedrockSkinsNetworking;
 import com.brandonitaly.bedrockskins.client.gui.SkinSelectionScreen;
-import com.brandonitaly.bedrockskins.client.util.ExternalAssetUtil;
+import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
 import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
@@ -41,6 +45,9 @@ import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.player.PlayerModelPart;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitializer /*?}*/ {
@@ -104,10 +111,44 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         });
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> CommonLogic.applySavedSkinOnJoin(client));
         
+        // Clear remote skins when disconnecting
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> 
+            client.execute(CommonLogic::clearAllRemoteSkins)
+        );
+        
         ClientPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.SkinUpdatePayload.ID, (payload, context) -> {
             BedrockSkinsNetworking.SkinUpdatePayload p = payload;
             context.client().execute(() -> CommonLogic.handleSkinUpdate(p));
         });
+
+        //? if legacy4j {
+        /*UIDefinitionManager.registerDefaultScreen(
+            "legacy_store_screen", 
+            (parentScreen) -> new Legacy4JStoreScreen(parentScreen)
+        );
+        
+        UIDefinitionManager.ElementType.registerConditional("add_store_button", (definition, accessorFunction, name, e) -> {
+            java.util.List<UIDefinitionManager.WidgetAction.PressSupplier<net.minecraft.client.gui.components.AbstractWidget>> actions = UIDefinitionManager.ElementType.parseActionsElement(definition, name, e);
+            definition.addStatic(wily.factoryapi.base.client.UIDefinition.createAfterInit(a -> {
+                wily.factoryapi.base.client.UIAccessor accessor = accessorFunction.apply(a);
+                net.minecraft.client.gui.components.AbstractWidget lowestButton = null;
+                for (Object child : accessor.getChildren()) {
+                    if (child instanceof net.minecraft.client.gui.components.AbstractWidget widget) {
+                        if (lowestButton == null || widget.getY() > lowestButton.getY()) {
+                            lowestButton = widget;
+                        }
+                    }
+                }
+                if (lowestButton != null) {
+                    lowestButton.setY(lowestButton.getY() + 24);
+                    net.minecraft.client.gui.components.Button storeButton = net.minecraft.client.gui.components.Button.builder(net.minecraft.network.chat.Component.translatable("bedrockskins.button.store"), b -> {
+                        actions.forEach(c -> c.press(a, b, UIDefinitionManager.WidgetAction.Type.ENABLE));
+                    }).bounds(lowestButton.getX(), lowestButton.getY() - 24, lowestButton.getWidth(), lowestButton.getHeight()).build();
+                    accessor.putWidget(name, accessor.addChild(name, storeButton));
+                }
+            }));
+        });*/
+        //?}
     }
 
     private final class Reloader implements IdentifiableResourceReloadListener, ResourceManagerReloadListener {
@@ -142,7 +183,38 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> CommonLogic.reloadResources(Minecraft.getInstance()));
+        event.enqueueWork(() -> {
+            CommonLogic.reloadResources(Minecraft.getInstance());
+            
+            //? if legacy4j {
+            UIDefinitionManager.registerDefaultScreen(
+                "legacy_store_screen", 
+                (parentScreen) -> new Legacy4JStoreScreen(parentScreen)
+            );
+            
+            UIDefinitionManager.ElementType.registerConditional("add_store_button", (definition, accessorFunction, name, e) -> {
+                java.util.List<UIDefinitionManager.WidgetAction.PressSupplier<net.minecraft.client.gui.components.AbstractWidget>> actions = UIDefinitionManager.ElementType.parseActionsElement(definition, name, e);
+                definition.addStatic(wily.factoryapi.base.client.UIDefinition.createAfterInit(a -> {
+                    wily.factoryapi.base.client.UIAccessor accessor = accessorFunction.apply(a);
+                    net.minecraft.client.gui.components.AbstractWidget lowestButton = null;
+                    for (Object child : accessor.getChildren()) {
+                        if (child instanceof net.minecraft.client.gui.components.AbstractWidget widget) {
+                            if (lowestButton == null || widget.getY() > lowestButton.getY()) {
+                                lowestButton = widget;
+                            }
+                        }
+                    }
+                    if (lowestButton != null) {
+                        lowestButton.setY(lowestButton.getY() + 24);
+                        net.minecraft.client.gui.components.Button storeButton = net.minecraft.client.gui.components.Button.builder(net.minecraft.network.chat.Component.translatable("bedrockskins.button.store"), b -> {
+                            actions.forEach(c -> c.press(a, b, UIDefinitionManager.WidgetAction.Type.ENABLE));
+                        }).bounds(lowestButton.getX(), lowestButton.getY() - 24, lowestButton.getWidth(), lowestButton.getHeight()).build();
+                        accessor.putWidget(name, accessor.addChild(name, storeButton));
+                    }
+                }));
+            });
+            //?}
+        });
     }
 
     public static void handleSkinUpdatePacket(BedrockSkinsNetworking.SkinUpdatePayload payload) {
@@ -158,6 +230,12 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         @SubscribeEvent
         public static void onJoin(ClientPlayerNetworkEvent.LoggingIn event) {
             CommonLogic.applySavedSkinOnJoin(Minecraft.getInstance());
+        }
+
+        // Clear remote skins when disconnecting
+        @SubscribeEvent
+        public static void onLogOut(ClientPlayerNetworkEvent.LoggingOut event) {
+            Minecraft.getInstance().execute(CommonLogic::clearAllRemoteSkins);
         }
     }
 }
@@ -239,6 +317,30 @@ class CommonLogic {
         } else {
             SkinPackLoader.registerRemoteSkin(id.toString(), p.getGeometry(), p.getTextureData());
             setSafeSkin(playerUuid, id, id.toString());
+        }
+    }
+
+    static void clearAllRemoteSkins() {
+        SkinManager.clearOtherPlayers();
+        BedrockModelManager.clearAllModels();
+        
+        List<SkinId> toRemove = new ArrayList<>();
+        
+        synchronized (SkinPackLoader.loadedSkins) {
+            for (Map.Entry<SkinId, LoadedSkin> entry : SkinPackLoader.loadedSkins.entrySet()) {
+                if (entry.getValue().getTexture() instanceof AssetSource.Remote) {
+                    toRemove.add(entry.getKey());
+                }
+            }
+            
+            for (SkinId id : toRemove) {
+                SkinPackLoader.releaseSkinAssets(id); 
+                SkinPackLoader.loadedSkins.remove(id);
+            }
+        }
+        
+        if (!toRemove.isEmpty()) {
+            System.out.println("BedrockSkinsClient: Cleared " + toRemove.size() + " remote skins from memory.");
         }
     }
     

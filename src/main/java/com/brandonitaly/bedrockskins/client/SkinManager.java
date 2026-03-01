@@ -15,17 +15,25 @@ public final class SkinManager {
     private static final Map<UUID, SkinId> previewSkins = new HashMap<>();
 
     public static void load() {
-        playerSkins.clear();
         previewSkins.clear();
         try {
             var selected = StateManager.readState().getSelected();
-            var player = Minecraft.getInstance().player;
-            if (selected != null && !selected.isEmpty() && player != null) {
-                playerSkins.put(player.getUUID(), SkinId.parse(selected));
+            var localUuid = getLocalPlayerUuid();
+            if (localUuid != null) {
+                if (selected != null && !selected.isEmpty()) {
+                    playerSkins.put(localUuid, SkinId.parse(selected));
+                } else {
+                    playerSkins.remove(localUuid);
+                }
             }
         } catch (Exception e) {
             BedrockSkinsLog.error("SkinManager: load failed", e);
         }
+    }
+
+    public static void clearOtherPlayers() {
+        UUID localUuid = getLocalPlayerUuid();
+        playerSkins.keySet().removeIf(uuid -> !uuid.equals(localUuid));
     }
 
     public static SkinId getLocalSelectedKey() {

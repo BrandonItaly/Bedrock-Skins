@@ -1,10 +1,6 @@
-- Skins with stationary legs now have view bobbing disabled.
-- Updated icon buttons to use `SpriteIconButton` for improved rendering.
-- Added a tooltip when hovering over the Open Skin Packs Folder button.
-- Legacy4J: The current pose now carries over when navigating skins, matching the behavior of Legacy Console Edition.
-- Legacy4J: You can now navigate to skins by clicking on them with the cursor when using a mouse.
-- Legacy4J: Skin rotation no longer resets when switching skin packs.
-- Fixed an issue where models rotations would be inverted.
-- Updated translations.
+- Added a new Download Packs tab to the Change Skin screen for remote skin pack downloads.
+- Legacy4J: Added a Download Content button to the title screen.
+- Skin packs are no longer bundled with the mod to reduce file size. Previously built-in packs can now be downloaded in-game.
+- Fixed an issue where other players' skins could unload when resources were reloaded.
 
 **Full Changelog**: https://github.com/BrandonItaly/Bedrock-Skins/commits/master

@@ -1,0 +1,11 @@
+{
+    "targetUI": "title_screen",
+    "elements": {
+        "store": {
+            "type": "add_store_button",
+            "actions": {
+                "open_default_screen": "legacy_store_screen"
+            }
+        }
+    }
+}

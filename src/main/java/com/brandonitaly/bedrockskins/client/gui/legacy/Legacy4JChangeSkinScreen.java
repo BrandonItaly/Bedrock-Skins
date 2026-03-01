@@ -6,8 +6,8 @@ import com.brandonitaly.bedrockskins.client.ClientSkinSync;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.client.StateManager;
-import com.brandonitaly.bedrockskins.client.gui.BedrockSkinsSprites;
-import com.brandonitaly.bedrockskins.client.util.ExternalAssetUtil;
+import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
+import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
 import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
@@ -55,7 +55,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     private String focusedPackId;
     private SkinPackAdapter focusedPack;
     private PlayerSkinWidgetList playerSkinWidgetList;
-    private final Map<String, Button> packButtons = new HashMap<>();
+    private final Map<String, Button> packButtons = new LinkedHashMap<>();
     private final Map<String, SkinPackAdapter> allPacks = new HashMap<>();
     
     //? if <1.21.11 {

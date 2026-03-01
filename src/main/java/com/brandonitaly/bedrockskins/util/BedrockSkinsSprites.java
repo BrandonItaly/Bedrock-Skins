@@ -1,4 +1,4 @@
-package com.brandonitaly.bedrockskins.client.gui;
+package com.brandonitaly.bedrockskins.util;
 
 import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
 

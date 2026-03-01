@@ -1,4 +1,4 @@
-package com.brandonitaly.bedrockskins.client.util;
+package com.brandonitaly.bedrockskins.util;
 
 import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
