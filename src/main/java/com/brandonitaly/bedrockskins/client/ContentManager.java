@@ -1,6 +1,7 @@
 package com.brandonitaly.bedrockskins.client;
 
 import com.brandonitaly.bedrockskins.client.pack.ContentPack;
+import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
@@ -79,8 +80,10 @@ public class ContentManager {
                     Files.deleteIfExists(downloadedTempFile);
 
                     Minecraft.getInstance().execute(() -> {
-                        Minecraft.getInstance().reloadResourcePacks();
-                        onFinished.run();
+                        SkinPackLoader.loadPacks();
+                        Minecraft.getInstance().reloadResourcePacks().thenRun(() -> {
+                            Minecraft.getInstance().execute(onFinished);
+                        });
                     });
                 }
             } catch (Exception e) {

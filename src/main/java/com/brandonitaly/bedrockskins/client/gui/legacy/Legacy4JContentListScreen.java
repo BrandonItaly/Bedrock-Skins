@@ -29,8 +29,7 @@ public class Legacy4JContentListScreen extends PanelVListScreen implements Contr
     protected final Panel tooltipBox = Panel.tooltipBoxOf(panel, 250);
 
     public Legacy4JContentListScreen(Screen parent, Component title, List<ContentPack> packs) {
-        super(s -> Panel.createPanel(s, 
-                // Increased width slightly to maintain button size with smaller padding
+        super(s -> Panel.createPanel(s,
                 p -> p.appearance(286, 249), 
                 p -> p.pos(p.centeredLeftPos(s), p.centeredTopPos(s) + 17)), 
                 Component.empty()
@@ -64,7 +63,6 @@ public class Legacy4JContentListScreen extends PanelVListScreen implements Contr
         initRenderableVListHeight(36);
         
         addRenderableOnly((guiGraphics, i, j, f) -> {
-            // FIX: Recessed panel now uses 10px padding on ALL sides (X, Y, Width, Height)
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, LegacySprites.PANEL_RECESS, 
                 panel.getX() + 10, panel.getY() + 10, panel.getWidth() - 20, panel.getHeight() - 20);
             
