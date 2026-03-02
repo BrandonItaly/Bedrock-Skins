@@ -1,6 +1,6 @@
-package com.brandonitaly.bedrockskins.client;
+package com.brandonitaly.legacystore.client;
 
-import com.brandonitaly.bedrockskins.client.pack.ContentPack;
+import com.brandonitaly.legacystore.api.ContentPack;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
@@ -20,11 +20,10 @@ import java.util.zip.ZipInputStream;
 
 public class ContentManager {
     private static final Gson GSON = new Gson();
-    private static final String INDEX_URL = "https://raw.githubusercontent.com/BrandonItaly/LCE-Resources/refs/heads/skin-packs/skin_packs.json";
 
-    public static CompletableFuture<List<ContentPack>> fetchIndex() {
+    public static CompletableFuture<List<ContentPack>> fetchIndex(String indexUrl) {
         return CompletableFuture.supplyAsync(() -> {
-            try (InputStreamReader reader = new InputStreamReader(new URL(INDEX_URL).openStream())) {
+            try (InputStreamReader reader = new InputStreamReader(new URL(indexUrl).openStream())) {
                 JsonObject json = GSON.fromJson(reader, JsonObject.class);
                 return GSON.fromJson(json.get("packs"), new TypeToken<List<ContentPack>>(){}.getType());
             } catch (Exception e) {
@@ -34,27 +33,27 @@ public class ContentManager {
         });
     }
 
-    public static Path getSkinPacksDir() {
-        File dir = new File(Minecraft.getInstance().gameDirectory, "skin_packs");
+    public static Path getContentDir(String folderName) {
+        File dir = new File(Minecraft.getInstance().gameDirectory, folderName);
         if (!dir.exists()) {
             dir.mkdirs();
         }
         return dir.toPath();
     }
 
-    public static boolean isPackInstalled(ContentPack pack) {
-        Path path = getSkinPacksDir().resolve(pack.id());
+    public static boolean isPackInstalled(ContentPack pack, String folderName) {
+        Path path = getContentDir(folderName).resolve(pack.id());
         return Files.exists(path) && Files.isDirectory(path);
     }
 
-    public static void downloadPack(ContentPack pack, Runnable onFinished) {
-        if (isPackInstalled(pack)) return;
+    public static void downloadPack(ContentPack pack, String folderName, Runnable onFinished) {
+        if (isPackInstalled(pack, folderName)) return;
 
-        Path skinPacksDir = getSkinPacksDir();
+        Path contentDir = getContentDir(folderName);
         CompletableFuture.runAsync(() -> {
             try {
                 Path downloadedTempFile = HttpUtil.downloadFile(
-                    skinPacksDir,
+                    contentDir,
                     new URL(pack.downloadURI()),
                     new java.util.HashMap<>(),
                     com.google.common.hash.Hashing.sha256(),
@@ -70,14 +69,9 @@ public class ContentManager {
                 );
 
                 if (downloadedTempFile != null && Files.exists(downloadedTempFile)) {
-                    Path targetFolder = skinPacksDir.resolve(pack.id());
-                    
-                    // Extract the zip to the target folder
+                    Path targetFolder = contentDir.resolve(pack.id());
                     extractZip(downloadedTempFile, targetFolder);
-                    
-                    // Clean up the temporary download file
                     Files.deleteIfExists(downloadedTempFile);
-
                     Minecraft.getInstance().execute(onFinished);
                 }
             } catch (Exception e) {
@@ -90,16 +84,13 @@ public class ContentManager {
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile.toFile()))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
-                // Cross-platform fix: Force Windows backslashes into standard Unix forward slashes
                 String normalizedName = entry.getName().replace('\\', '/');
                 Path entryPath = targetDir.resolve(normalizedName);
                 
-                // Security check
                 if (!entryPath.normalize().startsWith(targetDir.normalize())) {
                     throw new IOException("Zip entry is outside of the target directory: " + normalizedName);
                 }
 
-                // Check both entry.isDirectory() and the normalized string just in case
                 if (entry.isDirectory() || normalizedName.endsWith("/")) {
                     Files.createDirectories(entryPath);
                 } else {

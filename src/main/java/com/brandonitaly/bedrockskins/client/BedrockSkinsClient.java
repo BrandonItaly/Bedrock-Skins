@@ -1,8 +1,10 @@
 package com.brandonitaly.bedrockskins.client;
 
 //? if legacy4j { 
-/*import wily.factoryapi.base.client.UIDefinitionManager;
-import com.brandonitaly.bedrockskins.client.gui.legacy.Legacy4JStoreScreen;*/
+/*
+import com.brandonitaly.legacystore.LegacyStoreClient;
+import com.brandonitaly.legacystore.api.ContentCategory;
+*/
 //?}
 import com.brandonitaly.bedrockskins.BedrockSkinsNetworking;
 import com.brandonitaly.bedrockskins.client.gui.SkinSelectionScreen;
@@ -52,7 +54,7 @@ import java.util.UUID;
 
 public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitializer /*?}*/ {
     public static KeyMapping toggleCapeKey, toggleJacketKey, toggleLeftSleeveKey, toggleRightSleeveKey,
-                           toggleLeftPantsKey, toggleRightPantsKey, toggleHatKey, toggleMainHandKey, openKey;
+                             toggleLeftPantsKey, toggleRightPantsKey, toggleHatKey, toggleMainHandKey, openKey;
     
     private static KeyMapping.Category keybindCategory;
 
@@ -122,32 +124,23 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         });
 
         //? if legacy4j {
-        /*UIDefinitionManager.registerDefaultScreen(
-            "legacy_store_screen", 
-            (parentScreen) -> new Legacy4JStoreScreen(parentScreen)
+        /*
+        ContentCategory skinPacks = new ContentCategory(
+            "bedrock_skins",
+            net.minecraft.network.chat.Component.translatable("bedrockskins.gui.packs"),
+            "https://raw.githubusercontent.com/BrandonItaly/LCE-Resources/refs/heads/skin-packs/skin_packs.json",
+            "skin_packs",
+            () -> {
+                SkinPackLoader.loadPacks();
+                if (Minecraft.getInstance() != null) {
+                    Minecraft.getInstance().reloadResourcePacks();
+                }
+            }
         );
-        
-        UIDefinitionManager.ElementType.registerConditional("add_store_button", (definition, accessorFunction, name, e) -> {
-            java.util.List<UIDefinitionManager.WidgetAction.PressSupplier<net.minecraft.client.gui.components.AbstractWidget>> actions = UIDefinitionManager.ElementType.parseActionsElement(definition, name, e);
-            definition.addStatic(wily.factoryapi.base.client.UIDefinition.createAfterInit(a -> {
-                wily.factoryapi.base.client.UIAccessor accessor = accessorFunction.apply(a);
-                net.minecraft.client.gui.components.AbstractWidget lowestButton = null;
-                for (Object child : accessor.getChildren()) {
-                    if (child instanceof net.minecraft.client.gui.components.AbstractWidget widget) {
-                        if (lowestButton == null || widget.getY() > lowestButton.getY()) {
-                            lowestButton = widget;
-                        }
-                    }
-                }
-                if (lowestButton != null) {
-                    lowestButton.setY(lowestButton.getY() + 24);
-                    net.minecraft.client.gui.components.Button storeButton = net.minecraft.client.gui.components.Button.builder(net.minecraft.network.chat.Component.translatable("bedrockskins.button.store"), b -> {
-                        actions.forEach(c -> c.press(a, b, UIDefinitionManager.WidgetAction.Type.ENABLE));
-                    }).bounds(lowestButton.getX(), lowestButton.getY() - 24, lowestButton.getWidth(), lowestButton.getHeight()).build();
-                    accessor.putWidget(name, accessor.addChild(name, storeButton));
-                }
-            }));
-        });*/
+
+        LegacyStoreClient.registerCategory(skinPacks);
+        LegacyStoreClient.init();
+        */
         //?}
     }
 
@@ -187,32 +180,21 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
             CommonLogic.reloadResources(Minecraft.getInstance());
             
             //? if legacy4j {
-            UIDefinitionManager.registerDefaultScreen(
-                "legacy_store_screen", 
-                (parentScreen) -> new Legacy4JStoreScreen(parentScreen)
+            ContentCategory skinPacks = new ContentCategory(
+                "bedrock_skins",
+                net.minecraft.network.chat.Component.translatable("bedrockskins.gui.packs"),
+                "https://raw.githubusercontent.com/BrandonItaly/LCE-Resources/refs/heads/skin-packs/skin_packs.json",
+                "skin_packs",
+                () -> {
+                    SkinPackLoader.loadPacks();
+                    if (Minecraft.getInstance() != null) {
+                        Minecraft.getInstance().reloadResourcePacks();
+                    }
+                }
             );
-            
-            UIDefinitionManager.ElementType.registerConditional("add_store_button", (definition, accessorFunction, name, e) -> {
-                java.util.List<UIDefinitionManager.WidgetAction.PressSupplier<net.minecraft.client.gui.components.AbstractWidget>> actions = UIDefinitionManager.ElementType.parseActionsElement(definition, name, e);
-                definition.addStatic(wily.factoryapi.base.client.UIDefinition.createAfterInit(a -> {
-                    wily.factoryapi.base.client.UIAccessor accessor = accessorFunction.apply(a);
-                    net.minecraft.client.gui.components.AbstractWidget lowestButton = null;
-                    for (Object child : accessor.getChildren()) {
-                        if (child instanceof net.minecraft.client.gui.components.AbstractWidget widget) {
-                            if (lowestButton == null || widget.getY() > lowestButton.getY()) {
-                                lowestButton = widget;
-                            }
-                        }
-                    }
-                    if (lowestButton != null) {
-                        lowestButton.setY(lowestButton.getY() + 24);
-                        net.minecraft.client.gui.components.Button storeButton = net.minecraft.client.gui.components.Button.builder(net.minecraft.network.chat.Component.translatable("bedrockskins.button.store"), b -> {
-                            actions.forEach(c -> c.press(a, b, UIDefinitionManager.WidgetAction.Type.ENABLE));
-                        }).bounds(lowestButton.getX(), lowestButton.getY() - 24, lowestButton.getWidth(), lowestButton.getHeight()).build();
-                        accessor.putWidget(name, accessor.addChild(name, storeButton));
-                    }
-                }));
-            });
+
+            LegacyStoreClient.registerCategory(skinPacks);
+            LegacyStoreClient.init();
             //?}
         });
     }

@@ -1,0 +1,18 @@
+{
+    "targetUI": "title_screen",
+    "elements": {
+        "store": {
+            "type": "add_menu_button",
+            "message": {
+                "translate": "legacystore.button.store"
+            },
+            "target": {
+                "translate": "menu.quit"
+            },
+            "placement": "above",
+            "actions": {
+                "open_default_screen": "legacy_store_screen"
+            }
+        }
+    }
+}

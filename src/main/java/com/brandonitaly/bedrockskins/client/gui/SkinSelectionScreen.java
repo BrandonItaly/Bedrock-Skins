@@ -1,9 +1,9 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
-import com.brandonitaly.bedrockskins.client.ContentManager;
+import com.brandonitaly.legacystore.client.ContentManager;
+import com.brandonitaly.legacystore.api.ContentPack;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
-import com.brandonitaly.bedrockskins.client.pack.ContentPack;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
@@ -33,6 +33,9 @@ import java.io.File;
 import java.util.*;
 
 public class SkinSelectionScreen extends Screen {
+    private static final String STORE_INDEX_URL = "https://raw.githubusercontent.com/BrandonItaly/LCE-Resources/refs/heads/skin-packs/skin_packs.json";
+    private static final String STORE_FOLDER = "skin_packs";
+
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
     private TabNavigationBar tabNavigationBar;
@@ -91,7 +94,6 @@ public class SkinSelectionScreen extends Screen {
     }
     
     private void applyTabState(ScreenRectangle tabArea, int tabIndex) {
-        // If switching AWAY from the download tab, and modifications were made, trigger reload
         if (this.activeTab == 2 && tabIndex != 2) {
             triggerReloadIfNeeded();
         }
@@ -109,7 +111,6 @@ public class SkinSelectionScreen extends Screen {
             previewPanel.setButtonsVisible(isSkins);
         }
 
-        // Hide Store UI elements when switching away from the Store tab
         boolean isDownload = activeTab == 2;
         if (downloadList != null) downloadList.visible = isDownload;
         if (downloadButton != null) downloadButton.visible = isDownload;
@@ -154,10 +155,10 @@ public class SkinSelectionScreen extends Screen {
         int topY = tabArea != null ? tabArea.top() : (tabNavigationBar != null ? tabNavigationBar.getRectangle().bottom() : 32);
         int areaH = tabArea != null ? tabArea.height() : (height - topY - Math.max(layout.getFooterHeight(), 32));
 
-        int innerH = Math.max(50, areaH - 16); // 8px padding top and bottom
-        int fullW = width - 20; // 10px margins
+        int innerH = Math.max(50, areaH - 16); 
+        int fullW = width - 20; 
         int sideW = Math.max(130, Math.min(200, (int)(fullW * 0.22)));
-        int centerW = fullW - (sideW * 2) - 12; // 6px gaps
+        int centerW = fullW - (sideW * 2) - 12; 
         
         if (centerW < 100) {
             sideW = (fullW - 112) / 2;
@@ -174,7 +175,6 @@ public class SkinSelectionScreen extends Screen {
         if (minecraft == null) return;
         int pHead = 24, pPad = 4;
 
-        // Pack List
         int plY = rPacks.y + pHead + pPad, plH = rPacks.h - pHead - (pPad * 2);
         if (packList == null) {
             packList = new SkinPackListWidget(minecraft, rPacks.w - pPad * 2, plH, plY, 24,
@@ -184,7 +184,6 @@ public class SkinSelectionScreen extends Screen {
         packList.setX(rPacks.x + pPad); packList.setY(plY);
         packList.setWidth(Math.max(10, rPacks.w - pPad * 2)); packList.setHeight(Math.max(10, plH));
 
-        // Preview Panel
         if (previewPanel == null) {
             previewPanel = new SkinPreviewPanel(minecraft, font, this::onFavoritesChanged);
             previewPanel.init(rPreview.x, rPreview.y, rPreview.w, rPreview.h, this::addRenderableWidget);
@@ -192,7 +191,6 @@ public class SkinSelectionScreen extends Screen {
             previewPanel.reposition(rPreview.x, rPreview.y, rPreview.w, rPreview.h);
         }
 
-        // Skin Grid
         int sgY = rSkins.y + pHead + pPad, sgH = rSkins.h - pHead - (pPad * 2);
         if (skinGrid == null) {
             skinGrid = new SkinGridWidget(minecraft, rSkins.w - pPad * 2, sgH, sgY, 90,
@@ -321,7 +319,7 @@ public class SkinSelectionScreen extends Screen {
     }
 
     private void openSkinPacksFolder() {
-        File dir = new File(minecraft.gameDirectory, "skin_packs");
+        File dir = new File(minecraft.gameDirectory, STORE_FOLDER);
         if (!dir.exists()) dir.mkdirs();
         Util.getPlatform().openFile(dir);
     }
@@ -337,12 +335,12 @@ public class SkinSelectionScreen extends Screen {
         downloadButton.active = false;
         downloadButton.setMessage(Component.translatable("bedrockskins.status.downloading"));
 
-        ContentManager.downloadPack(pack, () -> {
+        ContentManager.downloadPack(pack, STORE_FOLDER, () -> {
             minecraft.execute(() -> {
                 isDownloading = false;
-                downloadButton.setMessage(Component.translatable("bedrockskins.button.delete")); // Now installed
+                downloadButton.setMessage(Component.translatable("bedrockskins.button.delete")); 
                 downloadButton.active = true;
-                needsReload = true; // Defer the reload until the user leaves the tab
+                needsReload = true; 
             });
         });
     }
@@ -350,15 +348,14 @@ public class SkinSelectionScreen extends Screen {
     private void deletePack(ContentPack pack) {
         if (isDownloading) return;
         
-        File packDir = new File(minecraft.gameDirectory, "skin_packs/" + pack.id());
+        File packDir = new File(minecraft.gameDirectory, STORE_FOLDER + "/" + pack.id());
         if (packDir.exists()) {
             deleteDirectoryRecursively(packDir);
         }
 
         minecraft.execute(() -> {
-            needsReload = true; // Defer the reload until the user leaves the tab
+            needsReload = true; 
             
-            // Force the button to update back to "Download"
             if (downloadList != null) {
                 downloadList.setSelected(downloadList.getSelected());
             }
@@ -429,7 +426,7 @@ public class SkinSelectionScreen extends Screen {
 
     @Override
     public void onClose() {
-        triggerReloadIfNeeded(); // Process any pending reloads when the screen is closed
+        triggerReloadIfNeeded(); 
         if (skinGrid != null) skinGrid.clear();
         if (previewPanel != null) previewPanel.cleanup();
         if (minecraft != null) minecraft.setScreen(parent);
@@ -462,7 +459,7 @@ public class SkinSelectionScreen extends Screen {
                 downloadList = new ContentPackList(minecraft, tabArea.width(), tabArea.height() - 40, tabArea.top(), 36);
                 addRenderableWidget(downloadList);
                 
-                ContentManager.fetchIndex().thenAccept(packs -> {
+                ContentManager.fetchIndex(STORE_INDEX_URL).thenAccept(packs -> {
                     minecraft.execute(() -> {
                         for (var pack : packs) downloadList.addPack(new ContentPackEntry(pack));
                     });
@@ -479,7 +476,7 @@ public class SkinSelectionScreen extends Screen {
                 downloadButton = Button.builder(Component.translatable("bedrockskins.button.download"), btn -> {
                     ContentPackEntry selected = downloadList.getSelected();
                     if (selected != null) {
-                        if (ContentManager.isPackInstalled(selected.pack)) {
+                        if (ContentManager.isPackInstalled(selected.pack, STORE_FOLDER)) {
                             deletePack(selected.pack);
                         } else {
                             downloadPack(selected.pack);
@@ -519,7 +516,7 @@ public class SkinSelectionScreen extends Screen {
             if (downloadButton != null) {
                 if (entry != null) {
                     downloadButton.active = true;
-                    if (ContentManager.isPackInstalled(entry.pack)) {
+                    if (ContentManager.isPackInstalled(entry.pack, STORE_FOLDER)) {
                         downloadButton.setMessage(Component.translatable("bedrockskins.button.delete"));
                     } else {
                         downloadButton.setMessage(Component.translatable("bedrockskins.button.download"));
@@ -550,8 +547,8 @@ public class SkinSelectionScreen extends Screen {
             int maxTextWidth = width - 10;
 
             String name = pack.name();
-            // Append the text if the pack is installed
-            if (ContentManager.isPackInstalled(pack)) {
+            
+            if (ContentManager.isPackInstalled(pack, STORE_FOLDER)) {
                 name += " (Installed)";
             }
 

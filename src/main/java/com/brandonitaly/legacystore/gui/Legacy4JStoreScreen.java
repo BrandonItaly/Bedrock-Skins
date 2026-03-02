@@ -1,8 +1,9 @@
-package com.brandonitaly.bedrockskins.client.gui.legacy;
+package com.brandonitaly.legacystore.gui;
 
 //? if legacy4j {
 /*
-import com.brandonitaly.bedrockskins.client.ContentManager;
+import com.brandonitaly.legacystore.api.ContentCategory;
+import com.brandonitaly.legacystore.client.ContentManager;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -19,13 +20,15 @@ import wily.legacy.client.screen.PanelVListScreen;
 import wily.legacy.util.LegacySprites;
 import wily.legacy.util.client.LegacyRenderUtil;
 
+import java.util.List;
+
 public class Legacy4JStoreScreen extends PanelVListScreen implements ControlTooltip.Event {
     
     public boolean isLoading = false;
-    private static final Component TITLE_LABEL = Component.literal("Downloadable Content Offers");    
+    private static final Component TITLE_LABEL = Component.translatable("legacystore.gui.store_title");    
     private final LogoRenderer logoRenderer = new LogoRenderer(false);
 
-    public Legacy4JStoreScreen(Screen parent) {
+    public Legacy4JStoreScreen(Screen parent, List<ContentCategory> categories) {
         super(s -> Panel.createPanel(s, 
                 p -> p.appearance(372, 249), 
                 p -> p.pos(p.centeredLeftPos(s), p.centeredTopPos(s) + 17)), 
@@ -33,19 +36,23 @@ public class Legacy4JStoreScreen extends PanelVListScreen implements ControlTool
         );
         this.parent = parent;
         renderableVList.layoutSpacing(l -> 0);        
-        addMenuButton("Skin Packs", b -> {
-            this.isLoading = true; // Show the loading spinner we defined earlier
-            ContentManager.fetchIndex().thenAccept(packs -> {
-                minecraft.execute(() -> {
-                    this.isLoading = false;
-                    minecraft.setScreen(new Legacy4JSkinPackScreen(this, packs));
+        
+        // Loop through the categories provided by the mod and create buttons
+        for (ContentCategory category : categories) {
+            addMenuButton(category.title(), b -> {
+                this.isLoading = true;
+                ContentManager.fetchIndex(category.indexUrl()).thenAccept(packs -> {
+                    minecraft.execute(() -> {
+                        this.isLoading = false;
+                        minecraft.setScreen(new Legacy4JContentListScreen(this, category, packs));
+                    });
                 });
             });
-        });
+        }
     }
 
-    private void addMenuButton(String name, Button.OnPress onPress) {
-        renderableVList.addRenderable(new LeftAlignedButton(324, 36, Component.literal(name), onPress)); 
+    private void addMenuButton(Component name, Button.OnPress onPress) {
+        renderableVList.addRenderable(new LeftAlignedButton(324, 36, name, onPress)); 
     }
 
     @Override
@@ -53,8 +60,6 @@ public class Legacy4JStoreScreen extends PanelVListScreen implements ControlTool
         initRenderableVListHeight(36);
         
         addRenderableOnly((guiGraphics, i, j, f) -> {
-            
-            // Draw the recessed panel exactly 343 units wide
             guiGraphics.blitSprite(
                 RenderPipelines.GUI_TEXTURED, 
                 LegacySprites.PANEL_RECESS, 
@@ -64,7 +69,6 @@ public class Legacy4JStoreScreen extends PanelVListScreen implements ControlTool
                 panel.getHeight() - 20
             );
             
-            // Render the text INSIDE the top of the recessed panel, CENTERED
             UIAccessor accessor = UIAccessor.of(this);
             guiGraphics.pose().pushMatrix();
             
@@ -83,19 +87,12 @@ public class Legacy4JStoreScreen extends PanelVListScreen implements ControlTool
             guiGraphics.pose().popMatrix();
         });
 
-        getRenderableVList().init(
-            "renderableVList",
-            panel.getX() + 24, 
-            panel.getY() + 32,
-            324, 
-            180
-        );
+        getRenderableVList().init("renderableVList", panel.getX() + 24, panel.getY() + 32, 324, 180);
     }
 
     @Override
     public void renderDefaultBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         LegacyRenderUtil.renderDefaultBackground(UIAccessor.of(this), guiGraphics, false);
-        
         logoRenderer.renderLogo(guiGraphics, this.width, 1.0f);
         panel.render(guiGraphics, mouseX, mouseY, partialTick);
 
@@ -125,4 +122,6 @@ public class Legacy4JStoreScreen extends PanelVListScreen implements ControlTool
     }
 }
 */
+//?} else {
+public class Legacy4JStoreScreen {}
 //?}
