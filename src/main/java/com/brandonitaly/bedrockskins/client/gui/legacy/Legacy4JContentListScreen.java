@@ -162,6 +162,10 @@ public class Legacy4JContentListScreen extends PanelVListScreen implements Contr
 
         @Override
         protected void addButtons() {
+            // Add Cancel Button
+            renderableVList.addRenderable(Button.builder(Component.translatable("gui.cancel"), b -> minecraft.setScreen(parent))
+                .bounds(panel.x + 15, panel.getRectangle().bottom() - 52, 200, 20).build());
+
             // Add Download/Delete Button
             Component actionText = isInstalled ? Component.translatable("bedrockskins.button.delete") : Component.translatable("bedrockskins.button.download");
             renderableVList.addRenderable(Button.builder(actionText, b -> {
@@ -174,11 +178,7 @@ public class Legacy4JContentListScreen extends PanelVListScreen implements Contr
                     });
                     minecraft.setScreen(parent);
                 }
-            }).bounds(panel.x + 15, panel.getRectangle().bottom() - 52, 200, 20).build());
-
-            // Add Cancel Button
-            renderableVList.addRenderable(Button.builder(Component.translatable("gui.cancel"), b -> minecraft.setScreen(parent))
-                .bounds(panel.x + 15, panel.getRectangle().bottom() - 30, 200, 20).build());
+            }).bounds(panel.x + 15, panel.getRectangle().bottom() - 30, 200, 20).build());
         }
     }
 
