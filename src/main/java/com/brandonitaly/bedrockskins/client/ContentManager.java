@@ -1,7 +1,6 @@
 package com.brandonitaly.bedrockskins.client;
 
 import com.brandonitaly.bedrockskins.client.pack.ContentPack;
-import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
@@ -79,12 +78,7 @@ public class ContentManager {
                     // Clean up the temporary download file
                     Files.deleteIfExists(downloadedTempFile);
 
-                    Minecraft.getInstance().execute(() -> {
-                        SkinPackLoader.loadPacks();
-                        Minecraft.getInstance().reloadResourcePacks().thenRun(() -> {
-                            Minecraft.getInstance().execute(onFinished);
-                        });
-                    });
+                    Minecraft.getInstance().execute(onFinished);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -96,17 +90,22 @@ public class ContentManager {
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile.toFile()))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
-                Path entryPath = targetDir.resolve(entry.getName());
+                // Cross-platform fix: Force Windows backslashes into standard Unix forward slashes
+                String normalizedName = entry.getName().replace('\\', '/');
+                Path entryPath = targetDir.resolve(normalizedName);
                 
                 // Security check
                 if (!entryPath.normalize().startsWith(targetDir.normalize())) {
-                    throw new IOException("Zip entry is outside of the target directory: " + entry.getName());
+                    throw new IOException("Zip entry is outside of the target directory: " + normalizedName);
                 }
 
-                if (entry.isDirectory()) {
+                // Check both entry.isDirectory() and the normalized string just in case
+                if (entry.isDirectory() || normalizedName.endsWith("/")) {
                     Files.createDirectories(entryPath);
                 } else {
-                    Files.createDirectories(entryPath.getParent());
+                    if (entryPath.getParent() != null) {
+                        Files.createDirectories(entryPath.getParent());
+                    }
                     Files.copy(zis, entryPath, StandardCopyOption.REPLACE_EXISTING);
                 }
                 zis.closeEntry();

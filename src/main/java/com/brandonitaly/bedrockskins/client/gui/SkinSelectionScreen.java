@@ -54,6 +54,7 @@ public class SkinSelectionScreen extends Screen {
     private ContentPackList downloadList;
     private Button downloadButton;
     private boolean isDownloading = false;
+    private boolean needsReload = false; // Flag to track if packs were modified
 
     public SkinSelectionScreen(Screen parent) {
         super(Component.translatable("bedrockskins.gui.title"));
@@ -72,7 +73,7 @@ public class SkinSelectionScreen extends Screen {
         addRenderableWidget(tabNavigationBar);
         
         updateFooterButtons();
-        tabNavigationBar.selectTab(0, false);
+        tabNavigationBar.selectTab(activeTab, false);
         repositionElements();
     }
     
@@ -90,6 +91,11 @@ public class SkinSelectionScreen extends Screen {
     }
     
     private void applyTabState(ScreenRectangle tabArea, int tabIndex) {
+        // If switching AWAY from the download tab, and modifications were made, trigger reload
+        if (this.activeTab == 2 && tabIndex != 2) {
+            triggerReloadIfNeeded();
+        }
+        
         activeTab = tabIndex;
         calculateLayout(tabArea);
         clearCustomizationWidgets();
@@ -336,10 +342,7 @@ public class SkinSelectionScreen extends Screen {
                 isDownloading = false;
                 downloadButton.setMessage(Component.translatable("bedrockskins.button.delete")); // Now installed
                 downloadButton.active = true;
-                
-                SkinPackLoader.loadPacks();
-                buildSkinCache();
-                refreshPackList();
+                needsReload = true; // Defer the reload until the user leaves the tab
             });
         });
     }
@@ -353,15 +356,25 @@ public class SkinSelectionScreen extends Screen {
         }
 
         minecraft.execute(() -> {
-            SkinPackLoader.loadPacks(); // Rescan missing packs
-            buildSkinCache();
-            refreshPackList();
+            needsReload = true; // Defer the reload until the user leaves the tab
             
             // Force the button to update back to "Download"
             if (downloadList != null) {
                 downloadList.setSelected(downloadList.getSelected());
             }
         });
+    }
+
+    private void triggerReloadIfNeeded() {
+        if (needsReload) {
+            SkinPackLoader.loadPacks();
+            buildSkinCache();
+            refreshPackList();
+            if (minecraft != null) {
+                minecraft.reloadResourcePacks();
+            }
+            needsReload = false;
+        }
     }
 
     private void deleteDirectoryRecursively(File directory) {
@@ -416,6 +429,7 @@ public class SkinSelectionScreen extends Screen {
 
     @Override
     public void onClose() {
+        triggerReloadIfNeeded(); // Process any pending reloads when the screen is closed
         if (skinGrid != null) skinGrid.clear();
         if (previewPanel != null) previewPanel.cleanup();
         if (minecraft != null) minecraft.setScreen(parent);
@@ -545,7 +559,7 @@ public class SkinSelectionScreen extends Screen {
                 name = font.plainSubstrByWidth(name, maxTextWidth - font.width("...")) + "...";
             }
 
-            String desc = pack.description();
+            String desc = pack.description() != null ? pack.description().replace("\n", " ").replace("\r", "") : "";
             if (font.width(desc) > maxTextWidth) {
                 desc = font.plainSubstrByWidth(desc, maxTextWidth - font.width("...")) + "...";
             }

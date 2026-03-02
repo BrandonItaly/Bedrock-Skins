@@ -339,11 +339,11 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             return Component.translatable("bedrockskins.button.favorite");
         });
 
-        // Open Skin Customization
-        renderer.add(() -> isKbm ? ControlTooltip.getKeyIcon(InputConstants.KEY_H) : ControllerBinding.BACK.bindingState.getIcon(), () -> Component.translatable("options.skinCustomisation.title"));
-
         // Compound left/right navigation icon
         renderer.add(() -> isKbm ? ControlTooltip.COMPOUND_ICON_FUNCTION.apply(new ControlTooltip.Icon[]{ControlTooltip.getKeyIcon(InputConstants.KEY_LEFT), ControlTooltip.SPACE_ICON, ControlTooltip.getKeyIcon(InputConstants.KEY_RIGHT)}) : ControllerBinding.LEFT_STICK.bindingState.getIcon(), () -> Component.translatable("bedrockskins.menu.navigate"));
+
+        // Open Skin Customization
+        renderer.add(() -> isKbm ? ControlTooltip.getKeyIcon(InputConstants.KEY_H) : ControllerBinding.BACK.bindingState.getIcon(), () -> Component.translatable("options.skinCustomisation.title"));
     }
 
     @Override
