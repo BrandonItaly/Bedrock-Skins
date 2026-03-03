@@ -295,65 +295,80 @@ public class BedrockPlayerModel extends PlayerModel {
         // Bail out if user has disabled custom Bedrock skin animations
         if (!BedrockSkinsConfig.isSkinAnimationsEnabled()) return;
         
+        ModelPart rightArm = resolvePart("rightArm", PartNames.RIGHT_ARM);
+        ModelPart leftArm = resolvePart("leftArm", PartNames.LEFT_ARM);
+        ModelPart rightLeg = resolvePart("rightLeg", PartNames.RIGHT_LEG);
+        ModelPart leftLeg = resolvePart("leftLeg", PartNames.LEFT_LEG);
+
+        // --- Arms Additive Animation ---
         if (animationArmsOutFront) {
-            applyArmsOutFront(resolvePart("rightArm", PartNames.RIGHT_ARM), resolvePart("leftArm", PartNames.LEFT_ARM), state);
+            if (!state.isPassenger) {
+                applyArmsOutFrontToArm(rightArm, true, state);
+                applyArmsOutFrontToArm(leftArm, false, state);
+
+                float offset = (float) Math.toRadians(90.0);
+                if (rightArm != null) rightArm.xRot -= offset;
+                if (leftArm != null) leftArm.xRot -= offset;
+            }
         } else if (animationSingleArmAnimation) {
-            ModelPart leftArm = resolvePart("leftArm", PartNames.LEFT_ARM);
-            if (leftArm != null) leftArm.xRot -= computeWalkSwing(state, false) * 2.0F;
+            if (leftArm != null && rightArm != null) {
+                // Cancel out the left arm's native walk swing, and apply the right arm's walk swing instead
+                leftArm.xRot -= computeArmWalkSwing(state, false);
+                leftArm.xRot += computeArmWalkSwing(state, true);
+            }
         }
         
-        if (animationStationaryLegs) {
-            resetLegAngle("rightLeg", PartNames.RIGHT_LEG);
-            resetLegAngle("leftLeg", PartNames.LEFT_LEG);
-        } else if (animationSingleLegAnimation) {
-            ModelPart rightLeg = resolvePart("rightLeg", PartNames.RIGHT_LEG);
-            ModelPart leftLeg = resolvePart("leftLeg", PartNames.LEFT_LEG);
-            if (rightLeg != null && leftLeg != null) {
-                leftLeg.xRot = rightLeg.xRot;
-                leftLeg.yRot = rightLeg.yRot;
-                leftLeg.zRot = rightLeg.zRot;
+        // --- Legs Additive Animation ---
+        if (!state.isPassenger) {
+            if (animationStationaryLegs) {
+                // Subtract vanilla walking swing to freeze the legs during walking,
+                // while preserving sneaking/swimming offsets.
+                if (rightLeg != null) rightLeg.xRot -= computeLegWalkSwing(state, true);
+                if (leftLeg != null) leftLeg.xRot -= computeLegWalkSwing(state, false);
+                
+            } else if (animationSingleLegAnimation) {
+                if (rightLeg != null && leftLeg != null) {
+                    // Cancel out the left leg's native walk swing, and apply the right leg's walk swing instead
+                    leftLeg.xRot -= computeLegWalkSwing(state, false);
+                    leftLeg.xRot += computeLegWalkSwing(state, true);
+                }
             }
         }
     }
 
-    private void applyArmsOutFront(ModelPart rightArm, ModelPart leftArm, AvatarRenderState state) {
+    private void applyArmsOutFrontToArm(ModelPart arm, boolean rightArm, AvatarRenderState state) {
+        if (arm == null) return;
+
+        HumanoidModel.ArmPose pose = rightArm ? state.rightArmPose : state.leftArmPose;
+        float bobDirection = rightArm ? 1.0F : -1.0F;
         boolean attacking = state.attackTime > 0.0F;
-        applyArmsOutFrontToArm(rightArm, state.rightArmPose, state.ageInTicks, 1.0F, computeWalkSwing(state, true), attacking);
-        applyArmsOutFrontToArm(leftArm, state.leftArmPose, state.ageInTicks, -1.0F, computeWalkSwing(state, false), attacking);
-    }
 
-    private float computeWalkSwing(AvatarRenderState state, boolean rightArm) {
-        float speedValue = state.speedValue != 0f ? state.speedValue : 1f;
-        float walkSwingScale = 2.0F * state.walkAnimationSpeed * 0.5F / speedValue;
-        float phase = rightArm ? (float) Math.PI : 0f;
-        return (float) (Math.cos(state.walkAnimationPos * 0.6662F + phase) * walkSwingScale);
-    }
-
-    private void applyArmsOutFrontToArm(ModelPart arm, HumanoidModel.ArmPose pose, float ageInTicks, float bobDirection, float walkSwing, boolean attacking) {
-        if (arm == null || (pose != null && pose != HumanoidModel.ArmPose.EMPTY && pose != HumanoidModel.ArmPose.ITEM)) return;
-
-        // Remove idle arm bob
-        arm.zRot -= (Mth.cos(ageInTicks * 0.09F) * 0.05F + 0.05F) * bobDirection;
-        arm.xRot -= Mth.sin(ageInTicks * 0.067F) * 0.05F * bobDirection;
+        // Only cancel walk swing if they aren't doing complex poses like aiming a bow/crossbow
+        if (pose != null && pose != HumanoidModel.ArmPose.EMPTY && pose != HumanoidModel.ArmPose.ITEM) return;
         
+        // Reverse standard ITEM holding pose so arms stay completely straight instead of angled slightly up
         if (pose == HumanoidModel.ArmPose.ITEM && !attacking) {
             arm.xRot = (arm.xRot + ((float) Math.PI / 10.0F)) * 2.0F;
             arm.yRot = 0.0F;
             arm.zRot = 0.0F;
         }
         
-        arm.xRot -= walkSwing;
-        arm.xRot += -1.5707964f; // Arms out offset
+        // Remove walk swing
+        arm.xRot -= computeArmWalkSwing(state, rightArm);
     }
 
-    private void resetLegAngle(String primaryKey, String fallbackKey) {
-        ModelPart leg = resolvePart(primaryKey, fallbackKey);
-        PartTransform def = defaultTransforms.getOrDefault(primaryKey, defaultTransforms.get(fallbackKey));
-        if (leg != null && def != null) {
-            leg.xRot = def.pitch();
-            leg.yRot = def.yaw();
-            leg.zRot = def.roll();
-        }
+    // Calculates the exact vanilla walking swing applied to the arms
+    private float computeArmWalkSwing(AvatarRenderState state, boolean rightArm) {
+        float speedValue = state.speedValue != 0f ? state.speedValue : 1f;
+        float walkSwingScale = 2.0F * state.walkAnimationSpeed * 0.5F / speedValue;
+        float phase = rightArm ? (float) Math.PI : 0f;
+        return (float) (Math.cos(state.walkAnimationPos * 0.6662F + phase) * walkSwingScale);
+    }
+
+    // Calculates the exact vanilla walking swing applied to the legs
+    private float computeLegWalkSwing(AvatarRenderState state, boolean rightLeg) {
+        float phase = rightLeg ? 0f : (float) Math.PI;
+        return Mth.cos(state.walkAnimationPos * 0.6662F + phase) * 1.4F * state.walkAnimationSpeed;
     }
 
     public void copyFromVanilla(PlayerModel vanillaModel) {
