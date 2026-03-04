@@ -1,11 +1,5 @@
 package com.brandonitaly.bedrockskins.client;
 
-//? if legacy4j { 
-/*
-import com.brandonitaly.legacystore.LegacyStoreClient;
-import com.brandonitaly.legacystore.api.ContentCategory;
-*/
-//?}
 import com.brandonitaly.bedrockskins.BedrockSkinsNetworking;
 import com.brandonitaly.bedrockskins.client.gui.SkinSelectionScreen;
 import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
@@ -83,12 +77,9 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         //?}
         
         if (legacyLoaded) {
-            try {
-                var constructor = Class.forName("com.brandonitaly.bedrockskins.client.gui.legacy.Legacy4JChangeSkinScreen")
-                                       .getConstructor(Screen.class);
-                return (Screen) constructor.newInstance(parent);
-            } catch (Exception ignored) {}
+            return LegacyScreenProvider.createLegacyScreen(parent);
         }
+        
         return new SkinSelectionScreen(parent);
     }
 
@@ -122,26 +113,6 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
             BedrockSkinsNetworking.SkinUpdatePayload p = payload;
             context.client().execute(() -> CommonLogic.handleSkinUpdate(p));
         });
-
-        //? if legacy4j {
-        /*
-        ContentCategory skinPacks = new ContentCategory(
-            "bedrock_skins",
-            net.minecraft.network.chat.Component.translatable("bedrockskins.gui.packs"),
-            "https://raw.githubusercontent.com/BrandonItaly/LCE-Resources/refs/heads/skin-packs/skin_packs.json",
-            "skin_packs",
-            () -> {
-                SkinPackLoader.loadPacks();
-                if (Minecraft.getInstance() != null) {
-                    Minecraft.getInstance().reloadResourcePacks();
-                }
-            }
-        );
-
-        LegacyStoreClient.registerCategory(skinPacks);
-        LegacyStoreClient.init();
-        */
-        //?}
     }
 
     private final class Reloader implements IdentifiableResourceReloadListener, ResourceManagerReloadListener {
@@ -178,24 +149,6 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             CommonLogic.reloadResources(Minecraft.getInstance());
-            
-            //? if legacy4j {
-            ContentCategory skinPacks = new ContentCategory(
-                "bedrock_skins",
-                net.minecraft.network.chat.Component.translatable("bedrockskins.gui.packs"),
-                "https://raw.githubusercontent.com/BrandonItaly/LCE-Resources/refs/heads/skin-packs/skin_packs.json",
-                "skin_packs",
-                () -> {
-                    SkinPackLoader.loadPacks();
-                    if (Minecraft.getInstance() != null) {
-                        Minecraft.getInstance().reloadResourcePacks();
-                    }
-                }
-            );
-
-            LegacyStoreClient.registerCategory(skinPacks);
-            LegacyStoreClient.init();
-            //?}
         });
     }
 

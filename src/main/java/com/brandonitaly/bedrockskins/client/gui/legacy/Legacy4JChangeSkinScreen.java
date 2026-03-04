@@ -1,7 +1,5 @@
 package com.brandonitaly.bedrockskins.client.gui.legacy;
 
-//? if legacy4j {
-/*
 import com.brandonitaly.bedrockskins.client.ClientSkinSync;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
@@ -15,7 +13,7 @@ import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.NativeImage;
 //? if <1.21.11 {
-import net.minecraft.resources.ResourceLocation;
+/*import net.minecraft.resources.ResourceLocation;*/
 //?} else {
 import net.minecraft.resources.Identifier;
 //?}
@@ -36,7 +34,6 @@ import wily.legacy.client.screen.Panel;
 import wily.legacy.client.screen.PanelVListScreen;
 import wily.legacy.client.screen.ScrollableRenderer;
 import wily.legacy.init.LegacyRegistries;
-import wily.legacy.util.LegacySprites;
 import wily.legacy.util.client.LegacyRenderUtil;
 import net.minecraft.client.renderer.RenderPipelines;
 
@@ -59,11 +56,9 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     private final Map<String, SkinPackAdapter> allPacks = new HashMap<>();
     
     //? if <1.21.11 {
-    private final Map<ResourceLocation, int[]> packIconDims = new HashMap<>();
-    private final Map<String, ResourceLocation> dynamicIconCache = new HashMap<>();
-    private ResourceLocation createId(String ns, String path) { return ResourceLocation.fromNamespaceAndPath(ns, path); }
+    /*private final Map<String, ResourceLocation> dynamicIconCache = new HashMap<>();
+    private ResourceLocation createId(String ns, String path) { return ResourceLocation.fromNamespaceAndPath(ns, path); }*/
     //?} else {
-    private final Map<Identifier, int[]> packIconDims = new HashMap<>();
     private final Map<String, Identifier> dynamicIconCache = new HashMap<>();
     private Identifier createId(String ns, String path) { return Identifier.fromNamespaceAndPath(ns, path); }
     //?}
@@ -367,39 +362,15 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         int tx = tooltipBox.getX(), ty = panel.getY(), tw = tooltipBox.getWidth(), th = tooltipBox.getHeight();
         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.SKIN_PANEL, tx - 10, ty + 7, tw, th - 2);
         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.PANEL_FILLER, tx - 5, ty + th - 64, tw - 14, 60);
-        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, LegacySprites.SQUARE_RECESSED_PANEL , tx - 1, ty + th - 59, tw - 55, 55);
-        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, LegacySprites.ICON_HOLDER, tx + tw - 50, ty + th - 57, 24, 24);
-        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, LegacySprites.ICON_HOLDER, tx + tw - 50, ty + th - 30, 24, 24);
+        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.SQUARE_RECESSED_PANEL , tx - 1, ty + th - 59, tw - 55, 55);
+        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.ICON_HOLDER, tx + tw - 50, ty + th - 57, 24, 24);
+        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.ICON_HOLDER, tx + tw - 50, ty + th - 30, 24, 24);
         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.PACK_NAME_BOX, tx - 5, ty + 20, tw - 18, 40);
         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.SKIN_BOX, tx - 5, ty + 16, tw - 14, th - 80);
     }
 
     //? if <1.21.11 {
-    private int[] packIconDims(ResourceLocation icon) {
-    //?} else {
-    private int[] packIconDims(Identifier icon) {
-    //?}
-        int[] d = packIconDims.get(icon);
-        if (d != null) return d;
-        int w = 128, h = 128;
-        try {
-            var r = minecraft.getResourceManager().getResource(icon).orElse(null);
-            if (r != null) {
-                try (var in = r.open()) {
-                    NativeImage img = NativeImage.read(in);
-                    w = img.getWidth();
-                    h = img.getHeight();
-                    img.close();
-                }
-            }
-        } catch (Throwable ignored) {}
-        int[] out = new int[]{Math.max(1, w), Math.max(1, h)};
-        packIconDims.put(icon, out);
-        return out;
-    }
-
-    //? if <1.21.11 {
-    private ResourceLocation resolveFocusedPackIconTexture() {
+    /*private ResourceLocation resolveFocusedPackIconTexture() {*/
     //?} else {
     private Identifier resolveFocusedPackIconTexture() {
     //?}
@@ -423,13 +394,8 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
                     NativeImage img = ExternalAssetUtil.loadPackIcon(src);
                     if (img != null) {
                         var dynamicId = createId("bedrockskins", "dynamic_icon_" + UUID.randomUUID().toString().replace("-", ""));
-                        //? if <1.21.11 {
                         minecraft.getTextureManager().register(dynamicId, new net.minecraft.client.renderer.texture.DynamicTexture(() -> "dynamic_icon", img));
-                        //?} else {
-                        minecraft.getTextureManager().register(dynamicId, new net.minecraft.client.renderer.texture.DynamicTexture(img));
-                        //?}
                         dynamicIconCache.put(focusedPackId, dynamicId);
-                        packIconDims.put(dynamicId, new int[]{Math.max(1, img.getWidth()), Math.max(1, img.getHeight())});
                         return dynamicId;
                     }
                     dynamicIconCache.put(focusedPackId, null);
@@ -490,7 +456,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         // Render checkmark if this skin is currently selected
         SkinId currentSkinKey = SkinManager.getLocalSelectedKey();
         if (isAutoSelectedSkin(skin) ? currentSkinKey == null : Objects.equals(currentSkinKey, skin.getSkinId())) {
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, LegacySprites.BEACON_CONFIRM, tooltipBox.getX() + tooltipBox.getWidth() - 50, panel.getY() + tooltipBox.getHeight() - 57, 24, 24);
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.BEACON_CONFIRM, tooltipBox.getX() + tooltipBox.getWidth() - 50, panel.getY() + tooltipBox.getHeight() - 57, 24, 24);
         }
         
         // Render heart if this skin is favorited
@@ -510,14 +476,14 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     @Override
     public void renderableVListInit() {
         addRenderableOnly((guiGraphics, i, j, f) -> {
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, LegacySprites.SQUARE_RECESSED_PANEL, panel.getX() + 7, panel.getY() + 7 + 130 - 8, panel.getWidth() - 14, panel.getHeight() - 14 - 135 + 1 + 8);
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.SQUARE_RECESSED_PANEL, panel.getX() + 7, panel.getY() + 7 + 130 - 8, panel.getWidth() - 14, panel.getHeight() - 14 - 135 + 1 + 8);
             
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, LegacySprites.SQUARE_RECESSED_PANEL, panel.getX() + 34, panel.getY() + 10, 112, 112);
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.SQUARE_RECESSED_PANEL, panel.getX() + 34, panel.getY() + 10, 112, 112);
             
             if (focusedPack != null) {
                 var icon = resolveFocusedPackIconTexture();
                 if (icon != null) {
-                    int[] d = packIconDims(icon);
+                    int[] d = new int[]{128, 128};
                     var pose = guiGraphics.pose();
                     pose.pushMatrix();
                     pose.translate(panel.getX() + 35.4f, panel.getY() + 11.4f);
@@ -695,9 +661,9 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         if (playerSkinWidgetList != null) playerSkinWidgetList.widgets.forEach(PlayerSkinWidget::cleanup);
         
         //? if <1.21.11 {
-        for (ResourceLocation id : dynamicIconCache.values()) {
+        /*for (ResourceLocation id : dynamicIconCache.values()) {
             if (id != null) minecraft.getTextureManager().release(id);
-        }
+        }*/
         //?} else {
         for (Identifier id : dynamicIconCache.values()) {
             if (id != null) minecraft.getTextureManager().release(id);
@@ -707,5 +673,3 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         super.onClose();
     }
 }
-*/
-//?}

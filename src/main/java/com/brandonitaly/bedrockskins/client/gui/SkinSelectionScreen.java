@@ -1,13 +1,12 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
-import com.brandonitaly.legacystore.client.ContentManager;
-import com.brandonitaly.legacystore.api.ContentPack;
+import com.brandonitaly.bedrockskins.client.ContentManager;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
-import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
-import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.pack.SkinId;
+import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
+import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -329,7 +328,7 @@ public class SkinSelectionScreen extends Screen {
 
     // --- Pack Management Logic ---
 
-    private void downloadPack(ContentPack pack) {
+    private void downloadPack(ContentManager.Pack pack) {
         if (isDownloading) return;
         isDownloading = true;
         downloadButton.active = false;
@@ -345,7 +344,7 @@ public class SkinSelectionScreen extends Screen {
         });
     }
 
-    private void deletePack(ContentPack pack) {
+    private void deletePack(ContentManager.Pack pack) {
         if (isDownloading) return;
         
         File packDir = new File(minecraft.gameDirectory, STORE_FOLDER + "/" + pack.id());
@@ -461,8 +460,11 @@ public class SkinSelectionScreen extends Screen {
                 
                 ContentManager.fetchIndex(STORE_INDEX_URL).thenAccept(packs -> {
                     minecraft.execute(() -> {
-                        for (var pack : packs) downloadList.addPack(new ContentPackEntry(pack));
+                        for (ContentManager.Pack pack : packs) downloadList.addPack(new ContentPackEntry(pack));
                     });
+                }).exceptionally(e -> {
+                    // Added a fallback just in case the JSON fails to load
+                    return null;
                 });
             }
             
@@ -530,9 +532,9 @@ public class SkinSelectionScreen extends Screen {
     }
 
     class ContentPackEntry extends ObjectSelectionList.Entry<ContentPackEntry> {
-        final ContentPack pack;
+        final ContentManager.Pack pack;
 
-        public ContentPackEntry(ContentPack pack) {
+        public ContentPackEntry(ContentManager.Pack pack) {
             this.pack = pack;
         }
 
