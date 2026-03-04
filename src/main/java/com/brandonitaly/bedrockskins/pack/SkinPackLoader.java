@@ -27,7 +27,6 @@ public final class SkinPackLoader {
     public static List<String> packOrder = Collections.emptyList();
 
     private static final Codec<List<String>> PACK_ORDER_CODEC = Codec.list(Codec.STRING);
-    private static final File skinPacksDir = new File("skin_packs");
     private static final Map<String, Map<String, String>> translations = new HashMap<>();
     private static JsonObject vanillaGeometryJson = null;
 
@@ -70,8 +69,9 @@ public final class SkinPackLoader {
         packTypesByPackId.clear();
 
         // Load external skin packs from skin_packs directory
-        if (skinPacksDir.exists()) {
-            File[] children = skinPacksDir.listFiles(File::isDirectory);
+        File currentSkinPacksDir = getSkinPacksDir();
+        if (currentSkinPacksDir.exists()) {
+            File[] children = currentSkinPacksDir.listFiles(File::isDirectory);
             if (children != null) {
                 for (File f : children) loadExternalPack(f);
             }
@@ -537,6 +537,16 @@ public final class SkinPackLoader {
         if (packType != null && !packType.isEmpty()) {
             packTypesByPackId.put("skinpack." + serializeName, packType);
         }
+    }
+
+    private static File getSkinPacksDir() {
+        try {
+            Minecraft client = Minecraft.getInstance();
+            if (client != null && client.gameDirectory != null) {
+                return new File(client.gameDirectory, "skin_packs");
+            }
+        } catch (Exception ignored) {}
+        return new File("skin_packs"); 
     }
 
     private static File getResourcepacksDir() {
