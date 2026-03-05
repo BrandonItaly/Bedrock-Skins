@@ -77,7 +77,11 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         //?}
         
         if (legacyLoaded) {
-            return LegacyScreenProvider.createLegacyScreen(parent);
+            try {
+                return LegacyScreenProvider.createLegacyScreen(parent);
+            } catch (Throwable t) {
+                System.err.println("BedrockSkinsClient: Failed to open legacy screen, falling back to default screen.");
+            }
         }
         
         return new SkinSelectionScreen(parent);
@@ -99,6 +103,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
 
         ClientTickEvents.END_CLIENT_TICK.register(CommonLogic::handleTick);
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
+            ContentManager.reloadCategories(client.getResourceManager());
             CommonLogic.reloadResources(client);
             ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new Reloader());
         });
@@ -120,6 +125,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ getFabricId() { return /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "reloader"); }
         @Override
         public void onResourceManagerReload(ResourceManager manager) {
+            ContentManager.reloadCategories(manager);
             CommonLogic.reloadResources(Minecraft.getInstance());
         }
     }

@@ -32,7 +32,7 @@ import java.io.File;
 import java.util.*;
 
 public class SkinSelectionScreen extends Screen {
-    private static final String STORE_INDEX_URL = "https://raw.githubusercontent.com/BrandonItaly/LCE-Resources/refs/heads/skin-packs/skin_packs.json";
+    private static final String STORE_CATEGORY_ID = "bedrock_skins";
     private static final String STORE_FOLDER = "skin_packs";
 
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
@@ -457,15 +457,14 @@ public class SkinSelectionScreen extends Screen {
             if (downloadList == null) {
                 downloadList = new ContentPackList(minecraft, tabArea.width(), tabArea.height() - 40, tabArea.top(), 36);
                 addRenderableWidget(downloadList);
-                
-                ContentManager.fetchIndex(STORE_INDEX_URL).thenAccept(packs -> {
+
+                ContentManager.getCategory(STORE_CATEGORY_ID).ifPresent(category -> ContentManager.fetchIndex(category.indexUrl()).thenAccept(packs -> {
                     minecraft.execute(() -> {
                         for (ContentManager.Pack pack : packs) downloadList.addPack(new ContentPackEntry(pack));
                     });
                 }).exceptionally(e -> {
-                    // Added a fallback just in case the JSON fails to load
                     return null;
-                });
+                }));
             }
             
             downloadList.setX(tabArea.left());

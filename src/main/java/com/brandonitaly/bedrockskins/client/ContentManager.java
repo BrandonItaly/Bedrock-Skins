@@ -2,6 +2,8 @@ package com.brandonitaly.bedrockskins.client;
 
 import com.google.common.hash.Hashing;
 import com.google.common.io.ByteSource;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
@@ -9,6 +11,8 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.Minecraft;
+import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
+import net.minecraft.server.packs.resources.ResourceManager;
 import org.slf4j.Logger;
 
 import java.io.*;
@@ -17,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -26,6 +31,15 @@ import java.util.zip.ZipInputStream;
 public class ContentManager {
     
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final String CATEGORIES_FILE = "store_categories.json";
+    public static final List<Category> CATEGORIES = new ArrayList<>();
+
+    public record Category(
+        String id,
+        String indexUrl,
+        String targetDirectoryName,
+        boolean requiresResourceReload
+    ) {}
 
     public record Pack(
         String id,
@@ -59,6 +73,48 @@ public class ContentManager {
                 return new ArrayList<>();
             }
         });
+    }
+
+    public static void reloadCategories(ResourceManager resourceManager) {
+        CATEGORIES.clear();
+        List<String> namespaces = new ArrayList<>(resourceManager.getNamespaces());
+        Collections.sort(namespaces);
+
+        for (String namespace : namespaces) {
+            resourceManager.getResource(/*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath(namespace, CATEGORIES_FILE)).ifPresent(resource -> {
+                try (BufferedReader bufferedReader = resource.openAsReader()) {
+                    JsonElement parsed = JsonParser.parseReader(bufferedReader);
+                    if (!parsed.isJsonArray()) {
+                        LOGGER.warn("{} in namespace {} is not a JSON array", CATEGORIES_FILE, namespace);
+                        return;
+                    }
+
+                    JsonArray categories = parsed.getAsJsonArray();
+                    for (JsonElement element : categories) {
+                        if (!element.isJsonObject()) continue;
+                        JsonObject category = element.getAsJsonObject();
+                        String id = getString(category, "id", "");
+                        String indexUrl = getString(category, "indexUrl", "");
+                        String targetDirectoryName = getString(category, "targetDirectoryName", "");
+                        boolean requiresResourceReload = category.has("requiresResourceReload") && category.get("requiresResourceReload").getAsBoolean();
+
+                        if (!id.isBlank() && !indexUrl.isBlank()) {
+                            CATEGORIES.add(new Category(id, indexUrl, targetDirectoryName, requiresResourceReload));
+                        }
+                    }
+                } catch (IOException e) {
+                    LOGGER.warn("Failed to load store categories from namespace {}: {}", namespace, e.getMessage());
+                }
+            });
+        }
+    }
+
+    public static Optional<Category> getCategory(String id) {
+        return CATEGORIES.stream().filter(c -> c.id().equals(id)).findFirst();
+    }
+
+    private static String getString(JsonObject object, String key, String defaultValue) {
+        return object.has(key) ? object.get(key).getAsString() : defaultValue;
     }
 
     public static Path getContentDir(String folderName) {
