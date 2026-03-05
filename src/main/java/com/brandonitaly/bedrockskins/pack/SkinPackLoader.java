@@ -217,10 +217,12 @@ public final class SkinPackLoader {
                 JsonObject geometry = resolveGeometry(entry.getGeometry(), geometryJson);
                 if (geometry == null) continue;
 
-                File textureFile = new File(packDir, entry.getTexture());
+                if (entry.getTexture() == null) continue;
+                String texturePath = entry.getTexture().toLowerCase(Locale.ROOT);
+                File textureFile = new File(packDir, texturePath);
                 if (!textureFile.exists()) continue;
 
-                File capeFile = entry.getCape() != null ? new File(packDir, entry.getCape()) : null;
+                File capeFile = entry.getCape() != null ? new File(packDir, entry.getCape().toLowerCase(Locale.ROOT)) : null;
                 if (capeFile != null && !capeFile.exists()) capeFile = null;
 
                 SkinId id = SkinId.of(manifest.getSerializeName(), entry.getLocalizationName());
