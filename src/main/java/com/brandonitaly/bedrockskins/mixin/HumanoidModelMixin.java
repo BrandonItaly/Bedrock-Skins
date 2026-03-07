@@ -1,4 +1,4 @@
-package com.brandonitaly.bedrockskins.mixins;
+package com.brandonitaly.bedrockskins.mixin;
 
 import com.brandonitaly.bedrockskins.client.BedrockModelManager;
 import com.brandonitaly.bedrockskins.client.BedrockPlayerModel;
@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(HumanoidModel.class)
-public abstract class MixinHumanoidModel<T extends HumanoidRenderState> {
+public abstract class HumanoidModelMixin<T extends HumanoidRenderState> {
 
     @Shadow public ModelPart head;
     @Shadow public ModelPart hat;

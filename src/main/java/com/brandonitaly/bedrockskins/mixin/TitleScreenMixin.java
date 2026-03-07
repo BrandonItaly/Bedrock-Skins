@@ -1,4 +1,4 @@
-package com.brandonitaly.bedrockskins.mixins;
+package com.brandonitaly.bedrockskins.mixin;
 
 import com.brandonitaly.bedrockskins.client.BedrockSkinsClient;
 import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
@@ -12,13 +12,9 @@ import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.SpriteIconButton;
-import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
-/*? if <1.21.11 {*/
-/*ResourceLocation*/
-/*?} else {*/
-/*?}*/
 import net.minecraft./*? if <1.21.11 {*//**//*?} else {*/util./*?}*/Util;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -29,18 +25,18 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.UUID;
 
-@Mixin(PauseScreen.class)
-public abstract class MixinPauseScreen extends Screen {
+@Mixin(TitleScreen.class)
+public abstract class TitleScreenMixin extends Screen {
 
-    protected MixinPauseScreen(Component title) { super(title); }
+    protected TitleScreenMixin(Component title) { super(title); }
 
     @Unique
     private static final int PREVIEW_W = 78, PREVIEW_H = 112, BTN_SIZE = 20, BTN_GAP = -16;
 
     @Unique
-    private PreviewPlayer bedrockskins$pausePreviewPlayer;
+    private PreviewPlayer bedrockskins$menuPreviewPlayer;
     @Unique
-    private final UUID bedrockskins$pausePreviewUuid = UUID.randomUUID();
+    private final UUID bedrockskins$menuPreviewUuid = UUID.randomUUID();
     @Unique
     private SpriteIconButton bedrockskins$openSkinButton;
     @Unique
@@ -61,18 +57,19 @@ public abstract class MixinPauseScreen extends Screen {
     private int bedrockskins$getTop() { return (height - PREVIEW_H) / 2; }
 
     @Inject(method = "init", at = @At("TAIL"))
-    private void bedrockskins$initPausePreview(CallbackInfo ci) {
-        if (!((PauseScreen) (Object) this).showsPauseMenu() || !BedrockSkinsConfig.isShowPaperDollOnPauseScreen()) return;
+    private void bedrockskins$initMainMenuPreview(CallbackInfo ci) {
+        if (!BedrockSkinsConfig.isShowPaperDollOnMainMenu()) return;
 
         bedrockskins$draggingPreview = false;
         bedrockskins$leftMouseDown = false;
 
         // Initialize Player
-        String name = minecraft.getGameProfile() != null ? minecraft.getGameProfile().name() : "Preview";
-        bedrockskins$pausePreviewPlayer = PreviewPlayer.PreviewPlayerPool.get(new GameProfile(bedrockskins$pausePreviewUuid, name));
-        bedrockskins$pausePreviewPlayer.setShowNameTag(true);
-        bedrockskins$pausePreviewPlayer.setCustomName(Component.literal(name));
-        bedrockskins$pausePreviewPlayer.setCustomNameVisible(true);
+        minecraft.getGameProfile();
+        String name = minecraft.getGameProfile().name();
+        bedrockskins$menuPreviewPlayer = PreviewPlayer.PreviewPlayerPool.get(new GameProfile(bedrockskins$menuPreviewUuid, name));
+        bedrockskins$menuPreviewPlayer.setShowNameTag(true);
+        bedrockskins$menuPreviewPlayer.setCustomName(Component.literal(name));
+        bedrockskins$menuPreviewPlayer.setCustomNameVisible(true);
 
         // Setup Skin
         bedrockskins$updatePreviewSkin();
@@ -97,22 +94,22 @@ public abstract class MixinPauseScreen extends Screen {
     private void bedrockskins$updatePreviewSkin() {
         SkinId selected = SkinManager.getLocalSelectedKey();
         if (selected != null) {
-            SkinManager.setPreviewSkin(bedrockskins$pausePreviewUuid, selected.getPack(), selected.getName());
+            SkinManager.setPreviewSkin(bedrockskins$menuPreviewUuid, selected.getPack(), selected.getName());
             SkinPackLoader.registerTextureFor(selected);
-            bedrockskins$pausePreviewPlayer.clearForcedProfileSkin();
-            bedrockskins$pausePreviewPlayer.clearForcedBody();
-            bedrockskins$pausePreviewPlayer.clearForcedCape();
+            bedrockskins$menuPreviewPlayer.clearForcedProfileSkin();
+            bedrockskins$menuPreviewPlayer.clearForcedBody();
+            bedrockskins$menuPreviewPlayer.clearForcedCape();
 
             LoadedSkin loaded = SkinPackLoader.getLoadedSkin(selected);
-            if (loaded != null) bedrockskins$pausePreviewPlayer.setForcedCape(loaded.capeIdentifier);
+            if (loaded != null) bedrockskins$menuPreviewPlayer.setForcedCape(loaded.capeIdentifier);
         } else {
-            SkinManager.resetPreviewSkin(bedrockskins$pausePreviewUuid);
-            bedrockskins$pausePreviewPlayer.clearForcedBody();
-            bedrockskins$pausePreviewPlayer.clearForcedCape();
+            SkinManager.resetPreviewSkin(bedrockskins$menuPreviewUuid);
+            bedrockskins$menuPreviewPlayer.clearForcedBody();
+            bedrockskins$menuPreviewPlayer.clearForcedCape();
             var profile = minecraft.getGameProfile();
-            bedrockskins$pausePreviewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(profile, false).get());
+            bedrockskins$menuPreviewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(profile, false).get());
         }
-        bedrockskins$pausePreviewPlayer.setUseLocalPlayerModel(false);
+        bedrockskins$menuPreviewPlayer.setUseLocalPlayerModel(false);
     }
 
     @Unique
@@ -122,12 +119,12 @@ public abstract class MixinPauseScreen extends Screen {
     }
 
     @Inject(method = "render", at = @At("TAIL"))
-    private void bedrockskins$renderPausePreview(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-        if (bedrockskins$pausePreviewPlayer == null || !BedrockSkinsConfig.isShowPaperDollOnPauseScreen()) return;
+    private void bedrockskins$renderMainMenuPreview(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+        if (bedrockskins$menuPreviewPlayer == null || !BedrockSkinsConfig.isShowPaperDollOnMainMenu()) return;
 
         if (SkinManager.getLocalSelectedKey() == null) {
             minecraft.getGameProfile();
-            bedrockskins$pausePreviewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(minecraft.getGameProfile(), false).get());
+            bedrockskins$menuPreviewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(minecraft.getGameProfile(), false).get());
         }
 
         long window = minecraft.getWindow().handle();
@@ -152,8 +149,17 @@ public abstract class MixinPauseScreen extends Screen {
         }
         bedrockskins$lastMouseX = mouseX;
 
-        bedrockskins$pausePreviewPlayer.tickCount = (int) (Util.getMillis() / 50L);
-        GuiUtils.renderEntityInRect(guiGraphics, bedrockskins$pausePreviewPlayer, bedrockskins$previewYaw, 
+        bedrockskins$menuPreviewPlayer.tickCount = (int) (Util.getMillis() / 50L);
+        GuiUtils.renderEntityInRect(guiGraphics, bedrockskins$menuPreviewPlayer, bedrockskins$previewYaw, 
             bedrockskins$getLeft(), bedrockskins$getTop() - 14, bedrockskins$getLeft() + PREVIEW_W, bedrockskins$getTop() + PREVIEW_H, 56);
+    }
+
+    @Inject(method = "removed", at = @At("TAIL"))
+    private void bedrockskins$cleanupMainMenuPreview(CallbackInfo ci) {
+        PreviewPlayer.PreviewPlayerPool.remove(bedrockskins$menuPreviewUuid);
+        SkinManager.resetPreviewSkin(bedrockskins$menuPreviewUuid);
+        bedrockskins$menuPreviewPlayer = null;
+        bedrockskins$openSkinButton = null;
+        bedrockskins$draggingPreview = false;
     }
 }

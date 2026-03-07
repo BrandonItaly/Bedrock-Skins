@@ -1,4 +1,4 @@
-package com.brandonitaly.bedrockskins.mixins.legacy4j;
+package com.brandonitaly.bedrockskins.mixin.legacy4j;
 
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.Screen;

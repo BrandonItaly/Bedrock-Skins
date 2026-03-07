@@ -1,22 +1,24 @@
 {
   "required": true,
-  "package": "com.brandonitaly.bedrockskins.mixins",
+  "package": "com.brandonitaly.bedrockskins.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [
-    "MixinPlayerEntityRenderer",
-    "MixinLivingEntityRenderer",
-    "MixinPlayerEntityRenderState",
-    "MixinHumanoidModel",
-    "MixinHumanoidArmorLayer",
-    "MixinCapeFeatureRenderer",
-    "MixinElytraModel",
-    "MixinPlayerListEntry",
-    "MixinTranslationStorage",
-    "MixinTitleScreen",
-    "MixinPauseScreen",
-    "MixinGameRenderer",
+  "client": [
+    "PlayerEntityRendererMixin",
+    "LivingEntityRendererMixin",
+    "PlayerEntityRenderStateMixin",
+    "HumanoidModelMixin",
+    "HumanoidArmorLayerMixin",
+    "CapeFeatureRendererMixin",
+    "ElytraModelMixin",
+    "PlayerListEntryMixin",
+    "TranslationStorageMixin",
+    "TitleScreenMixin",
+    "PauseScreenMixin",
+    "GameRendererMixin",
+    "EntityMixin",
     "legacy4j.HelpOptionsMixin"
   ],
+  "mixins": [],
   "injectors": {
     "defaultRequire": 1
   }

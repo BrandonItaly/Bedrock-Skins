@@ -27,6 +27,7 @@ public class BedrockSkinsConfig {
     private static volatile PaperDollMode paperDollMode;
     private static volatile boolean paperDollLeftSide;
     private static volatile boolean skinAnimations;
+    private static volatile boolean adjustCameraHeight;
 
     public enum PaperDollMode {
         NONE("bedrockskins.option.show_paper_doll.none"),
@@ -56,16 +57,17 @@ public class BedrockSkinsConfig {
         );
     }
 
-    private record ConfigData(boolean scanResourcePacksForSkins, boolean enableBuiltInSkinPacks, PaperDollMode paperDollMode, boolean paperDollLeftSide, boolean skinAnimations) {}
+    private record ConfigData(boolean scanResourcePacksForSkins, boolean enableBuiltInSkinPacks, PaperDollMode paperDollMode, boolean paperDollLeftSide, boolean skinAnimations, boolean adjustCameraHeight) {}
 
-    private static final ConfigData DEFAULTS = new ConfigData(true, true, PaperDollMode.BOTH, false, true);
+    private static final ConfigData DEFAULTS = new ConfigData(true, true, PaperDollMode.BOTH, false, true, false);
 
     private static final Codec<ConfigData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         Codec.BOOL.optionalFieldOf("scanResourcePacksForSkins", DEFAULTS.scanResourcePacksForSkins()).forGetter(ConfigData::scanResourcePacksForSkins),
         Codec.BOOL.optionalFieldOf("enableBuiltInSkinPacks", DEFAULTS.enableBuiltInSkinPacks()).forGetter(ConfigData::enableBuiltInSkinPacks),
         PaperDollMode.CODEC.optionalFieldOf("showPaperDoll", DEFAULTS.paperDollMode()).forGetter(ConfigData::paperDollMode),
         Codec.BOOL.optionalFieldOf("paperDollLeftSide", DEFAULTS.paperDollLeftSide()).forGetter(ConfigData::paperDollLeftSide),
-        Codec.BOOL.optionalFieldOf("skinAnimations", DEFAULTS.skinAnimations()).forGetter(ConfigData::skinAnimations)
+        Codec.BOOL.optionalFieldOf("skinAnimations", DEFAULTS.skinAnimations()).forGetter(ConfigData::skinAnimations),
+        Codec.BOOL.optionalFieldOf("adjustCameraHeight", DEFAULTS.adjustCameraHeight()).forGetter(ConfigData::adjustCameraHeight)
     ).apply(instance, ConfigData::new));
 
     // Ensure load happens BEFORE OptionInstances are created
@@ -116,6 +118,18 @@ public class BedrockSkinsConfig {
         value -> Tooltip.create(Component.translatable("bedrockskins.option.skin_animations.tooltip")),
         isSkinAnimationsEnabled(),
         BedrockSkinsConfig::setSkinAnimations
+    );
+
+    public static final OptionInstance<Boolean> ADJUST_CAMERA_HEIGHT = OptionInstance.createBoolean(
+        "bedrockskins.option.adjust_camera_height",
+        value -> Tooltip.create(Component.translatable("bedrockskins.option.adjust_camera_height.tooltip")),
+        isAdjustCameraHeightEnabled(),
+        value -> {
+            setAdjustCameraHeight(value);
+            if (net.minecraft.client.Minecraft.getInstance().player != null) {
+                net.minecraft.client.Minecraft.getInstance().player.refreshDimensions();
+            }
+        }
     );
 
     public static boolean isScanResourcePacksForSkinsEnabled() {
@@ -171,8 +185,17 @@ public class BedrockSkinsConfig {
         save();
     }
 
+    public static boolean isAdjustCameraHeightEnabled() {
+        return adjustCameraHeight;
+    }
+
+    public static void setAdjustCameraHeight(boolean enabled) {
+        adjustCameraHeight = enabled;
+        save();
+    }
+
     public static OptionInstance<?>[] asOptions() {
-        return new OptionInstance<?>[] { SCAN_RESOURCE_PACKS, ENABLE_BUILT_IN_PACKS, SHOW_PAPER_DOLL, PAPER_DOLL_LEFT_SIDE, SKIN_ANIMATIONS };
+        return new OptionInstance<?>[] { SCAN_RESOURCE_PACKS, ENABLE_BUILT_IN_PACKS, SHOW_PAPER_DOLL, PAPER_DOLL_LEFT_SIDE, SKIN_ANIMATIONS, ADJUST_CAMERA_HEIGHT };
     }
 
     private static void reloadSkinPacks() {
@@ -189,10 +212,11 @@ public class BedrockSkinsConfig {
         paperDollMode = data.paperDollMode();
         paperDollLeftSide = data.paperDollLeftSide();
         skinAnimations = data.skinAnimations();
+        adjustCameraHeight = data.adjustCameraHeight();
     }
 
     private static void save() {
-        ConfigData data = new ConfigData(scanResourcePacksForSkins, enableBuiltInSkinPacks, paperDollMode, paperDollLeftSide, skinAnimations);
+        ConfigData data = new ConfigData(scanResourcePacksForSkins, enableBuiltInSkinPacks, paperDollMode, paperDollLeftSide, skinAnimations, adjustCameraHeight);
         JsonCodecFileStore.write(CONFIG_PATH, CODEC, data, "BedrockSkinsConfig");
     }
 }

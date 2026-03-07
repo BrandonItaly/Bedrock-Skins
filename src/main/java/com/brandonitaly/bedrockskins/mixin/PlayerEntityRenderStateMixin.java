@@ -1,4 +1,4 @@
-package com.brandonitaly.bedrockskins.mixins;
+package com.brandonitaly.bedrockskins.mixin;
 
 import com.brandonitaly.bedrockskins.client.BedrockRenderStateAccessor;
 import com.brandonitaly.bedrockskins.pack.SkinId;
@@ -8,7 +8,7 @@ import java.util.UUID;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 
 @Mixin(AvatarRenderState.class)
-public class MixinPlayerEntityRenderState implements BedrockRenderStateAccessor {
+public class PlayerEntityRenderStateMixin implements BedrockRenderStateAccessor {
     @Unique
     private SkinId bedrockSkinId;
     @Unique

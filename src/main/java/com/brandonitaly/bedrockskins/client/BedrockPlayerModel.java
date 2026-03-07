@@ -24,13 +24,15 @@ public class BedrockPlayerModel extends PlayerModel {
     public final Map<String, ModelPart> partsMap;
     public final Map<String, PartTransform> defaultTransforms;
     
+    public final float heightMultiplier;
+    
     private final boolean animationArmsOutFront;
     private final boolean animationSingleArmAnimation;
     private final boolean animationStationaryLegs;
     private final boolean animationSingleLegAnimation;
     private final boolean animationDontShowArmor;
 
-    public BedrockPlayerModel(ModelPart root, boolean thinArms, Map<String, ModelPart> partsMap, Map<String, PartTransform> defaultTransforms, boolean animationArmsOutFront, boolean animationSingleArmAnimation, boolean animationStationaryLegs, boolean animationSingleLegAnimation, boolean animationDontShowArmor) {
+    public BedrockPlayerModel(ModelPart root, boolean thinArms, Map<String, ModelPart> partsMap, Map<String, PartTransform> defaultTransforms, boolean animationArmsOutFront, boolean animationSingleArmAnimation, boolean animationStationaryLegs, boolean animationSingleLegAnimation, boolean animationDontShowArmor, float heightMultiplier) {
         super(root, thinArms);
         this.partsMap = Map.copyOf(partsMap);
         this.defaultTransforms = Map.copyOf(defaultTransforms);
@@ -39,6 +41,7 @@ public class BedrockPlayerModel extends PlayerModel {
         this.animationStationaryLegs = animationStationaryLegs;
         this.animationSingleLegAnimation = animationSingleLegAnimation;
         this.animationDontShowArmor = animationDontShowArmor;
+        this.heightMultiplier = heightMultiplier;
     }
 
     public record PartTransform(float x, float y, float z, float pitch, float yaw, float roll) {}
@@ -58,13 +61,32 @@ public class BedrockPlayerModel extends PlayerModel {
         ensureRequiredBones(normalized);
         BuildRootResult result = buildRoot(normalized);
         
+        // Extract the head pivot to calculate model scale
+        float headPivotY = 24.0f;
+        if (normalized.getBones() != null) {
+            for (BedrockBone bone : normalized.getBones()) {
+                String name = bone.getName();
+                if (name != null && (name.equalsIgnoreCase("head") || "head".equalsIgnoreCase(mapBoneName(name)))) {
+                    if (bone.getPivot() != null && bone.getPivot().size() >= 2) {
+                        headPivotY = bone.getPivot().get(1);
+                    }
+                    break;
+                }
+            }
+        }
+        
+        // Vanilla head pivot is at Y=24.0
+        float heightMultiplier = headPivotY / 24.0f;
+        if (heightMultiplier <= 0.0f) heightMultiplier = 1.0f; // Safety fallback
+        
         return new BedrockPlayerModel(
             result.root(), thinArms, result.parts(), result.defaults(),
             Boolean.TRUE.equals(normalized.getAnimationArmsOutFront()),
             Boolean.TRUE.equals(normalized.getAnimationSingleArmAnimation()),
             Boolean.TRUE.equals(normalized.getAnimationStationaryLegs()),
             Boolean.TRUE.equals(normalized.getAnimationSingleLegAnimation()),
-            Boolean.TRUE.equals(normalized.getAnimationDontShowArmor())
+            Boolean.TRUE.equals(normalized.getAnimationDontShowArmor()),
+            heightMultiplier
         );
     }
 

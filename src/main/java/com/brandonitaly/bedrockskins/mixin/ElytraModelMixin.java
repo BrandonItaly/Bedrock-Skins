@@ -1,4 +1,4 @@
-package com.brandonitaly.bedrockskins.mixins;
+package com.brandonitaly.bedrockskins.mixin;
 
 import com.brandonitaly.bedrockskins.client.BedrockModelManager;
 import com.brandonitaly.bedrockskins.client.BedrockPlayerModel;
@@ -22,7 +22,7 @@ import net.minecraft.client.model.object.equipment.ElytraModel;
 //?}
 
 @Mixin(ElytraModel.class)
-public abstract class MixinElytraModel {
+public abstract class ElytraModelMixin {
 
     @Shadow private ModelPart rightWing;
     @Shadow private ModelPart leftWing;

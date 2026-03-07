@@ -181,6 +181,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             if (minecraft.player != null) {
                 SkinManager.setSkin(minecraft.player.getUUID(), skin.getSerializeName(), skin.getSkinDisplayName());
                 ClientSkinSync.sendSetSkinPayload(skinId, skin.getGeometryData().toString(), ExternalAssetUtil.loadTextureData(skin.getTexture(), minecraft));
+                minecraft.player.refreshDimensions();
             } else {
                 StateManager.saveState(FavoritesManager.getFavoriteKeys(), skinId.toString());
             }
@@ -194,6 +195,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         if (minecraft.player != null) {
             SkinManager.resetSkin(minecraft.player.getUUID());
             ClientSkinSync.sendResetSkinPayload();
+            minecraft.player.refreshDimensions();
         } else {
             StateManager.saveState(FavoritesManager.getFavoriteKeys(), null);
         }

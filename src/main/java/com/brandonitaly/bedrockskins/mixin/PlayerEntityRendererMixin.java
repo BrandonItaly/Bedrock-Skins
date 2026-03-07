@@ -1,4 +1,4 @@
-package com.brandonitaly.bedrockskins.mixins;
+package com.brandonitaly.bedrockskins.mixin;
 
 import com.brandonitaly.bedrockskins.client.BedrockModelManager;
 import com.brandonitaly.bedrockskins.client.BedrockRenderStateAccessor;
@@ -32,7 +32,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(AvatarRenderer.class)
-public abstract class MixinPlayerEntityRenderer {
+public abstract class PlayerEntityRendererMixin {
 
     @Unique
     private void bedrockSkins$renderArm(boolean isRightArm, PoseStack matrices, int light, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ skinTexture, boolean sleeveVisible, Object rendererOrQueue, CallbackInfo ci) {

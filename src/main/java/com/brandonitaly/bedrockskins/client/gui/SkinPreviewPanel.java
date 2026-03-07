@@ -156,6 +156,7 @@ public class SkinPreviewPanel {
                 SkinManager.setSkin(minecraft.player.getUUID(), id.pack(), id.name());
                 byte[] data = ExternalAssetUtil.loadTextureData(selectedSkin, minecraft);
                 if (data.length > 0) ClientSkinSync.sendSetSkinPayload(id, selectedSkin.getGeometryData().toString(), data);
+                minecraft.player.refreshDimensions();
             } else {
                 StateManager.saveState(FavoritesManager.getFavoriteKeys(), id.toString());
                 updatePreviewModel(dummyUuid, id);
@@ -170,6 +171,7 @@ public class SkinPreviewPanel {
         if (minecraft.player != null) {
             SkinManager.resetSkin(minecraft.player.getUUID());
             ClientSkinSync.sendResetSkinPayload();
+            minecraft.player.refreshDimensions();
         } else {
             StateManager.saveState(FavoritesManager.getFavoriteKeys(), null);
         }
