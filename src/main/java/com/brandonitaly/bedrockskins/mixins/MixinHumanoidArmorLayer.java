@@ -22,9 +22,9 @@ public abstract class MixinHumanoidArmorLayer {
     private void bedrockSkins$hideArmor(PoseStack matrices, SubmitNodeCollector queue, int light, HumanoidRenderState state, float limbAngle, float limbDistance, CallbackInfo ci) {
         if (!(state instanceof BedrockRenderStateAccessor skinState)) return;
 
-        SkinId skinId = skinState.getBedrockSkinId();
+        SkinId skinId = skinState.bedrockSkins$getBedrockSkinId();
         if (skinId == null) {
-            UUID uuid = skinState.getUniqueId();
+            UUID uuid = skinState.bedrockSkins$getUniqueId();
             skinId = uuid == null ? null : SkinManager.getSkin(uuid);
         }
         if (skinId == null) return;

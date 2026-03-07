@@ -27,11 +27,4 @@ public record SkinReference(String packId, int ordinal) {
     public String toKey() {
         return packId + ":" + ordinal;
     }
-    
-    public static SkinReference fromKey(String key) {
-        if (key == null) return null;
-        return CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, new com.google.gson.JsonPrimitive(key))
-            .result()
-            .orElse(null);
-    }
 }

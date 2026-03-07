@@ -15,7 +15,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ObjectSelectionList;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
@@ -25,7 +24,6 @@ import net.minecraft./*? if <1.21.11 {*//**//*?} else {*/util./*?}*/Util;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
 public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEntry> {
 
@@ -113,7 +111,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
 
         // --- Shared Logic ---
 
-        private void renderCommon(GuiGraphics context, int x, int y, int mouseX, int mouseY, float tickDelta) {
+        private void renderCommon(GuiGraphics context, int x, int y, int mouseX, int mouseY) {
             // Calculate grid widget bounds
             int gridLeft = SkinGridWidget.this.getX();
             int gridTop = SkinGridWidget.this.getY();
@@ -125,7 +123,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                 int cx = x + (i * (CELL_WIDTH + CELL_PADDING));
                 // Only allow hover if mouse is inside grid widget
                 boolean isHovered = mouseInGrid && mouseX >= cx && mouseX < cx + CELL_WIDTH && mouseY >= y && mouseY < y + CELL_HEIGHT;
-                cell.render(context, cx, y, CELL_WIDTH, CELL_HEIGHT, isHovered, tickDelta, mouseX, mouseY);
+                cell.render(context, cx, y, CELL_WIDTH, CELL_HEIGHT, isHovered, mouseX, mouseY);
             }
         }
 
@@ -133,17 +131,15 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
             if (localX < 0) return false;
             int index = localX / (CELL_WIDTH + CELL_PADDING);
 
-            if (index >= 0 && index < cells.size()) {
+            if (index < cells.size()) {
                 int cellStart = index * (CELL_WIDTH + CELL_PADDING);
                 if (localX >= cellStart && localX <= cellStart + CELL_WIDTH) {
                     SkinCell cell = cells.get(index);
                     onSelectSkin.accept(cell.skin);
 
-                    if (Minecraft.getInstance().getSoundManager() != null) {
-                        Minecraft.getInstance().getSoundManager().play(
-                                SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f)
-                        );
-                    }
+                    Minecraft.getInstance().getSoundManager().play(
+                            SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f)
+                    );
 
                     if (doubled) {
                         onSelectSkin.accept(cell.skin);
@@ -157,7 +153,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
         // --- Version Specific Wrappers ---
 
         public void renderContent(GuiGraphics context, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-            renderCommon(context, getX(), getY(), mouseX, mouseY, tickDelta);
+            renderCommon(context, getX(), getY(), mouseX, mouseY);
         }
 
         public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
@@ -208,7 +204,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                 PreviewPlayerPool.remove(uuid);
             }
 
-            public void render(GuiGraphics context, int x, int y, int w, int h, boolean hovered, float delta, int mouseX, int mouseY) {
+            public void render(GuiGraphics context, int x, int y, int w, int h, boolean hovered, int mouseX, int mouseY) {
                 LoadedSkin selected = getSelectedSkin.get();
                 boolean isSelected = (selected != null && selected.equals(skin));
 
@@ -249,9 +245,6 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                         hoverYaw = 0f;
                     }
 
-                    float pX = x + w / 2.0f;
-                    float pY = y + h / 2.0f;
-
                     // Save entity state
                     float yBodyRot = player.yBodyRot;
                     float yRot = player.getYRot();
@@ -282,12 +275,6 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                     entityRenderState.lightCoords = 15728880;
                     entityRenderState.boundingBoxHeight = 0;
                     entityRenderState.boundingBoxWidth = 0;
-
-                    // Calculate scale/position
-                    int size = Math.min((int)(h / 2.75), 72);
-                    float scale = player.getScale();
-                    Vector3f vector3f = new Vector3f(0.0F, player.getBbHeight() / 2.0F, 0.0F);
-                    float renderScale = (float) size / scale;
 
                     // Setup quaternions for orientation
                     Quaternionf quaternion = new Quaternionf().rotationZ((float)Math.toRadians(180.0F));

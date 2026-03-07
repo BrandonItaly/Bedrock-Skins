@@ -10,13 +10,15 @@ import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.authlib.GameProfile;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
+/*? if <1.21.11 {*/
+/*ResourceLocation*/
+/*?} else {*/
+/*?}*/
 import net.minecraft./*? if <1.21.11 {*//**//*?} else {*/util./*?}*/Util;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -60,7 +62,7 @@ public abstract class MixinPauseScreen extends Screen {
 
     @Inject(method = "init", at = @At("TAIL"))
     private void bedrockskins$initPausePreview(CallbackInfo ci) {
-        if (minecraft == null || !((PauseScreen) (Object) this).showsPauseMenu() || !BedrockSkinsConfig.isShowPaperDollOnPauseScreen()) return;
+        if (!((PauseScreen) (Object) this).showsPauseMenu() || !BedrockSkinsConfig.isShowPaperDollOnPauseScreen()) return;
 
         bedrockskins$draggingPreview = false;
         bedrockskins$leftMouseDown = false;
@@ -108,8 +110,7 @@ public abstract class MixinPauseScreen extends Screen {
             bedrockskins$pausePreviewPlayer.clearForcedBody();
             bedrockskins$pausePreviewPlayer.clearForcedCape();
             var profile = minecraft.getGameProfile();
-            if (profile != null) bedrockskins$pausePreviewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(profile, false).get());
-            else bedrockskins$pausePreviewPlayer.clearForcedProfileSkin();
+            bedrockskins$pausePreviewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(profile, false).get());
         }
         bedrockskins$pausePreviewPlayer.setUseLocalPlayerModel(false);
     }
@@ -124,11 +125,12 @@ public abstract class MixinPauseScreen extends Screen {
     private void bedrockskins$renderPausePreview(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         if (bedrockskins$pausePreviewPlayer == null || !BedrockSkinsConfig.isShowPaperDollOnPauseScreen()) return;
 
-        if (SkinManager.getLocalSelectedKey() == null && minecraft != null && minecraft.getGameProfile() != null) {
+        if (SkinManager.getLocalSelectedKey() == null) {
+            minecraft.getGameProfile();
             bedrockskins$pausePreviewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(minecraft.getGameProfile(), false).get());
         }
 
-        long window = minecraft != null ? minecraft.getWindow().handle() : 0L;
+        long window = minecraft.getWindow().handle();
         boolean leftDown = window != 0L && GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
 
         boolean insidePreview = bedrockskins$isMouseOverPreview(mouseX, mouseY);

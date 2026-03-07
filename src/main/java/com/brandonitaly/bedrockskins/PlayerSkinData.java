@@ -29,6 +29,4 @@ public record PlayerSkinData(SkinId skinId, String geometry, byte[] textureData,
     // Backwards-compatible getters
     public SkinId getSkinId() { return skinId; }
     public String getGeometry() { return geometry; }
-    public byte[] getTextureData() { return textureData; }
-    public JsonObject getGeometryJson() { return geometryJson; }
 }

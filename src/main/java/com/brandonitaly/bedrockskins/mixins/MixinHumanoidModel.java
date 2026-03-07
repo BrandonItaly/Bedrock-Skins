@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -36,9 +37,9 @@ public abstract class MixinHumanoidModel<T extends HumanoidRenderState> {
         }
         if (!(state instanceof BedrockRenderStateAccessor skinState)) return;
 
-        SkinId skinId = skinState.getBedrockSkinId();
+        SkinId skinId = skinState.bedrockSkins$getBedrockSkinId();
         if (skinId == null) {
-            UUID uuid = skinState.getUniqueId();
+            UUID uuid = skinState.bedrockSkins$getUniqueId();
             skinId = SkinManager.getSkin(uuid);
         }
         if (skinId == null) return;
@@ -55,6 +56,7 @@ public abstract class MixinHumanoidModel<T extends HumanoidRenderState> {
         copyPose(bedrockModel.leftLeg, this.leftLeg);
     }
 
+    @Unique
     private void applyBedrockPartVisibility(BedrockPlayerModel bedrockModel, T state) {
         bedrockModel.setBedrockPartVisible("bodyArmor", true);
         bedrockModel.setBedrockPartVisible("helmet", true);
@@ -64,37 +66,34 @@ public abstract class MixinHumanoidModel<T extends HumanoidRenderState> {
             bedrockModel.setBedrockPartVisible("bodyArmor", false);
         }
 
-        if (state.chestEquipment != null && !state.chestEquipment.isEmpty()) {
+        if (!state.chestEquipment.isEmpty()) {
             bedrockModel.setBedrockPartVisible("bodyArmor", false);
         }
-        if (state.headEquipment != null && !state.headEquipment.isEmpty()) {
+        if (!state.headEquipment.isEmpty()) {
             bedrockModel.setBedrockPartVisible("helmet", false);
         }
     }
 
+    @Unique
     private boolean hasActualCape(T state) {
         if (!(state instanceof BedrockRenderStateAccessor skinState)) return false;
 
-        UUID uuid = skinState.getUniqueId();
+        UUID uuid = skinState.bedrockSkins$getUniqueId();
         if (uuid == null) return false;
 
         try {
             var client = Minecraft.getInstance();
-            if (client == null || client.getConnection() == null) return false;
+            if (client.getConnection() == null) return false;
             var entry = client.getConnection().getPlayerInfo(uuid);
             if (entry == null) return false;
             var textures = entry.getSkin();
-            return textures != null && textures.cape() != null;
+            return textures.cape() != null;
         } catch (Throwable ignored) {
             return false;
         }
     }
 
-    private static void copyChildIfPresent(ModelPart sourcePart, ModelPart targetParent, String childName) {
-        if (sourcePart == null || targetParent == null || !targetParent.hasChild(childName)) return;
-        copyPose(sourcePart, targetParent.getChild(childName));
-    }
-
+    @Unique
     private static void copyPose(ModelPart from, ModelPart to) {
         if (from == null || to == null) return;
         to.x = from.x;

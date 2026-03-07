@@ -53,7 +53,7 @@ public abstract class MixinPlayerEntityRenderer {
             if (sleeve == null) sleeve = parts.get(side + "Sleeve");
 
             if (part != null) {
-                var bedrockSkin = (skinId != null) ? SkinPackLoader.getLoadedSkin(skinId) : null;
+                var bedrockSkin = SkinPackLoader.getLoadedSkin(skinId);
 
                 var texture = (bedrockSkin != null && bedrockSkin.identifier != null) ? bedrockSkin.identifier : skinTexture;
 
@@ -101,14 +101,14 @@ public abstract class MixinPlayerEntityRenderer {
     private void updateRenderState(Avatar player, AvatarRenderState state, float tickDelta, CallbackInfo ci) {
         if (player instanceof AbstractClientPlayer cp && state instanceof BedrockRenderStateAccessor skinState) {
             java.util.UUID uuid = cp.getUUID();
-            skinState.setUniqueId(uuid);
-            skinState.setBedrockSkinId(SkinManager.getSkin(uuid));
+            skinState.bedrockSkins$setUniqueId(uuid);
+            skinState.bedrockSkins$setBedrockSkinId(SkinManager.getSkin(uuid));
         }
     }
 
     @Inject(method = "renderHand", at = @At("HEAD"), cancellable = true)
     private void renderHand(PoseStack matrices, SubmitNodeCollector queue, int light, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ tex, ModelPart arm, boolean sleeve, CallbackInfo ci) {
-        HumanoidModel<?> model = (HumanoidModel<?>) ((AvatarRenderer)(Object)this).getModel();
+        HumanoidModel<?> model = ((AvatarRenderer<?>)(Object)this).getModel();
         boolean isRightArm = (arm == model.rightArm);
         bedrockSkins$renderArm(isRightArm, matrices, light, tex, sleeve, queue, ci);
     }
@@ -127,7 +127,7 @@ public abstract class MixinPlayerEntityRenderer {
     @Inject(method = "getTextureLocation", at = @At("HEAD"), cancellable = true)
     private void getTexture(AvatarRenderState state, CallbackInfoReturnable</*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/> ci) {
         if (state instanceof BedrockRenderStateAccessor skinState) {
-            java.util.UUID uuid = skinState.getUniqueId();
+            java.util.UUID uuid = skinState.bedrockSkins$getUniqueId();
             if (uuid != null) {
                 SkinId skinId = SkinManager.getSkin(uuid);
                 if (skinId != null) {

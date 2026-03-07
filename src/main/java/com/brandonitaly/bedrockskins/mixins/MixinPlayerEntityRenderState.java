@@ -15,22 +15,22 @@ public class MixinPlayerEntityRenderState implements BedrockRenderStateAccessor 
     private UUID uniqueId;
 
     @Override
-    public SkinId getBedrockSkinId() {
+    public SkinId bedrockSkins$getBedrockSkinId() {
         return bedrockSkinId;
     }
 
     @Override
-    public void setBedrockSkinId(SkinId id) {
+    public void bedrockSkins$setBedrockSkinId(SkinId id) {
         this.bedrockSkinId = id;
     }
 
     @Override
-    public UUID getUniqueId() {
+    public UUID bedrockSkins$getUniqueId() {
         return uniqueId;
     }
 
     @Override
-    public void setUniqueId(UUID uuid) {
+    public void bedrockSkins$setUniqueId(UUID uuid) {
         this.uniqueId = uuid;
     }
 }

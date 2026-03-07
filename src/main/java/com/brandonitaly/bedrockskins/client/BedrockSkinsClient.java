@@ -49,13 +49,9 @@ import java.util.UUID;
 public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitializer /*?}*/ {
     public static KeyMapping toggleCapeKey, toggleJacketKey, toggleLeftSleeveKey, toggleRightSleeveKey,
                              toggleLeftPantsKey, toggleRightPantsKey, toggleHatKey, toggleMainHandKey, openKey;
-    
-    private static KeyMapping.Category keybindCategory;
 
     public static void createKeybinds() {
-        keybindCategory = KeyMapping.Category.register(/*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "controls"));
-        
-        KeyMapping.Category cat = keybindCategory;
+        KeyMapping.Category cat = KeyMapping.Category.register(/*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "controls"));
 
         openKey = new KeyMapping("key.bedrockskins.open", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_K, cat);
         toggleCapeKey = new KeyMapping("key.bedrockskins.toggle_cape", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), cat);
@@ -69,7 +65,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     }
 
     public static Screen getAppropriateSkinScreen(Screen parent) {
-        boolean legacyLoaded = false;
+        boolean legacyLoaded;
         //? if fabric {
         legacyLoaded = FabricLoader.getInstance().isModLoaded("legacy");
         //?} else if neoforge {
@@ -114,13 +110,10 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
             client.execute(CommonLogic::clearAllRemoteSkins)
         );
         
-        ClientPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.SkinUpdatePayload.ID, (payload, context) -> {
-            BedrockSkinsNetworking.SkinUpdatePayload p = payload;
-            context.client().execute(() -> CommonLogic.handleSkinUpdate(p));
-        });
+        ClientPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.SkinUpdatePayload.ID, (payload, context) -> context.client().execute(() -> CommonLogic.handleSkinUpdate(payload)));
     }
 
-    private final class Reloader implements IdentifiableResourceReloadListener, ResourceManagerReloadListener {
+    private static final class Reloader implements IdentifiableResourceReloadListener, ResourceManagerReloadListener {
         @Override
         public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ getFabricId() { return /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "reloader"); }
         @Override

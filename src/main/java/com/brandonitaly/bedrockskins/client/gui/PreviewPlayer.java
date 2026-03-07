@@ -42,16 +42,8 @@ public class PreviewPlayer extends RemotePlayer {
         this.forcedCapeTexture = cape != null ? new ResourceTexture(cape, cape) : null;
     }
 
-    public void setForcedCapeTexture(ClientAsset.Texture capeTexture) {
-        this.forcedCapeTexture = capeTexture;
-    }
-
     public void clearForcedCape() {
         this.forcedCapeTexture = null;
-    }
-
-    public void setForcedBody(ClientAsset.Texture body) {
-        this.forcedBody = body;
     }
 
     public void clearForcedBody() {
@@ -110,10 +102,7 @@ public class PreviewPlayer extends RemotePlayer {
     public boolean isModelPartShown(PlayerModelPart part) {
         // Respect the client's options so changes update the preview instantly
         Minecraft mc = Minecraft.getInstance();
-        if (mc != null && mc.options != null) {
-            return mc.options.isModelPartEnabled(part);
-        }
-        return true;
+        return mc.options.isModelPartEnabled(part);
     }
 
     public static final class PreviewPlayerPool {
@@ -135,6 +124,5 @@ public class PreviewPlayer extends RemotePlayer {
         }
 
         public static void remove(UUID id) { pool.remove(id); }
-        public static void clear() { pool.clear(); }
     }
 }

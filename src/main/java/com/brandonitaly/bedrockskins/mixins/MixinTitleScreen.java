@@ -10,13 +10,11 @@ import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.authlib.GameProfile;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
 import net.minecraft./*? if <1.21.11 {*//**//*?} else {*/util./*?}*/Util;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -60,13 +58,14 @@ public abstract class MixinTitleScreen extends Screen {
 
     @Inject(method = "init", at = @At("TAIL"))
     private void bedrockskins$initMainMenuPreview(CallbackInfo ci) {
-        if (minecraft == null || !BedrockSkinsConfig.isShowPaperDollOnMainMenu()) return;
+        if (!BedrockSkinsConfig.isShowPaperDollOnMainMenu()) return;
 
         bedrockskins$draggingPreview = false;
         bedrockskins$leftMouseDown = false;
 
         // Initialize Player
-        String name = minecraft.getGameProfile() != null ? minecraft.getGameProfile().name() : "Preview";
+        minecraft.getGameProfile();
+        String name = minecraft.getGameProfile().name();
         bedrockskins$menuPreviewPlayer = PreviewPlayer.PreviewPlayerPool.get(new GameProfile(bedrockskins$menuPreviewUuid, name));
         bedrockskins$menuPreviewPlayer.setShowNameTag(true);
         bedrockskins$menuPreviewPlayer.setCustomName(Component.literal(name));
@@ -108,8 +107,7 @@ public abstract class MixinTitleScreen extends Screen {
             bedrockskins$menuPreviewPlayer.clearForcedBody();
             bedrockskins$menuPreviewPlayer.clearForcedCape();
             var profile = minecraft.getGameProfile();
-            if (profile != null) bedrockskins$menuPreviewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(profile, false).get());
-            else bedrockskins$menuPreviewPlayer.clearForcedProfileSkin();
+            bedrockskins$menuPreviewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(profile, false).get());
         }
         bedrockskins$menuPreviewPlayer.setUseLocalPlayerModel(false);
     }
@@ -124,11 +122,12 @@ public abstract class MixinTitleScreen extends Screen {
     private void bedrockskins$renderMainMenuPreview(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         if (bedrockskins$menuPreviewPlayer == null || !BedrockSkinsConfig.isShowPaperDollOnMainMenu()) return;
 
-        if (SkinManager.getLocalSelectedKey() == null && minecraft != null && minecraft.getGameProfile() != null) {
+        if (SkinManager.getLocalSelectedKey() == null) {
+            minecraft.getGameProfile();
             bedrockskins$menuPreviewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(minecraft.getGameProfile(), false).get());
         }
 
-        long window = minecraft != null ? minecraft.getWindow().handle() : 0L;
+        long window = minecraft.getWindow().handle();
         boolean leftDown = window != 0L && GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
 
         boolean insidePreview = bedrockskins$isMouseOverPreview(mouseX, mouseY);

@@ -1,7 +1,6 @@
 package com.brandonitaly.bedrockskins.pack;
 
 import com.mojang.serialization.Codec;
-import java.util.Objects;
 
 public record SkinId(String pack, String name, String safePackName, String safeSkinName) {
     public static final Codec<SkinId> CODEC = Codec.STRING.xmap(SkinId::parse, SkinId::toString);
@@ -29,8 +28,6 @@ public record SkinId(String pack, String name, String safePackName, String safeS
     // Backwards-compatible getters
     public String getPack() { return pack; }
     public String getName() { return name; }
-    public String getSafePackName() { return safePackName; }
-    public String getSafeSkinName() { return safeSkinName; }
 
     @Override
     public String toString() {

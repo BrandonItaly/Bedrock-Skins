@@ -16,8 +16,6 @@ import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else 
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-import java.util.UUID;
-
 public final class GuiUtils {
     private GuiUtils() {}
 

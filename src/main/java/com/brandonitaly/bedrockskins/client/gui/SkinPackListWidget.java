@@ -9,23 +9,12 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.SkinPackEntry> {
-    public SkinPackListWidget(Minecraft client, int width, int height, int y, int itemHeight,
-                              Consumer<String> onSelect,
-                              Predicate<String> isSelected,
-                              Font textRenderer) {
+    public SkinPackListWidget(Minecraft client, int width, int height, int y, int itemHeight) {
         super(client, width, height, y, itemHeight);
-        this.onSelect = onSelect;
-        this.isSelected = isSelected;
-        this.textRenderer = textRenderer;
     }
-
-    private final Consumer<String> onSelect;
-    private final Predicate<String> isSelected;
-    private final Font textRenderer;
 
     @Override
     public int getRowWidth() { return getWidth() - 10; }

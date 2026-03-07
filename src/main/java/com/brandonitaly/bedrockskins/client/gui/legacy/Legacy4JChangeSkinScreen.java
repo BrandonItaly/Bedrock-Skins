@@ -20,7 +20,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
@@ -64,10 +63,9 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     //?}
     
     private boolean queuedChangeSkinPack = false;
-    private Renderable scissorStart, scissorEnd;
     private boolean hasScrolledToInitial = false;
     private boolean isDraggingPreview = false;
-    private double lastMouseX = 0, lastMouseY = 0;
+    private double lastMouseX = 0;
 
     public Legacy4JChangeSkinScreen(Screen parent) {
         super(parent, 180, 290, Component.translatable("bedrockskins.gui.title"));
@@ -135,8 +133,8 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         LoadedSkin autoSkin = createAutoSelectedSkin(standardPack);
         if (autoSkin != null) merged.add(autoSkin);
 
-        standardPack.getSkins().stream().filter(s -> !isAutoSelectedSkin(s)).forEach(merged::add);
-        allPacks.put(STANDARD_PACK_ID, new SkinPackAdapter(STANDARD_PACK_ID, merged, standardPack.getPackType()));
+        standardPack.skins().stream().filter(s -> !isAutoSelectedSkin(s)).forEach(merged::add);
+        allPacks.put(STANDARD_PACK_ID, new SkinPackAdapter(STANDARD_PACK_ID, merged, standardPack.packType()));
     }
 
     private LoadedSkin createAutoSelectedSkin(SkinPackAdapter standardPack) {
@@ -156,7 +154,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     private LoadedSkin resolveAutoSelectedSkinForFavorites() {
         SkinPackAdapter standardPack = getPackForUi(STANDARD_PACK_ID);
         if (standardPack == null) return null;
-        return standardPack.getSkins().stream().filter(this::isAutoSelectedSkin).findFirst().orElseGet(() -> createAutoSelectedSkin(standardPack));
+        return standardPack.skins().stream().filter(this::isAutoSelectedSkin).findFirst().orElseGet(() -> createAutoSelectedSkin(standardPack));
     }
 
     private SkinPackAdapter getPackForUi(String packId) {
@@ -289,7 +287,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         
         if (hasSelectedSkinWidget() && state.is(ControllerBinding.RIGHT_STICK) && state instanceof BindingState.Axis stick) {
             double deltaX = stick.getDeadZone() > Math.abs(stick.x) ? 0 : -(double)stick.x * 0.15d;
-            if (Math.abs(deltaX) > 0.01) playerSkinWidgetList.element3.onDrag(playerSkinWidgetList.element3.getX(), playerSkinWidgetList.element3.getY(), deltaX, 0);
+            if (Math.abs(deltaX) > 0.01) playerSkinWidgetList.element3.onDrag(deltaX);
             state.block();
         }
     }
@@ -419,10 +417,10 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         stack.popMatrix();
 
         // Draw subtitle below pack name
-        if (focusedPack != null && focusedPack.getPackType() != null && !focusedPack.getPackType().isEmpty()) {
+        if (focusedPack != null && focusedPack.packType() != null && !focusedPack.packType().isEmpty()) {
             stack.pushMatrix();
             stack.translate(middle, panel.getY() + 45);
-            guiGraphics.drawCenteredString(minecraft.font, Component.translatable("bedrockskins.packType." + focusedPack.getPackType()), 0, 0, 0xffffffff);
+            guiGraphics.drawCenteredString(minecraft.font, Component.translatable("bedrockskins.packType." + focusedPack.packType()), 0, 0, 0xffffffff);
             stack.popMatrix();
         }
     }
@@ -551,7 +549,10 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         }
 
         int boxX = tooltipBox.getX() - 5, boxY = panel.getY() + 16, boxW = tooltipBox.getWidth() - 14, boxH = tooltipBox.getHeight() - 80;
-        scissorStart = addRenderableOnly((guiGraphics, i, j, f) -> { if (playerSkinWidgetList != null) guiGraphics.enableScissor(boxX + 7, boxY + 4, boxX + boxW - 5, boxY + boxH - 4); });
+        addRenderableOnly((guiGraphics, i, j, f) -> {
+            if (playerSkinWidgetList != null)
+                guiGraphics.enableScissor(boxX + 7, boxY + 4, boxX + boxW - 5, boxY + boxH - 4);
+        });
 
         List<PlayerSkinWidget> widgets = new ArrayList<>();
         for (int i = 0; i < focusedPack.size(); i++) {
@@ -569,7 +570,9 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         playerSkinWidgetList.element3.setPreviewPose(savedPose);
         playerSkinWidgetList.sortForIndex(targetIndex, savedRotX, savedRotY);
 
-        scissorEnd = addRenderableOnly((guiGraphics, i, j, f) -> { if (playerSkinWidgetList != null) guiGraphics.disableScissor(); });
+        addRenderableOnly((guiGraphics, i, j, f) -> {
+            if (playerSkinWidgetList != null) guiGraphics.disableScissor();
+        });
     }
 
     @Override
@@ -621,11 +624,10 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
                 if (hasSelectedSkinWidget() && isInBounds(mouseX, mouseY, playerSkinWidgetList.element3.getX(), playerSkinWidgetList.element3.getY(), playerSkinWidgetList.element3.getWidth(), playerSkinWidgetList.element3.getHeight())) {
                     isDraggingPreview = true;
                     lastMouseX = mouseX;
-                    lastMouseY = mouseY;
                     return true;
                 }
 
-                if (playerSkinWidgetList.widgets.stream().noneMatch(w -> w.progress <= 1)) {
+                if (playerSkinWidgetList != null && playerSkinWidgetList.widgets.stream().noneMatch(w -> w.progress <= 1)) {
                     for (int i = 0; i < playerSkinWidgetList.widgets.size(); i++) {
                         PlayerSkinWidget w = playerSkinWidgetList.widgets.get(i);
                         if (w.visible && w != playerSkinWidgetList.element3 && isInBounds(mouseX, mouseY, w.getX(), w.getY(), w.getWidth(), w.getHeight())) {
@@ -648,9 +650,8 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double deltaX, double deltaY) {
         if (isDraggingPreview && hasSelectedSkinWidget()) {
             double delta = lastMouseX - event.x();
-            if (Math.abs(delta) > 0.01) playerSkinWidgetList.element3.onDrag(event.x(), 0, delta, 0);
+            if (Math.abs(delta) > 0.01) playerSkinWidgetList.element3.onDrag(delta);
             lastMouseX = event.x();
-            lastMouseY = event.y();
             return true;
         }
         return super.mouseDragged(event, deltaX, deltaY);

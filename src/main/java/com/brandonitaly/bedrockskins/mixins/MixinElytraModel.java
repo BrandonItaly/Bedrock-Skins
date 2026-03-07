@@ -24,16 +24,16 @@ import net.minecraft.client.model.object.equipment.ElytraModel;
 @Mixin(ElytraModel.class)
 public abstract class MixinElytraModel {
 
-    @Shadow public ModelPart rightWing;
-    @Shadow public ModelPart leftWing;
+    @Shadow private ModelPart rightWing;
+    @Shadow private ModelPart leftWing;
 
     @Inject(method = "setupAnim", at = @At("RETURN"))
     private void bedrockSkins$syncElytraPivots(HumanoidRenderState state, CallbackInfo ci) {
         if (!(state instanceof BedrockRenderStateAccessor skinState)) return;
 
-        SkinId skinId = skinState.getBedrockSkinId();
+        SkinId skinId = skinState.bedrockSkins$getBedrockSkinId();
         if (skinId == null) {
-            UUID uuid = skinState.getUniqueId();
+            UUID uuid = skinState.bedrockSkins$getUniqueId();
             if (uuid == null) return;
             skinId = SkinManager.getSkin(uuid);
         }

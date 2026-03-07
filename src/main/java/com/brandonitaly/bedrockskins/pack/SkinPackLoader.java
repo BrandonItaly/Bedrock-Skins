@@ -18,7 +18,6 @@ import java.util.zip.ZipFile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
-import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 
 public final class SkinPackLoader {
@@ -84,11 +83,9 @@ public final class SkinPackLoader {
                 Set<String> enabledPacks = new HashSet<>();
                 try {
                     Minecraft client = Minecraft.getInstance();
-                    if (client != null && client.getResourcePackRepository() != null) {
-                        client.getResourcePackRepository().getSelectedIds().forEach(id -> 
+                    client.getResourcePackRepository().getSelectedIds().forEach(id ->
                             enabledPacks.add(id.startsWith("file/") ? id.substring(5) : id)
-                        );
-                    }
+                    );
                 } catch (Exception ignored) {}
 
                 File[] packs = resourcepacksDir.listFiles();
@@ -113,8 +110,7 @@ public final class SkinPackLoader {
         }
 
         Minecraft client = Minecraft.getInstance();
-        if (client == null) return;
-        
+
         ResourceManager manager = client.getResourceManager();
         loadVanillaGeometry(manager);
         
@@ -144,21 +140,16 @@ public final class SkinPackLoader {
         }
     }
 
-    public static /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ registerTextureFor(SkinId id) {
+    public static void registerTextureFor(SkinId id) {
         LoadedSkin skin = getLoadedSkin(id);
-        if (skin == null) return null;
-        if (skin.getIdentifier() != null) return skin.getIdentifier();
+        if (skin == null) return;
+        if (skin.getIdentifier() != null) return;
         
         registerSkinAssets(skin);
-        return skin.getIdentifier();
     }
 
     public static LoadedSkin getLoadedSkin(SkinId id) { 
         return id == null ? null : loadedSkins.get(id); 
-    }
-
-    public static void registerRemoteSkinStatic(String key, String geometryJson, byte[] textureData) {
-        registerRemoteSkin(key, geometryJson, textureData);
     }
 
     public static void registerRemoteSkin(String key, String geometryJson, byte[] textureData) {
@@ -544,9 +535,7 @@ public final class SkinPackLoader {
     private static File getSkinPacksDir() {
         try {
             Minecraft client = Minecraft.getInstance();
-            if (client != null && client.gameDirectory != null) {
-                return new File(client.gameDirectory, "skin_packs");
-            }
+            return new File(client.gameDirectory, "skin_packs");
         } catch (Exception ignored) {}
         return new File("skin_packs"); 
     }

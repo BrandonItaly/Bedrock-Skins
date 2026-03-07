@@ -1,8 +1,5 @@
 package com.brandonitaly.bedrockskins.mixins.legacy4j;
 
-//? if fabric {
-import com.brandonitaly.bedrockskins.client.BedrockSkinsClient;
-//?}
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;

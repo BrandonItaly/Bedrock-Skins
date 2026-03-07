@@ -40,9 +40,6 @@ import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalLong;
-import java.util.UUID;
 
 public class DummyClientPacketListener extends ClientPacketListener {
     private static DummyClientPacketListener instance;
@@ -85,8 +82,7 @@ public class DummyClientPacketListener extends ClientPacketListener {
 
     private static GameProfile getProfile() {
         Minecraft minecraft = Minecraft.getInstance();
-        GameProfile profile = minecraft.getGameProfile();
-        return profile != null ? profile : new GameProfile(UUID.randomUUID(), "Preview");
+        return minecraft.getGameProfile();
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -164,7 +160,7 @@ public class DummyClientPacketListener extends ClientPacketListener {
         return new RegistryAccess.ImmutableRegistryAccess(registries).freeze();
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"unchecked"})
     private static void registerDamageTypes(MappedRegistry<DamageType> damageTypeRegistry) {
         try {
             for (Field field : DamageTypes.class.getFields()) {

@@ -239,10 +239,6 @@ public class BedrockPlayerModel extends PlayerModel {
         return (list != null && list.size() > index && list.get(index) != null) ? list.get(index) : 0f;
     }
 
-    private static float toRadiansNeg(float degrees) {
-        return (float) Math.toRadians(-degrees);
-    }
-
     private static ModelPart resolvePart(ModelPart root, String boneName, Map<String, BoneNode> nodes) {
         String mapped = mapBoneName(boneName);
         if (root.hasChild(mapped)) return root.getChild(mapped);
@@ -340,11 +336,10 @@ public class BedrockPlayerModel extends PlayerModel {
         if (arm == null) return;
 
         HumanoidModel.ArmPose pose = rightArm ? state.rightArmPose : state.leftArmPose;
-        float bobDirection = rightArm ? 1.0F : -1.0F;
         boolean attacking = state.attackTime > 0.0F;
 
         // Only cancel walk swing if they aren't doing complex poses like aiming a bow/crossbow
-        if (pose != null && pose != HumanoidModel.ArmPose.EMPTY && pose != HumanoidModel.ArmPose.ITEM) return;
+        if (pose != ArmPose.EMPTY && pose != ArmPose.ITEM) return;
         
         // Reverse standard ITEM holding pose so arms stay completely straight instead of angled slightly up
         if (pose == HumanoidModel.ArmPose.ITEM && !attacking) {
