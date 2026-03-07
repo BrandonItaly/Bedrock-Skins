@@ -79,7 +79,7 @@ public class BedrockSkins {
     @SubscribeEvent
     public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-            ServerSkinHandler.onPlayerJoin(serverPlayer, payload -> PacketDistributor.sendToPlayer(serverPlayer, payload));
+            ServerSkinHandler.onPlayerJoin(payload -> PacketDistributor.sendToPlayer(serverPlayer, payload));
         }
     }
 }*/

@@ -32,7 +32,9 @@ import net.minecraft.world.level.dimension.DimensionType;
 //? if >=1.21.11 {
 import net.minecraft.world.attribute.EnvironmentAttributeMap;
 //?} else {
-/*import net.minecraft.resources.ResourceLocation;*/
+/*import net.minecraft.resources.ResourceLocation;
+import java.util.Optional;
+import java.util.OptionalLong;*/
 //?}
 import net.minecraft.util.valueproviders.ConstantInt;
 
