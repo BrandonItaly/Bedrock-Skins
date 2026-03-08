@@ -1,6 +1,5 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
-import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -48,18 +47,13 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
         private void renderCommon(GuiGraphics context, int x, int y, boolean hovered) {
             boolean isSelected = Boolean.TRUE.equals(isSelectedFn.get());
             int color = isSelected ? 0xFFFFFF00 : (hovered ? 0xFFFFFFA0 : 0xFFFFFFFF);
-            String translated = SkinPackLoader.getTranslation(translationKey);
-            if (translated == null) translated = fallbackName;
+            String translated = GuiSkinUtils.getTranslatedOrFallback(translationKey, fallbackName);
             context.drawString(textRenderer, Component.literal(translated), x + 2, y + 6, color);
         }
 
         private boolean clickCommon() {
             onSelect.accept(packId);
-            try {
-                Minecraft.getInstance().getSoundManager().play(
-                    net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0f)
-                );
-            } catch (Exception ignored) {}
+            GuiUtils.playButtonClickSound();
             return true;
         }
 

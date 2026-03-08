@@ -1,6 +1,7 @@
 package com.brandonitaly.bedrockskins.client.gui.legacy;
 
 import com.brandonitaly.bedrockskins.client.SkinManager;
+import com.brandonitaly.bedrockskins.client.gui.GuiSkinUtils;
 import com.brandonitaly.bedrockskins.client.gui.PreviewPlayer;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
@@ -21,8 +22,6 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 public class PlayerSkinWidget extends AbstractWidget {
-    private static final String AUTO_SELECTED_INTERNAL_NAME = "__auto_selected__";
-
     private static final float ROTATION_SENSITIVITY = 2.5F;
     private static final float ROTATION_X_LIMIT = 50.0F;
     private static final float LEGACY_WALK_SPEED = 0.3F;
@@ -214,22 +213,12 @@ public class PlayerSkinWidget extends AbstractWidget {
         dummyPlayer.clearForcedBody();
         dummyPlayer.clearForcedCape();
 
-        if (isAutoSelectedSkin(loadedSkin)) {
-            SkinManager.resetPreviewSkin(dummyUuid);
-            var profile = minecraft.getGameProfile();
-            dummyPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(profile, false).get());
-            dummyPlayer.setUseLocalPlayerModel(false);
+        if (GuiSkinUtils.isAutoSelectedSkin(loadedSkin)) {
+            GuiSkinUtils.applyAutoSelectedPreview(minecraft, dummyPlayer, dummyUuid);
         } else if (loadedSkin != null) {
-            dummyPlayer.setUseLocalPlayerModel(false);
-            var id = loadedSkin.getSkinId();
-            if (id != null) {
-                SkinManager.setPreviewSkin(dummyUuid, id.pack(), id.name());
-                SkinPackLoader.registerTextureFor(id);
-            }
-            dummyPlayer.setForcedCape(loadedSkin.capeIdentifier);
+            GuiSkinUtils.applyLoadedSkinPreview(dummyPlayer, dummyUuid, loadedSkin);
         } else {
-            SkinManager.resetPreviewSkin(dummyUuid);
-            dummyPlayer.setUseLocalPlayerModel(false);
+            GuiSkinUtils.applyLoadedSkinPreview(dummyPlayer, dummyUuid, null);
         }
     }
 
@@ -248,9 +237,8 @@ public class PlayerSkinWidget extends AbstractWidget {
 
             LoadedSkin loadedSkin = this.skin.get();
             Minecraft mc = Minecraft.getInstance();
-            if (isAutoSelectedSkin(loadedSkin)) {
-                mc.getGameProfile();
-                dummyPlayer.setForcedProfileSkin(mc.getSkinManager().createLookup(mc.getGameProfile(), false).get());
+            if (GuiSkinUtils.isAutoSelectedSkin(loadedSkin)) {
+                GuiSkinUtils.refreshAutoSelectedProfileSkin(mc, dummyPlayer);
             }
             
             advancePreviewSimulation(dummyPlayer);
@@ -365,8 +353,7 @@ public class PlayerSkinWidget extends AbstractWidget {
     public float getRotationY() { return this.rotationY; }
 
     public void cleanup() {
-        SkinManager.resetPreviewSkin(dummyUuid);
-        PreviewPlayer.PreviewPlayerPool.remove(dummyUuid);
+        GuiSkinUtils.cleanupPreview(dummyUuid);
     }
 
     public @Nullable LoadedSkin getCurrentSkin() {
@@ -374,8 +361,6 @@ public class PlayerSkinWidget extends AbstractWidget {
     }
 
     private boolean isAutoSelectedSkin(LoadedSkin skin) {
-        return skin != null
-            && "Standard".equals(skin.getSerializeName())
-            && AUTO_SELECTED_INTERNAL_NAME.equals(skin.getSkinDisplayName());
+        return GuiSkinUtils.isAutoSelectedSkin(skin);
     }
 }

@@ -10,11 +10,7 @@ import net.minecraft.client.model.geom.PartNames;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 import net.minecraft.util.Mth;
-//? if >=1.21.11 {
-import net.minecraft.client.model.player.PlayerModel;
-//?} else {
-/*import net.minecraft.client.model.PlayerModel;*/
-//?}
+import net.minecraft.client.model./*? if <1.21.11 {*//**//*?} else {*/player./*?}*/PlayerModel;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 
 import java.util.*;
@@ -312,6 +308,9 @@ public class BedrockPlayerModel extends PlayerModel {
         
         // Bail out if user has disabled custom Bedrock skin animations
         if (!BedrockSkinsConfig.isSkinAnimationsEnabled()) return;
+
+        // Do not run custom animation overrides while riding.
+        if (state.isPassenger) return;
         
         ModelPart rightArm = resolvePart("rightArm", PartNames.RIGHT_ARM);
         ModelPart leftArm = resolvePart("leftArm", PartNames.LEFT_ARM);
@@ -319,16 +318,14 @@ public class BedrockPlayerModel extends PlayerModel {
         ModelPart leftLeg = resolvePart("leftLeg", PartNames.LEFT_LEG);
 
         // --- Arms Additive Animation ---
-        if (animationArmsOutFront) {
-            if (!state.isPassenger) {
-                applyArmsOutFrontToArm(rightArm, true, state);
-                applyArmsOutFrontToArm(leftArm, false, state);
+        if (animationArmsOutFront && !state.isVisuallySwimming) {
+            applyArmsOutFrontToArm(rightArm, true, state);
+            applyArmsOutFrontToArm(leftArm, false, state);
 
-                float offset = (float) Math.toRadians(90.0);
-                if (rightArm != null) rightArm.xRot -= offset;
-                if (leftArm != null) leftArm.xRot -= offset;
-            }
-        } else if (animationSingleArmAnimation) {
+            float offset = (float) Math.toRadians(90.0);
+            if (rightArm != null) rightArm.xRot -= offset;
+            if (leftArm != null) leftArm.xRot -= offset;
+        } else if (animationSingleArmAnimation && !state.isVisuallySwimming) {
             if (leftArm != null && rightArm != null) {
                 // Cancel out the left arm's native walk swing, and apply the right arm's walk swing instead
                 leftArm.xRot -= computeArmWalkSwing(state, false);
@@ -337,19 +334,13 @@ public class BedrockPlayerModel extends PlayerModel {
         }
         
         // --- Legs Additive Animation ---
-        if (!state.isPassenger) {
-            if (animationStationaryLegs) {
-                // Subtract vanilla walking swing to freeze the legs during walking,
-                // while preserving sneaking/swimming offsets.
-                if (rightLeg != null) rightLeg.xRot -= computeLegWalkSwing(state, true);
-                if (leftLeg != null) leftLeg.xRot -= computeLegWalkSwing(state, false);
-                
-            } else if (animationSingleLegAnimation) {
-                if (rightLeg != null && leftLeg != null) {
-                    // Cancel out the left leg's native walk swing, and apply the right leg's walk swing instead
-                    leftLeg.xRot -= computeLegWalkSwing(state, false);
-                    leftLeg.xRot += computeLegWalkSwing(state, true);
-                }
+        if (animationStationaryLegs) {
+            if (rightLeg != null) rightLeg.xRot -= computeLegWalkSwing(state, true);
+            if (leftLeg != null) leftLeg.xRot -= computeLegWalkSwing(state, false);
+            
+        } else if (animationSingleLegAnimation) {
+            if (rightLeg != null && leftLeg != null) {
+                leftLeg.xRot = rightLeg.xRot;
             }
         }
     }

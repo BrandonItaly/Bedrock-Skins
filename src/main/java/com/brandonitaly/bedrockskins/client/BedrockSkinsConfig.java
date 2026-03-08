@@ -181,6 +181,7 @@ public class BedrockSkinsConfig {
     }
 
     public static void setSkinAnimations(boolean enabled) {
+        if (skinAnimations == enabled) return;
         skinAnimations = enabled;
         save();
     }
@@ -190,6 +191,7 @@ public class BedrockSkinsConfig {
     }
 
     public static void setAdjustCameraHeight(boolean enabled) {
+        if (adjustCameraHeight == enabled) return;
         adjustCameraHeight = enabled;
         save();
     }

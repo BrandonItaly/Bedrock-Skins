@@ -4,6 +4,7 @@ import com.brandonitaly.bedrockskins.client.ClientSkinSync;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.client.StateManager;
+import com.brandonitaly.bedrockskins.client.gui.GuiSkinUtils;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
 import com.brandonitaly.bedrockskins.pack.AssetSource;
@@ -41,8 +42,6 @@ import java.util.*;
 public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Controller.Event, ControlTooltip.Event {
     private static final String STANDARD_PACK_ID = "skinpack.Standard";
     private static final String FAVORITES_PACK_ID = "skinpack.Favorites";
-    private static final String AUTO_SELECTED_TRANSLATION_KEY = "bedrockskins.skin.auto_selected";
-    private static final String AUTO_SELECTED_INTERNAL_NAME = "__auto_selected__";
 
     protected final Minecraft minecraft = Minecraft.getInstance();
     protected final Panel tooltipBox = Panel.tooltipBoxOf(panel, 400);
@@ -105,13 +104,8 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     }
 
     private String resolvePackDisplayName(String packId, SkinPackAdapter pack) {
-        if (FAVORITES_PACK_ID.equals(packId)) return Component.translatable("bedrockskins.gui.favorites").getString();
-        if (pack != null && !pack.isEmpty() && pack.getSkin(0) != null) {
-            String trans = SkinPackLoader.getTranslation(pack.getSkin(0).getSafePackName());
-            return trans != null ? trans : pack.getSkin(0).getPackDisplayName();
-        }
-        String displayName = SkinPackLoader.getTranslation(packId);
-        return displayName != null ? displayName : packId;
+        LoadedSkin firstSkin = (pack != null && !pack.isEmpty()) ? pack.getSkin(0) : null;
+        return GuiSkinUtils.getPackDisplayName(packId, firstSkin);
     }
 
     private void rebuildFavoritesPack() {
@@ -119,7 +113,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             .map(SkinId::parse).filter(Objects::nonNull)
             .map(id -> {
                 LoadedSkin s = SkinPackLoader.getLoadedSkin(id);
-                return (s == null && isAutoSelectedSkinId(id)) ? resolveAutoSelectedSkinForFavorites() : s;
+                return (s == null && GuiSkinUtils.isAutoSelectedSkinId(id)) ? resolveAutoSelectedSkinForFavorites() : s;
             }).filter(Objects::nonNull).toList();
             
         allPacks.put(FAVORITES_PACK_ID, new SkinPackAdapter(FAVORITES_PACK_ID, favs));
@@ -133,28 +127,20 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         LoadedSkin autoSkin = createAutoSelectedSkin(standardPack);
         if (autoSkin != null) merged.add(autoSkin);
 
-        standardPack.skins().stream().filter(s -> !isAutoSelectedSkin(s)).forEach(merged::add);
+        standardPack.skins().stream().filter(s -> !GuiSkinUtils.isAutoSelectedSkin(s)).forEach(merged::add);
         allPacks.put(STANDARD_PACK_ID, new SkinPackAdapter(STANDARD_PACK_ID, merged, standardPack.packType()));
     }
 
     private LoadedSkin createAutoSelectedSkin(SkinPackAdapter standardPack) {
         LoadedSkin template = standardPack.getSkin(0);
-        return template == null ? null : new LoadedSkin("Standard", "Standard", AUTO_SELECTED_INTERNAL_NAME, 
+        return template == null ? null : new LoadedSkin("Standard", "Standard", GuiSkinUtils.AUTO_SELECTED_INTERNAL_NAME,
                 template.getGeometryData(), template.getTexture(), null, false);
-    }
-
-    private boolean isAutoSelectedSkin(LoadedSkin skin) {
-        return skin != null && "Standard".equals(skin.getSerializeName()) && AUTO_SELECTED_INTERNAL_NAME.equals(skin.getSkinDisplayName());
-    }
-
-    private boolean isAutoSelectedSkinId(SkinId skinId) {
-        return skinId != null && "Standard".equals(skinId.getPack()) && AUTO_SELECTED_INTERNAL_NAME.equals(skinId.getName());
     }
 
     private LoadedSkin resolveAutoSelectedSkinForFavorites() {
         SkinPackAdapter standardPack = getPackForUi(STANDARD_PACK_ID);
         if (standardPack == null) return null;
-        return standardPack.skins().stream().filter(this::isAutoSelectedSkin).findFirst().orElseGet(() -> createAutoSelectedSkin(standardPack));
+        return standardPack.skins().stream().filter(GuiSkinUtils::isAutoSelectedSkin).findFirst().orElseGet(() -> createAutoSelectedSkin(standardPack));
     }
 
     private SkinPackAdapter getPackForUi(String packId) {
@@ -171,20 +157,8 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         LoadedSkin skin = playerSkinWidgetList.element3.getCurrentSkin();
         if (skin == null) return;
 
-        if (isAutoSelectedSkin(skin)) {
-            resetSkin();
-            return;
-        }
-
         try {
-            SkinId skinId = skin.getSkinId() != null ? skin.getSkinId() : SkinId.of(skin.getSerializeName(), skin.getSkinDisplayName());
-            if (minecraft.player != null) {
-                SkinManager.setSkin(minecraft.player.getUUID(), skin.getSerializeName(), skin.getSkinDisplayName());
-                ClientSkinSync.sendSetSkinPayload(skinId, skin.getGeometryData().toString(), ExternalAssetUtil.loadTextureData(skin.getTexture(), minecraft));
-                minecraft.player.refreshDimensions();
-            } else {
-                StateManager.saveState(FavoritesManager.getFavoriteKeys(), skinId.toString());
-            }
+            GuiSkinUtils.applySelectedSkin(minecraft, skin);
             playUISound();
         } catch (Exception e) {
             e.printStackTrace();
@@ -192,13 +166,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     }
 
     private void resetSkin() {
-        if (minecraft.player != null) {
-            SkinManager.resetSkin(minecraft.player.getUUID());
-            ClientSkinSync.sendResetSkinPayload();
-            minecraft.player.refreshDimensions();
-        } else {
-            StateManager.saveState(FavoritesManager.getFavoriteKeys(), null);
-        }
+        GuiSkinUtils.resetSelectedSkin(minecraft);
         playUISound();
     }
 
@@ -409,21 +377,11 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         int middle = tooltipBox.getX() - 5 + (tooltipBox.getWidth() - 18) / 2;
         String packDisplayName = resolvePackDisplayName(focusedPackId, focusedPack);
 
-        var stack = guiGraphics.pose();
-
-        // Render skin pack name
-        stack.pushMatrix();
-        stack.translate(middle, panel.getY() + 27);
-        stack.scale(1.5f, 1.5f);
-        guiGraphics.drawCenteredString(minecraft.font, Component.literal(packDisplayName), 0, 0, 0xffffffff);
-        stack.popMatrix();
+        drawScaledCenteredString(guiGraphics, Component.literal(packDisplayName), middle, panel.getY() + 27, 1.5f, 0xffffffff);
 
         // Draw subtitle below pack name
         if (focusedPack != null && focusedPack.packType() != null && !focusedPack.packType().isEmpty()) {
-            stack.pushMatrix();
-            stack.translate(middle, panel.getY() + 45);
-            guiGraphics.drawCenteredString(minecraft.font, Component.translatable("bedrockskins.packType." + focusedPack.packType()), 0, 0, 0xffffffff);
-            stack.popMatrix();
+            drawScaledCenteredString(guiGraphics, Component.translatable("bedrockskins.packType." + focusedPack.packType()), middle, panel.getY() + 45, 1.0f, 0xffffffff);
         }
     }
     
@@ -432,30 +390,18 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         if (skin == null) return;
         
         int middle = tooltipBox.getX() - 5 + (tooltipBox.getWidth() - 18) / 2;
-        String trans = SkinPackLoader.getTranslation(skin.getSafeSkinName());
-        Component skinNameComp = isAutoSelectedSkin(skin) ? Component.translatable(AUTO_SELECTED_TRANSLATION_KEY) : Component.literal(trans != null ? trans : skin.getSkinDisplayName());
+        Component skinNameComp = GuiSkinUtils.getSkinDisplayName(skin);
 
-        var stack = guiGraphics.pose();
-        // Render skin name
-        stack.pushMatrix();
-        stack.translate(middle, panel.getY() + tooltipBox.getHeight() - 49);
-        stack.scale(1.5f, 1.5f);
-        guiGraphics.drawCenteredString(minecraft.font, skinNameComp, 0, 0, 0xffffffff);
-        stack.popMatrix();
+        drawScaledCenteredString(guiGraphics, skinNameComp, middle, panel.getY() + tooltipBox.getHeight() - 49, 1.5f, 0xffffffff);
 
         // Render description if available
-        String desc = SkinPackLoader.getTranslation(skin.getSafeSkinName() + ".description");
-        if (desc != null && !desc.isEmpty()) {
-            stack.pushMatrix();
-            stack.translate(middle, panel.getY() + tooltipBox.getHeight() - 24);
-            stack.scale(1.5f, 1.5f);
-            guiGraphics.drawCenteredString(minecraft.font, Component.literal(desc), 0, 0, 0xffffffff);
-            stack.popMatrix();
+        String desc = GuiSkinUtils.getSkinDescriptionText(skin).orElse(null);
+        if (desc != null) {
+            drawScaledCenteredString(guiGraphics, Component.literal(desc), middle, panel.getY() + tooltipBox.getHeight() - 24, 1.5f, 0xffffffff);
         }
         
         // Render checkmark if this skin is currently selected
-        SkinId currentSkinKey = SkinManager.getLocalSelectedKey();
-        if (isAutoSelectedSkin(skin) ? currentSkinKey == null : Objects.equals(currentSkinKey, skin.getSkinId())) {
+        if (GuiSkinUtils.isSkinCurrentlyEquipped(skin)) {
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.BEACON_CONFIRM, tooltipBox.getX() + tooltipBox.getWidth() - 50, panel.getY() + tooltipBox.getHeight() - 57, 24, 24);
         }
         
@@ -465,6 +411,15 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.HEART_CONTAINER, hx, hy, 16, 16);
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.HEART_FULL, hx, hy, 16, 16);
         }
+    }
+
+    private void drawScaledCenteredString(GuiGraphics guiGraphics, Component text, int x, int y, float scale, int color) {
+        var stack = guiGraphics.pose();
+        stack.pushMatrix();
+        stack.translate(x, y);
+        stack.scale(scale, scale);
+        guiGraphics.drawCenteredString(minecraft.font, text, 0, 0, color);
+        stack.popMatrix();
     }
 
     @Override
