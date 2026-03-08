@@ -60,7 +60,7 @@ public final class SkinManager {
         
         if (uuid.equals(getLocalPlayerUuid())) {
             try {
-                StateManager.saveState(FavoritesManager.getFavoriteKeys(), id == null ? null : id.toString());
+                StateManager.saveState(FavoritesManager.getFavoriteKeys(), id.toString());
             } catch (Exception e) {
                 BedrockSkinsLog.error("SkinManager: failed to save selected skin", e);
             }
@@ -96,10 +96,6 @@ public final class SkinManager {
         if (uuid == null) return null;
         SkinId preview = previewSkins.get(uuid);
         return preview != null ? preview : playerSkins.get(uuid);
-    }
-
-    public static void resetSkin(String uuidStr) {
-        resetSkin(UUID.fromString(uuidStr));
     }
 
     public static void resetSkin(UUID uuid) {

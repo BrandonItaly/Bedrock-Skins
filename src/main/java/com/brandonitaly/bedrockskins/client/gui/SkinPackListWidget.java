@@ -1,6 +1,5 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
-import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -9,23 +8,12 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.SkinPackEntry> {
-    public SkinPackListWidget(Minecraft client, int width, int height, int y, int itemHeight,
-                              Consumer<String> onSelect,
-                              Predicate<String> isSelected,
-                              Font textRenderer) {
+    public SkinPackListWidget(Minecraft client, int width, int height, int y, int itemHeight) {
         super(client, width, height, y, itemHeight);
-        this.onSelect = onSelect;
-        this.isSelected = isSelected;
-        this.textRenderer = textRenderer;
     }
-
-    private final Consumer<String> onSelect;
-    private final Predicate<String> isSelected;
-    private final Font textRenderer;
 
     @Override
     public int getRowWidth() { return getWidth() - 10; }
@@ -59,18 +47,13 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
         private void renderCommon(GuiGraphics context, int x, int y, boolean hovered) {
             boolean isSelected = Boolean.TRUE.equals(isSelectedFn.get());
             int color = isSelected ? 0xFFFFFF00 : (hovered ? 0xFFFFFFA0 : 0xFFFFFFFF);
-            String translated = SkinPackLoader.getTranslation(translationKey);
-            if (translated == null) translated = fallbackName;
+            String translated = GuiSkinUtils.getTranslatedOrFallback(translationKey, fallbackName);
             context.drawString(textRenderer, Component.literal(translated), x + 2, y + 6, color);
         }
 
         private boolean clickCommon() {
             onSelect.accept(packId);
-            try {
-                Minecraft.getInstance().getSoundManager().play(
-                    net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0f)
-                );
-            } catch (Exception ignored) {}
+            GuiUtils.playButtonClickSound();
             return true;
         }
 

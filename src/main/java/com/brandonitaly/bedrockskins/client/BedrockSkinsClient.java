@@ -1,11 +1,5 @@
 package com.brandonitaly.bedrockskins.client;
 
-//? if legacy4j { 
-/*
-import com.brandonitaly.legacystore.LegacyStoreClient;
-import com.brandonitaly.legacystore.api.ContentCategory;
-*/
-//?}
 import com.brandonitaly.bedrockskins.BedrockSkinsNetworking;
 import com.brandonitaly.bedrockskins.client.gui.SkinSelectionScreen;
 import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
@@ -55,13 +49,9 @@ import java.util.UUID;
 public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitializer /*?}*/ {
     public static KeyMapping toggleCapeKey, toggleJacketKey, toggleLeftSleeveKey, toggleRightSleeveKey,
                              toggleLeftPantsKey, toggleRightPantsKey, toggleHatKey, toggleMainHandKey, openKey;
-    
-    private static KeyMapping.Category keybindCategory;
 
     public static void createKeybinds() {
-        keybindCategory = KeyMapping.Category.register(/*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "controls"));
-        
-        KeyMapping.Category cat = keybindCategory;
+        KeyMapping.Category cat = KeyMapping.Category.register(/*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "controls"));
 
         openKey = new KeyMapping("key.bedrockskins.open", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_K, cat);
         toggleCapeKey = new KeyMapping("key.bedrockskins.toggle_cape", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), cat);
@@ -75,7 +65,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     }
 
     public static Screen getAppropriateSkinScreen(Screen parent) {
-        boolean legacyLoaded = false;
+        boolean legacyLoaded;
         //? if fabric {
         legacyLoaded = FabricLoader.getInstance().isModLoaded("legacy");
         //?} else if neoforge {
@@ -84,11 +74,12 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         
         if (legacyLoaded) {
             try {
-                var constructor = Class.forName("com.brandonitaly.bedrockskins.client.gui.legacy.Legacy4JChangeSkinScreen")
-                                       .getConstructor(Screen.class);
-                return (Screen) constructor.newInstance(parent);
-            } catch (Exception ignored) {}
+                return LegacyScreenProvider.createLegacyScreen(parent);
+            } catch (Throwable t) {
+                System.err.println("BedrockSkinsClient: Failed to open legacy screen, falling back to default screen.");
+            }
         }
+        
         return new SkinSelectionScreen(parent);
     }
 
@@ -108,6 +99,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
 
         ClientTickEvents.END_CLIENT_TICK.register(CommonLogic::handleTick);
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
+            ContentManager.reloadCategories(client.getResourceManager());
             CommonLogic.reloadResources(client);
             ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new Reloader());
         });
@@ -118,37 +110,15 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
             client.execute(CommonLogic::clearAllRemoteSkins)
         );
         
-        ClientPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.SkinUpdatePayload.ID, (payload, context) -> {
-            BedrockSkinsNetworking.SkinUpdatePayload p = payload;
-            context.client().execute(() -> CommonLogic.handleSkinUpdate(p));
-        });
-
-        //? if legacy4j {
-        /*
-        ContentCategory skinPacks = new ContentCategory(
-            "bedrock_skins",
-            net.minecraft.network.chat.Component.translatable("bedrockskins.gui.packs"),
-            "https://raw.githubusercontent.com/BrandonItaly/LCE-Resources/refs/heads/skin-packs/skin_packs.json",
-            "skin_packs",
-            () -> {
-                SkinPackLoader.loadPacks();
-                if (Minecraft.getInstance() != null) {
-                    Minecraft.getInstance().reloadResourcePacks();
-                }
-            }
-        );
-
-        LegacyStoreClient.registerCategory(skinPacks);
-        LegacyStoreClient.init();
-        */
-        //?}
+        ClientPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.SkinUpdatePayload.ID, (payload, context) -> context.client().execute(() -> CommonLogic.handleSkinUpdate(payload)));
     }
 
-    private final class Reloader implements IdentifiableResourceReloadListener, ResourceManagerReloadListener {
+    private static final class Reloader implements IdentifiableResourceReloadListener, ResourceManagerReloadListener {
         @Override
         public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ getFabricId() { return /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "reloader"); }
         @Override
         public void onResourceManagerReload(ResourceManager manager) {
+            ContentManager.reloadCategories(manager);
             CommonLogic.reloadResources(Minecraft.getInstance());
         }
     }
@@ -178,24 +148,6 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             CommonLogic.reloadResources(Minecraft.getInstance());
-            
-            //? if legacy4j {
-            ContentCategory skinPacks = new ContentCategory(
-                "bedrock_skins",
-                net.minecraft.network.chat.Component.translatable("bedrockskins.gui.packs"),
-                "https://raw.githubusercontent.com/BrandonItaly/LCE-Resources/refs/heads/skin-packs/skin_packs.json",
-                "skin_packs",
-                () -> {
-                    SkinPackLoader.loadPacks();
-                    if (Minecraft.getInstance() != null) {
-                        Minecraft.getInstance().reloadResourcePacks();
-                    }
-                }
-            );
-
-            LegacyStoreClient.registerCategory(skinPacks);
-            LegacyStoreClient.init();
-            //?}
         });
     }
 

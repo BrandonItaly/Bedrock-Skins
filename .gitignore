@@ -15,5 +15,8 @@ bin/
 .classpath
 .project
 
+# idea
+.idea/
+
 # secrets
 .env

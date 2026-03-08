@@ -15,20 +15,15 @@ public class LocalSkinConfig {
         Codec.STRING.optionalFieldOf("selected").forGetter(state -> Optional.ofNullable(state.getSelected()))
     ).apply(instance, (favorites, selected) -> new LocalSkinConfig(favorites, selected.orElse(null))));
 
-    private List<String> favorites;
+    private final List<String> favorites;
     private String selected;
-
-    public LocalSkinConfig() {
-        this(Collections.emptyList(), null);
-    }
 
     public LocalSkinConfig(List<String> favorites, String selected) {
         this.favorites = favorites == null ? new ArrayList<>() : new ArrayList<>(favorites);
         this.selected = selected;
     }
 
-    public List<String> getFavorites() { return favorites == null ? Collections.emptyList() : favorites; }
-    public void setFavorites(List<String> favorites) { this.favorites = favorites == null ? new ArrayList<>() : new ArrayList<>(favorites); }
+    public List<String> getFavorites() { return favorites; }
 
     public String getSelected() { return selected; }
     public void setSelected(String selected) { this.selected = selected; }

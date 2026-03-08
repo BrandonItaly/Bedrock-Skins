@@ -32,7 +32,7 @@ public final class BedrockModelManager {
             BedrockFile bedrockFile = gson.fromJson(skin.geometryData, BedrockFile.class);
             var geometryList = bedrockFile.getGeometries();
             if (geometryList != null && !geometryList.isEmpty()) {
-                var geometry = geometryList.get(0);
+                var geometry = geometryList.getFirst();
                 var model = BedrockPlayerModel.create(geometry, false);
                 bedrockModels.put(skinId, model);
                 return model;

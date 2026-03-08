@@ -1,4 +1,4 @@
-package com.brandonitaly.bedrockskins.mixins;
+package com.brandonitaly.bedrockskins.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -14,7 +14,7 @@ import net.minecraft.client.renderer.rendertype.RenderTypes;
 //?}
 
 @Mixin(CapeLayer.class)
-public abstract class MixinCapeFeatureRenderer {
+public abstract class CapeFeatureRendererMixin {
 
     // Allow capes to use the translucent render layer instead of solid
     //? if >=1.21.11 {

@@ -1,4 +1,4 @@
-package com.brandonitaly.bedrockskins.mixins;
+package com.brandonitaly.bedrockskins.mixin;
 
 import com.brandonitaly.bedrockskins.client.BedrockModelManager;
 import com.brandonitaly.bedrockskins.client.BedrockPlayerModel;
@@ -16,15 +16,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(HumanoidArmorLayer.class)
-public abstract class MixinHumanoidArmorLayer {
+public abstract class HumanoidArmorLayerMixin {
 
     @Inject(method = "submit", at = @At("HEAD"), cancellable = true)
     private void bedrockSkins$hideArmor(PoseStack matrices, SubmitNodeCollector queue, int light, HumanoidRenderState state, float limbAngle, float limbDistance, CallbackInfo ci) {
         if (!(state instanceof BedrockRenderStateAccessor skinState)) return;
 
-        SkinId skinId = skinState.getBedrockSkinId();
+        SkinId skinId = skinState.bedrockSkins$getBedrockSkinId();
         if (skinId == null) {
-            UUID uuid = skinState.getUniqueId();
+            UUID uuid = skinState.bedrockSkins$getUniqueId();
             skinId = uuid == null ? null : SkinManager.getSkin(uuid);
         }
         if (skinId == null) return;

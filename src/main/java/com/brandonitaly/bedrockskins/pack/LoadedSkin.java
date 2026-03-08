@@ -52,13 +52,10 @@ public class LoadedSkin {
     public AssetSource getCape() { return cape; }
     public boolean isUpsideDown() { return upsideDown; }
 
-    public String getKey() { return skinId.toString(); }
     public String getId() { return packId; }
     public String getSafePackName() { return safePackName; }
     public String getSafeSkinName() { return safeSkinName; }
     public SkinId getSkinId() { return skinId; }
-    public boolean isInternal() { return texture instanceof AssetSource.Resource; }
 
     public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ getIdentifier() { return identifier; }
-    public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ getCapeIdentifier() { return capeIdentifier; }
 }

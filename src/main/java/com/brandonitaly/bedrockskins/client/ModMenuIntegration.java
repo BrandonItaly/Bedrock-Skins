@@ -11,7 +11,7 @@ import net.minecraft.client.gui.screens.Screen;
 public class ModMenuIntegration implements ModMenuApi {
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
-        return parent -> new BedrockSkinsOptionsScreen((Screen) parent);
+        return BedrockSkinsOptionsScreen::new;
     }
 }
 //?}

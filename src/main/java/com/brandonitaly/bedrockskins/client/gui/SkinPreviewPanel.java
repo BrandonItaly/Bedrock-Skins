@@ -1,12 +1,8 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
-import com.brandonitaly.bedrockskins.client.ClientSkinSync;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
-import com.brandonitaly.bedrockskins.client.StateManager;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
-import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
-import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
@@ -57,7 +53,7 @@ public class SkinPreviewPanel {
         selectButton = Button.builder(Component.translatable("bedrockskins.button.select"), b -> applySkin()).bounds(0, 0, 10, 20).build();
         widgetAdder.accept(selectButton);
 
-        favoriteButton = new FavoriteHeartButton(0, 0, 20, BedrockSkinsSprites.HEART_CONTAINER, BedrockSkinsSprites.HEART_FULL, b -> toggleFavorite());
+        favoriteButton = new FavoriteHeartButton(20, BedrockSkinsSprites.HEART_CONTAINER, BedrockSkinsSprites.HEART_FULL, b -> toggleFavorite());
         widgetAdder.accept(favoriteButton.getButton());
 
         resetButton = Button.builder(Component.translatable("bedrockskins.button.reset"), b -> resetSkin()).bounds(0, 0, 10, 20).build();
@@ -128,39 +124,20 @@ public class SkinPreviewPanel {
         if (skinId == null) {
             applyAutoSelectedSkinBehavior();
         } else {
-            SkinManager.setPreviewSkin(uuid, skinId.pack(), skinId.name());
-            SkinPackLoader.registerTextureFor(skinId);
-            dummyPlayer.clearForcedProfileSkin();
-            dummyPlayer.clearForcedBody();
-            dummyPlayer.setForcedCape(selectedSkin != null ? selectedSkin.capeIdentifier : null);
-            dummyPlayer.setUseLocalPlayerModel(false);
+            GuiSkinUtils.applyLoadedSkinPreview(dummyPlayer, uuid, selectedSkin);
         }
     }
 
     private void applyAutoSelectedSkinBehavior() {
-        if (dummyPlayer == null) return;
-        SkinManager.resetPreviewSkin(dummyUuid);
-        dummyPlayer.clearForcedBody();
-        dummyPlayer.clearForcedCape();
-        var profile = minecraft.getGameProfile();
-        if (profile != null) dummyPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(profile, false).get());
-        else dummyPlayer.clearForcedProfileSkin();
-        dummyPlayer.setUseLocalPlayerModel(false);
+        GuiSkinUtils.applyAutoSelectedPreview(minecraft, dummyPlayer, dummyUuid);
     }
 
     private void applySkin() {
         if (selectedSkin == null) return;
         try {
-            SkinId id = selectedSkin.getSkinId();
-            SkinPackLoader.registerTextureFor(id);
-            
-            if (minecraft.player != null) {
-                SkinManager.setSkin(minecraft.player.getUUID(), id.pack(), id.name());
-                byte[] data = ExternalAssetUtil.loadTextureData(selectedSkin, minecraft);
-                if (data.length > 0) ClientSkinSync.sendSetSkinPayload(id, selectedSkin.getGeometryData().toString(), data);
-            } else {
-                StateManager.saveState(FavoritesManager.getFavoriteKeys(), id.toString());
-                updatePreviewModel(dummyUuid, id);
+            GuiSkinUtils.applySelectedSkin(minecraft, selectedSkin);
+            if (minecraft.player == null) {
+                updatePreviewModel(dummyUuid, selectedSkin.getSkinId());
                 updateActionButtons();
             }
         } catch (Exception e) { e.printStackTrace(); }
@@ -169,13 +146,7 @@ public class SkinPreviewPanel {
     private void resetSkin() {
         selectedSkin = null;
         currentSkinId = null;
-        if (minecraft.player != null) {
-            SkinManager.resetSkin(minecraft.player.getUUID());
-            ClientSkinSync.sendResetSkinPayload();
-        } else {
-            StateManager.saveState(FavoritesManager.getFavoriteKeys(), null);
-        }
-        SkinManager.resetPreviewSkin(dummyUuid);
+        GuiSkinUtils.resetSelectedSkin(minecraft);
         updatePreviewModel(dummyUuid, null);
         updateFavoriteButton();
     }
@@ -200,7 +171,7 @@ public class SkinPreviewPanel {
         updateActionButtons();
         if (favoriteButton == null) return;
         
-        boolean isFav = selectedSkin != null && FavoritesManager.isFavorite(selectedSkin);
+        boolean isFav = FavoritesManager.isFavorite(selectedSkin);
         favoriteButton.setSelected(isFav);
         favoriteButton.setActive(currentSkinId != null);
         favoriteButton.setTooltip(Component.translatable(isFav ? "bedrockskins.button.unfavorite" : "bedrockskins.button.favorite"));
@@ -208,7 +179,7 @@ public class SkinPreviewPanel {
         if (selectButton != null) selectButton.active = selectedSkin != null;
     }
 
-    public void render(GuiGraphics gui, int mouseX, int mouseY) {
+    public void render(GuiGraphics gui, int mouseX) {
         GuiUtils.drawPanelChrome(gui, x, y, width, height, Component.translatable("bedrockskins.gui.preview"), font);
 
         int PANEL_HEADER_HEIGHT = 24;
@@ -216,7 +187,6 @@ public class SkinPreviewPanel {
         
         int contentTop = y + PANEL_HEADER_HEIGHT;
         int contentBottom = y + height - BUTTONS_RESERVED_HEIGHT;
-        int contentHeight = Math.max(0, contentBottom - contentTop);
         int centerX = x + width / 2;
 
         int rotateW = Math.max(30, Math.min((int)(width * 0.3f), 90));
@@ -235,9 +205,8 @@ public class SkinPreviewPanel {
             String descToRender = null;
 
             if (selectedSkin != null) {
-                nameToRender = SkinPackLoader.getTranslation(selectedSkin.getSafeSkinName());
-                if (nameToRender == null) nameToRender = selectedSkin.getSkinDisplayName();
-                descToRender = SkinPackLoader.getTranslation(selectedSkin.getSafeSkinName() + ".description");
+                nameToRender = GuiSkinUtils.getSkinDisplayNameText(selectedSkin);
+                descToRender = GuiSkinUtils.getSkinDescriptionText(selectedSkin).orElse(null);
             }
 
             int textGap = 4;
@@ -272,7 +241,7 @@ public class SkinPreviewPanel {
         return false;
     }
     
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean mouseReleased(int button) {
         if (button == 0 && isDraggingPreview) {
             isDraggingPreview = false;
             return true;
@@ -296,8 +265,7 @@ public class SkinPreviewPanel {
     }
 
     public void cleanup() {
-        SkinManager.resetPreviewSkin(this.dummyUuid);
-        PreviewPlayer.PreviewPlayerPool.remove(this.dummyUuid);
+        GuiSkinUtils.cleanupPreview(this.dummyUuid);
         this.dummyPlayer = null;
     }
     
@@ -306,7 +274,7 @@ public class SkinPreviewPanel {
         private final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ fullSprite;
         private boolean isFavorited = false;
 
-        public FavoriteHeartButton(int x, int y, int size, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ containerSprite, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ fullSprite, Button.OnPress onPress) {
+        public FavoriteHeartButton(int size, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ containerSprite, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ fullSprite, Button.OnPress onPress) {
             this.fullSprite = fullSprite;
             this.button = SpriteIconButton.builder(Component.empty(), onPress, true)
                     .size(size, size).sprite(containerSprite, 12, 12).build();

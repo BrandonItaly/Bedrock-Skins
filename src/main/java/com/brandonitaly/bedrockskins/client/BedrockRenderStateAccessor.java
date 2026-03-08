@@ -4,9 +4,9 @@ import java.util.UUID;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 
 public interface BedrockRenderStateAccessor {
-    SkinId getBedrockSkinId();
-    void setBedrockSkinId(SkinId id);
+    SkinId bedrockSkins$getBedrockSkinId();
+    void bedrockSkins$setBedrockSkinId(SkinId id);
 
-    UUID getUniqueId();
-    void setUniqueId(UUID id);
+    UUID bedrockSkins$getUniqueId();
+    void bedrockSkins$setUniqueId(UUID id);
 } 

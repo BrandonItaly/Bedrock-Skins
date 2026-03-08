@@ -71,6 +71,5 @@ public final class BedrockSkinsNetworking {
         // Backwards-compatible getters
         public SkinId getSkinId() { return skinId; }
         public String getGeometry() { return geometry; }
-        public byte[] getTextureData() { return textureData; }
     }
 }

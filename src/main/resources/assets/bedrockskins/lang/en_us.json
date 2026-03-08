@@ -46,5 +46,7 @@
   "bedrockskins.option.paper_doll_side.left": "Left",
   "bedrockskins.option.paper_doll_side.right": "Right",
   "bedrockskins.option.skin_animations": "Skin Animations",
-  "bedrockskins.option.skin_animations.tooltip": "Choose whether skins with unique animations will use their animations or not.\nIf disabled, all skins will use their default animations."
+  "bedrockskins.option.skin_animations.tooltip": "Choose whether skins with unique animations will use their animations or not.\nIf disabled, all skins will use their default animations.",
+  "bedrockskins.option.adjust_camera_height": "Scale Camera to Model",
+  "bedrockskins.option.adjust_camera_height.tooltip": "When enabled, your eye level will automatically adjust if you are using a skin that is shorter or taller than a normal Minecraft player."
 }

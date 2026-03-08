@@ -37,15 +37,7 @@ public class PlayerSkinWidgetList {
         SLOT_CONFIGS[8] = new SlotConfig(OFFSET * 4, VERTICAL_OFFSET * 4 + 20, 0.4f, FACING_FROM_RIGHT, false);  // Offset  4
     }
 
-    private static class SlotConfig {
-        final int dx, dy;
-        final float scale, rotY;
-        final boolean interactable;
-
-        SlotConfig(int dx, int dy, float scale, float rotY, boolean interactable) {
-            this.dx = dx; this.dy = dy; this.scale = scale; this.rotY = rotY; this.interactable = interactable;
-        }
-    }
+    private record SlotConfig(int dx, int dy, float scale, float rotY, boolean interactable) {}
 
     private PlayerSkinWidgetList(int x, int y, PlayerSkinWidget[] widgets) {
         this.x = x;
@@ -151,7 +143,7 @@ public class PlayerSkinWidgetList {
         
         int currentX = w.getX();
         
-        boolean isWrap = w.visible && delta != 0 && (
+        boolean isWrap = w.visible && (
             (delta > 0 && targetPosX > currentX + 50) || 
             (delta < 0 && targetPosX < currentX - 50)
         );

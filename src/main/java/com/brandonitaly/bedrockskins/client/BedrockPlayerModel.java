@@ -10,11 +10,7 @@ import net.minecraft.client.model.geom.PartNames;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 import net.minecraft.util.Mth;
-//? if >=1.21.11 {
-import net.minecraft.client.model.player.PlayerModel;
-//?} else {
-/*import net.minecraft.client.model.PlayerModel;*/
-//?}
+import net.minecraft.client.model./*? if <1.21.11 {*//**//*?} else {*/player./*?}*/PlayerModel;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 
 import java.util.*;
@@ -24,13 +20,15 @@ public class BedrockPlayerModel extends PlayerModel {
     public final Map<String, ModelPart> partsMap;
     public final Map<String, PartTransform> defaultTransforms;
     
+    public final float heightMultiplier;
+    
     private final boolean animationArmsOutFront;
     private final boolean animationSingleArmAnimation;
     private final boolean animationStationaryLegs;
     private final boolean animationSingleLegAnimation;
     private final boolean animationDontShowArmor;
 
-    public BedrockPlayerModel(ModelPart root, boolean thinArms, Map<String, ModelPart> partsMap, Map<String, PartTransform> defaultTransforms, boolean animationArmsOutFront, boolean animationSingleArmAnimation, boolean animationStationaryLegs, boolean animationSingleLegAnimation, boolean animationDontShowArmor) {
+    public BedrockPlayerModel(ModelPart root, boolean thinArms, Map<String, ModelPart> partsMap, Map<String, PartTransform> defaultTransforms, boolean animationArmsOutFront, boolean animationSingleArmAnimation, boolean animationStationaryLegs, boolean animationSingleLegAnimation, boolean animationDontShowArmor, float heightMultiplier) {
         super(root, thinArms);
         this.partsMap = Map.copyOf(partsMap);
         this.defaultTransforms = Map.copyOf(defaultTransforms);
@@ -39,6 +37,7 @@ public class BedrockPlayerModel extends PlayerModel {
         this.animationStationaryLegs = animationStationaryLegs;
         this.animationSingleLegAnimation = animationSingleLegAnimation;
         this.animationDontShowArmor = animationDontShowArmor;
+        this.heightMultiplier = heightMultiplier;
     }
 
     public record PartTransform(float x, float y, float z, float pitch, float yaw, float roll) {}
@@ -58,13 +57,32 @@ public class BedrockPlayerModel extends PlayerModel {
         ensureRequiredBones(normalized);
         BuildRootResult result = buildRoot(normalized);
         
+        // Extract the head pivot to calculate model scale
+        float headPivotY = 24.0f;
+        if (normalized.getBones() != null) {
+            for (BedrockBone bone : normalized.getBones()) {
+                String name = bone.getName();
+                if (name != null && (name.equalsIgnoreCase("head") || "head".equalsIgnoreCase(mapBoneName(name)))) {
+                    if (bone.getPivot() != null && bone.getPivot().size() >= 2) {
+                        headPivotY = bone.getPivot().get(1);
+                    }
+                    break;
+                }
+            }
+        }
+        
+        // Vanilla head pivot is at Y=24.0
+        float heightMultiplier = headPivotY / 24.0f;
+        if (heightMultiplier <= 0.0f) heightMultiplier = 1.0f; // Safety fallback
+        
         return new BedrockPlayerModel(
             result.root(), thinArms, result.parts(), result.defaults(),
             Boolean.TRUE.equals(normalized.getAnimationArmsOutFront()),
             Boolean.TRUE.equals(normalized.getAnimationSingleArmAnimation()),
             Boolean.TRUE.equals(normalized.getAnimationStationaryLegs()),
             Boolean.TRUE.equals(normalized.getAnimationSingleLegAnimation()),
-            Boolean.TRUE.equals(normalized.getAnimationDontShowArmor())
+            Boolean.TRUE.equals(normalized.getAnimationDontShowArmor()),
+            heightMultiplier
         );
     }
 
@@ -239,10 +257,6 @@ public class BedrockPlayerModel extends PlayerModel {
         return (list != null && list.size() > index && list.get(index) != null) ? list.get(index) : 0f;
     }
 
-    private static float toRadiansNeg(float degrees) {
-        return (float) Math.toRadians(-degrees);
-    }
-
     private static ModelPart resolvePart(ModelPart root, String boneName, Map<String, BoneNode> nodes) {
         String mapped = mapBoneName(boneName);
         if (root.hasChild(mapped)) return root.getChild(mapped);
@@ -294,6 +308,9 @@ public class BedrockPlayerModel extends PlayerModel {
         
         // Bail out if user has disabled custom Bedrock skin animations
         if (!BedrockSkinsConfig.isSkinAnimationsEnabled()) return;
+
+        // Do not run custom animation overrides while riding.
+        if (state.isPassenger) return;
         
         ModelPart rightArm = resolvePart("rightArm", PartNames.RIGHT_ARM);
         ModelPart leftArm = resolvePart("leftArm", PartNames.LEFT_ARM);
@@ -301,16 +318,14 @@ public class BedrockPlayerModel extends PlayerModel {
         ModelPart leftLeg = resolvePart("leftLeg", PartNames.LEFT_LEG);
 
         // --- Arms Additive Animation ---
-        if (animationArmsOutFront) {
-            if (!state.isPassenger) {
-                applyArmsOutFrontToArm(rightArm, true, state);
-                applyArmsOutFrontToArm(leftArm, false, state);
+        if (animationArmsOutFront && !state.isVisuallySwimming) {
+            applyArmsOutFrontToArm(rightArm, true, state);
+            applyArmsOutFrontToArm(leftArm, false, state);
 
-                float offset = (float) Math.toRadians(90.0);
-                if (rightArm != null) rightArm.xRot -= offset;
-                if (leftArm != null) leftArm.xRot -= offset;
-            }
-        } else if (animationSingleArmAnimation) {
+            float offset = (float) Math.toRadians(90.0);
+            if (rightArm != null) rightArm.xRot -= offset;
+            if (leftArm != null) leftArm.xRot -= offset;
+        } else if (animationSingleArmAnimation && !state.isVisuallySwimming) {
             if (leftArm != null && rightArm != null) {
                 // Cancel out the left arm's native walk swing, and apply the right arm's walk swing instead
                 leftArm.xRot -= computeArmWalkSwing(state, false);
@@ -319,19 +334,13 @@ public class BedrockPlayerModel extends PlayerModel {
         }
         
         // --- Legs Additive Animation ---
-        if (!state.isPassenger) {
-            if (animationStationaryLegs) {
-                // Subtract vanilla walking swing to freeze the legs during walking,
-                // while preserving sneaking/swimming offsets.
-                if (rightLeg != null) rightLeg.xRot -= computeLegWalkSwing(state, true);
-                if (leftLeg != null) leftLeg.xRot -= computeLegWalkSwing(state, false);
-                
-            } else if (animationSingleLegAnimation) {
-                if (rightLeg != null && leftLeg != null) {
-                    // Cancel out the left leg's native walk swing, and apply the right leg's walk swing instead
-                    leftLeg.xRot -= computeLegWalkSwing(state, false);
-                    leftLeg.xRot += computeLegWalkSwing(state, true);
-                }
+        if (animationStationaryLegs) {
+            if (rightLeg != null) rightLeg.xRot -= computeLegWalkSwing(state, true);
+            if (leftLeg != null) leftLeg.xRot -= computeLegWalkSwing(state, false);
+            
+        } else if (animationSingleLegAnimation) {
+            if (rightLeg != null && leftLeg != null) {
+                leftLeg.xRot = rightLeg.xRot;
             }
         }
     }
@@ -340,11 +349,10 @@ public class BedrockPlayerModel extends PlayerModel {
         if (arm == null) return;
 
         HumanoidModel.ArmPose pose = rightArm ? state.rightArmPose : state.leftArmPose;
-        float bobDirection = rightArm ? 1.0F : -1.0F;
         boolean attacking = state.attackTime > 0.0F;
 
         // Only cancel walk swing if they aren't doing complex poses like aiming a bow/crossbow
-        if (pose != null && pose != HumanoidModel.ArmPose.EMPTY && pose != HumanoidModel.ArmPose.ITEM) return;
+        if (pose != ArmPose.EMPTY && pose != ArmPose.ITEM) return;
         
         // Reverse standard ITEM holding pose so arms stay completely straight instead of angled slightly up
         if (pose == HumanoidModel.ArmPose.ITEM && !attacking) {

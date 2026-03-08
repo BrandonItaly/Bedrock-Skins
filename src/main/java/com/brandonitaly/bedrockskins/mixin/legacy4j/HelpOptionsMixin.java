@@ -1,10 +1,5 @@
-package com.brandonitaly.bedrockskins.mixins.legacy4j;
+package com.brandonitaly.bedrockskins.mixin.legacy4j;
 
-//? if legacy4j {
-/*
-//? if fabric {
-import com.brandonitaly.bedrockskins.client.BedrockSkinsClient;
-//?}
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -38,13 +33,4 @@ public abstract class HelpOptionsMixin extends RenderableVListScreen {
         }).build());
         return instance;
     }
-}*/
-//?} else {
-import org.spongepowered.asm.mixin.Mixin;
-import net.minecraft.client.Minecraft;
-
-@Mixin(Minecraft.class)
-public class HelpOptionsMixin {
-
 }
-//?}

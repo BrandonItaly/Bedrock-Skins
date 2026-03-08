@@ -5,7 +5,6 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.server.MinecraftServer;
 //?} else if neoforge {
 /*import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -38,19 +37,15 @@ public class BedrockSkins implements ModInitializer {
         PayloadTypeRegistry.playC2S().register(BedrockSkinsNetworking.SetSkinPayload.ID, BedrockSkinsNetworking.SetSkinPayload.CODEC);
 
         // Handle player joining - send them all existing skins
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            ServerSkinHandler.onPlayerJoin(handler.player, payload -> ServerPlayNetworking.send(handler.player, payload));
-        });
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> ServerSkinHandler.onPlayerJoin(payload -> ServerPlayNetworking.send(handler.player, payload)));
 
         // Handle client setting their skin
-        ServerPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.SetSkinPayload.ID, (payload, context) -> {
-            context.server().execute(() -> {
-                ServerSkinHandler.handleSetSkin(
-                    context.player(), payload.skinId(), payload.geometry(), payload.textureData(),
-                    broadcast -> context.server().getPlayerList().getPlayers().forEach(p -> ServerPlayNetworking.send(p, broadcast))
-                );
-            });
-        });
+        ServerPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.SetSkinPayload.ID, (payload, context) -> context.server().execute(() -> {
+            ServerSkinHandler.handleSetSkin(
+                context.player(), payload.skinId(), payload.geometry(), payload.textureData(),
+                broadcast -> context.server().getPlayerList().getPlayers().forEach(p -> ServerPlayNetworking.send(p, broadcast))
+            );
+        }));
     }
 }
 //?} else if neoforge {
@@ -84,7 +79,7 @@ public class BedrockSkins {
     @SubscribeEvent
     public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-            ServerSkinHandler.onPlayerJoin(serverPlayer, payload -> PacketDistributor.sendToPlayer(serverPlayer, payload));
+            ServerSkinHandler.onPlayerJoin(payload -> PacketDistributor.sendToPlayer(serverPlayer, payload));
         }
     }
 }*/
@@ -95,7 +90,7 @@ class ServerSkinHandler {
     static final Logger logger = LoggerFactory.getLogger("bedrockskins");
     private static final Map<UUID, Long> lastSkinChange = new ConcurrentHashMap<>();
 
-    static void onPlayerJoin(ServerPlayer player, Consumer<BedrockSkinsNetworking.SkinUpdatePayload> packetSender) {
+    static void onPlayerJoin(Consumer<BedrockSkinsNetworking.SkinUpdatePayload> packetSender) {
         ServerSkinManager.getAllSkins().forEach((uuid, skinData) -> {
             packetSender.accept(new BedrockSkinsNetworking.SkinUpdatePayload(
                 uuid, skinData.skinId(), skinData.geometry(), skinData.textureData()

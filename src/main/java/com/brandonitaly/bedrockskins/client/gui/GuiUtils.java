@@ -4,19 +4,20 @@ import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
+import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.EntityAttachment;
 import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-
-import java.util.UUID;
 
 public final class GuiUtils {
     private GuiUtils() {}
@@ -103,7 +104,13 @@ public final class GuiUtils {
     }
 
     public static void safeRegisterTexture(String key) { try { var id = SkinId.parse(key); if (id != null) SkinPackLoader.registerTextureFor(id); } catch (Exception ignored) {} }
-    public static void safeResetPreview(String uuid) { try { com.brandonitaly.bedrockskins.client.SkinManager.resetPreviewSkin(uuid); } catch (Exception ignored) {} }
+
+    public static void playButtonClickSound() {
+        try {
+            Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+        } catch (Exception ignored) {
+        }
+    }
 
     private static boolean isUpsideDown(LivingEntity entity) {
         SkinId id = SkinManager.getSkin(entity.getUUID());
@@ -112,10 +119,8 @@ public final class GuiUtils {
         return skin != null && skin.isUpsideDown();
     }
 
-    private static final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ PANEL_SPRITE = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "container/skin_panel");
-
     public static void drawPanelChrome(GuiGraphics gui, int x, int y, int w, int h, Component title, Font font) {
-        gui.blitSprite(RenderPipelines.GUI_TEXTURED, PANEL_SPRITE, x-1, y-1, w+2, h+2);
+        gui.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.PANEL_SPRITE, x-1, y-1, w+2, h+2);
         gui.drawCenteredString(font, title, x + (w / 2), y + 8, 0xFFFFFFFF);
     }
 }

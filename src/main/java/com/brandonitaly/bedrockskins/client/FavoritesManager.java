@@ -45,7 +45,7 @@ public final class FavoritesManager {
         
         SkinId id = skin.getSkinId();
         if (id != null && !favoriteIds.contains(id)) {
-            favoriteIds.add(0, id); // Add to the front
+            favoriteIds.addFirst(id); // Add to the front
             save();
         }
     }
@@ -63,9 +63,5 @@ public final class FavoritesManager {
         return favoriteIds.stream()
             .map(SkinId::toString)
             .toList(); // Natively returns an unmodifiable list
-    }
-
-    public static List<SkinId> getFavoriteIds() {
-        return List.copyOf(favoriteIds); // Natively returns an unmodifiable copy
     }
 }

@@ -2,71 +2,44 @@ package com.brandonitaly.bedrockskins.client.gui.legacy;
 
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
-import com.brandonitaly.bedrockskins.pack.SkinId;
+
 import java.util.*;
 
 /**
  * Adapter to organize LoadedSkins into pack-based collections
  * compatible with the Legacy4J carousel system.
  */
-public class SkinPackAdapter {
-    private final String packId;
-    private final List<LoadedSkin> skins;
-    private final String packType;
-
+public record SkinPackAdapter(String packId, List<LoadedSkin> skins, String packType) {
     public SkinPackAdapter(String packId, List<LoadedSkin> skins, String packType) {
         this.packId = packId;
         this.skins = new ArrayList<>(skins);
         this.packType = packType;
     }
 
-    public String getPackType() {
-        return packType;
-    }
-
     // Legacy constructor for compatibility
     public SkinPackAdapter(String packId, List<LoadedSkin> skins) {
         this(packId, skins, null);
     }
-    
-    public String getPackId() {
-        return packId;
-    }
-    
-    public List<LoadedSkin> getSkins() {
-        return skins;
-    }
-    
+
     public int size() {
         return skins.size();
     }
-    
+
     public LoadedSkin getSkin(int ordinal) {
         if (ordinal >= 0 && ordinal < skins.size()) {
             return skins.get(ordinal);
         }
         return null;
     }
-    
+
     public int indexOf(LoadedSkin skin) {
         return skins.indexOf(skin);
     }
-    
-    public int indexOf(SkinId skinId) {
-        if (skinId == null) return -1;
-        for (int i = 0; i < skins.size(); i++) {
-            var id = skins.get(i).getSkinId();
-            if (java.util.Objects.equals(id, skinId)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-    
+
     public boolean isEmpty() {
         return skins.isEmpty();
     }
-    
+
     /**
      * Gets all available skin packs from the SkinPackLoader.
      */
@@ -88,7 +61,7 @@ public class SkinPackAdapter {
 
         return packs;
     }
-    
+
     /**
      * Gets a specific pack by ID.
      */

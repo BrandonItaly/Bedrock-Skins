@@ -18,7 +18,6 @@ import java.util.zip.ZipFile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
-import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 
 public final class SkinPackLoader {
@@ -27,7 +26,6 @@ public final class SkinPackLoader {
     public static List<String> packOrder = Collections.emptyList();
 
     private static final Codec<List<String>> PACK_ORDER_CODEC = Codec.list(Codec.STRING);
-    private static final File skinPacksDir = new File("skin_packs");
     private static final Map<String, Map<String, String>> translations = new HashMap<>();
     private static JsonObject vanillaGeometryJson = null;
 
@@ -70,8 +68,9 @@ public final class SkinPackLoader {
         packTypesByPackId.clear();
 
         // Load external skin packs from skin_packs directory
-        if (skinPacksDir.exists()) {
-            File[] children = skinPacksDir.listFiles(File::isDirectory);
+        File currentSkinPacksDir = getSkinPacksDir();
+        if (currentSkinPacksDir.exists()) {
+            File[] children = currentSkinPacksDir.listFiles(File::isDirectory);
             if (children != null) {
                 for (File f : children) loadExternalPack(f);
             }
@@ -84,11 +83,9 @@ public final class SkinPackLoader {
                 Set<String> enabledPacks = new HashSet<>();
                 try {
                     Minecraft client = Minecraft.getInstance();
-                    if (client != null && client.getResourcePackRepository() != null) {
-                        client.getResourcePackRepository().getSelectedIds().forEach(id -> 
+                    client.getResourcePackRepository().getSelectedIds().forEach(id ->
                             enabledPacks.add(id.startsWith("file/") ? id.substring(5) : id)
-                        );
-                    }
+                    );
                 } catch (Exception ignored) {}
 
                 File[] packs = resourcepacksDir.listFiles();
@@ -113,8 +110,7 @@ public final class SkinPackLoader {
         }
 
         Minecraft client = Minecraft.getInstance();
-        if (client == null) return;
-        
+
         ResourceManager manager = client.getResourceManager();
         loadVanillaGeometry(manager);
         
@@ -144,21 +140,16 @@ public final class SkinPackLoader {
         }
     }
 
-    public static /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ registerTextureFor(SkinId id) {
+    public static void registerTextureFor(SkinId id) {
         LoadedSkin skin = getLoadedSkin(id);
-        if (skin == null) return null;
-        if (skin.getIdentifier() != null) return skin.getIdentifier();
+        if (skin == null) return;
+        if (skin.getIdentifier() != null) return;
         
         registerSkinAssets(skin);
-        return skin.getIdentifier();
     }
 
     public static LoadedSkin getLoadedSkin(SkinId id) { 
         return id == null ? null : loadedSkins.get(id); 
-    }
-
-    public static void registerRemoteSkinStatic(String key, String geometryJson, byte[] textureData) {
-        registerRemoteSkin(key, geometryJson, textureData);
     }
 
     public static void registerRemoteSkin(String key, String geometryJson, byte[] textureData) {
@@ -217,10 +208,12 @@ public final class SkinPackLoader {
                 JsonObject geometry = resolveGeometry(entry.getGeometry(), geometryJson);
                 if (geometry == null) continue;
 
-                File textureFile = new File(packDir, entry.getTexture());
+                if (entry.getTexture() == null) continue;
+                String texturePath = entry.getTexture().toLowerCase(Locale.ROOT);
+                File textureFile = new File(packDir, texturePath);
                 if (!textureFile.exists()) continue;
 
-                File capeFile = entry.getCape() != null ? new File(packDir, entry.getCape()) : null;
+                File capeFile = entry.getCape() != null ? new File(packDir, entry.getCape().toLowerCase(Locale.ROOT)) : null;
                 if (capeFile != null && !capeFile.exists()) capeFile = null;
 
                 SkinId id = SkinId.of(manifest.getSerializeName(), entry.getLocalizationName());
@@ -537,6 +530,14 @@ public final class SkinPackLoader {
         if (packType != null && !packType.isEmpty()) {
             packTypesByPackId.put("skinpack." + serializeName, packType);
         }
+    }
+
+    private static File getSkinPacksDir() {
+        try {
+            Minecraft client = Minecraft.getInstance();
+            return new File(client.gameDirectory, "skin_packs");
+        } catch (Exception ignored) {}
+        return new File("skin_packs"); 
     }
 
     private static File getResourcepacksDir() {

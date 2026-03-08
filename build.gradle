@@ -97,15 +97,22 @@ dependencies {
     minecraft "com.mojang:minecraft:${stonecutter.current.version}"
     mappings loom.officialMojangMappings()
     def facVer = project.findProperty("factory_api_version") ?: ""
+
+    def legacyMcVersion = stonecutter.current.version
+
+    if (stonecutter.current.version == "1.21.9" || stonecutter.current.version == "1.21.11") {
+        legacyMcVersion = "1.21.10"
+    }
+
     if (facVer && facVer != "[VERSIONED]") {
-        modApi "wily.factory_api:factory_api-${loader}:${stonecutter.current.version}-${facVer}"
+        // modApi "wily.factory_api:factory_api-${loader}:${stonecutter.current.version}-${facVer}"
+        modCompileOnly "wily.factory_api:factory_api-${loader}:${legacyMcVersion}-${facVer}"
     } else {
         logger.lifecycle("Skipping wily.factory_api dependency for ${project.path} (factory_api_version not set)")
     }
 
-    // def legVer = project.findProperty("legacy4j_version") ?: ""
     if (legVer && legVer != "[VERSIONED]") {
-        modCompileOnly "wily.legacy:legacy-${loader}:${stonecutter.current.version}-${legVer}"
+        modCompileOnly "wily.legacy:legacy-${loader}:${legacyMcVersion}-${legVer}"
     } else {
         logger.lifecycle("Skipping wily.legacy dependency for ${project.path} (legacy4j_version not set)")
     }
