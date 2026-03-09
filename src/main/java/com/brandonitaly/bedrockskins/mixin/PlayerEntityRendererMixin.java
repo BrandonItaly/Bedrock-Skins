@@ -16,7 +16,7 @@ import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Avatar;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -83,7 +83,7 @@ public abstract class PlayerEntityRendererMixin {
     }
 
     @Unique
-    private void bedrockSkins$renderArm(PoseStack matrices, int light, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ skinTexture, boolean sleeveVisible, ModelPart vanillaArm, ModelPart vanillaSleeve, SkinId skinId, ModelPart bedrockArm, ModelPart bedrockSleeve, boolean sleeveIsChild, SubmitNodeCollector queue) {
+    private void bedrockSkins$renderArm(PoseStack matrices, int light, Identifier skinTexture, boolean sleeveVisible, ModelPart vanillaArm, ModelPart vanillaSleeve, SkinId skinId, ModelPart bedrockArm, ModelPart bedrockSleeve, boolean sleeveIsChild, SubmitNodeCollector queue) {
         var bedrockSkin = SkinPackLoader.getLoadedSkin(skinId);
         var texture = (bedrockSkin != null && bedrockSkin.identifier != null) ? bedrockSkin.identifier : skinTexture;
 
@@ -134,7 +134,7 @@ public abstract class PlayerEntityRendererMixin {
     }
 
     @Inject(method = "renderHand", at = @At("HEAD"))
-    private void bedrockSkins$hideVanillaHand(PoseStack matrices, SubmitNodeCollector queue, int light, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ tex, ModelPart arm, boolean sleeve, CallbackInfo ci) {
+    private void bedrockSkins$hideVanillaHand(PoseStack matrices, SubmitNodeCollector queue, int light, Identifier tex, ModelPart arm, boolean sleeve, CallbackInfo ci) {
         this.bedrockSkins$clearOverride();
 
         HumanoidModel<?> model = ((AvatarRenderer<?>)(Object)this).getModel();
@@ -157,7 +157,7 @@ public abstract class PlayerEntityRendererMixin {
     }
 
     @Inject(method = "renderHand", at = @At("TAIL"))
-    private void bedrockSkins$renderBedrockHand(PoseStack matrices, SubmitNodeCollector queue, int light, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ tex, ModelPart arm, boolean sleeveVisible, CallbackInfo ci) {
+    private void bedrockSkins$renderBedrockHand(PoseStack matrices, SubmitNodeCollector queue, int light, Identifier tex, ModelPart arm, boolean sleeveVisible, CallbackInfo ci) {
         if (!this.bedrockSkins$overrideActive || this.bedrockSkins$overrideSkinId == null || this.bedrockSkins$overrideBedrockArm == null) {
             return;
         }
@@ -185,7 +185,7 @@ public abstract class PlayerEntityRendererMixin {
     }
 
     @Inject(method = "getTextureLocation", at = @At("HEAD"), cancellable = true)
-    private void getTexture(AvatarRenderState state, CallbackInfoReturnable</*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/> ci) {
+    private void getTexture(AvatarRenderState state, CallbackInfoReturnable<Identifier> ci) {
         if (state instanceof BedrockRenderStateAccessor skinState) {
             java.util.UUID uuid = skinState.bedrockSkins$getUniqueId();
             if (uuid != null) {

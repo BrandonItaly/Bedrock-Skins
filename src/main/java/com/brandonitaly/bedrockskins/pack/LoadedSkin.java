@@ -1,7 +1,7 @@
 package com.brandonitaly.bedrockskins.pack;
 
 import com.google.gson.JsonObject;
-import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
+import net.minecraft.resources.Identifier;
 
 public class LoadedSkin {
     public final String serializeName;
@@ -17,8 +17,8 @@ public class LoadedSkin {
     private final String safeSkinName;
     private final String packId;
 
-    public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ identifier;
-    public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ capeIdentifier;
+    public Identifier identifier;
+    public Identifier capeIdentifier;
 
     public LoadedSkin(String serializeName, String packDisplayName, String skinDisplayName, JsonObject geometryData, AssetSource texture) {
         this(serializeName, packDisplayName, skinDisplayName, geometryData, texture, null, false);
@@ -57,5 +57,5 @@ public class LoadedSkin {
     public String getSafeSkinName() { return safeSkinName; }
     public SkinId getSkinId() { return skinId; }
 
-    public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ getIdentifier() { return identifier; }
+    public Identifier getIdentifier() { return identifier; }
 }

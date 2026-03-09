@@ -10,18 +10,18 @@ import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.authlib.GameProfile;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.SpriteIconButton;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
-import net.minecraft./*? if <1.21.11 {*//**//*?} else {*/util./*?}*/Util;
+import net.minecraft.util.Util;
+import org.lwjgl.glfw.GLFW;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.UUID;
 

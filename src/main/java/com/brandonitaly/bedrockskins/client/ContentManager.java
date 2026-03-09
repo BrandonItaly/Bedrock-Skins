@@ -11,7 +11,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.slf4j.Logger;
 
@@ -81,7 +81,7 @@ public class ContentManager {
         Collections.sort(namespaces);
 
         for (String namespace : namespaces) {
-            resourceManager.getResource(/*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath(namespace, CATEGORIES_FILE)).ifPresent(resource -> {
+            resourceManager.getResource(Identifier.fromNamespaceAndPath(namespace, CATEGORIES_FILE)).ifPresent(resource -> {
                 try (BufferedReader bufferedReader = resource.openAsReader()) {
                     JsonElement parsed = JsonParser.parseReader(bufferedReader);
                     if (!parsed.isJsonArray()) {

@@ -7,17 +7,17 @@ import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.authlib.GameProfile;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
-import net.minecraft./*? if <1.21.11 {*//**//*?} else {*/util./*?}*/Util;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.Util;
 import net.minecraft.world.entity.LivingEntity;
 
 import java.util.UUID;
@@ -271,10 +271,10 @@ public class SkinPreviewPanel {
     
     private static class FavoriteHeartButton {
         private final SpriteIconButton button;
-        private final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ fullSprite;
+        private final Identifier fullSprite;
         private boolean isFavorited = false;
 
-        public FavoriteHeartButton(int size, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ containerSprite, /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ fullSprite, Button.OnPress onPress) {
+        public FavoriteHeartButton(int size, Identifier containerSprite, Identifier fullSprite, Button.OnPress onPress) {
             this.fullSprite = fullSprite;
             this.button = SpriteIconButton.builder(Component.empty(), onPress, true)
                     .size(size, size).sprite(containerSprite, 12, 12).build();

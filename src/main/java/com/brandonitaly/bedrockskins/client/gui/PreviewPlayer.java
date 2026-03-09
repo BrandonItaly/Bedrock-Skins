@@ -10,7 +10,7 @@ import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.core.ClientAsset;
 import com.brandonitaly.bedrockskins.client.dummy.DummyClientLevel;
-import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.world.entity.player.PlayerSkin;
 import net.minecraft.world.level.GameType;
@@ -38,7 +38,7 @@ public class PreviewPlayer extends RemotePlayer {
     }
 
     // Sets a cape to be forced on the player preview
-    public void setForcedCape(/*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ cape) {
+    public void setForcedCape(Identifier cape) {
         this.forcedCapeTexture = cape != null ? new ResourceTexture(cape, cape) : null;
     }
 

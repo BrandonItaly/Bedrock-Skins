@@ -14,8 +14,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
-import net.minecraft./*? if <1.21.11 {*//**//*?} else {*/util./*?}*/Util;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.Util;
 
 public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEntry> {
 
@@ -161,7 +161,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
             private float hoverYaw = 0f; // degrees
             private long lastHoverTime = Util.getMillis();
 
-            private static final /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ EQUIPPED_BORDER = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "container/equipped_item_border");
+            private static final Identifier EQUIPPED_BORDER = Identifier.fromNamespaceAndPath("bedrockskins", "container/equipped_item_border");
 
             public SkinCell(LoadedSkin skin) {
                 this.skin = skin;
@@ -209,11 +209,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
 
                 if (player != null) {
                     // Update hover rotation state (increment while hovered, reset instantly when not hovered)
-                    //? if >=1.21.11 {
                     long now = Util.getMillis();
-                    //?} else {
-                    /*long now = Util.getMillis();*/
-                    //?}
                     long dt = Math.max(0, now - lastHoverTime);
                     lastHoverTime = now;
                     if (hovered) {

@@ -35,7 +35,7 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;*/
 //?}
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
+import net.minecraft.resources.Identifier;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -53,7 +53,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
                              toggleLeftPantsKey, toggleRightPantsKey, toggleHatKey, toggleMainHandKey, openKey;
 
     public static void createKeybinds() {
-        KeyMapping.Category cat = KeyMapping.Category.register(/*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "controls"));
+        KeyMapping.Category cat = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("bedrockskins", "controls"));
 
         openKey = new KeyMapping("key.bedrockskins.open", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_K, cat);
         toggleCapeKey = new KeyMapping("key.bedrockskins.toggle_cape", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), cat);
@@ -117,7 +117,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
 
     private static final class Reloader implements IdentifiableResourceReloadListener, ResourceManagerReloadListener {
         @Override
-        public /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ getFabricId() { return /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "reloader"); }
+        public Identifier getFabricId() { return Identifier.fromNamespaceAndPath("bedrockskins", "reloader"); }
         @Override
         public void onResourceManagerReload(ResourceManager manager) {
             ContentManager.reloadCategories(manager);

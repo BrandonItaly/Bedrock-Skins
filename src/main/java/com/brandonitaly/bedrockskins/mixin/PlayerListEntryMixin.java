@@ -6,13 +6,14 @@ import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.core.ClientAsset;
-import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerSkin;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import java.util.UUID;
 
 @Mixin(PlayerInfo.class)
 public abstract class PlayerListEntryMixin {
@@ -22,52 +23,36 @@ public abstract class PlayerListEntryMixin {
 
     @Inject(method = "getSkin", at = @At("RETURN"), cancellable = true)
     private void onGetSkinTextures(CallbackInfoReturnable<PlayerSkin> cir) {
-        GameProfile profile = getProfile();
-        java.util.UUID id = profile.id();
+        UUID id = getProfile().id();
         if (id == null) return;
 
-        /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ capeId = null;
-
-        // Check for a Custom Bedrock Skin Cape first
+        // Fetch the skin ID, exit early if none exists
         SkinId skinId = SkinManager.getSkin(id.toString());
-        if (skinId != null) {
-            var loadedSkin = SkinPackLoader.getLoadedSkin(skinId);
-            if (loadedSkin != null) {
-                capeId = loadedSkin.capeIdentifier;
-            }
-        }
+        if (skinId == null) return;
 
-        // Apply modifications if a cape was found from either source
+        // Fetch the loaded skin, exit early if it failed to load
+        var loadedSkin = SkinPackLoader.getLoadedSkin(skinId);
+        if (loadedSkin == null) return;
+
+        // Start with the original vanilla assets
         PlayerSkin original = cir.getReturnValue();
-
-        ClientAsset.Texture capeAsset;
-        ClientAsset.Texture elytraAsset;
-
-        /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ elytraId = /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("minecraft", "textures/entity/equipment/wings/elytra.png");
-
-        // Priority logic for cape and elytra selection
-        boolean hasBedrockCape = skinId != null && capeId != null;
-        boolean hasVanillaCape = original.cape() != null;
-
-        if (hasBedrockCape) {
-            capeAsset = new ClientAsset.ResourceTexture(capeId, capeId);
-            elytraAsset = new ClientAsset.ResourceTexture(elytraId, elytraId);
-        } else if (hasVanillaCape) {
-            capeAsset = original.cape();
-            elytraAsset = original.elytra();
-        } else {
-            capeAsset = null;
-            elytraAsset = null;
-        }
-
-        // Use Bedrock skin texture as body if available
         ClientAsset.Texture bodyAsset = original.body();
-        if (skinId != null) {
-            var loadedSkin = SkinPackLoader.getLoadedSkin(skinId);
-            if (loadedSkin != null && loadedSkin.identifier != null) {
-                bodyAsset = new ClientAsset.ResourceTexture(loadedSkin.identifier, loadedSkin.identifier);
-            }
+        ClientAsset.Texture capeAsset = original.cape();
+        ClientAsset.Texture elytraAsset = original.elytra();
+
+        // Overwrite body if a custom Bedrock body exists
+        if (loadedSkin.identifier != null) {
+            bodyAsset = new ClientAsset.ResourceTexture(loadedSkin.identifier, loadedSkin.identifier);
         }
+
+        // Overwrite cape and elytra if a custom Bedrock cape exists
+        if (loadedSkin.capeIdentifier != null) {
+            capeAsset = new ClientAsset.ResourceTexture(loadedSkin.capeIdentifier, loadedSkin.capeIdentifier);
+            Identifier elytraId = Identifier.withDefaultNamespace("textures/entity/equipment/wings/elytra.png");
+            elytraAsset = new ClientAsset.ResourceTexture(elytraId, elytraId);
+        }
+
+        // Apply the newly assembled skin
         cir.setReturnValue(new PlayerSkin(bodyAsset, capeAsset, elytraAsset, original.model(), original.secure()));
     }
 }

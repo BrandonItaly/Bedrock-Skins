@@ -6,16 +6,17 @@ import com.brandonitaly.bedrockskins.client.gui.PreviewPlayer;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.authlib.GameProfile;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.EntityModelSet;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.util.Mth;
-import net.minecraft.world.InteractionHand;
+import net.minecraft.util.Util;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.world.InteractionHand;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -26,7 +27,7 @@ public class PlayerSkinWidget extends AbstractWidget {
     private static final float ROTATION_X_LIMIT = 50.0F;
     private static final float LEGACY_WALK_SPEED = 0.3F;
     private static final float LEGACY_WALK_DISTANCE = 1.0F;
-    private static final long WALK_SYNC_EPOCH_MS = currentTimeMillis();
+    private static final long WALK_SYNC_EPOCH_MS = Util.getMillis();
     private static final long WALK_STEP_MS = 16L;
     private static final int WALK_BOOTSTRAP_MOD_STEPS = 384;
     private static final float WALK_STEP_SPEED = LEGACY_WALK_SPEED * (WALK_STEP_MS / 50.0F);
@@ -64,7 +65,7 @@ public class PlayerSkinWidget extends AbstractWidget {
     private Integer snapY = null;
     private PreviewPose pendingPose = null;
     private PreviewPose previewPose = PreviewPose.STANDING;
-    private long lastPreviewTickMs = currentTimeMillis();
+    private long lastPreviewTickMs = Util.getMillis();
     
     private boolean skinSetupComplete = false;
 
@@ -102,7 +103,7 @@ public class PlayerSkinWidget extends AbstractWidget {
         }
 
         this.progress = 0;
-        this.start = currentTimeMillis();
+        this.start = Util.getMillis();
         this.prevRotationX = rotationX;
         this.prevRotationY = rotationY;
         this.targetRotationX = targetRotationX;
@@ -132,7 +133,7 @@ public class PlayerSkinWidget extends AbstractWidget {
             this.prevRotationY = targetRotationY;
             this.prevScale = targetScale;
             
-            this.start = currentTimeMillis() - 200L;
+            this.start = Util.getMillis() - 200L;
             this.progress = 2;
             if (this.visible) this.wasHidden = false;
         }
@@ -226,7 +227,7 @@ public class PlayerSkinWidget extends AbstractWidget {
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (!visible) return;
 
-        progress = (currentTimeMillis() - start) / 200f;
+        progress = (Util.getMillis() - start) / 200f;
         interpolate(progress);
         
         if (dummyPlayer != null) {
@@ -258,7 +259,7 @@ public class PlayerSkinWidget extends AbstractWidget {
     }
 
     private void applyLegacyWalkAnimation(PreviewPlayer player) {
-        long now = currentTimeMillis();
+        long now = Util.getMillis();
         int totalSteps = (int) ((now - WALK_SYNC_EPOCH_MS) / WALK_STEP_MS);
 
         player.walkAnimation.stop();
@@ -268,7 +269,7 @@ public class PlayerSkinWidget extends AbstractWidget {
     }
 
     private void initializeWalkAnimationPhase(PreviewPlayer player) {
-        long now = currentTimeMillis();
+        long now = Util.getMillis();
         int bootstrapSteps = (int) (((now - WALK_SYNC_EPOCH_MS) / WALK_STEP_MS) % WALK_BOOTSTRAP_MOD_STEPS);
         if (bootstrapSteps < 0) bootstrapSteps += WALK_BOOTSTRAP_MOD_STEPS;
 
@@ -279,7 +280,7 @@ public class PlayerSkinWidget extends AbstractWidget {
     }
 
     private void advancePreviewSimulation(PreviewPlayer player) {
-        long now = currentTimeMillis();
+        long now = Util.getMillis();
         long elapsed = now - lastPreviewTickMs;
         if (elapsed < PREVIEW_TICK_MS) return;
 
@@ -295,21 +296,13 @@ public class PlayerSkinWidget extends AbstractWidget {
 
         float swingDuration = 6.0F;
         float swingTimeMs = swingDuration * 50.0F;
-        float timeSinceStart = (currentTimeMillis() - WALK_SYNC_EPOCH_MS) % (int)swingTimeMs;
+        float timeSinceStart = (Util.getMillis() - WALK_SYNC_EPOCH_MS) % (int)swingTimeMs;
         float swingProgress = timeSinceStart / swingTimeMs;
 
         player.swinging = true;
         player.swingTime = (int)(swingProgress * swingDuration);
         player.swingingArm = InteractionHand.MAIN_HAND;
         player.attackAnim = swingProgress;
-    }
-
-    private static long currentTimeMillis() {
-        //? if >=1.21.11 {
-        return net.minecraft.util.Util.getMillis();
-        //?} else {
-        /*return net.minecraft.Util.getMillis();*/
-        //?}
     }
 
     protected void onDrag(double deltaX) {

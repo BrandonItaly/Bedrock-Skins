@@ -13,11 +13,7 @@ import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.NativeImage;
-//? if <1.21.11 {
-/*import net.minecraft.resources.ResourceLocation;*/
-//?} else {
 import net.minecraft.resources.Identifier;
-//?}
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -53,13 +49,8 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     private final Map<String, Button> packButtons = new LinkedHashMap<>();
     private final Map<String, SkinPackAdapter> allPacks = new HashMap<>();
     
-    //? if <1.21.11 {
-    /*private final Map<String, ResourceLocation> dynamicIconCache = new HashMap<>();
-    private ResourceLocation createId(String ns, String path) { return ResourceLocation.fromNamespaceAndPath(ns, path); }*/
-    //?} else {
     private final Map<String, Identifier> dynamicIconCache = new HashMap<>();
     private Identifier createId(String ns, String path) { return Identifier.fromNamespaceAndPath(ns, path); }
-    //?}
     
     private boolean queuedChangeSkinPack = false;
     private boolean hasScrolledToInitial = false;
@@ -337,11 +328,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.SKIN_BOX, tx - 5, ty + 16, tw - 14, th - 80);
     }
 
-    //? if <1.21.11 {
-    /*private ResourceLocation resolveFocusedPackIconTexture() {*/
-    //?} else {
     private Identifier resolveFocusedPackIconTexture() {
-    //?}
         if (FAVORITES_PACK_ID.equals(focusedPackId)) return createId("bedrockskins", "skin_packs/vanilla/pack_icon.png");
 
         if (focusedPack != null && !focusedPack.isEmpty()) {
@@ -618,15 +605,10 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     public void onClose() {
         if (playerSkinWidgetList != null) playerSkinWidgetList.widgets.forEach(PlayerSkinWidget::cleanup);
         
-        //? if <1.21.11 {
-        /*for (ResourceLocation id : dynamicIconCache.values()) {
-            if (id != null) minecraft.getTextureManager().release(id);
-        }*/
-        //?} else {
         for (Identifier id : dynamicIconCache.values()) {
             if (id != null) minecraft.getTextureManager().release(id);
         }
-        //?}
+
         dynamicIconCache.clear();
         super.onClose();
     }

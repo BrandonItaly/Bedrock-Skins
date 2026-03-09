@@ -24,10 +24,6 @@ version = stonecutter.current.version + "-" + mod_version
 group = rootProject.maven_group
 def loader = property("loom.platform")
 
-def legVer = project.findProperty("legacy4j_version") ?: ""
-boolean legacy4j = legVer && legVer != "[VERSIONED]"
-stonecutter.const("legacy4j", legacy4j)
-
 repositories {
     mavenCentral()
     maven { url "https://maven.neoforged.net/releases/" }
@@ -88,15 +84,18 @@ repositories {
         }
     }
 }
+
 configurations.configureEach {
     resolutionStrategy {
         force("net.fabricmc:fabric-loader:${fabric_loader_version}")
     }
 }
+
 dependencies {
     minecraft "com.mojang:minecraft:${stonecutter.current.version}"
     mappings loom.officialMojangMappings()
     def facVer = project.findProperty("factory_api_version") ?: ""
+    def legVer = project.findProperty("legacy4j_version") ?: ""
 
     def legacyMcVersion = stonecutter.current.version
 
@@ -125,10 +124,42 @@ dependencies {
     } else if (loader == "forge") {
         forge "net.minecraftforge:forge:${stonecutter.current.version}-${forge_version}"
         compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:${mixin_extras_version}"))
+        implementation(include("io.github.llamalad7:mixinextras-${loader}:${mixin_extras_version}"))
     } else if (loader == "neoforge") {
         neoForge "net.neoforged:neoforge:${neoforge_version}"
     }
+}
 
+stonecutter {
+    replacements {
+        string(stonecutter.eval(stonecutter.current.version, "<1.21.11")) {
+            replace("Identifier", "ResourceLocation")
+        }
+        string(stonecutter.eval(stonecutter.current.version, ">=1.21.11")) {
+            replace("CommonNetwork.Identifier", "CommonNetwork.Identifier")
+        }
+        string(stonecutter.eval(stonecutter.current.version, ">=1.21.11")) {
+            replace("Progress.Identifier", "Progress.Identifier")
+        }
+        string(stonecutter.eval(stonecutter.current.version, ">=1.21.11")) {
+            replace("withSlotIdentifier", "withSlotIdentifier")
+        }
+        string(stonecutter.eval(stonecutter.current.version, ">=1.21.11")) {
+            replace("record Identifier", "record Identifier")
+        }
+        string(stonecutter.eval(stonecutter.current.version, ">=1.21.11")) {
+            replace("SlotsIdentifier", "SlotsIdentifier")
+        }
+        string(stonecutter.eval(stonecutter.current.version, ">=1.21.11")) {
+            replace("IHasIdentifier", "IHasIdentifier")
+        }
+        string(stonecutter.eval(stonecutter.current.version, ">=1.21.11")) {
+            replace("Identifier<T extends Payload>", "Identifier<T extends Payload>")
+        }
+        string(stonecutter.eval(stonecutter.current.version, "<1.21.11")) {
+            replace("import net.minecraft.util.Util;", "import net.minecraft.Util;")
+        }
+    }
 }
 
 def aw = "${mod_id}.accesswidener"
@@ -147,10 +178,11 @@ loom {
 }
 
 def isJava21 = stonecutter.eval(stonecutter.current.version, ">=1.20.5")
+def isJava25 = stonecutter.eval(stonecutter.current.version, ">=26.0")
 
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
-    options.release = isJava21 ? 21 : 17
+    options.release = isJava25 ? 25 : isJava21 ? 21 : 17
 }
 
 def buildJar = tasks.create("buildJar", Copy.class) {
@@ -165,8 +197,8 @@ afterEvaluate {
 
 java {
     withSourcesJar()
-    sourceCompatibility = isJava21 ? JavaVersion.VERSION_21 : JavaVersion.VERSION_17
-    targetCompatibility = isJava21 ? JavaVersion.VERSION_21 : JavaVersion.VERSION_17
+    sourceCompatibility = isJava25 ? JavaVersion.VERSION_25 : isJava21 ? JavaVersion.VERSION_21 : JavaVersion.VERSION_17
+    targetCompatibility = isJava25 ? JavaVersion.VERSION_25 : isJava21 ? JavaVersion.VERSION_21 : JavaVersion.VERSION_17
 }
 remapJar {
     if (loader == "neoforge") atAccessWideners.add aw
@@ -329,7 +361,8 @@ publishMods {
 
     curseforge {
         minecraftVersions.addAll versions
-        if (isJava21) javaVersions.add(JavaVersion.VERSION_21)
+        if (isJava25) javaVersions.add(JavaVersion.VERSION_25)
+        else if (isJava21) javaVersions.add(JavaVersion.VERSION_21)
         else javaVersions.addAll(JavaVersion.VERSION_17,JavaVersion.VERSION_18)
         clientRequired = true
         serverRequired = false

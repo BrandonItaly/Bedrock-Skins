@@ -17,7 +17,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 
 public final class SkinPackLoader {
@@ -31,8 +31,8 @@ public final class SkinPackLoader {
 
     private SkinPackLoader() {}
 
-    private static /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ createIdentifier(String namespace, String path) {
-        return /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath(namespace, path);
+    private static Identifier createIdentifier(String namespace, String path) {
+        return Identifier.fromNamespaceAndPath(namespace, path);
     }
 
     // --- Public API ---
@@ -262,7 +262,7 @@ public final class SkinPackLoader {
                     var textureId = createIdentifier(id.getNamespace(), (packPath + "/" + entry.getTexture()).toLowerCase(Locale.ROOT));
                     if (manager.getResource(textureId).isEmpty()) continue;
 
-                    /*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/ capeId = null;
+                    Identifier capeId = null;
                     
                     if (entry.getCape() != null) {
                         var candidate = createIdentifier(id.getNamespace(), (packPath + "/" + entry.getCape()).toLowerCase(Locale.ROOT));

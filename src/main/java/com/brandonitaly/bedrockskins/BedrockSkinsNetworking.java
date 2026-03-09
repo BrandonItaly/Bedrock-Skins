@@ -6,7 +6,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources./*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/;
+import net.minecraft.resources.Identifier;
 
 import java.util.UUID;
 
@@ -21,7 +21,7 @@ public final class BedrockSkinsNetworking {
 
     // Skin Update Payload (Server -> Client)
     public record SkinUpdatePayload(UUID uuid, SkinId skinId, String geometry, byte[] textureData) implements CustomPacketPayload {
-        public static final CustomPacketPayload.Type<SkinUpdatePayload> ID = new CustomPacketPayload.Type<>(/*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "skin_update"));
+        public static final CustomPacketPayload.Type<SkinUpdatePayload> ID = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("bedrockskins", "skin_update"));
         
         public static final StreamCodec<RegistryFriendlyByteBuf, SkinUpdatePayload> CODEC = StreamCodec.composite(
             UUIDUtil.STREAM_CODEC, SkinUpdatePayload::uuid,
@@ -50,7 +50,7 @@ public final class BedrockSkinsNetworking {
 
     // Set Skin Payload (Client -> Server)
     public record SetSkinPayload(SkinId skinId, String geometry, byte[] textureData) implements CustomPacketPayload {
-        public static final CustomPacketPayload.Type<SetSkinPayload> ID = new CustomPacketPayload.Type<>(/*? if <1.21.11 {*//*ResourceLocation*//*?} else {*/Identifier/*?}*/.fromNamespaceAndPath("bedrockskins", "set_skin"));
+        public static final CustomPacketPayload.Type<SetSkinPayload> ID = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("bedrockskins", "set_skin"));
         
         public static final StreamCodec<RegistryFriendlyByteBuf, SetSkinPayload> CODEC = StreamCodec.composite(
             OPTIONAL_SKIN_ID_CODEC, SetSkinPayload::skinId,
