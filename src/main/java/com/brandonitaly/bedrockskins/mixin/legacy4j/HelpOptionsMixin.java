@@ -23,6 +23,7 @@ public abstract class HelpOptionsMixin extends RenderableVListScreen {
         at = @At(
             value = "INVOKE",
             target = "Lwily/legacy/client/screen/RenderableVList;addRenderable(Lnet/minecraft/client/gui/components/Renderable;)Lwily/legacy/client/screen/RenderableVList;",
+            remap = false,
             ordinal = 0
         )
     )
