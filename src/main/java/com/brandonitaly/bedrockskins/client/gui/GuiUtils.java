@@ -62,6 +62,9 @@ public final class GuiUtils {
         // Get renderer and state
         EntityRenderDispatcher entityRenderDispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
         var entityRenderer = entityRenderDispatcher.getRenderer(entity);
+
+        // Prevent crash if renderers haven't finished loading
+        if (entityRenderer == null) return;
         var entityRenderState = entityRenderer.createRenderState(entity, 1.0F);
         if (entity instanceof PreviewPlayer previewPlayer && previewPlayer.shouldShowName()) {
             entityRenderState.nameTag = entity.getDisplayName();
