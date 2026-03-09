@@ -29,7 +29,9 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.common.NeoForge;
-import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;*/
+import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;*/
 //?}
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -125,9 +127,14 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
 }
 //?} else if neoforge {
 /*
-    public static void init(IEventBus modBus) {
+    public static void init(IEventBus modBus, ModContainer modContainer) {
         modBus.register(BedrockSkinsClient.class);
         NeoForge.EVENT_BUS.register(GameEvents.class);
+
+        // Register the NeoForge Config Screen
+        modContainer.registerExtensionPoint(IConfigScreenFactory.class, (container, parent) -> {
+            return new com.brandonitaly.bedrockskins.client.gui.BedrockSkinsOptionsScreen(parent);
+        });
     }
 
     @SubscribeEvent

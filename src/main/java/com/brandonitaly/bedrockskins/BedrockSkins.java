@@ -14,7 +14,8 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.loading.FMLLoader;*/
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.ModContainer;*/
 //?}
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
@@ -51,13 +52,13 @@ public class BedrockSkins implements ModInitializer {
 //?} else if neoforge {
 /*@Mod("bedrockskins")
 public class BedrockSkins {
-    public BedrockSkins(IEventBus modEventBus) {
+    public BedrockSkins(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::registerPayloads);
         NeoForge.EVENT_BUS.register(this);
         
         // Manual Client Registration to avoid Annotation issues
         if (net.neoforged.fml.loading.FMLEnvironment.getDist().isClient()) {
-            com.brandonitaly.bedrockskins.client.BedrockSkinsClient.init(modEventBus);
+            com.brandonitaly.bedrockskins.client.BedrockSkinsClient.init(modEventBus, modContainer);
         }
     }
 
