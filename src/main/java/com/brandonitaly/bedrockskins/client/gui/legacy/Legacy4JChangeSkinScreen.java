@@ -333,8 +333,9 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
                     }
                 } else {
                     var cached = dynamicIconCache.get(focusedPackId);
-                    if (cached != null || dynamicIconCache.containsKey(focusedPackId)) return cached;
-
+                    if (dynamicIconCache.containsKey(focusedPackId)) {
+                        return cached != null ? cached : createId("bedrockskins", "skin_packs/vanilla/pack_icon.png");
+                    }
                     NativeImage img = ExternalAssetUtil.loadPackIcon(src);
                     if (img != null) {
                         var dynamicId = createId("bedrockskins", "dynamic_icon_" + UUID.randomUUID().toString().replace("-", ""));
