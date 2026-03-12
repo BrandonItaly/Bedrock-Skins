@@ -3,6 +3,7 @@ package com.brandonitaly.bedrockskins.mixin;
 import com.brandonitaly.bedrockskins.client.BedrockSkinsClient;
 import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 import com.brandonitaly.bedrockskins.client.SkinManager;
+import com.brandonitaly.bedrockskins.client.gui.SkinSelectionScreen;
 import com.brandonitaly.bedrockskins.client.gui.GuiUtils;
 import com.brandonitaly.bedrockskins.client.gui.PreviewPlayer;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
@@ -75,7 +76,7 @@ public abstract class TitleScreenMixin extends Screen {
         bedrockskins$updatePreviewSkin();
 
         // Setup Button
-        bedrockskins$openSkinButton = SpriteIconButton.builder(Component.empty(), b -> minecraft.setScreen(BedrockSkinsClient.getAppropriateSkinScreen(this)), true)
+        bedrockskins$openSkinButton = SpriteIconButton.builder(Component.empty(), b -> minecraft.setScreen(new SkinSelectionScreen(this)), true)
             .size(BTN_SIZE, BTN_SIZE).sprite(BedrockSkinsSprites.HANGAR_ICON, 16, 16).build();
         
         bedrockskins$updateLayout();

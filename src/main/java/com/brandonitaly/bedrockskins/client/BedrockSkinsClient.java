@@ -76,7 +76,11 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         
         if (legacyLoaded) {
             try {
-                return LegacyScreenProvider.createLegacyScreen(parent);
+                Class<?> cls = Class.forName("com.brandonitaly.bedrockskins.client.gui.legacy.Legacy4JChangeSkinScreen");
+                Object screen = cls.getConstructor(Screen.class).newInstance(parent);
+                if (screen instanceof Screen legacyScreen) {
+                    return legacyScreen;
+                }
             } catch (Throwable t) {
                 System.err.println("BedrockSkinsClient: Failed to open legacy screen, falling back to default screen.");
             }
