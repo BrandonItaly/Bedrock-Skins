@@ -9,7 +9,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.client.model./*? if <1.21.11 {*//**//*?} else {*/player./*?}*/PlayerModel;
+import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer./*? if <1.21.11 {*//*RenderType*//*?} else {*/rendertype.RenderTypes/*?}*/;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
@@ -66,19 +66,31 @@ public abstract class PlayerEntityRendererMixin {
         var bedrockModel = BedrockModelManager.getModel(skinId);
         if (bedrockModel == null) return false;
 
-        String side = isRightArm ? "right" : "left";
-        var parts = bedrockModel.partsMap;
-
-        var arm = parts.get(side + "_arm");
-        if (arm == null) arm = parts.get(side + "Arm");
+        ModelPart arm = isRightArm ? bedrockModel.customRightArm : bedrockModel.customLeftArm;
         if (arm == null) return false;
 
-        var sleeve = parts.get(side + "_sleeve");
-        if (sleeve == null) sleeve = parts.get(side + "Sleeve");
+        ModelPart sleeve = null;
+        boolean isChild = false;
+
+        if (isRightArm) {
+            if (arm.hasChild("right_sleeve")) { sleeve = arm.getChild("right_sleeve"); isChild = true; }
+            else if (arm.hasChild("rightSleeve")) { sleeve = arm.getChild("rightSleeve"); isChild = true; }
+            else {
+                sleeve = bedrockModel.partsMap.get("right_sleeve");
+                if (sleeve == null) sleeve = bedrockModel.partsMap.get("rightSleeve");
+            }
+        } else {
+            if (arm.hasChild("left_sleeve")) { sleeve = arm.getChild("left_sleeve"); isChild = true; }
+            else if (arm.hasChild("leftSleeve")) { sleeve = arm.getChild("leftSleeve"); isChild = true; }
+            else {
+                sleeve = bedrockModel.partsMap.get("left_sleeve");
+                if (sleeve == null) sleeve = bedrockModel.partsMap.get("leftSleeve");
+            }
+        }
 
         this.bedrockSkins$overrideBedrockArm = arm;
         this.bedrockSkins$overrideBedrockSleeve = sleeve;
-        this.bedrockSkins$overrideSleeveIsChild = arm.hasChild(side + "_sleeve") || arm.hasChild(side + "Sleeve");
+        this.bedrockSkins$overrideSleeveIsChild = isChild;
         return true;
     }
 

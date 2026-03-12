@@ -5,9 +5,10 @@ import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 
-import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -19,10 +20,10 @@ public class ExternalAssetUtil {
     public static NativeImage loadPackIcon(AssetSource src) {
         try {
             if (src instanceof AssetSource.File fSrc) {
-                File file = new File(fSrc.getPath());
-                File iconFile = new File(file.getParentFile(), "pack_icon.png");
-                if (iconFile.exists()) {
-                    try (InputStream in = Files.newInputStream(iconFile.toPath())) {
+                Path file = Paths.get(fSrc.getPath());
+                Path iconFile = file.getParent().resolve("pack_icon.png");
+                if (Files.exists(iconFile)) {
+                    try (InputStream in = Files.newInputStream(iconFile)) {
                         return NativeImage.read(in);
                     }
                 }
@@ -64,7 +65,7 @@ public class ExternalAssetUtil {
                     } catch (Exception e) { return new byte[0]; }
                 }).orElse(new byte[0]);
             } else if (src instanceof AssetSource.File fSrc) {
-                return Files.readAllBytes(new File(fSrc.getPath()).toPath());
+                return Files.readAllBytes(Paths.get(fSrc.getPath()));
             } else if (src instanceof AssetSource.Zip z) {
                 try (ZipFile zip = new ZipFile(z.getZipPath())) {
                     ZipEntry entry = zip.getEntry(z.getInternalPath());
@@ -74,6 +75,8 @@ public class ExternalAssetUtil {
                         }
                     }
                 }
+            } else if (src instanceof AssetSource.Bytes bytes) {
+                return bytes.getData();
             }
         } catch (Exception ignored) {}
         return new byte[0];

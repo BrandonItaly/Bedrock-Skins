@@ -14,6 +14,7 @@ stonecutter parameters {
             replace("ResourceLocation", "Identifier")
             replace("ResourceKey::location", "ResourceKey::identifier")
             replace("net.minecraft.Util", "net.minecraft.util.Util")
+            replace("net.minecraft.client.model.PlayerModel", "net.minecraft.client.model.player.PlayerModel")
         }
     }
 }

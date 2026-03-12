@@ -40,15 +40,9 @@ public abstract class LivingEntityRendererMixin {
                     originalModel = this.model;
                     this.model = bedrockModel;
                     
-                    //? if >=1.21.11 {
                     if (originalModel instanceof net.minecraft.client.model.player.PlayerModel playerModel) {
                         bedrockModel.copyFromVanilla(playerModel);
                     }
-                    //?} else {
-                    /*if (originalModel instanceof net.minecraft.client.model.PlayerModel playerModel) {
-                        bedrockModel.copyFromVanilla(playerModel);
-                    }*/
-                    //?}
                 }
             }
         }

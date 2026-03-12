@@ -29,4 +29,17 @@ public abstract class AssetSource {
         public String getZipPath() { return zipPath; }
         public String getInternalPath() { return internalPath; }
     }
+
+    public static final class Bytes extends AssetSource {
+        private final byte[] data;
+        private final String debugName;
+
+        public Bytes(byte[] data, String debugName) {
+            this.data = data == null ? new byte[0] : data.clone();
+            this.debugName = debugName == null ? "" : debugName;
+        }
+
+        public byte[] getData() { return data.clone(); }
+        public String getDebugName() { return debugName; }
+    }
 }

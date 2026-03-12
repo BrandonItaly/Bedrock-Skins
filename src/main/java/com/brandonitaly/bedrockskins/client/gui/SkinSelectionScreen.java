@@ -69,6 +69,7 @@ public class SkinSelectionScreen extends Screen {
         super.init();
         FavoritesManager.load();
         buildSkinCache();
+        openToCurrentSkin();
         calculateLayout(null);
         
         tabNavigationBar = TabNavigationBar.builder(tabManager, width)
@@ -79,6 +80,17 @@ public class SkinSelectionScreen extends Screen {
         tabNavigationBar.selectTab(activeTab, false);
         setDownloadTabActive(ContentManager.getCategory(STORE_CATEGORY_ID).isPresent());
         repositionElements();
+    }
+
+    private void openToCurrentSkin() {
+        SkinId selectedSkin = SkinManager.getLocalSelectedKey();
+        if (selectedSkin == null) return;
+
+        LoadedSkin loadedSkin = SkinPackLoader.getLoadedSkin(selectedSkin);
+        String packId = loadedSkin != null ? loadedSkin.getId() : ("skinpack." + selectedSkin.pack());
+        if (packId != null && skinCache.containsKey(packId)) {
+            selectedPackId = packId;
+        }
     }
     
     @Override
