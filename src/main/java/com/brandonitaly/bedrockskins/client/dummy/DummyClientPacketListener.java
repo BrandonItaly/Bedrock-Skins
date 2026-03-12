@@ -101,7 +101,7 @@ public class DummyClientPacketListener extends ClientPacketListener {
             .specialEffects(
                 new BiomeSpecialEffects.Builder()
                     .waterColor(4159204)
-                    //? if <=1.21.10 {
+                    //? if <1.21.11 {
                     /*.waterFogColor(329011)
                     .fogColor(12638463)
                     .skyColor(7907327)*/
@@ -118,15 +118,8 @@ public class DummyClientPacketListener extends ClientPacketListener {
 
         //? if >=1.21.11 {
         DimensionType dummyDimension = new DimensionType(
-            false,
-            true,
-            false,
-            1.0,
-            -64,
-            384,
-            384,
-            BlockTags.INFINIBURN_OVERWORLD,
-            0.0f,
+            false, true, false, 1.0, -64, 384, 384,
+            BlockTags.INFINIBURN_OVERWORLD, 0.0f,
             new DimensionType.MonsterSettings(ConstantInt.of(0), 0),
             DimensionType.Skybox.OVERWORLD,
             DimensionType.CardinalLightType.DEFAULT,
@@ -135,22 +128,9 @@ public class DummyClientPacketListener extends ClientPacketListener {
         );
         //?} else {
         /*DimensionType dummyDimension = new DimensionType(
-            OptionalLong.empty(),
-            true,
-            false,
-            false,
-            false,
-            1.0,
-            true,
-            false,
-            -64,
-            384,
-            384,
-            BlockTags.INFINIBURN_OVERWORLD,
-            ResourceLocation.withDefaultNamespace("overworld"),
-            0.0f,
-            Optional.of(384),
-            new DimensionType.MonsterSettings(false, true, ConstantInt.of(0), 0)
+            OptionalLong.empty(), true, false, false, false, 1.0, true, false, -64, 384, 384,
+            BlockTags.INFINIBURN_OVERWORLD, ResourceLocation.withDefaultNamespace("overworld"), 0.0f,
+            Optional.of(384), new DimensionType.MonsterSettings(false, true, ConstantInt.of(0), 0)
         );*/
         //?}
         Registry.register(DUMMY_DIMENSION_TYPE_REGISTRY, BuiltinDimensionTypes.OVERWORLD, dummyDimension);
@@ -168,11 +148,11 @@ public class DummyClientPacketListener extends ClientPacketListener {
             for (Field field : DamageTypes.class.getFields()) {
                 if (!field.getType().equals(net.minecraft.resources.ResourceKey.class)) continue;
                 var key = (net.minecraft.resources.ResourceKey<DamageType>) field.get(null);
-                //? if >=1.21.11 {
+                
+                //~ if <1.21.11 'identifier' -> 'location' {
                 DamageType type = new DamageType(key.identifier().toString(), 0.0f);
-                //?} else {
-                /*DamageType type = new DamageType(key.location().toString(), 0.0f);*/
-                //?}
+                //~}
+                
                 Registry.register(damageTypeRegistry, key, type);
             }
         } catch (IllegalAccessException e) {
