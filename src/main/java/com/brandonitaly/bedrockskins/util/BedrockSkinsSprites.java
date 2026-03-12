@@ -10,6 +10,9 @@ public class BedrockSkinsSprites {
     public static final Identifier PANEL_SPRITE = Identifier.fromNamespaceAndPath("bedrockskins", "container/skin_panel");
     public static final Identifier HANGAR_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/icon_hangar");
     public static final Identifier ROTATE_SPRITE = Identifier.fromNamespaceAndPath("bedrockskins", "container/rotate");
+    public static final Identifier CARD_IDLE = Identifier.fromNamespaceAndPath("bedrockskins", "container/card");
+    public static final Identifier CARD_HOVER = Identifier.fromNamespaceAndPath("bedrockskins", "container/card_hover");
+    public static final Identifier CARD_SELECTED = Identifier.fromNamespaceAndPath("bedrockskins", "container/card_selected");
 
     // Legacy4J textures
     public static final Identifier SQUARE_RECESSED_PANEL = Identifier.fromNamespaceAndPath("legacy", "tiles/square_recessed_panel");

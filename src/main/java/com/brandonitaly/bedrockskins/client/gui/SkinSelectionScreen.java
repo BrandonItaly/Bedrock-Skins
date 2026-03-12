@@ -34,6 +34,7 @@ import java.util.*;
 public class SkinSelectionScreen extends Screen {
     private static final String STORE_CATEGORY_ID = "bedrock_skins";
     private static final String STORE_FOLDER = "skin_packs";
+    private static final String FAVORITES_PACK_ID = "skinpack.Favorites";
 
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
@@ -150,13 +151,30 @@ public class SkinSelectionScreen extends Screen {
         for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
             skinCache.computeIfAbsent(skin.getId(), k -> new ArrayList<>()).add(skin);
         }
+
+        injectAutoSelectedIntoStandardPack();
         
         List<LoadedSkin> favs = new ArrayList<>();
         for (String key : FavoritesManager.getFavoriteKeys()) {
-            LoadedSkin s = SkinPackLoader.getLoadedSkin(SkinId.parse(key));
+            SkinId id = SkinId.parse(key);
+            LoadedSkin s = SkinPackLoader.getLoadedSkin(id);
+            if (s == null && GuiSkinUtils.isAutoSelectedSkinId(id)) {
+                s = resolveAutoSelectedSkinForFavorites();
+            }
             if (s != null) favs.add(s);
         }
-        skinCache.put("skinpack.Favorites", favs);
+        skinCache.put(FAVORITES_PACK_ID, favs);
+    }
+
+    private void injectAutoSelectedIntoStandardPack() {
+        List<LoadedSkin> standardSkins = skinCache.get(GuiSkinUtils.STANDARD_PACK_ID);
+        if (standardSkins == null || standardSkins.isEmpty()) return;
+        skinCache.put(GuiSkinUtils.STANDARD_PACK_ID, GuiSkinUtils.withAutoSelectedStandardFirst(standardSkins));
+    }
+
+    private LoadedSkin resolveAutoSelectedSkinForFavorites() {
+        List<LoadedSkin> standardSkins = skinCache.get(GuiSkinUtils.STANDARD_PACK_ID);
+        return GuiSkinUtils.resolveAutoSelectedFromStandard(standardSkins);
     }
 
     private void calculateLayout(ScreenRectangle tabArea) {
@@ -184,7 +202,7 @@ public class SkinSelectionScreen extends Screen {
 
         int plY = rPacks.y + pHead + pPad, plH = rPacks.h - pHead - (pPad * 2);
         if (packList == null) {
-            packList = new SkinPackListWidget(minecraft, rPacks.w - pPad * 2, plH, plY, 24);
+            packList = new SkinPackListWidget(minecraft, rPacks.w - pPad * 2, plH, plY, 28);
             addRenderableWidget(packList);
         }
         packList.setX(rPacks.x + pPad); packList.setY(plY);
@@ -304,7 +322,7 @@ public class SkinSelectionScreen extends Screen {
             String translationKey = GuiSkinUtils.getPackTranslationKey(pid, firstSkin);
             String fallbackName = GuiSkinUtils.getPackFallbackName(pid, firstSkin);
 
-            packList.addEntryPublic(new SkinPackListWidget.SkinPackEntry(
+                packList.addEntryPublic(packList.new SkinPackEntry(
                     pid, translationKey, fallbackName, this::selectPack, () -> Objects.equals(selectedPackId, pid), font
             ));
         }

@@ -114,24 +114,13 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         SkinPackAdapter standardPack = allPacks.get(STANDARD_PACK_ID);
         if (standardPack == null || standardPack.isEmpty()) return;
 
-        List<LoadedSkin> merged = new ArrayList<>();
-        LoadedSkin autoSkin = createAutoSelectedSkin(standardPack);
-        if (autoSkin != null) merged.add(autoSkin);
-
-        standardPack.skins().stream().filter(s -> !GuiSkinUtils.isAutoSelectedSkin(s)).forEach(merged::add);
+        List<LoadedSkin> merged = GuiSkinUtils.withAutoSelectedStandardFirst(standardPack.skins());
         allPacks.put(STANDARD_PACK_ID, new SkinPackAdapter(STANDARD_PACK_ID, merged, standardPack.packType()));
-    }
-
-    private LoadedSkin createAutoSelectedSkin(SkinPackAdapter standardPack) {
-        LoadedSkin template = standardPack.getSkin(0);
-        return template == null ? null : new LoadedSkin("Standard", "Standard", GuiSkinUtils.AUTO_SELECTED_INTERNAL_NAME,
-                template.getGeometryData(), template.getTexture(), null, false);
     }
 
     private LoadedSkin resolveAutoSelectedSkinForFavorites() {
         SkinPackAdapter standardPack = getPackForUi(STANDARD_PACK_ID);
-        if (standardPack == null) return null;
-        return standardPack.skins().stream().filter(GuiSkinUtils::isAutoSelectedSkin).findFirst().orElseGet(() -> createAutoSelectedSkin(standardPack));
+        return standardPack == null ? null : GuiSkinUtils.resolveAutoSelectedFromStandard(standardPack.skins());
     }
 
     private SkinPackAdapter getPackForUi(String packId) {

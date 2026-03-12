@@ -16,6 +16,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
+import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 
 public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEntry> {
 
@@ -167,13 +168,18 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                 this.skin = skin;
                 this.uuid = UUID.randomUUID();
                 this.name = GuiSkinUtils.getSkinDisplayNameText(skin);
+                this.player = PreviewPlayerPool.get(new GameProfile(uuid, ""));
+
+                if (GuiSkinUtils.isAutoSelectedSkin(skin)) {
+                    GuiSkinUtils.applyAutoSelectedPreview(SkinGridWidget.this.minecraft, this.player, this.uuid);
+                    return;
+                }
 
                 var id = skin.getSkinId();
                 if (id != null) {
                     try {
                         registerTextureFor.accept(id.toString());
                         setPreviewSkin.set(uuid.toString(), id.getPack(), id.getName());
-                        this.player = PreviewPlayerPool.get(new GameProfile(uuid, ""));
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -187,25 +193,18 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
             public void render(GuiGraphics context, int x, int y, int w, int h, boolean hovered, int mouseX, int mouseY) {
                 LoadedSkin selected = getSelectedSkin.get();
                 boolean isSelected = (selected != null && selected.equals(skin));
+                var cardSprite = isSelected
+                        ? BedrockSkinsSprites.CARD_SELECTED
+                        : (hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE);
 
-                int borderColor;
-                if (isSelected) {
-                    borderColor = 0xFFFFFF00;
-                } else if (hovered) {
-                    borderColor = 0xFFFFFFFF;
-                } else {
-                    borderColor = 0xFF000000;
-                }
-
-                int bgColor;
-                if (isSelected) {
-                    bgColor = 0x80555555;
-                } else {
-                    bgColor = 0x40000000;
-                }
-
-                context.fill(x, y, x + w, y + h, bgColor);
-                drawBorder(context, x, y, w, h, borderColor);
+                context.blitSprite(
+                        RenderPipelines.GUI_TEXTURED,
+                        cardSprite,
+                        x,
+                        y,
+                        w,
+                        h
+                );
 
                 if (player != null) {
                     // Update hover rotation state (increment while hovered, reset instantly when not hovered)
@@ -232,13 +231,6 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                 if (hovered) {
                     context.setTooltipForNextFrame(textRenderer, Component.literal(name), mouseX, mouseY);
                 }
-            }
-
-            private void drawBorder(GuiGraphics context, int x, int y, int width, int height, int color) {
-                context.fill(x, y, x + width, y + 1, color);
-                context.fill(x, y + height - 1, x + width, y + height, color);
-                context.fill(x, y + 1, x + 1, y + height - 1, color);
-                context.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
             }
         }
     }

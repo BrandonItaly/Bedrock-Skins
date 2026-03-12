@@ -5,26 +5,40 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
+import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.SkinPackEntry> {
+    private static final int MIN_VISUAL_ROW_HEIGHT = 20;
+    private static final int ROW_LEFT_PADDING = 2;
+    private static final int ROW_RIGHT_PADDING = 10;
+    private final int rowSlotHeight;
+
     public SkinPackListWidget(Minecraft client, int width, int height, int y, int itemHeight) {
         super(client, width, height, y, itemHeight);
+        this.rowSlotHeight = itemHeight;
     }
 
     @Override
-    public int getRowWidth() { return getWidth() - 10; }
+    public int getRowWidth() { return Math.max(10, getWidth() - ROW_RIGHT_PADDING); }
+
+    @Override
+    public int getRowLeft() { return getX() + ROW_LEFT_PADDING; }
 
     @Override
     protected int scrollBarX() { return getX() + getWidth() - 6; }
 
+    @Override
+    protected void renderSelection(GuiGraphics context, SkinPackEntry entry, int color) {}
+
     public void addEntryPublic(SkinPackEntry entry) { super.addEntry(entry); }
     public void clear() { super.clearEntries(); }
 
-    public static class SkinPackEntry extends ObjectSelectionList.Entry<SkinPackEntry> {
+    public class SkinPackEntry extends ObjectSelectionList.Entry<SkinPackEntry> {
         private final String packId;
         private final String translationKey;
         private final String fallbackName;
@@ -44,11 +58,40 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
             this.textRenderer = textRenderer;
         }
 
-        private void renderCommon(GuiGraphics context, int x, int y, boolean hovered) {
+        private void renderCommon(GuiGraphics context, int x, int y, int mouseX, int mouseY, boolean hovered) {
             boolean isSelected = Boolean.TRUE.equals(isSelectedFn.get());
-            int color = isSelected ? 0xFFFFFF00 : (hovered ? 0xFFFFFFA0 : 0xFFFFFFFF);
             String translated = GuiSkinUtils.getTranslatedOrFallback(translationKey, fallbackName);
-            context.drawString(textRenderer, Component.literal(translated), x + 2, y + 6, color);
+
+            int rowWidth = Math.max(10, SkinPackListWidget.this.getRowWidth());
+            int rowHeight = Math.max(MIN_VISUAL_ROW_HEIGHT, rowSlotHeight - 2);
+            int rowY = y + Math.max(0, (rowSlotHeight - rowHeight) / 2);
+
+            int textColor = isSelected ? 0xFFFFFFF0 : hovered ? 0xFFFFFFFF : 0xFFD7D7D7;
+                var cardSprite = isSelected
+                    ? BedrockSkinsSprites.CARD_SELECTED
+                    : (hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE);
+
+            context.blitSprite(
+                    RenderPipelines.GUI_TEXTURED,
+                    cardSprite,
+                    x,
+                        rowY,
+                    rowWidth,
+                    rowHeight
+            );
+
+            int textX = x + 6;
+                    int textY = rowY + (rowHeight - textRenderer.lineHeight) / 2;
+            int maxTextWidth = Math.max(20, rowWidth - 12);
+
+            boolean truncated = textRenderer.width(translated) > maxTextWidth;
+            String shown = truncated
+                    ? textRenderer.plainSubstrByWidth(translated, Math.max(0, maxTextWidth - textRenderer.width("..."))) + "..."
+                    : translated;
+
+            context.drawString(textRenderer, Component.literal(shown), textX, textY, textColor, false);
+
+            if (hovered && truncated) context.setTooltipForNextFrame(textRenderer, Component.literal(translated), mouseX, mouseY);
         }
 
         private boolean clickCommon() {
@@ -58,7 +101,7 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
         }
 
         public void renderContent(GuiGraphics context, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-            renderCommon(context, getX(), getY(), hovered);
+            renderCommon(context, getX(), getY(), mouseX, mouseY, hovered);
         }
 
         public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {

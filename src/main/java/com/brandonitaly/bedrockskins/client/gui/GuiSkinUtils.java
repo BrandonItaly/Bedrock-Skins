@@ -14,10 +14,12 @@ import net.minecraft.network.chat.Component;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 
 public final class GuiSkinUtils {
     public static final String AUTO_SELECTED_TRANSLATION_KEY = "bedrockskins.skin.auto_selected";
     public static final String AUTO_SELECTED_INTERNAL_NAME = "__auto_selected__";
+    public static final String STANDARD_PACK_ID = "skinpack.Standard";
     private static final String FAVORITES_PACK_ID = "skinpack.Favorites";
 
     private GuiSkinUtils() {
@@ -50,6 +52,52 @@ public final class GuiSkinUtils {
         return skinId != null
             && "Standard".equals(skinId.getPack())
             && AUTO_SELECTED_INTERNAL_NAME.equals(skinId.getName());
+    }
+
+    public static LoadedSkin createAutoSelectedSkin(LoadedSkin template) {
+        if (template == null) {
+            return null;
+        }
+        return new LoadedSkin(
+                "Standard",
+                "Standard",
+                AUTO_SELECTED_INTERNAL_NAME,
+                template.getGeometryData(),
+                template.getTexture(),
+                null,
+                false
+        );
+    }
+
+    public static List<LoadedSkin> withAutoSelectedStandardFirst(List<LoadedSkin> standardSkins) {
+        if (standardSkins == null || standardSkins.isEmpty()) {
+            return List.of();
+        }
+
+        List<LoadedSkin> merged = new java.util.ArrayList<>();
+        LoadedSkin autoSelected = createAutoSelectedSkin(standardSkins.getFirst());
+        if (autoSelected != null) {
+            merged.add(autoSelected);
+        }
+
+        for (LoadedSkin skin : standardSkins) {
+            if (!isAutoSelectedSkin(skin)) {
+                merged.add(skin);
+            }
+        }
+        return merged;
+    }
+
+    public static LoadedSkin resolveAutoSelectedFromStandard(List<LoadedSkin> standardSkins) {
+        if (standardSkins == null || standardSkins.isEmpty()) {
+            return null;
+        }
+        for (LoadedSkin skin : standardSkins) {
+            if (isAutoSelectedSkin(skin)) {
+                return skin;
+            }
+        }
+        return createAutoSelectedSkin(standardSkins.getFirst());
     }
 
     public static Component getSkinDisplayName(LoadedSkin skin) {

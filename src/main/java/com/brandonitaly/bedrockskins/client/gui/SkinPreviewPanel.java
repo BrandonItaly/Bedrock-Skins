@@ -121,7 +121,7 @@ public class SkinPreviewPanel {
         String name = minecraft.player != null ? minecraft.player.getName().getString() : "Preview";
         dummyPlayer = PreviewPlayer.PreviewPlayerPool.get(new GameProfile(uuid, name));
 
-        if (skinId == null) {
+        if (skinId == null || GuiSkinUtils.isAutoSelectedSkin(selectedSkin)) {
             applyAutoSelectedSkinBehavior();
         } else {
             GuiSkinUtils.applyLoadedSkinPreview(dummyPlayer, uuid, selectedSkin);
