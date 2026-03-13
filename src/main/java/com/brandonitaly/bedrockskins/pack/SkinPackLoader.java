@@ -261,7 +261,7 @@ public final class SkinPackLoader {
                 String skinKey = stripExtension(fileNameOnly(normalizePckPath(asset.filename())));
                 if (skinKey.isEmpty()) continue;
 
-                String skinDisplayToken = firstNonBlank(getFirstPropertyValue(asset, "DISPLAYNAMEID", "IDS_DISPLAY_NAME"), firstNonBlank(getFirstPropertyValue(asset, "DISPLAYNAME"), skinKey));
+                String skinDisplayToken = firstNonBlank(getFirstPropertyValue(asset, "DISPLAYNAMEID", "IDS_DISPLAY_NAME", "LOC_KEY"), firstNonBlank(getFirstPropertyValue(asset, "DISPLAYNAME"), skinKey));
                 String skinDisplayName = firstNonBlank(PckLocalizationSupport.resolvePckLocalizedToken(skinDisplayToken, pckTranslations, currentLang), skinKey);
 
                 String skinThemeToken = PckLocalizationSupport.deriveSkinThemeToken(asset, skinDisplayToken, skinKey, pckTranslations, currentLang);
@@ -733,7 +733,7 @@ public final class SkinPackLoader {
 
         if (baseName.startsWith("dlcskin") || baseName.startsWith("skin")) return true;
 
-        return getFirstPropertyValue(asset, "ANIM", "DISPLAYNAME", "DISPLAYNAMEID") != null;
+        return getFirstPropertyValue(asset, "ANIM", "DISPLAYNAME", "DISPLAYNAMEID", "LOC_KEY") != null;
     }
 
     private static boolean isLikelyCapeAsset(PckFileParser.PckAsset asset, String normPath, String baseName) {
