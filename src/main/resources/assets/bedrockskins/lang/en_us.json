@@ -31,10 +31,11 @@
   "key.bedrockskins.swap_main_hand": "Swap Main Hand",
   "key.category.bedrockskins.controls": "Bedrock Skins",
 
+  "bedrockskins.option.pack_sort_order": "Sort",
+  "bedrockskins.option.sort.a_to_z": "A-Z",
+  "bedrockskins.option.sort.z_to_a": "Z-A",
   "bedrockskins.option.scan_resourcepacks": "Scan Resource Packs",
   "bedrockskins.option.scan_resourcepacks.tooltip": "Scan all available resource packs for skin packs.\nIf disabled, only skin packs from active resource packs and local skin packs will be loaded.",
-  "bedrockskins.option.enable_builtin_packs": "Built-in Skin Packs",
-  "bedrockskins.option.enable_builtin_packs.tooltip": "Load the built-in skin packs that come bundled with the mod.\nDisable this to only use external skin packs.",
   "bedrockskins.option.show_paper_doll": "Paper Doll",
   "bedrockskins.option.show_paper_doll.tooltip": "Choose where the paper doll and change skin button appear.",
   "bedrockskins.option.show_paper_doll.none": "None",

@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -141,19 +142,29 @@ public class ContentManager {
 
     public static boolean isPackInstalled(Pack pack, String folderName) {
         Path path = getContentDir(folderName).resolve(pack.id());
-        if (!Files.exists(path) || !Files.isDirectory(path)) return false;
+        if (Files.exists(path) && Files.isDirectory(path)) {
+            if (pack.checkSum().isPresent()) {
+                Path checksumFile = path.resolve(".md5");
+                if (Files.exists(checksumFile)) {
+                    try {
+                        String existingChecksum = Files.readString(checksumFile).trim();
+                        return pack.checkSum().get().equals(existingChecksum);
+                    } catch (IOException e) {
+                        return false;
+                    }
+                }
+                return false;
+            }
+
+            return true;
+        }
+
+        Path directFile = getContentDir(folderName).resolve(resolveDownloadFileName(pack));
+        if (!Files.exists(directFile) || Files.isDirectory(directFile)) return false;
 
         if (pack.checkSum().isPresent()) {
-            Path checksumFile = path.resolve(".md5");
-            if (Files.exists(checksumFile)) {
-                try {
-                    String existingChecksum = Files.readString(checksumFile).trim();
-                    return pack.checkSum().get().equals(existingChecksum);
-                } catch (IOException e) {
-                    return false;
-                }
-            }
-            return false; 
+            String existingChecksum = readFileCheckSum(directFile);
+            return existingChecksum != null && pack.checkSum().get().equals(existingChecksum);
         }
 
         return true;
@@ -168,7 +179,7 @@ public class ContentManager {
         Path contentDir = getContentDir(folderName);
         CompletableFuture.runAsync(() -> {
             try {
-                Path downloadedTempFile = Files.createTempFile("legacy_pack_", ".zip");
+                Path downloadedTempFile = Files.createTempFile("legacy_pack_", ".download");
                 
                 try (InputStream stream = new URL(pack.downloadURI()).openStream()) {
                     Files.copy(stream, downloadedTempFile, StandardCopyOption.REPLACE_EXISTING);
@@ -187,20 +198,45 @@ public class ContentManager {
                 if (Files.exists(targetFolder)) {
                     deleteDirectoryRecursively(targetFolder.toFile());
                 }
-                Files.createDirectories(targetFolder);
-                
-                extractZip(downloadedTempFile, targetFolder);
-                Files.deleteIfExists(downloadedTempFile);
-                
-                if (pack.checkSum().isPresent()) {
-                    Files.writeString(targetFolder.resolve(".md5"), pack.checkSum().get());
+
+                if (isZipArchive(downloadedTempFile)) {
+                    Files.createDirectories(targetFolder);
+                    extractZip(downloadedTempFile, targetFolder);
+
+                    if (pack.checkSum().isPresent()) {
+                        Files.writeString(targetFolder.resolve(".md5"), pack.checkSum().get());
+                    }
+                } else {
+                    Path targetFile = contentDir.resolve(resolveDownloadFileName(pack));
+                    Files.deleteIfExists(targetFile);
+                    Files.move(downloadedTempFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
                 }
+
+                Files.deleteIfExists(downloadedTempFile);
 
                 Minecraft.getInstance().execute(onFinished);
             } catch (Exception e) {
                 LOGGER.warn("Error when downloading content pack to {}: {}", contentDir.resolve(pack.id()), e.getMessage());
             }
         });
+    }
+
+    public static void deletePack(Pack pack, String folderName) {
+        Path contentDir = getContentDir(folderName);
+
+        Path extractedDir = contentDir.resolve(pack.id());
+        if (Files.exists(extractedDir) && Files.isDirectory(extractedDir)) {
+            deleteDirectoryRecursively(extractedDir.toFile());
+        }
+
+        Path directFile = contentDir.resolve(resolveDownloadFileName(pack));
+        try {
+            if (Files.exists(directFile) && !Files.isDirectory(directFile)) {
+                Files.deleteIfExists(directFile);
+            }
+        } catch (IOException e) {
+            LOGGER.warn("Failed to delete content file {}: {}", directFile, e.getMessage());
+        }
     }
 
     private static void deleteDirectoryRecursively(File directory) {
@@ -235,5 +271,30 @@ public class ContentManager {
                 zis.closeEntry();
             }
         }
+    }
+
+    private static boolean isZipArchive(Path file) {
+        try (InputStream input = Files.newInputStream(file)) {
+            byte[] header = input.readNBytes(4);
+            if (header.length < 4) return false;
+
+            // ZIP local file header and empty/split archive signatures.
+            return (header[0] == 'P' && header[1] == 'K'
+                && ((header[2] == 3 && header[3] == 4)
+                || (header[2] == 5 && header[3] == 6)
+                || (header[2] == 7 && header[3] == 8)));
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    private static String resolveDownloadFileName(Pack pack) {
+        try {
+            String path = new URL(pack.downloadURI()).getPath();
+            String name = Paths.get(path).getFileName() != null ? Paths.get(path).getFileName().toString() : "";
+            if (!name.isBlank()) return name;
+        } catch (Exception ignored) {}
+
+        return pack.id() + ".pck";
     }
 }

@@ -1,12 +1,14 @@
 package com.brandonitaly.bedrockskins.client.gui.legacy;
 
 import com.brandonitaly.bedrockskins.client.ClientSkinSync;
+import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.client.StateManager;
 import com.brandonitaly.bedrockskins.client.gui.GuiSkinUtils;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
+import com.brandonitaly.bedrockskins.util.PackSortUtil;
 import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
@@ -66,11 +68,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         rebuildFavoritesPack();
         
         List<String> sortedPackIds = new ArrayList<>(allPacks.keySet());
-        sortedPackIds.sort((k1, k2) -> {
-            int i1 = SkinPackLoader.packOrder.indexOf(k1), i2 = SkinPackLoader.packOrder.indexOf(k2);
-            if (i1 != -1 && i2 != -1) return Integer.compare(i1, i2);
-            return (i1 != -1) ? -1 : ((i2 != -1) ? 1 : k1.compareToIgnoreCase(k2));
-        });
+        sortedPackIds.sort(buildPackComparator());
         
         sortedPackIds.remove(FAVORITES_PACK_ID);
         sortedPackIds.add(1, FAVORITES_PACK_ID);
@@ -92,6 +90,15 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         }
         
         openToCurrentSkin();
+    }
+
+    private Comparator<String> buildPackComparator() {
+        return PackSortUtil.buildPackComparator(BedrockSkinsConfig.getPackSortOrder(), this::resolveSortDisplayName);
+    }
+
+    private String resolveSortDisplayName(String packId) {
+        SkinPackAdapter pack = allPacks.get(packId);
+        return resolvePackDisplayName(packId, pack);
     }
 
     private String resolvePackDisplayName(String packId, SkinPackAdapter pack) {

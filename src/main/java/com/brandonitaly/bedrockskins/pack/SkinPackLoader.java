@@ -111,7 +111,7 @@ public final class SkinPackLoader {
             }
         }
         
-        if (BedrockSkinsConfig.isEnableBuiltInSkinPacksEnabled()) loadInternalPacks(manager);
+        loadInternalPacks(manager);
         loadPackOrder(manager);
     }
 
