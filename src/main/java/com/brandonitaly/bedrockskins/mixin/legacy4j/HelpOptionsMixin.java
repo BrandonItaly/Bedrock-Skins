@@ -25,13 +25,11 @@ public abstract class HelpOptionsMixin extends RenderableVListScreen {
         at = @At(
             value = "INVOKE",
             target = "Lwily/legacy/client/screen/RenderableVList;addRenderable(Lnet/minecraft/client/gui/components/Renderable;)Lwily/legacy/client/screen/RenderableVList;",
-            remap = false,
             ordinal = 0
         )
     )
     private RenderableVList bedrockskins$ChangeSkinButton(RenderableVList instance, Renderable renderable, Operation<RenderableVList> original) {
         original.call(instance, openScreenButton(Component.translatable("legacy.menu.change_skin"), () -> {
-            // Works for both Fabric and NeoForge
             return com.brandonitaly.bedrockskins.client.BedrockSkinsClient.getAppropriateSkinScreen(this);
         }).build());
         return instance;
