@@ -149,6 +149,7 @@ final class PckModelConverter {
                     if (baseType != null) {
                         Float offsetY = offsets.get(baseType);
                         if (offsetY != null && Math.abs(offsetY) > 0.0001f) {
+                            applyOffsetToBoneCubesY(bone, offsetY);
                             applyPivotOffsetY(bone, lowerBoneName, offsetY);
                         }
                     }
@@ -289,6 +290,23 @@ final class PckModelConverter {
         }
 
         bone.add("pivot", createJsonArray(x, y - offsetY, z));
+    }
+
+    private static void applyOffsetToBoneCubesY(JsonObject bone, float offsetY) {
+        JsonArray cubes = bone.getAsJsonArray("cubes");
+        if (cubes == null || cubes.isEmpty()) return;
+
+        for (JsonElement cubeEl : cubes) {
+            if (!cubeEl.isJsonObject()) continue;
+            JsonObject cube = cubeEl.getAsJsonObject();
+            JsonArray origin = cube.getAsJsonArray("origin");
+            if (origin == null || origin.size() < 3) continue;
+
+            float x = origin.get(0).getAsFloat();
+            float y = origin.get(1).getAsFloat();
+            float z = origin.get(2).getAsFloat();
+            cube.add("origin", createJsonArray(x, y - offsetY, z));
+        }
     }
 
     private static boolean isVanillaCubeForBone(JsonObject cube, String lowerBoneName) {
