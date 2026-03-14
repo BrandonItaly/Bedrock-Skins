@@ -4,7 +4,6 @@ import com.brandonitaly.bedrockskins.client.BedrockModelManager;
 import com.brandonitaly.bedrockskins.client.BedrockPlayerModel;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.SkinId;
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.entity.player.Player;
@@ -17,16 +16,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class GameRendererMixin {
 
     @Inject(method = "bobView", at = @At("HEAD"), cancellable = true)
-    private void bedrockSkins$disableBobView(PoseStack matrices, float partialTicks, CallbackInfo ci) {
-        Minecraft client = Minecraft.getInstance();
-        if (client.getCameraEntity() instanceof Player player) {
-            SkinId skinId = SkinManager.getSkin(player.getUUID());
-            if (skinId != null) {
-                BedrockPlayerModel model = BedrockModelManager.getModel(skinId);
-                if (model != null && model.isStationaryLegs()) {
-                    ci.cancel();
-                }
-            }
+    private void bedrockSkins$disableBobView(CallbackInfo ci) {
+        if (!(Minecraft.getInstance().getCameraEntity() instanceof Player player)) return;
+        
+        SkinId skinId = SkinManager.getSkin(player.getUUID());
+        if (skinId == null) return;
+        
+        BedrockPlayerModel model = BedrockModelManager.getModel(skinId);
+        if (model != null && model.isStationaryLegs()) {
+            ci.cancel();
         }
     }
 }

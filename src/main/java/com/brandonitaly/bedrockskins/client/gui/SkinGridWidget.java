@@ -66,7 +66,6 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
         return this.getX() + this.width - 6;
     }
 
-    @Override
     protected void renderSelection(GuiGraphics context, SkinRowEntry entry, int color) {}
 
     public void addEntryPublic(SkinRowEntry entry) {
@@ -101,7 +100,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
 
         // --- Shared Logic ---
 
-        private void renderCommon(GuiGraphics context, int x, int y, int mouseX, int mouseY) {
+        private void renderCommon(GuiGraphics gui, int x, int y, int mouseX, int mouseY) {
             // Calculate grid widget bounds
             int gridLeft = SkinGridWidget.this.getX();
             int gridTop = SkinGridWidget.this.getY();
@@ -113,7 +112,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                 int cx = x + (i * (CELL_WIDTH + CELL_PADDING));
                 // Only allow hover if mouse is inside grid widget
                 boolean isHovered = mouseInGrid && mouseX >= cx && mouseX < cx + CELL_WIDTH && mouseY >= y && mouseY < y + CELL_HEIGHT;
-                cell.render(context, cx, y, CELL_WIDTH, CELL_HEIGHT, isHovered, mouseX, mouseY);
+                cell.render(gui, cx, y, CELL_WIDTH, CELL_HEIGHT, isHovered, mouseX, mouseY);
             }
         }
 
@@ -139,8 +138,8 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
 
         // --- Version Specific Wrappers ---
 
-        public void renderContent(GuiGraphics context, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-            renderCommon(context, getX(), getY(), mouseX, mouseY);
+        public void renderContent(GuiGraphics gui, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+            renderCommon(gui, getX(), getY(), mouseX, mouseY);
         }
 
         public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {

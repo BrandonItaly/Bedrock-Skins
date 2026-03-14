@@ -13,6 +13,7 @@ import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
@@ -179,7 +180,7 @@ public class SkinPreviewPanel {
         if (selectButton != null) selectButton.active = selectedSkin != null;
     }
 
-    public void render(GuiGraphics gui, int mouseX) {
+    public void renderPreview(GuiGraphics gui, int mouseX) {
         GuiUtils.drawPanelChrome(gui, x, y, width, height, Component.translatable("bedrockskins.gui.preview"), font);
 
         int PANEL_HEADER_HEIGHT = 24;
@@ -221,14 +222,29 @@ public class SkinPreviewPanel {
 
             int rotateY = Math.min((int)(centerY + (scale * 0.95f)), textY - rotateH - 4);
             gui.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.ROTATE_SPRITE, centerX - (rotateW / 2), rotateY, rotateW, rotateH);
-            
-            int currentTextY = textY;
-            if (nameToRender != null && !nameToRender.isEmpty()) {
-                gui.drawCenteredString(font, nameToRender, centerX, currentTextY, 0xFFAAAAAA);
-                currentTextY += font.lineHeight + textGap;
-            }
-            if (descToRender != null && !descToRender.isEmpty()) {
-                gui.drawCenteredString(font, descToRender, centerX, currentTextY, 0xFFAAAAAA);
+
+            boolean hasName = nameToRender != null && !nameToRender.isEmpty();
+            boolean hasDesc = descToRender != null && !descToRender.isEmpty();
+
+            if (hasName || hasDesc) {
+                int lineGap = 2;
+                
+                int textWidth = Math.max(hasName ? font.width(nameToRender) : 0, hasDesc ? font.width(descToRender) : 0);
+                int textHeight = font.lineHeight + (hasName && hasDesc ? font.lineHeight + lineGap : 0) - 1;
+
+                int tooltipX = Math.max(x + 8, Math.min(centerX - (textWidth / 2), x + width - textWidth - 8));
+                int tooltipCenterX = tooltipX + (textWidth / 2);
+
+                TooltipRenderUtil.renderTooltipBackground(gui, tooltipX, textY, textWidth, textHeight, null);
+
+                int textYCursor = textY;
+                if (hasName) {
+                    gui.drawCenteredString(font, nameToRender, tooltipCenterX, textYCursor, 0xFFFFFFFF);
+                    textYCursor += font.lineHeight + lineGap;
+                }
+                if (hasDesc) {
+                    gui.drawCenteredString(font, descToRender, tooltipCenterX, textYCursor, 0xFFAAAAAA);
+                }
             }
         }
     }

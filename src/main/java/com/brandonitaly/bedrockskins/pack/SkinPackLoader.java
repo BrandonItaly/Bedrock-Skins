@@ -265,10 +265,9 @@ public final class SkinPackLoader {
                 String skinDisplayName = firstNonBlank(PckLocalizationSupport.resolvePckLocalizedToken(skinDisplayToken, pckTranslations, currentLang), skinKey);
 
                 String skinThemeToken = PckLocalizationSupport.deriveSkinThemeToken(asset, skinDisplayToken, skinKey, pckTranslations, currentLang);
-                String skinTheme = PckLocalizationSupport.resolvePckLocalizedToken(skinThemeToken, pckTranslations, currentLang);
-                if (skinThemeToken != null && skinTheme != null && skinTheme.equalsIgnoreCase(PckLocalizationSupport.cleanLocText(skinThemeToken))) {
-                    skinTheme = null;
-                }
+                String resolvedTheme = PckLocalizationSupport.resolvePckLocalizedToken(skinThemeToken, pckTranslations, currentLang);
+                boolean isUnlocalized = resolvedTheme != null && resolvedTheme.equalsIgnoreCase(PckLocalizationSupport.cleanLocText(skinThemeToken));
+                String skinTheme = firstNonBlank(isUnlocalized ? null : resolvedTheme, getFirstPropertyValue(asset, "THEMENAME"));
 
                 Long animMask = PckModelConverter.parseAnimMask(asset);
                 boolean slim = PckModelConverter.isSlim(animMask);

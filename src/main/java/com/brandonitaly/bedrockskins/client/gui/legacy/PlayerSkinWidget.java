@@ -223,7 +223,6 @@ public class PlayerSkinWidget extends AbstractWidget {
         }
     }
 
-    @Override
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (!visible) return;
 

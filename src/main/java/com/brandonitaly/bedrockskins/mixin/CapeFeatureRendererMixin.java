@@ -25,17 +25,13 @@ public abstract class CapeFeatureRendererMixin {
             //? if >=1.21.11 {
             target = "Lnet/minecraft/client/renderer/rendertype/RenderTypes;entitySolid(Lnet/minecraft/resources/Identifier;)Lnet/minecraft/client/renderer/rendertype/RenderType;"
             //?} else {
-            /*target = "Lnet/minecraft/client/renderer/RenderType;entitySolid(Lnet/minecraft/resources/ResourceLocation;)Lnet/minecraft/client/renderer/RenderType;"*/
+            /*target = "Lnet/minecraft/client/renderer/RenderType;entitySolid(Lnet/minecraft/resources/Identifier;)Lnet/minecraft/client/renderer/RenderType;"*/
             //?}
         )
     )
-    //? if >=1.21.11 {
     private RenderType useTranslucentLayer(Identifier texture, Operation<RenderType> original) {
+        //~ if <1.21.11 'RenderTypes' -> 'RenderType' {
         return RenderTypes.entityTranslucent(texture);
+        //~}
     }
-    //?} else {
-    /*private RenderType useTranslucentLayer(ResourceLocation texture, Operation<RenderType> original) {
-        return RenderType.entityTranslucent(texture);
-    }*/
-    //?}
 }
