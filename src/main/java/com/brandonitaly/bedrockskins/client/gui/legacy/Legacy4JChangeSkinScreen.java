@@ -409,7 +409,15 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if ((isInBounds(mouseX, mouseY, tooltipBox.getX(), panel.getY(), tooltipBox.getWidth(), tooltipBox.getHeight()) || !ControlType.getActiveType().isKbm()) && scrollableRenderer.mouseScrolled(scrollY)) return true;
+        if (playerSkinWidgetList != null && isInBounds(mouseX, mouseY, tooltipBox.getX() - 5, panel.getY() + 16, tooltipBox.getWidth() - 14, tooltipBox.getHeight() - 80)) {
+            control(scrollY > 0, scrollY < 0);
+            return true;
+        }
+
+        if ((!ControlType.getActiveType().isKbm() || isInBounds(mouseX, mouseY, tooltipBox.getX(), panel.getY(), tooltipBox.getWidth(), tooltipBox.getHeight())) && scrollableRenderer.mouseScrolled(scrollY)) {
+            return true;
+        }
+        
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 

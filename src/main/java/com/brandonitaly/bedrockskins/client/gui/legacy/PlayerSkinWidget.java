@@ -1,5 +1,6 @@
 package com.brandonitaly.bedrockskins.client.gui.legacy;
 
+import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.client.gui.GuiSkinUtils;
 import com.brandonitaly.bedrockskins.client.gui.PreviewPlayer;
@@ -226,7 +227,13 @@ public class PlayerSkinWidget extends AbstractWidget {
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (!visible) return;
 
-        progress = (Util.getMillis() - start) / 200f;
+        long elapsed = Util.getMillis() - start;
+        
+        if (!BedrockSkinsConfig.isSmoothInterpolationEnabled()) {
+            elapsed = (elapsed / 33L) * 33L;
+        }
+
+        progress = elapsed / 200f;
         interpolate(progress);
         
         if (dummyPlayer != null) {

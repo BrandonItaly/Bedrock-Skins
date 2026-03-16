@@ -35,7 +35,7 @@
   "bedrockskins.option.sort.a_to_z": "A-Z",
   "bedrockskins.option.sort.z_to_a": "Z-A",
   "bedrockskins.option.scan_resourcepacks": "Scan Resource Packs",
-  "bedrockskins.option.scan_resourcepacks.tooltip": "Scan all available resource packs for skin packs.\nIf disabled, only skin packs from active resource packs and local skin packs will be loaded.",
+  "bedrockskins.option.scan_resourcepacks.tooltip": "Scan all available resource packs for skin packs. Disabling will only load skin packs from active resource packs and local skin packs.",
   "bedrockskins.option.show_paper_doll": "Paper Doll",
   "bedrockskins.option.show_paper_doll.tooltip": "Choose where the paper doll and change skin button appear.",
   "bedrockskins.option.show_paper_doll.none": "None",
@@ -47,7 +47,9 @@
   "bedrockskins.option.paper_doll_side.left": "Left",
   "bedrockskins.option.paper_doll_side.right": "Right",
   "bedrockskins.option.skin_animations": "Skin Animations",
-  "bedrockskins.option.skin_animations.tooltip": "Choose whether skins with unique animations will use their animations or not.\nIf disabled, all skins will use their default animations.",
+  "bedrockskins.option.skin_animations.tooltip": "Choose whether skins with unique animations will use their animations or not. Disabling this will make all skins use the default player animations.",
   "bedrockskins.option.adjust_camera_height": "Scale Camera to Model",
-  "bedrockskins.option.adjust_camera_height.tooltip": "When enabled, your eye level will automatically adjust if you are using a skin that is shorter or taller than a normal Minecraft player."
+  "bedrockskins.option.adjust_camera_height.tooltip": "When enabled, your eye level will automatically adjust if you are using a skin that is shorter or taller than a normal Minecraft player.",
+  "bedrockskins.option.smooth_interpolation": "Smooth Interpolation",
+  "bedrockskins.option.smooth_interpolation.tooltip": "Smooths the movement of the skin carousel. Disabling this limits the animation to 30 FPS."
 }
