@@ -1,5 +1,6 @@
 package com.brandonitaly.bedrockskins.client.gui.legacy;
 
+//? if <26.0 {
 import com.brandonitaly.bedrockskins.client.ClientSkinSync;
 import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
@@ -610,3 +611,4 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         super.onClose();
     }
 }
+//?}

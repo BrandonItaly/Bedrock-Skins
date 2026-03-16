@@ -118,7 +118,8 @@ public abstract class PauseScreenMixin extends Screen {
         return mouseX >= l && mouseX <= l + PREVIEW_W && mouseY >= t && mouseY <= t + PREVIEW_H;
     }
 
-    @Inject(method = "render", at = @At("TAIL"))
+    //~ if >=26.0 'render' -> 'extractRenderState' {
+    @Inject(method = "render", at = @At("TAIL"))//~}
     private void bedrockskins$renderPausePreview(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         if (bedrockskins$pausePreviewPlayer == null || !BedrockSkinsConfig.isShowPaperDollOnPauseScreen()) return;
 

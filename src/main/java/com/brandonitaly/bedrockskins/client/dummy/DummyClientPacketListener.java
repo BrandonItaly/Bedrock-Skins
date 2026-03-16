@@ -29,10 +29,15 @@ import net.minecraft.world.level.biome.MobSpawnSettings;
 import net.minecraft.world.level.biome.BiomeGenerationSettings;
 import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
 import net.minecraft.world.level.dimension.DimensionType;
+//? if >=26.0 {
+/*import DimensionType.CardinalLightType;
+import net.minecraft.world.clock.WorldClock;
+import java.util.Optional;
+*///?}
 //? if >=1.21.11 {
 import net.minecraft.world.attribute.EnvironmentAttributeMap;
 //?} else {
-/*import net.minecraft.resources.ResourceLocation;
+/*import net.minecraft.resources.Identifier;
 import java.util.Optional;
 import java.util.OptionalLong;*/
 //?}
@@ -65,26 +70,15 @@ public class DummyClientPacketListener extends ClientPacketListener {
             new Connection(PacketFlow.CLIENTBOUND),
             new CommonListenerCookie(
                 new LevelLoadTracker(),
-                getProfile(),
+                Minecraft.getInstance().getGameProfile(),
                 new WorldSessionTelemetryManager(TelemetryEventSender.DISABLED, true, Duration.ZERO, null),
                 DUMMY_REGISTRY_ACCESS,
                 FeatureFlags.DEFAULT_FLAGS,
                 "bedrockskins-dummy",
-                null,
-                null,
-                Map.of(),
-                null,
-                Map.of(),
-                ServerLinks.EMPTY,
-                Map.of(),
-                true
+                null, null, Map.of(), null, Map.of(),
+                ServerLinks.EMPTY, Map.of(), true
             )
         );
-    }
-
-    private static GameProfile getProfile() {
-        Minecraft minecraft = Minecraft.getInstance();
-        return minecraft.getGameProfile();
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -93,57 +87,64 @@ public class DummyClientPacketListener extends ClientPacketListener {
         Map registries = new HashMap();
         builtins.registries().forEach(entry -> registries.put(entry.key(), entry.value()));
 
-        MappedRegistry<Biome> biomeRegistry = new MappedRegistry<>(Registries.BIOME, Lifecycle.stable());
-        Biome dummyBiome = new Biome.BiomeBuilder()
-            .hasPrecipitation(true)
-            .temperature(0.8f)
-            .downfall(0.4f)
-            .specialEffects(
-                new BiomeSpecialEffects.Builder()
-                    .waterColor(4159204)
-                    //? if <1.21.11 {
-                    /*.waterFogColor(329011)
-                    .fogColor(12638463)
-                    .skyColor(7907327)*/
-                    //?}
-                    .build()
-            )
-            .mobSpawnSettings(MobSpawnSettings.EMPTY)
-            .generationSettings(BiomeGenerationSettings.EMPTY)
-            .build();
-        Registry.register(biomeRegistry, Biomes.PLAINS, dummyBiome);
-
-        MappedRegistry<DamageType> damageTypeRegistry = new MappedRegistry<>(Registries.DAMAGE_TYPE, Lifecycle.stable());
-        registerDamageTypes(damageTypeRegistry);
-
-        //? if >=1.21.11 {
-        DimensionType dummyDimension = new DimensionType(
-            false, true, false, 1.0, -64, 384, 384,
-            BlockTags.INFINIBURN_OVERWORLD, 0.0f,
-            new DimensionType.MonsterSettings(ConstantInt.of(0), 0),
-            DimensionType.Skybox.OVERWORLD,
-            DimensionType.CardinalLightType.DEFAULT,
-            EnvironmentAttributeMap.EMPTY,
-            HolderSet.empty()
-        );
-        //?} else {
-        /*DimensionType dummyDimension = new DimensionType(
-            OptionalLong.empty(), true, false, false, false, 1.0, true, false, -64, 384, 384,
-            BlockTags.INFINIBURN_OVERWORLD, ResourceLocation.withDefaultNamespace("overworld"), 0.0f,
-            Optional.of(384), new DimensionType.MonsterSettings(false, true, ConstantInt.of(0), 0)
-        );*/
-        //?}
-        Registry.register(DUMMY_DIMENSION_TYPE_REGISTRY, BuiltinDimensionTypes.OVERWORLD, dummyDimension);
-
-        registries.put(Registries.BIOME, biomeRegistry);
-        registries.put(Registries.DAMAGE_TYPE, damageTypeRegistry);
+        registries.put(Registries.BIOME, createDummyBiomeRegistry());
+        registries.put(Registries.DAMAGE_TYPE, createDummyDamageTypeRegistry());
+        
+        registerDummyDimension();
         registries.put(Registries.DIMENSION_TYPE, DUMMY_DIMENSION_TYPE_REGISTRY);
 
         return new RegistryAccess.ImmutableRegistryAccess(registries).freeze();
     }
 
-    @SuppressWarnings({"unchecked"})
-    private static void registerDamageTypes(MappedRegistry<DamageType> damageTypeRegistry) {
+    private static MappedRegistry<Biome> createDummyBiomeRegistry() {
+        MappedRegistry<Biome> biomeRegistry = new MappedRegistry<>(Registries.BIOME, Lifecycle.stable());
+        Biome dummyBiome = new Biome.BiomeBuilder()
+            .hasPrecipitation(true)
+            .temperature(0.8f)
+            .downfall(0.4f)
+            .specialEffects(new BiomeSpecialEffects.Builder()
+                .waterColor(4159204)
+                //? if <1.21.11 {
+                /*.waterFogColor(329011)
+                .fogColor(12638463)
+                .skyColor(7907327)*/
+                //?}
+                .build()
+            )
+            .mobSpawnSettings(MobSpawnSettings.EMPTY)
+            .generationSettings(BiomeGenerationSettings.EMPTY)
+            .build();
+            
+        Registry.register(biomeRegistry, Biomes.PLAINS, dummyBiome);
+        return biomeRegistry;
+    }
+
+    private static void registerDummyDimension() {
+        //? if >=26.0 {
+        /*DimensionType dummyDimension = new DimensionType(
+            false, true, false, false, 1.0, -64, 384, 384, BlockTags.INFINIBURN_OVERWORLD, 0.0f,
+            new DimensionType.MonsterSettings(ConstantInt.of(0), 0),
+            DimensionType.Skybox.OVERWORLD, Type.DEFAULT, EnvironmentAttributeMap.EMPTY, HolderSet.empty(), Optional.empty()
+        );
+        *///?} else if >=1.21.11 {
+        DimensionType dummyDimension = new DimensionType(
+            false, true, false, 1.0, -64, 384, 384, BlockTags.INFINIBURN_OVERWORLD, 0.0f,
+            new DimensionType.MonsterSettings(ConstantInt.of(0), 0),
+            DimensionType.Skybox.OVERWORLD, DimensionType.CardinalLightType.DEFAULT, EnvironmentAttributeMap.EMPTY, HolderSet.empty()
+        );
+        //?} else {
+        /*DimensionType dummyDimension = new DimensionType(
+            OptionalLong.empty(), true, false, false, false, 1.0, true, false, -64, 384, 384,
+            BlockTags.INFINIBURN_OVERWORLD, Identifier.withDefaultNamespace("overworld"), 0.0f,
+            Optional.of(384), new DimensionType.MonsterSettings(false, true, ConstantInt.of(0), 0)
+        );*/
+        //?}
+        Registry.register(DUMMY_DIMENSION_TYPE_REGISTRY, BuiltinDimensionTypes.OVERWORLD, dummyDimension);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static MappedRegistry<DamageType> createDummyDamageTypeRegistry() {
+        MappedRegistry<DamageType> damageTypeRegistry = new MappedRegistry<>(Registries.DAMAGE_TYPE, Lifecycle.stable());
         try {
             for (Field field : DamageTypes.class.getFields()) {
                 if (!field.getType().equals(net.minecraft.resources.ResourceKey.class)) continue;
@@ -158,5 +159,6 @@ public class DummyClientPacketListener extends ClientPacketListener {
         } catch (IllegalAccessException e) {
             throw new RuntimeException("Failed to initialize dummy damage type registry", e);
         }
+        return damageTypeRegistry;
     }
 }

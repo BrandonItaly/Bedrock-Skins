@@ -1,13 +1,10 @@
 package com.brandonitaly.bedrockskins.client;
 
-import com.brandonitaly.bedrockskins.client.gui.BedrockSkinsOptionsScreen;
 //? if fabric {
+import com.brandonitaly.bedrockskins.client.gui.BedrockSkinsOptionsScreen;
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
-//?}
-import net.minecraft.client.gui.screens.Screen;
 
-//? if fabric {
 public class ModMenuIntegration implements ModMenuApi {
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {

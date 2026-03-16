@@ -91,8 +91,9 @@ public final class GuiUtils {
         quat.mul(quat2);
         quat2.conjugate();
 
-        // Submit
+        //~ if >=26.0 '.submitEntityRenderState' -> '.entity' {
         gui.submitEntityRenderState(entityRenderState, renderScale, vector3f, quat, quat2, left, top, right, bottom);
+        //~}
 
         // Restore state
         entity.yBodyRot = yBodyRot;

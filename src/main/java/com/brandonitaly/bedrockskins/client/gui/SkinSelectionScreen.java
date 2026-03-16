@@ -97,7 +97,8 @@ public class SkinSelectionScreen extends Screen {
     @Override
     public void repositionElements() {
         if (tabNavigationBar != null) {
-            tabNavigationBar.setWidth(width);
+            //~ if >26.0 '.setWidth' -> '.updateWidth' {
+            tabNavigationBar.setWidth(width);//~}
             tabNavigationBar.arrangeElements();
             int top = tabNavigationBar.getRectangle().bottom();
             tabManager.setTabArea(new ScreenRectangle(0, top, width, height - layout.getFooterHeight() - top));
@@ -399,14 +400,13 @@ public class SkinSelectionScreen extends Screen {
 
     // --- Render and Input ---
 
-    @Override
     public void render(GuiGraphics gui, int mouseX, int mouseY, float delta) {
         if (activeTab == 0) {
             GuiUtils.drawPanelChrome(gui, rPacks.x, rPacks.y, rPacks.w, rPacks.h, Component.translatable("bedrockskins.gui.packs"), font);
             GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h, getSkinsPanelTitle(), font);
         }
             
-        if (previewPanel != null && activeTab != 2) previewPanel.render(gui, mouseX);
+        if (previewPanel != null && activeTab != 2) previewPanel.renderPreview(gui, mouseX);
         super.render(gui, mouseX, mouseY, delta);
         if (previewPanel != null && activeTab != 2) previewPanel.renderSprites(gui);
         
@@ -425,10 +425,9 @@ public class SkinSelectionScreen extends Screen {
             || super.mouseReleased(event);
     }
     
-    @Override
     protected void renderMenuBackground(GuiGraphics graphics) {
         graphics.blit(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.TAB_HEADER_BACKGROUND, 0, 0, 0.0F, 0.0F, width, layout.getHeaderHeight(), 16, 16);
-        this.renderMenuBackground(graphics, 0, layout.getHeaderHeight(), width, height);
+        super.renderMenuBackground(graphics);
     }
 
     private static class Rect {
@@ -558,7 +557,6 @@ public class SkinSelectionScreen extends Screen {
             this.pack = pack;
         }
 
-        @Override
         public void renderContent(GuiGraphics gui, int mouseX, int mouseY, boolean isMouseOver, float partialTick) {
             int index = downloadList.children().indexOf(this);
             if (index == -1) return;

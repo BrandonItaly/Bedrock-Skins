@@ -2,10 +2,30 @@ import java.text.SimpleDateFormat
 import groovy.json.JsonSlurper
 import groovy.json.JsonParserType
 import groovy.json.JsonOutput
+
 plugins {
-    id "dev.architectury.loom"
     id "me.modmuss50.mod-publish-plugin" version "0.7.4"
     id 'maven-publish'
+}
+
+def loader = property("loom.platform")
+def unobfuscated = project.name.startsWith("26")
+System.out.println("unobfuscated minecraft? " + unobfuscated)
+
+if (loader == "fabric") {
+    apply plugin: unobfuscated ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
+    System.out.println(net.fabricmc.loom.LoomGradlePlugin.LOOM_VERSION)
+} else if (loader == "neoforge") {
+    apply plugin: 'net.neoforged.moddev'
+}
+
+if (unobfuscated && (loader == "fabric")) {
+    configurations {
+        implementation.extendsFrom(modImplementation)
+        api.extendsFrom(modApi)
+        compileOnly.extendsFrom(modCompileOnly)
+        runtimeOnly.extendsFrom(modRuntimeOnly)
+    }
 }
 
 // Load .env file if it exists
@@ -22,26 +42,17 @@ if (envFile.exists()) {
 base.archivesName = project.archives_base_name
 version = stonecutter.current.version + "-" + mod_version
 group = rootProject.maven_group
-def loader = property("loom.platform")
 
 repositories {
     mavenCentral()
     maven { url "https://maven.neoforged.net/releases/" }
-
-    maven {
-        url "https://jm.gserv.me/repository/maven-public/"
-    }
-    maven {
-        url "https://maven.isxander.dev/releases"
-    }
-    maven {
-        url "https://www.cursemaven.com"
-    }
+    maven { url "https://jm.gserv.me/repository/maven-public/" }
+    maven { url "https://maven.isxander.dev/releases" }
+    maven { url "https://www.cursemaven.com" }
     maven {
         name = 'Kyubion Mod Resources'
         url "https://raw.githubusercontent.com/Kyubion-Studios/Mod-Resources/main/maven/"
     }
-
     exclusiveContent {
         forRepository {
             maven {
@@ -54,100 +65,93 @@ repositories {
         }
     }
     maven { url "https://jitpack.io" }
-
     maven {
         name = "Terraformers"
         url = "https://maven.terraformersmc.com/"
     }
-
     maven{url = "https://maven.su5ed.dev/releases"}
-
-
     maven {
-        // location of the maven that hosts JEI files since January 2023
         name = "Jared's maven"
         url = "https://maven.blamejared.com/"
     }
-
     maven {
-        // location of a maven mirror for JEI files, as a fallback
         name = "ModMaven"
         url = "https://modmaven.dev"
     }
-
     maven {
         url = "https://maven.pkg.github.com/ims212/ForgifiedFabricAPI"
         credentials {
             username = "IMS212"
-            // Read only token
             password = "ghp_" + "DEuGv0Z56vnSOYKLCXdsS9svK4nb9K39C1Hn"
         }
     }
 }
 
-configurations.configureEach {
-    resolutionStrategy {
-        force("net.fabricmc:fabric-loader:${fabric_loader_version}")
+if (loader == "fabric") {
+    configurations.configureEach {
+        resolutionStrategy {
+            force("net.fabricmc:fabric-loader:${fabric_loader_version}")
+        }
     }
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:${stonecutter.current.version}"
-    mappings loom.officialMojangMappings()
     def facVer = project.findProperty("factory_api_version") ?: ""
     def legVer = project.findProperty("legacy4j_version") ?: ""
+    def legacyMcVersion = "1.21.10"
 
-    def legacyMcVersion = stonecutter.current.version
-
-    if (stonecutter.current.version == "1.21.9" || stonecutter.current.version == "1.21.11") {
-        legacyMcVersion = "1.21.10"
+    if (loader == "fabric") {
+        minecraft "com.mojang:minecraft:${stonecutter.current.version}"
+        if (!unobfuscated) mappings loom.officialMojangMappings()
     }
 
-    if (facVer && facVer != "[VERSIONED]") {
-        // modApi "wily.factory_api:factory_api-${loader}:${stonecutter.current.version}-${facVer}"
-        modCompileOnly "wily.factory_api:factory_api-${loader}:${legacyMcVersion}-${facVer}"
+    if (facVer && facVer != "[VERSIONED]" && !unobfuscated) {
+        if (loader == "neoforge") compileOnly "wily.factory_api:factory_api-${loader}:${legacyMcVersion}-${facVer}"
+        else modCompileOnly "wily.factory_api:factory_api-${loader}:${legacyMcVersion}-${facVer}"
     } else {
         logger.lifecycle("Skipping wily.factory_api dependency for ${project.path} (factory_api_version not set)")
     }
 
-    if (legVer && legVer != "[VERSIONED]") {
-        modCompileOnly "wily.legacy:legacy-${loader}:${legacyMcVersion}-${legVer}"
+    if (legVer && legVer != "[VERSIONED]" && !unobfuscated) {
+        if (loader == "neoforge") compileOnly "wily.legacy:legacy-${loader}:${legacyMcVersion}-${legVer}"
+        else modCompileOnly "wily.legacy:legacy-${loader}:${legacyMcVersion}-${legVer}"
     } else {
         logger.lifecycle("Skipping wily.legacy dependency for ${project.path} (legacy4j_version not set)")
     }
 
     if (loader == "fabric") {
         modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
-        modApi fabricApi.module("fabric-networking-api-v1", fabric_api_version)
-        modApi fabricApi.module("fabric-lifecycle-events-v1", fabric_api_version)
-        modApi fabricApi.module("fabric-key-binding-api-v1", fabric_api_version)
-        modApi fabricApi.module("fabric-resource-loader-v0", fabric_api_version)
-        modApi fabricApi.module("fabric-screen-api-v1", fabric_api_version)
-        modApi fabricApi.module("fabric-api-base", fabric_api_version)
-        modApi fabricApi.module("fabric-rendering-v1", fabric_api_version)
+        modApi "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
         modImplementation("com.terraformersmc:modmenu:${modmenu_version}")
-
-    } else if (loader == "forge") {
-        forge "net.minecraftforge:forge:${stonecutter.current.version}-${forge_version}"
-        compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:${mixin_extras_version}"))
-        implementation(include("io.github.llamalad7:mixinextras-${loader}:${mixin_extras_version}"))
-    } else if (loader == "neoforge") {
-        neoForge "net.neoforged:neoforge:${neoforge_version}"
     }
 }
 
 def aw = "${mod_id}.accesswidener"
 
-loom {
-    accessWidenerPath = stonecutter.process(getRootProject().file("src/main/resources/${aw}"), "build/dev.aw")
-
-    if (loader == "forge") forge {
-        convertAccessWideners.set(true)
-        mixinConfigs("${mod_id}.mixins.json")
+if (loader == "fabric") {
+    loom {
+        accessWidenerPath = stonecutter.process(getRootProject().file("src/main/resources/${aw}"), "build/dev.aw")
     }
-    mixin {
-        useLegacyMixinAp = true
-        defaultRefmapName = "${mod_id}.refmap.json"
+} else if (loader == "neoforge") {
+    neoForge {
+        version = neoforge_version
+        def at = file('src/main/resources/META-INF/accesstransformer.cfg')
+        if (at.exists()) {
+            accessTransformers.from(at.absolutePath)
+        }
+        
+        mods {
+            create(mod_id) {
+                sourceSet project.sourceSets.main
+            }
+        }
+        
+        runs {
+            client {
+                client()
+                systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            }
+        }
     }
 }
 
@@ -178,9 +182,9 @@ java {
     sourceCompatibility = javaCompat
     targetCompatibility = javaCompat
 }
-remapJar {
-    if (loader == "neoforge") atAccessWideners.add aw
-}
+
+if (!unobfuscated && (loader == "fabric")) remapJar {}
+
 ext {
     releaseChangelog = {
         def changelogFile = rootProject.file("CHANGELOG.md")
@@ -192,7 +196,6 @@ ext {
         }
     }
 }
-
 
 processResources {
     def version_range = mc_version_range
@@ -258,10 +261,12 @@ processResources {
         }
     }
 }
-
 tasks.register('renameJarForPublication', Zip) {
-    dependsOn remapJar
-    from remapJar.archiveFile.map { zipTree(it) }
+    def isLoom = (loader == "fabric" || loader == "forge")
+    def targetJar = isLoom ? (unobfuscated ? jar : remapJar) : jar
+    
+    dependsOn targetJar
+    from targetJar.archiveFile.map { zipTree(it) }
     archiveExtension = "jar"
     metadataCharset "UTF-8"
     destinationDirectory = base.libsDirectory
@@ -272,66 +277,7 @@ assemble.dependsOn renameJarForPublication
 
 def modPlatformName = loader == "neoforge" ? "NeoForge" : loader.capitalize()
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifactId = "${project.mod_id}-${loader}"
-            version = version
-
-            pom {
-                name = "${mod_name} [${modPlatformName}]"
-                description = "${mod_description}"
-                url = "${mod_source}"
-                scm {
-                    url = "${mod_source}"
-                    connection = "${mod_source}".replace("https", "scm:git:git").concat(".git")
-                    developerConnection = "${mod_source}".replace("https://github.com/", "scm:git:git@github.com:").concat(".git")
-                }
-                issueManagement {
-                    system = 'github'
-                    url = "${mod_issues}"
-                }
-                licenses {
-                    license {
-                        name = 'MPL-2'
-                        url = 'https://www.mozilla.org/en-US/MPL/2.0/'
-                    }
-                }
-                developers {
-                    developer {
-                        id = "${mod_authors}".toLowerCase()
-                        name = "${mod_authors}"
-                    }
-                }
-            }
-            // this is necessary when not using 'from components.java', otherwise dependencies block will still be empty at this point
-            afterEvaluate {
-                // exclude certain dependencies when publishing to maven
-                // from https://stackoverflow.com/a/50121790
-                pom.withXml {
-                    asNode().dependencies.dependency.each { dep ->
-                        // use this approach to make excluding dependencies from Curse Maven more convenient
-                        if (["curse.maven:","dev.architectury:"].stream().anyMatch(mod -> "${dep.groupId.last().value().last()}:${dep.artifactId.last().value().last()}".startsWith(mod))) {
-                            assert dep.parent().remove(dep)
-                        }
-                    }
-                }
-            }
-            from components.java
-        }
-    }
-    repositories {
-        maven {
-            name = 'ModResources'
-            def modResourcesURL = project.findProperty("MOD_RESOURCES") ?: System.getenv("MOD_RESOURCES")
-            if (modResourcesURL != null)
-                url uri(modResourcesURL)
-        }
-    }
-}
-
 publishMods {
-
     def isFabric = loader == "fabric"
     displayName = "$mod_name [$modPlatformName] $project.version"
     type = STABLE
