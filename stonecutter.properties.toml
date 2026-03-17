@@ -41,6 +41,6 @@ mc_version_range="1.21.11"
 ["26.1-fabric"]
 loom.platform="fabric"
 fabric_loader_version="0.18.4"
-fabric_api_version="0.143.13+26.1"
-mc_version_range="26.1-pre.2"
+fabric_api_version="0.143.14+26.1"
+mc_version_range="<=26.1-pre.3 >=26.1-pre.2"
 modmenu_version="18.0.0-alpha.6"
