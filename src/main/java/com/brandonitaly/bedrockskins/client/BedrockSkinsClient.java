@@ -169,19 +169,19 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
             if (client.player != null) {
                 UUID playerUuid = client.player.getUUID();
                 SkinId id = SkinManager.getSkin(playerUuid);
-                if (id != null) setSafeSkin(playerUuid, id, id.toString());
+                if (id != null) SkinManager.setSkin(playerUuid, id);
             }
         } catch (Exception e) { e.printStackTrace(); }
     }
 
     static void applySavedSkinOnJoin(Minecraft client) {
         try {
-            String savedKey = StateManager.readState().getSelected();
+            String savedKey = StateManager.readState().selected();
             if (savedKey == null || client.player == null) return;
 
             SkinId savedSkinId = SkinId.parse(savedKey);
             UUID playerUuid = client.player.getUUID();
-            setSafeSkin(playerUuid, savedSkinId, savedKey);
+            SkinManager.setSkin(playerUuid, savedSkinId);
 
             LoadedSkin loadedSkin = SkinPackLoader.getLoadedSkin(savedSkinId);
             if (loadedSkin != null) {
@@ -202,7 +202,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
             SkinManager.resetSkin(playerUuid);
         } else {
             SkinPackLoader.registerRemoteSkin(id.toString(), p.geometry(), p.textureData());
-            setSafeSkin(playerUuid, id, id.toString());
+            SkinManager.setSkin(playerUuid, id);
         }
     }
 
@@ -223,11 +223,5 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         }
         
         if (!toRemove.isEmpty()) System.out.println("BedrockSkinsClient: Cleared " + toRemove.size() + " remote skins from memory.");
-    }
-    
-    private static void setSafeSkin(UUID uuid, SkinId id, String fallbackName) {
-        String pack = id == null || id.pack() == null || id.pack().isEmpty() ? "Remote" : id.pack();
-        String name = id == null || id.name() == null || id.name().isEmpty() ? fallbackName : id.name();
-        SkinManager.setSkin(uuid, pack, name);
     }
 }

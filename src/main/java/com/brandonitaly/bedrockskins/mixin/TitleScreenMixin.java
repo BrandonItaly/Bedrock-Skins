@@ -95,7 +95,7 @@ public abstract class TitleScreenMixin extends Screen {
     private void bedrockskins$updatePreviewSkin() {
         SkinId selected = SkinManager.getLocalSelectedKey();
         if (selected != null) {
-            SkinManager.setPreviewSkin(bedrockskins$menuPreviewUuid, selected.getPack(), selected.getName());
+            SkinManager.setPreviewSkin(bedrockskins$menuPreviewUuid, selected.pack(), selected.name());
             SkinPackLoader.registerTextureFor(selected);
             bedrockskins$menuPreviewPlayer.clearForcedProfileSkin();
             bedrockskins$menuPreviewPlayer.clearForcedBody();

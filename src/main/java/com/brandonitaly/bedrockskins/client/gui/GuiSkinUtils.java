@@ -160,7 +160,7 @@ public final class GuiSkinUtils {
 
         SkinId skinId = skin.skinId != null ? skin.skinId : SkinId.of(skin.serializeName, skin.skinDisplayName);
         if (minecraft.player != null) {
-            SkinManager.setSkin(minecraft.player.getUUID(), skinId.pack(), skinId.name());
+            SkinManager.setSkin(minecraft.player.getUUID(), skinId);
             byte[] textureData = ExternalAssetUtil.loadTextureData(skin, minecraft);
             ClientSkinSync.sendSetSkinPayload(skinId, skin.geometryData.toString(), textureData);
             minecraft.player.refreshDimensions();

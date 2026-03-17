@@ -21,7 +21,7 @@ public final class SkinManager {
     public static void load() {
         previewSkins.clear();
         try {
-            var selected = StateManager.readState().getSelected();
+            var selected = StateManager.readState().selected();
             var localUuid = getLocalPlayerUuid();
             if (localUuid != null) {
                 if (selected != null && !selected.isEmpty()) {
@@ -46,7 +46,7 @@ public final class SkinManager {
             return playerSkins.get(localUuid);
         }
         try {
-            var selected = StateManager.readState().getSelected();
+            var selected = StateManager.readState().selected();
             return (selected == null || selected.isEmpty()) ? null : SkinId.parse(selected);
         } catch (Exception e) {
             LOGGER.error("SkinManager: failed to read local selected skin from state", e);
@@ -54,8 +54,7 @@ public final class SkinManager {
         }
     }
 
-    public static void setSkin(UUID uuid, String packName, String skinName) {
-        SkinId id = SkinId.of(packName, skinName);
+    public static void setSkin(UUID uuid, SkinId id) {
         SkinId previous = playerSkins.put(uuid, id);
         
         if (!Objects.equals(previous, id)) {

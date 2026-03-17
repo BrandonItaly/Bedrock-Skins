@@ -178,7 +178,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                 if (id != null) {
                     try {
                         registerTextureFor.accept(id.toString());
-                        setPreviewSkin.set(uuid.toString(), id.getPack(), id.getName());
+                        setPreviewSkin.set(uuid.toString(), id.pack(), id.name());
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

@@ -19,8 +19,8 @@ public final class FavoritesManager {
         favoriteIds.clear();
         try {
             LocalSkinConfig state = StateManager.readState();
-            if (state.getFavorites() != null) {
-                state.getFavorites().stream()
+            if (state.favorites() != null) {
+                state.favorites().stream()
                     .map(SkinId::parse)
                     .filter(Objects::nonNull)
                     .forEach(favoriteIds::add);

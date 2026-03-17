@@ -24,10 +24,6 @@ public record SkinId(String pack, String name, String safePackName, String safeS
         return new SkinId(parts[0], parts.length > 1 ? parts[1] : "");
     }
 
-    // Backwards-compatible getters
-    public String getPack() { return pack; }
-    public String getName() { return name; }
-
     @Override
     public String toString() {
         return pack + ":" + name;

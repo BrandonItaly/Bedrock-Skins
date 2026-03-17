@@ -94,7 +94,7 @@ public abstract class PauseScreenMixin extends Screen {
     private void bedrockskins$updatePreviewSkin() {
         SkinId selected = SkinManager.getLocalSelectedKey();
         if (selected != null) {
-            SkinManager.setPreviewSkin(bedrockskins$pausePreviewUuid, selected.getPack(), selected.getName());
+            SkinManager.setPreviewSkin(bedrockskins$pausePreviewUuid, selected.pack(), selected.name());
             SkinPackLoader.registerTextureFor(selected);
             bedrockskins$pausePreviewPlayer.clearForcedProfileSkin();
             bedrockskins$pausePreviewPlayer.clearForcedBody();
