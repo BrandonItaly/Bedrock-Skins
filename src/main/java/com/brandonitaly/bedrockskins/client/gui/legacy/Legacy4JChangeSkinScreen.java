@@ -331,12 +331,12 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         if (focusedPack != null && !focusedPack.isEmpty()) {
             LoadedSkin firstSkin = focusedPack.getSkin(0);
             if (firstSkin != null) {
-                AssetSource src = firstSkin.getTexture();
+                AssetSource src = firstSkin.texture;
                 if (src instanceof AssetSource.Resource res) {
-                    String path = res.getId().getPath();
+                    String path = res.id().getPath();
                     int lastSlash = path.lastIndexOf('/');
                     if (lastSlash != -1) {
-                        var packIcon = createId(res.getId().getNamespace(), path.substring(0, lastSlash) + "/pack_icon.png");
+                        var packIcon = createId(res.id().getNamespace(), path.substring(0, lastSlash) + "/pack_icon.png");
                         if (minecraft.getResourceManager().getResource(packIcon).isPresent()) return packIcon;
                     }
                 } else {
@@ -462,9 +462,9 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         }
 
         LoadedSkin currentSkin = SkinPackLoader.getLoadedSkin(currentSkinKey);
-        SkinPackAdapter pack = getPackForUi(currentSkin.getId());
+        SkinPackAdapter pack = getPackForUi(currentSkin.packId);
         if (pack != null) {
-            focusedPackId = currentSkin.getId();
+            focusedPackId = currentSkin.packId;
             focusedPack = pack;
             queuedChangeSkinPack = true;
             updateSkinPack(pack.indexOf(currentSkin));
@@ -508,7 +508,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         for (int i = 0; i < focusedPack.size(); i++) {
             final LoadedSkin skin = focusedPack.getSkin(i);
             final SkinReference ref = (FAVORITES_PACK_ID.equals(focusedPackId) && skin != null) 
-                ? new SkinReference(skin.getId(), SkinPackAdapter.getPack(skin.getId()).indexOf(skin)) : new SkinReference(focusedPackId, i);
+                ? new SkinReference(skin.packId, SkinPackAdapter.getPack(skin.packId).indexOf(skin)) : new SkinReference(focusedPackId, i);
             widgets.add(addRenderableWidget(new PlayerSkinWidget(130, 160, minecraft.getEntityModels(), () -> ref, () -> skin)));
         }
 

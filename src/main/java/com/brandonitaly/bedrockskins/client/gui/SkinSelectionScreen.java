@@ -88,7 +88,7 @@ public class SkinSelectionScreen extends Screen {
         if (selectedSkin == null) return;
 
         LoadedSkin loadedSkin = SkinPackLoader.getLoadedSkin(selectedSkin);
-        String packId = loadedSkin != null ? loadedSkin.getId() : ("skinpack." + selectedSkin.pack());
+        String packId = loadedSkin != null ? loadedSkin.packId : ("skinpack." + selectedSkin.pack());
         if (packId != null && skinCache.containsKey(packId)) {
             selectedPackId = packId;
         }
@@ -163,7 +163,7 @@ public class SkinSelectionScreen extends Screen {
     private void buildSkinCache() {
         skinCache.clear();
         for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
-            skinCache.computeIfAbsent(skin.getId(), k -> new ArrayList<>()).add(skin);
+            skinCache.computeIfAbsent(skin.packId, k -> new ArrayList<>()).add(skin);
         }
 
         injectAutoSelectedIntoStandardPack();

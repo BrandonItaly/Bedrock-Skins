@@ -187,7 +187,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
             if (loadedSkin != null) {
                 byte[] textureData = ExternalAssetUtil.loadTextureData(loadedSkin, client);
                 if (textureData.length > 0) {
-                    ClientSkinSync.sendSetSkinPayload(savedSkinId, loadedSkin.getGeometryData().toString(), textureData);
+                    ClientSkinSync.sendSetSkinPayload(savedSkinId, loadedSkin.geometryData.toString(), textureData);
                     System.out.println("BedrockSkinsClient: Synced skin " + savedKey);
                 }
             }
@@ -195,13 +195,13 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     }
 
     static void handleSkinUpdate(BedrockSkinsNetworking.SkinUpdatePayload p) {
-        SkinId id = p.getSkinId();
-        UUID playerUuid = p.getUuid();
+        SkinId id = p.skinId();
+        UUID playerUuid = p.uuid();
 
         if (id == null) {
             SkinManager.resetSkin(playerUuid);
         } else {
-            SkinPackLoader.registerRemoteSkin(id.toString(), p.getGeometry(), p.getTextureData());
+            SkinPackLoader.registerRemoteSkin(id.toString(), p.geometry(), p.textureData());
             setSafeSkin(playerUuid, id, id.toString());
         }
     }
@@ -213,7 +213,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         List<SkinId> toRemove = new ArrayList<>();
         synchronized (SkinPackLoader.loadedSkins) {
             SkinPackLoader.loadedSkins.forEach((id, skin) -> {
-                if (skin.getTexture() instanceof AssetSource.Remote) toRemove.add(id);
+                if (skin.texture instanceof AssetSource.Remote) toRemove.add(id);
             });
             
             for (SkinId id : toRemove) {
@@ -226,8 +226,8 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     }
     
     private static void setSafeSkin(UUID uuid, SkinId id, String fallbackName) {
-        String pack = id == null || id.getPack() == null || id.getPack().isEmpty() ? "Remote" : id.getPack();
-        String name = id == null || id.getName() == null || id.getName().isEmpty() ? fallbackName : id.getName();
+        String pack = id == null || id.pack() == null || id.pack().isEmpty() ? "Remote" : id.pack();
+        String name = id == null || id.name() == null || id.name().isEmpty() ? fallbackName : id.name();
         SkinManager.setSkin(uuid, pack, name);
     }
 }

@@ -21,7 +21,7 @@ final class PckLocalizationSupport {
     }
 
     static String deriveSkinThemeToken(PckFileParser.PckAsset asset, String skinDisplayToken, String skinKey, Map<String, Map<String, String>> pckTranslations, String currentLang) {
-        String explicit = firstNonBlank(getFirstPropertyValue(asset, "THEMENAMEID"), getFirstPropertyValue(asset, "THEMENAME"));
+        String explicit = StringUtils.firstNonBlank(asset.getFirstProperty("THEMENAMEID"), asset.getFirstProperty("THEMENAME"));
         if (explicit != null && !explicit.isBlank()) return explicit;
 
         if (skinDisplayToken != null && !skinDisplayToken.isBlank()) {
@@ -74,17 +74,23 @@ final class PckLocalizationSupport {
 
     static String getTranslationFromMap(Map<String, Map<String, String>> source, String key, String currentLang) {
         if (source == null || source.isEmpty() || key == null) return null;
-
         String normalizedKey = cleanLocText(key).toLowerCase(Locale.ROOT);
 
         Map<String, String> currentLangMap = source.get(currentLang);
-        if (currentLangMap != null && currentLangMap.containsKey(normalizedKey)) return currentLangMap.get(normalizedKey);
+        if (currentLangMap != null) {
+            String val = currentLangMap.get(normalizedKey);
+            if (val != null) return val;
+        }
 
         Map<String, String> enMap = source.get("en_us");
-        if (enMap != null && enMap.containsKey(normalizedKey)) return enMap.get(normalizedKey);
+        if (enMap != null) {
+            String val = enMap.get(normalizedKey);
+            if (val != null) return val;
+        }
 
         for (Map<String, String> map : source.values()) {
-            if (map.containsKey(normalizedKey)) return map.get(normalizedKey);
+            String val = map.get(normalizedKey);
+            if (val != null) return val;
         }
         return null;
     }
@@ -201,22 +207,6 @@ final class PckLocalizationSupport {
         if (next < 0) return false;
         r.setPosition(next + 4);
         return true;
-    }
-
-    private static String getFirstPropertyValue(PckFileParser.PckAsset asset, String... keys) {
-        if (asset == null || asset.properties() == null || keys == null) return null;
-
-        for (String key : keys) {
-            if (key == null) continue;
-            for (Map.Entry<String, String> property : asset.properties()) {
-                if (key.equalsIgnoreCase(property.getKey())) return property.getValue();
-            }
-        }
-        return null;
-    }
-
-    private static String firstNonBlank(String first, String fallback) {
-        return first != null && !first.isBlank() ? first : (fallback == null ? "" : fallback);
     }
 
     private static final class LocReader {

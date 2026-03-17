@@ -40,12 +40,6 @@ public final class BedrockSkinsNetworking {
 
         @Override
         public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return ID; }
-        
-        // Backwards-compatible getters
-        public UUID getUuid() { return uuid; }
-        public SkinId getSkinId() { return skinId; }
-        public String getGeometry() { return geometry; }
-        public byte[] getTextureData() { return textureData; }
     }
 
     // Set Skin Payload (Client -> Server)
@@ -67,9 +61,5 @@ public final class BedrockSkinsNetworking {
 
         @Override
         public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return ID; }
-        
-        // Backwards-compatible getters
-        public SkinId getSkinId() { return skinId; }
-        public String getGeometry() { return geometry; }
     }
 }

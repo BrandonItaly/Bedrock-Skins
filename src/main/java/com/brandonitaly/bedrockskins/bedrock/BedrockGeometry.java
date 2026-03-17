@@ -1,9 +1,7 @@
 package com.brandonitaly.bedrockskins.bedrock;
 
 import com.google.gson.annotations.SerializedName;
-
 import java.util.List;
-import java.util.Map;
 
 public class BedrockGeometry {
     private GeometryDescription description;

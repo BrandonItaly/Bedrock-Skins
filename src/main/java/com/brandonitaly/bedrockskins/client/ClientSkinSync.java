@@ -18,7 +18,9 @@ public final class ClientSkinSync {
         //?}
     }
 
+    private static final byte[] EMPTY_TEXTURE = new byte[0];
+
     public static void sendResetSkinPayload() {
-        sendSetSkinPayload(null, "", new byte[0]);
+        sendSetSkinPayload(null, "", EMPTY_TEXTURE);
     }
 }

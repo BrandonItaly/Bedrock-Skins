@@ -12,10 +12,10 @@ public class LoadedSkin {
     public final AssetSource cape; // nullable
     public final boolean upsideDown;
 
-    private final SkinId skinId;
-    private final String safePackName;
-    private final String safeSkinName;
-    private final String packId;
+    public final SkinId skinId;
+    public final String safePackName;
+    public final String safeSkinName;
+    public final String packId;
 
     public Identifier identifier;
     public Identifier capeIdentifier;
@@ -37,25 +37,9 @@ public class LoadedSkin {
         this.cape = cape;
         this.upsideDown = upsideDown;
 
-        // Pre-calculate
         this.skinId = SkinId.of(serializeName, skinDisplayName);
         this.safePackName = StringUtils.sanitize("skinpack." + packDisplayName);
         this.safeSkinName = StringUtils.sanitize("skin." + packDisplayName + "." + skinDisplayName);
         this.packId = "skinpack." + serializeName;
     }
-
-    public String getSerializeName() { return serializeName; }
-    public String getPackDisplayName() { return packDisplayName; }
-    public String getSkinDisplayName() { return skinDisplayName; }
-    public JsonObject getGeometryData() { return geometryData; }
-    public AssetSource getTexture() { return texture; }
-    public AssetSource getCape() { return cape; }
-    public boolean isUpsideDown() { return upsideDown; }
-
-    public String getId() { return packId; }
-    public String getSafePackName() { return safePackName; }
-    public String getSafeSkinName() { return safeSkinName; }
-    public SkinId getSkinId() { return skinId; }
-
-    public Identifier getIdentifier() { return identifier; }
 }

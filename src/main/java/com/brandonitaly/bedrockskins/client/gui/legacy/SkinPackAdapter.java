@@ -49,7 +49,7 @@ public record SkinPackAdapter(String packId, List<LoadedSkin> skins, String pack
 
         // Group skins by pack ID
         for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
-            String packId = skin.getId();
+            String packId = skin.packId;
             packMap.computeIfAbsent(packId, k -> new ArrayList<>()).add(skin);
         }
 
@@ -68,7 +68,7 @@ public record SkinPackAdapter(String packId, List<LoadedSkin> skins, String pack
     public static SkinPackAdapter getPack(String packId) {
         List<LoadedSkin> skins = new ArrayList<>();
         for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
-            if (skin.getId().equals(packId)) {
+            if (skin.packId.equals(packId)) {
                 skins.add(skin);
             }
         }

@@ -60,7 +60,7 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
 
         private void renderCommon(GuiGraphics context, int x, int y, int mouseX, int mouseY, boolean hovered) {
             boolean isSelected = Boolean.TRUE.equals(isSelectedFn.get());
-            String translated = GuiSkinUtils.getTranslatedOrFallback(translationKey, fallbackName);
+            String translated = GuiSkinUtils.translatedOrFallback(translationKey, fallbackName);
 
             int rowWidth = Math.max(10, SkinPackListWidget.this.getRowWidth());
             int rowHeight = Math.max(MIN_VISUAL_ROW_HEIGHT, rowSlotHeight - 2);

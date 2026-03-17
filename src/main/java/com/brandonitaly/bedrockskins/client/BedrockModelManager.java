@@ -3,7 +3,9 @@ package com.brandonitaly.bedrockskins.client;
 import com.brandonitaly.bedrockskins.bedrock.BedrockFile;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.pack.SkinId;
+import com.mojang.logging.LogUtils;
 import com.google.gson.Gson;
+import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,6 +13,7 @@ import java.util.Map;
 public final class BedrockModelManager {
     private BedrockModelManager() {}
 
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static final Map<SkinId, BedrockPlayerModel> bedrockModels = new HashMap<>();
     private static final Gson gson = new Gson();
 
@@ -38,7 +41,7 @@ public final class BedrockModelManager {
                 return model;
             }
         } catch (Exception e) {
-            BedrockSkinsLog.error("BedrockModelManager: failed to build model for " + skinId, e);
+            LOGGER.error("BedrockModelManager: failed to build model for " + skinId, e);
         }
 
         return null;
@@ -49,7 +52,7 @@ public final class BedrockModelManager {
         try {
             SkinPackLoader.registerTextureFor(skinId);
         } catch (Exception e) {
-            BedrockSkinsLog.error("BedrockModelManager: failed to register texture for " + skinId, e);
+            LOGGER.error("BedrockModelManager: failed to register texture for " + skinId, e);
         }
     }
 

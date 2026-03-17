@@ -29,12 +29,4 @@ public record SkinEntry(
         cape.orElse(null), 
         animations == null ? Map.of() : Map.copyOf(animations)
     )));
-
-    // Backwards-compatible getters
-    public String getLocalizationName() { return localizationName; }
-    public String getGeometry() { return geometry; }
-    public String getTexture() { return texture; }
-    public String getType() { return type; }
-    public String getCape() { return cape; }
-    public Map<String, String> getAnimations() { return animations; }
 }

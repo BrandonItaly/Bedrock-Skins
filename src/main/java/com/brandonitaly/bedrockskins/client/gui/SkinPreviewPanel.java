@@ -91,7 +91,7 @@ public class SkinPreviewPanel {
 
     public void initPreviewState() {
         if (this.selectedSkin != null) {
-            updatePreviewModel(this.dummyUuid, this.selectedSkin.getSkinId());
+            updatePreviewModel(this.dummyUuid, this.selectedSkin.skinId);
             return;
         }
 
@@ -110,9 +110,9 @@ public class SkinPreviewPanel {
 
     public void setSelectedSkin(LoadedSkin skin) {
         this.selectedSkin = skin;
-        this.currentSkinId = skin != null ? skin.getSkinId() : null;
+        this.currentSkinId = skin != null ? skin.skinId : null;
         updateFavoriteButton();
-        if (skin != null) updatePreviewModel(dummyUuid, skin.getSkinId());
+        if (skin != null) updatePreviewModel(dummyUuid, skin.skinId);
     }
 
     private void updatePreviewModel(UUID uuid, SkinId skinId) {
@@ -138,7 +138,7 @@ public class SkinPreviewPanel {
         try {
             GuiSkinUtils.applySelectedSkin(minecraft, selectedSkin);
             if (minecraft.player == null) {
-                updatePreviewModel(dummyUuid, selectedSkin.getSkinId());
+                updatePreviewModel(dummyUuid, selectedSkin.skinId);
                 updateActionButtons();
             }
         } catch (Exception e) { e.printStackTrace(); }

@@ -62,7 +62,7 @@ public final class SkinPackLoader {
 
     public static void loadPacks() {
         synchronized (loadedSkins) {
-            loadedSkins.values().removeIf(skin -> !(skin.getTexture() instanceof AssetSource.Remote));
+            loadedSkins.values().removeIf(skin -> !(skin.texture instanceof AssetSource.Remote));
         }
 
         translations.clear();
@@ -116,7 +116,9 @@ public final class SkinPackLoader {
     }
 
     public static void registerTextures() {
-        for (LoadedSkin s : loadedSkins.values()) registerSkinAssets(s);
+        synchronized (loadedSkins) {
+            for (LoadedSkin s : loadedSkins.values()) registerSkinAssets(s);
+        }
     }
 
     public static void releaseSkinAssets(SkinId id) {
@@ -136,7 +138,7 @@ public final class SkinPackLoader {
 
     public static void registerTextureFor(SkinId id) {
         LoadedSkin skin = getLoadedSkin(id);
-        if (skin != null && skin.getIdentifier() == null) registerSkinAssets(skin);
+        if (skin != null && skin.identifier == null) registerSkinAssets(skin);
     }
 
     public static LoadedSkin getLoadedSkin(SkinId id) { 
@@ -193,19 +195,18 @@ public final class SkinPackLoader {
             loadExternalTranslations(packDir);
             registerPackType(manifest);
 
-            for (SkinEntry entry : manifest.getSkins()) {
-                JsonObject geometry = resolveGeometry(entry.getGeometry(), geometryJson);
-                if (geometry == null || entry.getTexture() == null) continue;
+            for (SkinEntry entry : manifest.skins()) {
+                JsonObject geometry = resolveGeometry(entry.geometry(), geometryJson);
+                if (geometry == null || entry.texture() == null) continue;
 
-                File textureFile = new File(packDir, entry.getTexture().toLowerCase(Locale.ROOT));
+                File textureFile = new File(packDir, entry.texture().toLowerCase(Locale.ROOT));
                 if (!textureFile.exists()) continue;
-
-                File capeFile = entry.getCape() != null ? new File(packDir, entry.getCape().toLowerCase(Locale.ROOT)) : null;
+                File capeFile = entry.cape() != null ? new File(packDir, entry.cape().toLowerCase(Locale.ROOT)) : null;
                 if (capeFile != null && !capeFile.exists()) capeFile = null;
 
-                SkinId id = SkinId.of(manifest.getSerializeName(), entry.getLocalizationName());
+                SkinId id = SkinId.of(manifest.serializeName(), entry.localizationName());
                 loadedSkins.put(id, new LoadedSkin(
-                    manifest.getSerializeName(), manifest.getLocalizationName(), entry.getLocalizationName(),
+                    manifest.serializeName(), manifest.localizationName(), entry.localizationName(),
                     geometry, new AssetSource.File(textureFile.getAbsolutePath()),
                     capeFile != null ? new AssetSource.File(capeFile.getAbsolutePath()) : null,
                     hasUpsideDownAnimation(entry)
@@ -251,9 +252,9 @@ public final class SkinPackLoader {
             String serializeName = StringUtils.sanitize(fileBaseName);
             if (serializeName.isEmpty()) serializeName = "legacy_console";
 
-            String packDisplayToken = firstNonBlank(PckLocalizationSupport.findPackDisplayToken(pckTranslations, currentLang), firstNonBlank(getPackDisplayName(generalAssets), fileBaseName)
+            String packDisplayToken = StringUtils.firstNonBlank(PckLocalizationSupport.findPackDisplayToken(pckTranslations, currentLang), StringUtils.firstNonBlank(getPackDisplayName(generalAssets), fileBaseName)
             );
-            String packDisplayName = firstNonBlank(PckLocalizationSupport.resolvePckLocalizedToken(packDisplayToken, pckTranslations, currentLang), fileBaseName);
+            String packDisplayName = StringUtils.firstNonBlank(PckLocalizationSupport.resolvePckLocalizedToken(packDisplayToken, pckTranslations, currentLang), fileBaseName);
 
             packTypesByPackId.put("skinpack." + serializeName, "skin_pack");
 
@@ -261,13 +262,16 @@ public final class SkinPackLoader {
                 String skinKey = stripExtension(fileNameOnly(normalizePckPath(asset.filename())));
                 if (skinKey.isEmpty()) continue;
 
-                String skinDisplayToken = firstNonBlank(getFirstPropertyValue(asset, "DISPLAYNAMEID", "IDS_DISPLAY_NAME", "LOC_KEY"), firstNonBlank(getFirstPropertyValue(asset, "DISPLAYNAME"), skinKey));
-                String skinDisplayName = firstNonBlank(PckLocalizationSupport.resolvePckLocalizedToken(skinDisplayToken, pckTranslations, currentLang), skinKey);
+                String skinDisplayToken = StringUtils.firstNonBlank(
+                    asset.getFirstProperty("DISPLAYNAMEID", "IDS_DISPLAY_NAME", "LOC_KEY"), 
+                    StringUtils.firstNonBlank(asset.getFirstProperty("DISPLAYNAME"), skinKey)
+                );
+                String skinDisplayName = StringUtils.firstNonBlank(PckLocalizationSupport.resolvePckLocalizedToken(skinDisplayToken, pckTranslations, currentLang), skinKey);
 
                 String skinThemeToken = PckLocalizationSupport.deriveSkinThemeToken(asset, skinDisplayToken, skinKey, pckTranslations, currentLang);
                 String resolvedTheme = PckLocalizationSupport.resolvePckLocalizedToken(skinThemeToken, pckTranslations, currentLang);
                 boolean isUnlocalized = resolvedTheme != null && resolvedTheme.equalsIgnoreCase(PckLocalizationSupport.cleanLocText(skinThemeToken));
-                String skinTheme = firstNonBlank(isUnlocalized ? null : resolvedTheme, getFirstPropertyValue(asset, "THEMENAME"));
+                String skinTheme = StringUtils.firstNonBlank(isUnlocalized ? null : resolvedTheme, asset.getFirstProperty("THEMENAME"));
 
                 Long animMask = PckModelConverter.parseAnimMask(asset);
                 boolean slim = PckModelConverter.isSlim(animMask);
@@ -278,7 +282,7 @@ public final class SkinPackLoader {
                 if (geometry == null) continue;
 
                 AssetSource capeSource = null;
-                String capePath = getFirstPropertyValue(asset, "CAPEPATH");
+                String capePath = asset.getFirstProperty("CAPEPATH");
                 if (capePath != null && !capePath.isBlank()) {
                     PckFileParser.PckAsset capeAsset = resolveCape(capesByName, capesByBaseName, capePath);
                     if (capeAsset != null) capeSource = new AssetSource.Bytes(capeAsset.data(), pckFile.getName() + ":" + capeAsset.filename());
@@ -304,7 +308,7 @@ public final class SkinPackLoader {
                 );
                 
                 if (skinTheme != null && !skinTheme.isBlank()) {
-                    PckLocalizationSupport.copyLocalizedValueToTranslations(skinThemeToken, loadedSkin.getSafeSkinName() + ".description", skinTheme, pckTranslations, translations);
+                    PckLocalizationSupport.copyLocalizedValueToTranslations(skinThemeToken, loadedSkin.safeSkinName + ".description", skinTheme, pckTranslations, translations);
                 }
 
                 loadedSkins.put(id, loadedSkin);
@@ -336,22 +340,22 @@ public final class SkinPackLoader {
                 registerPackType(manifest);
                 loadInternalTranslations(manager, id.getNamespace(), packPath);
 
-                for (SkinEntry entry : manifest.getSkins()) {
-                    JsonObject geometry = resolveGeometry(entry.getGeometry(), geoJson);
+                for (SkinEntry entry : manifest.skins()) {
+                    JsonObject geometry = resolveGeometry(entry.geometry(), geoJson);
                     if (geometry == null) continue;
                     
-                    var textureId = createIdentifier(id.getNamespace(), (packPath + "/" + entry.getTexture()).toLowerCase(Locale.ROOT));
+                    var textureId = createIdentifier(id.getNamespace(), (packPath + "/" + entry.texture()).toLowerCase(Locale.ROOT));
                     if (manager.getResource(textureId).isEmpty()) continue;
 
                     Identifier capeId = null;
-                    if (entry.getCape() != null) {
-                        var candidate = createIdentifier(id.getNamespace(), (packPath + "/" + entry.getCape()).toLowerCase(Locale.ROOT));
+                    if (entry.cape() != null) {
+                        var candidate = createIdentifier(id.getNamespace(), (packPath + "/" + entry.cape()).toLowerCase(Locale.ROOT));
                         if (manager.getResource(candidate).isPresent()) capeId = candidate;
                     }
 
-                    SkinId skinId = SkinId.of(manifest.getSerializeName(), entry.getLocalizationName());
+                    SkinId skinId = SkinId.of(manifest.serializeName(), entry.localizationName());
                     loadedSkins.put(skinId, new LoadedSkin(
-                        manifest.getSerializeName(), manifest.getLocalizationName(), entry.getLocalizationName(),
+                        manifest.serializeName(), manifest.localizationName(), entry.localizationName(),
                         geometry, new AssetSource.Resource(textureId),
                         capeId != null ? new AssetSource.Resource(capeId) : null,
                         hasUpsideDownAnimation(entry)
@@ -398,19 +402,19 @@ public final class SkinPackLoader {
                     loadExternalTranslationsFromZip(zf, dir);
                     registerPackType(manifest);
 
-                    for (SkinEntry entry : manifest.getSkins()) {
-                        JsonObject geometry = resolveGeometry(entry.getGeometry(), geometryJson);
+                    for (SkinEntry entry : manifest.skins()) {
+                        JsonObject geometry = resolveGeometry(entry.geometry(), geometryJson);
                         if (geometry == null) continue;
 
-                        String texPath = (dir + "/" + entry.getTexture()).toLowerCase(Locale.ROOT);
+                        String texPath = (dir + "/" + entry.texture()).toLowerCase(Locale.ROOT);
                         if (zf.getEntry(texPath) == null) continue;
 
-                        String capePath = entry.getCape() != null ? (dir + "/" + entry.getCape()).toLowerCase(Locale.ROOT) : null;
+                        String capePath = entry.cape() != null ? (dir + "/" + entry.cape()).toLowerCase(Locale.ROOT) : null;
                         ZipEntry capeEntry = capePath != null ? zf.getEntry(capePath) : null;
 
-                        SkinId id = SkinId.of(manifest.getSerializeName(), entry.getLocalizationName());
+                        SkinId id = SkinId.of(manifest.serializeName(), entry.localizationName());
                         loadedSkins.put(id, new LoadedSkin(
-                            manifest.getSerializeName(), manifest.getLocalizationName(), entry.getLocalizationName(),
+                            manifest.serializeName(), manifest.localizationName(), entry.localizationName(),
                             geometry, new AssetSource.Zip(pack.getAbsolutePath(), texPath),
                             capeEntry != null ? new AssetSource.Zip(pack.getAbsolutePath(), capePath) : null,
                             hasUpsideDownAnimation(entry)
@@ -441,10 +445,15 @@ public final class SkinPackLoader {
         JsonArray arr = json.getAsJsonArray("minecraft:geometry");
         if (arr != null) {
             for (JsonElement el : arr) {
-                try {
+                if (el.isJsonObject()) {
                     JsonObject geo = el.getAsJsonObject();
-                    if (name.equals(geo.getAsJsonObject("description").get("identifier").getAsString())) return geo;
-                } catch (Exception ignored) {}
+                    if (geo.has("description") && geo.get("description").isJsonObject()) {
+                        JsonObject desc = geo.getAsJsonObject("description");
+                        if (desc.has("identifier") && name.equals(desc.get("identifier").getAsString())) {
+                            return geo;
+                        }
+                    }
+                }
             }
         }
         return null;
@@ -478,17 +487,17 @@ public final class SkinPackLoader {
 
         var tm = Minecraft.getInstance().getTextureManager();
 
-        NativeImage img = loadNativeImage(skin.getTexture());
+        NativeImage img = loadNativeImage(skin.texture);
         img = convertLegacySkinIfNeeded(img, skin);
         if (img != null) {
-            skin.identifier = createIdentifier("bedrockskins", "skins/" + skin.getSafePackName() + "/" + skin.getSafeSkinName());
+            skin.identifier = createIdentifier("bedrockskins", "skins/" + skin.safePackName + "/" + skin.safeSkinName);
             tm.register(skin.identifier, new DynamicTexture(() -> "bedrock_skin", img));
         }
 
-        if (skin.capeIdentifier == null && skin.getCape() != null) {
-            NativeImage capeImg = loadNativeImage(skin.getCape());
+        if (skin.capeIdentifier == null && skin.cape != null) {
+            NativeImage capeImg = loadNativeImage(skin.cape);
             if (capeImg != null) {
-                skin.capeIdentifier = createIdentifier("bedrockskins", "capes/" + skin.getSafePackName() + "/" + skin.getSafeSkinName());
+                skin.capeIdentifier = createIdentifier("bedrockskins", "capes/" + skin.safePackName + "/" + skin.safeSkinName);
                 tm.register(skin.capeIdentifier, new DynamicTexture(() -> "bedrock_cape", capeImg));
             }
         }
@@ -540,7 +549,7 @@ public final class SkinPackLoader {
 
     private static boolean usesDefaultHumanoidGeometry(LoadedSkin skin) {
         try {
-            JsonObject data = skin.getGeometryData();
+            JsonObject data = skin.geometryData;
             if (data == null) return false;
 
             JsonArray arr = data.getAsJsonArray("minecraft:geometry");
@@ -632,10 +641,10 @@ public final class SkinPackLoader {
     }
     
     private static void registerPackType(SkinPackManifest manifest) {
-        String serializeName = manifest.getSerializeName();
+        String serializeName = manifest.serializeName();
         if (serializeName == null) return;
 
-        String packType = manifest.getPackType();
+        String packType = manifest.packType();
         if ((packType == null || packType.isEmpty()) && !"Favorites".equals(serializeName) && !"Standard".equals(serializeName)) {
             packType = "skin_pack";
         }
@@ -674,8 +683,8 @@ public final class SkinPackLoader {
     }
 
     private static boolean hasUpsideDownAnimation(SkinEntry entry) {
-        return entry != null && entry.getAnimations() != null 
-            && "animation.player.base_pose.upside_down".equals(entry.getAnimations().get("humanoid_base_pose"));
+        return entry != null && entry.animations() != null 
+            && "animation.player.base_pose.upside_down".equals(entry.animations().get("humanoid_base_pose"));
     }
 
     private static PckFileParser.PckAsset resolveCape(Map<String, PckFileParser.PckAsset> capesByName, Map<String, PckFileParser.PckAsset> capesByBaseName, String capePath) {
@@ -732,7 +741,7 @@ public final class SkinPackLoader {
 
         if (baseName.startsWith("dlcskin") || baseName.startsWith("skin")) return true;
 
-        return getFirstPropertyValue(asset, "ANIM", "DISPLAYNAME", "DISPLAYNAMEID", "LOC_KEY") != null;
+        return asset.getFirstProperty("ANIM", "DISPLAYNAME", "DISPLAYNAMEID", "LOC_KEY") != null;
     }
 
     private static boolean isLikelyCapeAsset(PckFileParser.PckAsset asset, String normPath, String baseName) {
@@ -752,7 +761,7 @@ public final class SkinPackLoader {
         if (generalAssets == null || generalAssets.isEmpty()) return null;
 
         for (PckFileParser.PckAsset asset : generalAssets) {
-            String fromIdsDisplayName = getFirstPropertyValue(asset, "IDS_DISPLAY_NAME", "DISPLAYNAMEID");
+            String fromIdsDisplayName = asset.getFirstProperty("IDS_DISPLAY_NAME", "DISPLAYNAMEID");
             if (fromIdsDisplayName != null && !fromIdsDisplayName.isBlank()) return fromIdsDisplayName;
         }
         return null;
@@ -763,18 +772,6 @@ public final class SkinPackLoader {
         CRC32 crc = new CRC32();
         crc.update(data, 0, Math.min(data.length, 1024));
         return ((long) data.length << 32) | crc.getValue();
-    }
-
-    private static String getFirstPropertyValue(PckFileParser.PckAsset asset, String... keys) {
-        if (asset == null || asset.properties() == null || keys == null) return null;
-
-        for (String key : keys) {
-            if (key == null) continue;
-            for (Map.Entry<String, String> property : asset.properties()) {
-                if (key.equalsIgnoreCase(property.getKey())) return property.getValue();
-            }
-        }
-        return null;
     }
 
     private static String stripExtension(String name) {
@@ -798,10 +795,6 @@ public final class SkinPackLoader {
         while (start < path.length() && path.charAt(start) == '/') start++;
         
         return (start > 0 ? path.substring(start) : path).toLowerCase(Locale.ROOT);
-    }
-
-    private static String firstNonBlank(String first, String fallback) {
-        return first != null && !first.isBlank() ? first : (fallback == null ? "" : fallback);
     }
     
     private static JsonObject loadJsonOrNull(File file) {

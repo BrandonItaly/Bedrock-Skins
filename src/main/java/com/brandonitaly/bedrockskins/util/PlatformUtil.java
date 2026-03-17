@@ -5,6 +5,8 @@ import net.fabricmc.loader.api.FabricLoader;
 //?}
 
 public class PlatformUtil {
+    private PlatformUtil() {}
+    
     public static boolean isModLoaded(String modId) {
         //? if fabric {
         return FabricLoader.getInstance().isModLoaded(modId);

@@ -40,7 +40,14 @@ public class ContentManager {
         String indexUrl,
         String targetDirectoryName,
         boolean requiresResourceReload
-    ) {}
+    ) {
+        public static final Codec<Category> CODEC = RecordCodecBuilder.create(i -> i.group(
+            Codec.STRING.fieldOf("id").forGetter(Category::id),
+            Codec.STRING.fieldOf("indexUrl").forGetter(Category::indexUrl),
+            Codec.STRING.optionalFieldOf("targetDirectoryName", "").forGetter(Category::targetDirectoryName),
+            Codec.BOOL.optionalFieldOf("requiresResourceReload", false).forGetter(Category::requiresResourceReload)
+        ).apply(i, Category::new));
+    }
 
     public record Pack(
         String id,
@@ -85,23 +92,12 @@ public class ContentManager {
             resourceManager.getResource(Identifier.fromNamespaceAndPath(namespace, CATEGORIES_FILE)).ifPresent(resource -> {
                 try (BufferedReader bufferedReader = resource.openAsReader()) {
                     JsonElement parsed = JsonParser.parseReader(bufferedReader);
-                    if (!parsed.isJsonArray()) {
-                        LOGGER.warn("{} in namespace {} is not a JSON array", CATEGORIES_FILE, namespace);
-                        return;
-                    }
+                    if (!parsed.isJsonArray()) return;
 
-                    JsonArray categories = parsed.getAsJsonArray();
-                    for (JsonElement element : categories) {
-                        if (!element.isJsonObject()) continue;
-                        JsonObject category = element.getAsJsonObject();
-                        String id = getString(category, "id", "");
-                        String indexUrl = getString(category, "indexUrl", "");
-                        String targetDirectoryName = getString(category, "targetDirectoryName", "");
-                        boolean requiresResourceReload = category.has("requiresResourceReload") && category.get("requiresResourceReload").getAsBoolean();
-
-                        if (!id.isBlank() && !indexUrl.isBlank()) {
-                            CATEGORIES.add(new Category(id, indexUrl, targetDirectoryName, requiresResourceReload));
-                        }
+                    for (JsonElement element : parsed.getAsJsonArray()) {
+                        Category.CODEC.parse(JsonOps.INSTANCE, element)
+                            .resultOrPartial(LOGGER::warn)
+                            .ifPresent(CATEGORIES::add);
                     }
                 } catch (IOException e) {
                     LOGGER.warn("Failed to load store categories from namespace {}: {}", namespace, e.getMessage());
@@ -112,10 +108,6 @@ public class ContentManager {
 
     public static Optional<Category> getCategory(String id) {
         return CATEGORIES.stream().filter(c -> c.id().equals(id)).findFirst();
-    }
-
-    private static String getString(JsonObject object, String key, String defaultValue) {
-        return object.has(key) ? object.get(key).getAsString() : defaultValue;
     }
 
     public static Path getContentDir(String folderName) {

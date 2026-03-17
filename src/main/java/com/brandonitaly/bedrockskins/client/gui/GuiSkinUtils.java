@@ -25,7 +25,7 @@ public final class GuiSkinUtils {
     private GuiSkinUtils() {
     }
 
-    private static String translatedOrFallback(String translationKey, String fallback) {
+    public static String translatedOrFallback(String translationKey, String fallback) {
         String translated = SkinPackLoader.getTranslation(translationKey);
         return translated != null ? translated : fallback;
     }
@@ -35,23 +35,19 @@ public final class GuiSkinUtils {
     }
 
     private static String skinDisplayNameText(LoadedSkin skin) {
-        return translatedOrFallback(skin.getSafeSkinName(), skin.getSkinDisplayName());
-    }
-
-    public static String getTranslatedOrFallback(String translationKey, String fallback) {
-        return translatedOrFallback(translationKey, fallback);
+        return translatedOrFallback(skin.safeSkinName, skin.skinDisplayName);
     }
 
     public static boolean isAutoSelectedSkin(LoadedSkin skin) {
         return skin != null
-            && "Standard".equals(skin.getSerializeName())
-            && AUTO_SELECTED_INTERNAL_NAME.equals(skin.getSkinDisplayName());
+            && "Standard".equals(skin.serializeName)
+            && AUTO_SELECTED_INTERNAL_NAME.equals(skin.skinDisplayName);
     }
 
     public static boolean isAutoSelectedSkinId(SkinId skinId) {
         return skinId != null
-            && "Standard".equals(skinId.getPack())
-            && AUTO_SELECTED_INTERNAL_NAME.equals(skinId.getName());
+            && "Standard".equals(skinId.pack())
+            && AUTO_SELECTED_INTERNAL_NAME.equals(skinId.name());
     }
 
     public static LoadedSkin createAutoSelectedSkin(LoadedSkin template) {
@@ -62,30 +58,20 @@ public final class GuiSkinUtils {
                 "Standard",
                 "Standard",
                 AUTO_SELECTED_INTERNAL_NAME,
-                template.getGeometryData(),
-                template.getTexture(),
+                template.geometryData,
+                template.texture,
                 null,
                 false
         );
     }
 
     public static List<LoadedSkin> withAutoSelectedStandardFirst(List<LoadedSkin> standardSkins) {
-        if (standardSkins == null || standardSkins.isEmpty()) {
-            return List.of();
-        }
+        if (standardSkins == null || standardSkins.isEmpty()) return List.of();
 
-        List<LoadedSkin> merged = new java.util.ArrayList<>();
-        LoadedSkin autoSelected = createAutoSelectedSkin(standardSkins.getFirst());
-        if (autoSelected != null) {
-            merged.add(autoSelected);
-        }
-
-        for (LoadedSkin skin : standardSkins) {
-            if (!isAutoSelectedSkin(skin)) {
-                merged.add(skin);
-            }
-        }
-        return merged;
+        return java.util.stream.Stream.concat(
+            java.util.stream.Stream.ofNullable(createAutoSelectedSkin(standardSkins.getFirst())),
+            standardSkins.stream().filter(skin -> !isAutoSelectedSkin(skin))
+        ).toList();
     }
 
     public static LoadedSkin resolveAutoSelectedFromStandard(List<LoadedSkin> standardSkins) {
@@ -124,7 +110,7 @@ public final class GuiSkinUtils {
         if (skin == null) {
             return Optional.empty();
         }
-        String description = translatedOrFallback(skin.getSafeSkinName() + ".description", "");
+        String description = translatedOrFallback(skin.safeSkinName + ".description", "");
         return (description == null || description.isEmpty()) ? Optional.empty() : Optional.of(description);
     }
 
@@ -133,7 +119,7 @@ public final class GuiSkinUtils {
             return favoritesDisplayName();
         }
         if (firstSkin != null) {
-            return translatedOrFallback(firstSkin.getSafePackName(), firstSkin.getPackDisplayName());
+            return translatedOrFallback(firstSkin.safePackName, firstSkin.packDisplayName);
         }
         return translatedOrFallback(packId, packId);
     }
@@ -143,7 +129,7 @@ public final class GuiSkinUtils {
             return "bedrockskins.gui.favorites";
         }
         if (firstSkin != null) {
-            return firstSkin.getSafePackName();
+            return firstSkin.safePackName;
         }
         return packId;
     }
@@ -153,14 +139,14 @@ public final class GuiSkinUtils {
             return favoritesDisplayName();
         }
         if (firstSkin != null) {
-            return firstSkin.getPackDisplayName();
+            return firstSkin.packDisplayName;
         }
         return packId;
     }
 
     public static boolean isSkinCurrentlyEquipped(LoadedSkin skin) {
         SkinId currentSkinKey = SkinManager.getLocalSelectedKey();
-        return isAutoSelectedSkin(skin) ? currentSkinKey == null : Objects.equals(currentSkinKey, skin != null ? skin.getSkinId() : null);
+        return isAutoSelectedSkin(skin) ? currentSkinKey == null : Objects.equals(currentSkinKey, skin != null ? skin.skinId : null);
     }
 
     public static void applySelectedSkin(Minecraft minecraft, LoadedSkin skin) throws Exception {
@@ -172,11 +158,11 @@ public final class GuiSkinUtils {
             return;
         }
 
-        SkinId skinId = skin.getSkinId() != null ? skin.getSkinId() : SkinId.of(skin.getSerializeName(), skin.getSkinDisplayName());
+        SkinId skinId = skin.skinId != null ? skin.skinId : SkinId.of(skin.serializeName, skin.skinDisplayName);
         if (minecraft.player != null) {
             SkinManager.setSkin(minecraft.player.getUUID(), skinId.pack(), skinId.name());
             byte[] textureData = ExternalAssetUtil.loadTextureData(skin, minecraft);
-            ClientSkinSync.sendSetSkinPayload(skinId, skin.getGeometryData().toString(), textureData);
+            ClientSkinSync.sendSetSkinPayload(skinId, skin.geometryData.toString(), textureData);
             minecraft.player.refreshDimensions();
         } else {
             StateManager.saveState(FavoritesManager.getFavoriteKeys(), skinId.toString());
@@ -225,7 +211,7 @@ public final class GuiSkinUtils {
             return;
         }
 
-        SkinId skinId = skin.getSkinId();
+        SkinId skinId = skin.skinId;
         if (skinId != null) {
             SkinManager.setPreviewSkin(previewUuid, skinId.pack(), skinId.name());
             SkinPackLoader.registerTextureFor(skinId);

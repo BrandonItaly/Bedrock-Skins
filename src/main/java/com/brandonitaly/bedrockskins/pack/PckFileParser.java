@@ -138,5 +138,16 @@ public final class PckFileParser {
 
     public record PckArchive(int type, int xmlVersion, List<PckAsset> assets) {}
 
-    public record PckAsset(String filename, int type, List<Map.Entry<String, String>> properties, byte[] data) {}
+    public record PckAsset(String filename, int type, List<Map.Entry<String, String>> properties, byte[] data) {
+        public String getFirstProperty(String... keys) {
+            if (properties == null || keys == null) return null;
+            for (String key : keys) {
+                if (key == null) continue;
+                for (Map.Entry<String, String> property : properties) {
+                    if (key.equalsIgnoreCase(property.getKey())) return property.getValue();
+                }
+            }
+            return null;
+        }
+    }
 }

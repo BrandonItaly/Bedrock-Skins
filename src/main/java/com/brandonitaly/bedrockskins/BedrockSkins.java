@@ -40,6 +40,11 @@ public class BedrockSkins implements ModInitializer {
         // Handle player joining - send them all existing skins
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> ServerSkinHandler.onPlayerJoin(payload -> ServerPlayNetworking.send(handler.player, payload)));
 
+        // Handle player disconnecting - clean up memory
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            ServerSkinHandler.onPlayerDisconnect(handler.player.getUUID());
+        });
+
         // Handle client setting their skin
         ServerPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.SetSkinPayload.ID, (payload, context) -> context.server().execute(() -> {
             ServerSkinHandler.handleSetSkin(
@@ -83,6 +88,13 @@ public class BedrockSkins {
             ServerSkinHandler.onPlayerJoin(payload -> PacketDistributor.sendToPlayer(serverPlayer, payload));
         }
     }
+
+    @SubscribeEvent
+    public void onPlayerLeave(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            ServerSkinHandler.onPlayerDisconnect(serverPlayer.getUUID());
+        }
+    }
 }*/
 //?}
 
@@ -97,6 +109,11 @@ class ServerSkinHandler {
                 uuid, skinData.skinId(), skinData.geometry(), skinData.textureData()
             ));
         });
+    }
+
+    static void onPlayerDisconnect(UUID uuid) {
+        lastSkinChange.remove(uuid);
+        ServerSkinManager.removeSkin(uuid);
     }
 
     static void handleSetSkin(ServerPlayer player, SkinId skinId, String geometry, byte[] textureData, Consumer<BedrockSkinsNetworking.SkinUpdatePayload> broadcaster) {

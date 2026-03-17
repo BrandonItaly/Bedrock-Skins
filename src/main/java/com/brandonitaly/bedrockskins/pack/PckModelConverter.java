@@ -53,7 +53,7 @@ final class PckModelConverter {
     private PckModelConverter() {}
 
     static Long parseAnimMask(PckFileParser.PckAsset asset) {
-        String anim = getFirstPropertyValue(asset, "ANIM");
+        String anim = asset.getFirstProperty("ANIM");
         if (anim == null || anim.isBlank()) return null;
 
         String cleaned = anim.trim();
@@ -465,21 +465,6 @@ final class PckModelConverter {
 
     private static float parseFloatToken(String token) {
         return Float.parseFloat(token.indexOf(',') >= 0 ? token.replace(',', '.') : token);
-    }
-
-    private static String getFirstPropertyValue(PckFileParser.PckAsset asset, String... keys) {
-        if (asset == null || asset.properties() == null || keys == null) return null;
-
-        for (String key : keys) {
-            if (key == null) continue;
-
-            for (Map.Entry<String, String> property : asset.properties()) {
-                if (property != null && key.equalsIgnoreCase(property.getKey())) {
-                    return property.getValue();
-                }
-            }
-        }
-        return null;
     }
 
     private record PckBox(

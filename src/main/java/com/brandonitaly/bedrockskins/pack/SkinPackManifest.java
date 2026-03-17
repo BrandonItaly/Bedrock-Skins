@@ -19,10 +19,4 @@ public record SkinPackManifest(
     ).apply(instance, (skins, serializeName, localizationName, packType) -> 
         new SkinPackManifest(skins, serializeName, localizationName, packType.orElse(null))
     ));
-
-    // Backwards-compatible getters
-    public List<SkinEntry> getSkins() { return skins; }
-    public String getSerializeName() { return serializeName; }
-    public String getLocalizationName() { return localizationName; }
-    public String getPackType() { return packType; }
 }

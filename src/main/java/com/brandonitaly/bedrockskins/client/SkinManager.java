@@ -1,16 +1,20 @@
 package com.brandonitaly.bedrockskins.client;
 
+import com.brandonitaly.bedrockskins.pack.SkinId;
+import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
+import net.minecraft.client.Minecraft;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import net.minecraft.client.Minecraft;
-import com.brandonitaly.bedrockskins.pack.SkinId;
-import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 
 public final class SkinManager {
     private SkinManager() {}
 
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static final Map<UUID, SkinId> playerSkins = new HashMap<>();
     private static final Map<UUID, SkinId> previewSkins = new HashMap<>();
 
@@ -27,7 +31,7 @@ public final class SkinManager {
                 }
             }
         } catch (Exception e) {
-            BedrockSkinsLog.error("SkinManager: load failed", e);
+            LOGGER.error("SkinManager: load failed", e);
         }
     }
 
@@ -45,7 +49,7 @@ public final class SkinManager {
             var selected = StateManager.readState().getSelected();
             return (selected == null || selected.isEmpty()) ? null : SkinId.parse(selected);
         } catch (Exception e) {
-            BedrockSkinsLog.error("SkinManager: failed to read local selected skin from state", e);
+            LOGGER.error("SkinManager: failed to read local selected skin from state", e);
             return null;
         }
     }
@@ -62,7 +66,7 @@ public final class SkinManager {
             try {
                 StateManager.saveState(FavoritesManager.getFavoriteKeys(), id.toString());
             } catch (Exception e) {
-                BedrockSkinsLog.error("SkinManager: failed to save selected skin", e);
+                LOGGER.error("SkinManager: failed to save selected skin", e);
             }
         }
     }
@@ -105,7 +109,7 @@ public final class SkinManager {
                 try {
                     StateManager.saveState(FavoritesManager.getFavoriteKeys(), null);
                 } catch (Exception e) {
-                    BedrockSkinsLog.error("SkinManager: failed to clear selected skin", e);
+                    LOGGER.error("SkinManager: failed to clear selected skin", e);
                 }
             }
             releaseIfUnused(previous);

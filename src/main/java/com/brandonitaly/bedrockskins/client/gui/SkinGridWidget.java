@@ -174,7 +174,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                     return;
                 }
 
-                var id = skin.getSkinId();
+                var id = skin.skinId;
                 if (id != null) {
                     try {
                         registerTextureFor.accept(id.toString());

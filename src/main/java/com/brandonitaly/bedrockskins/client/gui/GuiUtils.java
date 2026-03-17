@@ -120,7 +120,7 @@ public final class GuiUtils {
         SkinId id = SkinManager.getSkin(entity.getUUID());
         if (id == null) return false;
         LoadedSkin skin = SkinPackLoader.getLoadedSkin(id);
-        return skin != null && skin.isUpsideDown();
+        return skin != null && skin.upsideDown;
     }
 
     public static void drawPanelChrome(GuiGraphics gui, int x, int y, int w, int h, Component title, Font font) {

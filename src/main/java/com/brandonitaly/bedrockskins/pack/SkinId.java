@@ -20,9 +20,8 @@ public record SkinId(String pack, String name, String safePackName, String safeS
 
     public static SkinId parse(String key) {
         if (key == null || key.isEmpty()) return null;
-        int idx = key.indexOf(':');
-        if (idx < 0) return new SkinId(key, "");
-        return new SkinId(key.substring(0, idx), key.substring(idx + 1));
+        String[] parts = key.split(":", 2);
+        return new SkinId(parts[0], parts.length > 1 ? parts[1] : "");
     }
 
     // Backwards-compatible getters

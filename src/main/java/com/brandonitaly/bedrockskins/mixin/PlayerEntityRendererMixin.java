@@ -191,7 +191,7 @@ public abstract class PlayerEntityRendererMixin {
             SkinId skinId = SkinManager.getSkin(cp.getUUID());
             if (skinId != null) {
                 var skin = SkinPackLoader.getLoadedSkin(skinId);
-                if (skin != null && skin.isUpsideDown()) ci.setReturnValue(true);
+                if (skin != null && skin.upsideDown) ci.setReturnValue(true);
             }
         }
     }
