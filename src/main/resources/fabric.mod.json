@@ -16,7 +16,7 @@
     "issues": "${mod_issues}"
   },
   "license": "${mod_license}",
-  "icon": "assets/bedrockskins/icon.png",
+  "icon": "assets/${mod_id}/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
@@ -34,11 +34,8 @@
     "${mod_id}.mixins.json"
   ],
   "depends": {
-    "fabric-api-base": "*",
+    "fabric-api": "*",
     "fabricloader": ">=0.17",
     "minecraft": ["${mc_version_range}"]
-  },
-  "suggests": {
-    "legacy4j": "*"
   }
 }
