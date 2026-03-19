@@ -20,15 +20,15 @@ public final class SkinManager {
 
     public static void load() {
         previewSkins.clear();
+        UUID localUuid = getLocalPlayerUuid();
+        if (localUuid == null) return;
+
         try {
-            var selected = StateManager.readState().selected();
-            var localUuid = getLocalPlayerUuid();
-            if (localUuid != null) {
-                if (selected != null && !selected.isEmpty()) {
-                    playerSkins.put(localUuid, SkinId.parse(selected));
-                } else {
-                    playerSkins.remove(localUuid);
-                }
+            String selected = StateManager.readState().selected();
+            if (selected != null && !selected.isBlank()) {
+                playerSkins.put(localUuid, SkinId.parse(selected));
+            } else {
+                playerSkins.remove(localUuid);
             }
         } catch (Exception e) {
             LOGGER.error("SkinManager: load failed", e);
@@ -42,12 +42,13 @@ public final class SkinManager {
 
     public static SkinId getLocalSelectedKey() {
         UUID localUuid = getLocalPlayerUuid();
-        if (localUuid != null) {
+        if (localUuid != null && playerSkins.containsKey(localUuid)) {
             return playerSkins.get(localUuid);
         }
+        
         try {
-            var selected = StateManager.readState().selected();
-            return (selected == null || selected.isEmpty()) ? null : SkinId.parse(selected);
+            String selected = StateManager.readState().selected();
+            return (selected == null || selected.isBlank()) ? null : SkinId.parse(selected);
         } catch (Exception e) {
             LOGGER.error("SkinManager: failed to read local selected skin from state", e);
             return null;
@@ -57,9 +58,7 @@ public final class SkinManager {
     public static void setSkin(UUID uuid, SkinId id) {
         SkinId previous = playerSkins.put(uuid, id);
         
-        if (!Objects.equals(previous, id)) {
-            releaseIfUnused(previous);
-        }
+        if (!Objects.equals(previous, id)) releaseIfUnused(previous);
         
         if (uuid.equals(getLocalPlayerUuid())) {
             try {
@@ -77,9 +76,7 @@ public final class SkinManager {
     public static void setPreviewSkin(UUID uuid, String packName, String skinName) {
         SkinId id = SkinId.of(packName, skinName);
         SkinId previous = previewSkins.put(uuid, id);
-        if (!Objects.equals(previous, id)) {
-            releaseIfUnused(previous);
-        }
+        if (!Objects.equals(previous, id)) releaseIfUnused(previous);
     }
 
     public static void resetPreviewSkin(String uuidStr) {
@@ -87,8 +84,7 @@ public final class SkinManager {
     }
 
     public static void resetPreviewSkin(UUID uuid) {
-        SkinId previous = previewSkins.remove(uuid);
-        releaseIfUnused(previous);
+        releaseIfUnused(previewSkins.remove(uuid));
     }
 
     public static SkinId getSkin(String uuidStr) {
@@ -122,8 +118,8 @@ public final class SkinManager {
 
     private static void releaseIfUnused(SkinId id) {
         if (id == null) return;
-        if (playerSkins.containsValue(id)) return;
-        if (previewSkins.containsValue(id)) return;
-        SkinPackLoader.releaseSkinAssets(id);
+        if (!playerSkins.containsValue(id) && !previewSkins.containsValue(id)) {
+            SkinPackLoader.releaseSkinAssets(id);
+        }
     }
 }

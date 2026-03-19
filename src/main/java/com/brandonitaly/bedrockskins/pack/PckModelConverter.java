@@ -9,8 +9,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 final class PckModelConverter {
+    private static final Pattern WHITESPACE = Pattern.compile("\\s+");
+
     private static final int PCK_ANIM_FLAG_STATIC_ARMS = 0;
     private static final int PCK_ANIM_FLAG_ZOMBIE_ARMS = 1;
     private static final int PCK_ANIM_FLAG_STATIC_LEGS = 2;
@@ -71,13 +74,8 @@ final class PckModelConverter {
         return mask != null && (mask & (1L << bit)) != 0;
     }
 
-    static boolean isSlim(Long mask) {
-        return isAnimFlagSet(mask, PCK_ANIM_FLAG_SLIM);
-    }
-
-    static boolean isUpsideDown(Long mask) {
-        return isAnimFlagSet(mask, PCK_ANIM_FLAG_DINNERBONE);
-    }
+    static boolean isSlim(Long mask) { return isAnimFlagSet(mask, PCK_ANIM_FLAG_SLIM); }
+    static boolean isUpsideDown(Long mask) { return isAnimFlagSet(mask, PCK_ANIM_FLAG_DINNERBONE); }
 
     static JsonObject applyPckDataToGeometry(PckFileParser.PckAsset asset, JsonObject baseWrappedGeometry, Long animMask) {
         if (baseWrappedGeometry == null) return null;
@@ -134,7 +132,6 @@ final class PckModelConverter {
                         if (cubes != null && !cubes.isEmpty()) {
                             for (int i = cubes.size() - 1; i >= 0; i--) {
                                 JsonElement cubeEl = cubes.get(i);
-                                // Delete the cube since it matched the vanilla signature
                                 if (cubeEl.isJsonObject() && isVanillaCubeForBone(cubeEl.getAsJsonObject(), lowerBoneName)) {
                                     cubes.remove(i);
                                 }
@@ -161,13 +158,10 @@ final class PckModelConverter {
         for (PckBox box : boxes) {
             String baseType = baseTypeForBoxType(box.type());
             float offsetY = offsets.getOrDefault(baseType, 0.0f);
-
             float[] origin = toBedrockOrigin(box);
             origin[1] -= offsetY;
 
-            String boneName = boneNameForBoxType(box.type());
-            JsonObject bone = findOrCreateBone(bones, boneName);
-
+            JsonObject bone = findOrCreateBone(bones, boneNameForBoxType(box.type()));
             JsonArray cubes = bone.getAsJsonArray("cubes");
             if (cubes == null) {
                 cubes = new JsonArray();
@@ -211,9 +205,10 @@ final class PckModelConverter {
 
         List<PckBox> out = new ArrayList<>();
         for (Map.Entry<String, String> property : asset.properties()) {
-            if (property == null || !"BOX".equalsIgnoreCase(property.getKey())) continue;
-            PckBox parsed = parsePckBox(property.getValue());
-            if (parsed != null) out.add(parsed);
+            if (property != null && "BOX".equalsIgnoreCase(property.getKey())) {
+                PckBox parsed = parsePckBox(property.getValue());
+                if (parsed != null) out.add(parsed);
+            }
         }
         return out;
     }
@@ -221,7 +216,7 @@ final class PckModelConverter {
     private static PckBox parsePckBox(String value) {
         if (value == null || value.isBlank()) return null;
 
-        String[] t = value.trim().split("\\s+");
+        String[] t = WHITESPACE.split(value.trim());
         if (t.length < 9) return null;
 
         try {
@@ -253,7 +248,7 @@ final class PckModelConverter {
         for (Map.Entry<String, String> property : asset.properties()) {
             if (property == null || !"OFFSET".equalsIgnoreCase(property.getKey())) continue;
 
-            String[] t = property.getValue() == null ? new String[0] : property.getValue().trim().split("\\s+");
+            String[] t = property.getValue() == null ? new String[0] : WHITESPACE.split(property.getValue().trim());
             if (t.length < 3) continue;
 
             String type = normalizeBaseType(t[0]);
@@ -369,10 +364,9 @@ final class PckModelConverter {
     private static JsonObject firstGeometryNode(JsonObject wrappedGeometry) {
         if (wrappedGeometry == null) return null;
         JsonArray arr = wrappedGeometry.getAsJsonArray("minecraft:geometry");
-        if (arr == null || arr.isEmpty()) return null;
         
-        try { return arr.get(0).getAsJsonObject(); } 
-        catch (Exception e) { return null; }
+        if (arr == null || arr.isEmpty() || !arr.get(0).isJsonObject()) return null;
+        return arr.get(0).getAsJsonObject();
     }
 
     private static float[] defaultPivotForBone(String lowerBoneName) {

@@ -27,13 +27,9 @@ public class BedrockPlayerModel extends PlayerModel {
     public final BedrockAnimFlags animFlags;
 
     // Pre-resolved parts for zero-allocation rendering
-    public final ModelPart customHead;
-    public final ModelPart customHat;
-    public final ModelPart customBody;
-    public final ModelPart customRightArm;
-    public final ModelPart customLeftArm;
-    public final ModelPart customRightLeg;
-    public final ModelPart customLeftLeg;
+    public final ModelPart customHead, customHat, customBody;
+    public final ModelPart customRightArm, customLeftArm;
+    public final ModelPart customRightLeg, customLeftLeg;
 
     public BedrockPlayerModel(ModelPart root, boolean thinArms, Map<String, ModelPart> partsMap, Map<String, PartTransform> defaultTransforms, float heightMultiplier, BedrockAnimFlags animFlags) {
         super(root, thinArms);
@@ -59,7 +55,22 @@ public class BedrockPlayerModel extends PlayerModel {
         boolean leftArmDisabled, boolean rightLegDisabled, boolean leftLegDisabled,
         boolean forceHeadArmor, boolean forceBodyArmor, boolean forceRightArmArmor,
         boolean forceLeftArmArmor, boolean forceRightLegArmor, boolean forceLeftLegArmor
-    ) {}
+    ) {
+        public static BedrockAnimFlags fromGeometry(BedrockGeometry g) {
+            return new BedrockAnimFlags(
+                isTrue(g.getAnimationArmsOutFront()), isTrue(g.getAnimationSingleArmAnimation()),
+                isTrue(g.getAnimationStationaryLegs()), isTrue(g.getAnimationSingleLegAnimation()),
+                isTrue(g.getAnimationDontShowArmor()), isTrue(g.getAnimationHeadDisabled()),
+                isTrue(g.getAnimationBodyDisabled()), isTrue(g.getAnimationRightArmDisabled()),
+                isTrue(g.getAnimationLeftArmDisabled()), isTrue(g.getAnimationRightLegDisabled()),
+                isTrue(g.getAnimationLeftLegDisabled()), isTrue(g.getAnimationForceHeadArmor()),
+                isTrue(g.getAnimationForceBodyArmor()), isTrue(g.getAnimationForceRightArmArmor()),
+                isTrue(g.getAnimationForceLeftArmArmor()), isTrue(g.getAnimationForceRightLegArmor()),
+                isTrue(g.getAnimationForceLeftLegArmor())
+            );
+        }
+        private static boolean isTrue(Boolean b) { return Boolean.TRUE.equals(b); }
+    }
 
     private static final Set<String> VANILLA_ROOT_PARTS = Set.of(
         PartNames.HEAD, PartNames.BODY, PartNames.RIGHT_ARM, PartNames.LEFT_ARM, PartNames.RIGHT_LEG, PartNames.LEFT_LEG
@@ -76,27 +87,16 @@ public class BedrockPlayerModel extends PlayerModel {
         ensureRequiredBones(normalized);
         BuildRootResult result = buildRoot(normalized);
         
-        float headPivotY = 24.0f;
-        for (BedrockBone bone : normalized.getBones()) {
-            if (bone.getName() != null && "head".equalsIgnoreCase(mapBoneName(bone.getName()))) {
-                if (bone.getPivot() != null && bone.getPivot().size() >= 2) headPivotY = bone.getPivot().get(1);
-                break;
-            }
-        }
+        float headPivotY = (float) normalized.getBones().stream()
+            .filter(b -> b.getName() != null && "head".equalsIgnoreCase(mapBoneName(b.getName())))
+            .map(BedrockBone::getPivot)
+            .filter(p -> p != null && p.size() >= 2)
+            .mapToDouble(p -> p.get(1))
+            .findFirst()
+            .orElse(24.0);
         
         float heightMultiplier = Math.max(headPivotY / 24.0f, 0.001f);
-        
-        BedrockAnimFlags flags = new BedrockAnimFlags(
-            Boolean.TRUE.equals(normalized.getAnimationArmsOutFront()), Boolean.TRUE.equals(normalized.getAnimationSingleArmAnimation()),
-            Boolean.TRUE.equals(normalized.getAnimationStationaryLegs()), Boolean.TRUE.equals(normalized.getAnimationSingleLegAnimation()),
-            Boolean.TRUE.equals(normalized.getAnimationDontShowArmor()), Boolean.TRUE.equals(normalized.getAnimationHeadDisabled()),
-            Boolean.TRUE.equals(normalized.getAnimationBodyDisabled()), Boolean.TRUE.equals(normalized.getAnimationRightArmDisabled()),
-            Boolean.TRUE.equals(normalized.getAnimationLeftArmDisabled()), Boolean.TRUE.equals(normalized.getAnimationRightLegDisabled()),
-            Boolean.TRUE.equals(normalized.getAnimationLeftLegDisabled()), Boolean.TRUE.equals(normalized.getAnimationForceHeadArmor()),
-            Boolean.TRUE.equals(normalized.getAnimationForceBodyArmor()), Boolean.TRUE.equals(normalized.getAnimationForceRightArmArmor()),
-            Boolean.TRUE.equals(normalized.getAnimationForceLeftArmArmor()), Boolean.TRUE.equals(normalized.getAnimationForceRightLegArmor()),
-            Boolean.TRUE.equals(normalized.getAnimationForceLeftLegArmor())
-        );
+        BedrockAnimFlags flags = BedrockAnimFlags.fromGeometry(normalized);
 
         return new BedrockPlayerModel(result.root(), thinArms, result.parts(), result.defaults(), heightMultiplier, flags);
     }
@@ -108,8 +108,8 @@ public class BedrockPlayerModel extends PlayerModel {
         GeometryDescription desc = geometry.getDescription();
         if (desc.getTextureWidth() <= 0) desc.setTextureWidth(64);
         if (desc.getTextureHeight() <= 0) desc.setTextureHeight(64);
-        
         if (geometry.getBones() == null) geometry.setBones(new ArrayList<>());
+        
         return geometry;
     }
 
@@ -225,18 +225,12 @@ public class BedrockPlayerModel extends PlayerModel {
     }
 
     private static void addVanillaScaffold(PartDefinition root) {
-        root.addOrReplaceChild(PartNames.HEAD, CubeListBuilder.create(), PartPose.ZERO)
-            .addOrReplaceChild(PartNames.HAT, CubeListBuilder.create(), PartPose.ZERO);
-        root.addOrReplaceChild(PartNames.BODY, CubeListBuilder.create(), PartPose.ZERO)
-            .addOrReplaceChild(PartNames.JACKET, CubeListBuilder.create(), PartPose.ZERO);
-        root.addOrReplaceChild(PartNames.RIGHT_ARM, CubeListBuilder.create(), PartPose.ZERO)
-            .addOrReplaceChild("right_sleeve", CubeListBuilder.create(), PartPose.ZERO);
-        root.addOrReplaceChild(PartNames.LEFT_ARM, CubeListBuilder.create(), PartPose.ZERO)
-            .addOrReplaceChild("left_sleeve", CubeListBuilder.create(), PartPose.ZERO);
-        root.addOrReplaceChild(PartNames.RIGHT_LEG, CubeListBuilder.create(), PartPose.ZERO)
-            .addOrReplaceChild("right_pants", CubeListBuilder.create(), PartPose.ZERO);
-        root.addOrReplaceChild(PartNames.LEFT_LEG, CubeListBuilder.create(), PartPose.ZERO)
-            .addOrReplaceChild("left_pants", CubeListBuilder.create(), PartPose.ZERO);
+        root.addOrReplaceChild(PartNames.HEAD, CubeListBuilder.create(), PartPose.ZERO).addOrReplaceChild(PartNames.HAT, CubeListBuilder.create(), PartPose.ZERO);
+        root.addOrReplaceChild(PartNames.BODY, CubeListBuilder.create(), PartPose.ZERO).addOrReplaceChild(PartNames.JACKET, CubeListBuilder.create(), PartPose.ZERO);
+        root.addOrReplaceChild(PartNames.RIGHT_ARM, CubeListBuilder.create(), PartPose.ZERO).addOrReplaceChild("right_sleeve", CubeListBuilder.create(), PartPose.ZERO);
+        root.addOrReplaceChild(PartNames.LEFT_ARM, CubeListBuilder.create(), PartPose.ZERO).addOrReplaceChild("left_sleeve", CubeListBuilder.create(), PartPose.ZERO);
+        root.addOrReplaceChild(PartNames.RIGHT_LEG, CubeListBuilder.create(), PartPose.ZERO).addOrReplaceChild("right_pants", CubeListBuilder.create(), PartPose.ZERO);
+        root.addOrReplaceChild(PartNames.LEFT_LEG, CubeListBuilder.create(), PartPose.ZERO).addOrReplaceChild("left_pants", CubeListBuilder.create(), PartPose.ZERO);
     }
 
     private static CubeListBuilder buildCubeList(BoneNode node) {
@@ -357,12 +351,12 @@ public class BedrockPlayerModel extends PlayerModel {
 
     private float computeArmWalkSwing(AvatarRenderState state, boolean rightArm) {
         float speedValue = state.speedValue != 0f ? state.speedValue : 1f;
-        float phase = rightArm ? (float) Math.PI : 0f;
-        return (float) (Math.cos(state.walkAnimationPos * WALK_SWING_CONST + phase) * (state.walkAnimationSpeed / speedValue));
+        float phase = rightArm ? Mth.PI : 0f;
+        return Mth.cos(state.walkAnimationPos * WALK_SWING_CONST + phase) * (state.walkAnimationSpeed / speedValue);
     }
 
     private float computeLegWalkSwing(AvatarRenderState state, boolean rightLeg) {
-        float phase = rightLeg ? 0f : (float) Math.PI;
+        float phase = rightLeg ? 0f : Mth.PI;
         return Mth.cos(state.walkAnimationPos * WALK_SWING_CONST + phase) * 1.4F * state.walkAnimationSpeed;
     }
 

@@ -137,10 +137,6 @@ class ServerSkinHandler {
                 logger.warn("Player {} sent invalid texture format (not PNG).", player.getName().getString());
                 return;
             }
-            if (geometry.length() > 100_000) {
-                logger.warn("Player {} sent oversized geometry ({} chars).", player.getName().getString(), geometry.length());
-                return;
-            }
         }
 
         logger.info("Player {} set skin to {}", player.getName().getString(), (skinId == null ? "RESET" : skinId.toString()));
