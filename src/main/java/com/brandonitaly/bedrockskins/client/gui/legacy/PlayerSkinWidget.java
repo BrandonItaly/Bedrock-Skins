@@ -1,11 +1,9 @@
 package com.brandonitaly.bedrockskins.client.gui.legacy;
 
 import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
-import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.client.gui.GuiSkinUtils;
 import com.brandonitaly.bedrockskins.client.gui.PreviewPlayer;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
-import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.GuiGraphics;
@@ -24,15 +22,18 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 public class PlayerSkinWidget extends AbstractWidget {
+    private static final float VISUAL_SCALE_MULTIPLIER = 1.1F; 
     private static final float ROTATION_SENSITIVITY = 2.5F;
     private static final float ROTATION_X_LIMIT = 50.0F;
     private static final float LEGACY_WALK_SPEED = 0.3F;
     private static final float LEGACY_WALK_DISTANCE = 1.0F;
-    private static final long WALK_SYNC_EPOCH_MS = Util.getMillis();
     private static final long WALK_STEP_MS = 16L;
-    private static final int WALK_BOOTSTRAP_MOD_STEPS = 384;
     private static final float WALK_STEP_SPEED = LEGACY_WALK_SPEED * (WALK_STEP_MS / 50.0F);
     private static final long PREVIEW_TICK_MS = 50L;
+    
+    // Global sync variables
+    private static long walkSyncEpochMs = Util.getMillis();
+    private static long lastRenderTickMs = Util.getMillis();
     
     private final PreviewPlayer dummyPlayer;
     private final UUID dummyUuid = UUID.randomUUID();
@@ -40,99 +41,70 @@ public class PlayerSkinWidget extends AbstractWidget {
     final Supplier<LoadedSkin> skin;
     private final int originalWidth;
     private final int originalHeight;
-    private float rotationX = 0.0F;
-    private float rotationY = 0.0F;
     public boolean interactable = true;
     public boolean visible = true;
     
-    // Animation state
-    private float targetRotationX = Float.NEGATIVE_INFINITY;
-    private float targetRotationY = Float.NEGATIVE_INFINITY;
-    private float targetPosX = Float.NEGATIVE_INFINITY;
-    private float targetPosY = Float.NEGATIVE_INFINITY;
-    private float prevPosX = 0;
-    private float prevPosY = 0;
-    private float prevRotationX = 0;
-    private float prevRotationY = 0;
-    float progress = 0;
-    private float scale = 1;
-    private float targetScale = Float.NEGATIVE_INFINITY;
-    private float prevScale = 0;
+    // Animation & State
+    private float rotationX = 0.0F, rotationY = 0.0F;
+    private float targetRotationX = Float.NEGATIVE_INFINITY, targetRotationY = Float.NEGATIVE_INFINITY;
+    private float targetPosX = Float.NEGATIVE_INFINITY, targetPosY = Float.NEGATIVE_INFINITY;
+    private float prevPosX = 0, prevPosY = 0, prevRotationX = 0, prevRotationY = 0;
+    private float scale = 1, targetScale = Float.NEGATIVE_INFINITY, prevScale = 0;
+    float progress = 0; 
     boolean wasHidden = true;
     private long start = 0;
 
-    // Snap & Pose state
-    private Integer snapX = null;
-    private Integer snapY = null;
+    // Pose State
+    private Integer snapX = null, snapY = null;
     private PreviewPose pendingPose = null;
     private PreviewPose previewPose = PreviewPose.STANDING;
     private long lastPreviewTickMs = Util.getMillis();
-    
     private boolean skinSetupComplete = false;
 
-    public enum PreviewPose {
-        STANDING,
-        SNEAKING,
-        PUNCHING
-    }
+    public enum PreviewPose { STANDING, SNEAKING, PUNCHING }
 
     public PlayerSkinWidget(int width, int height, EntityModelSet entityModelSet, Supplier<SkinReference> supplier, @Nullable Supplier<LoadedSkin> skinSupplier) {
         super(-9999, -9999, width, height, CommonComponents.EMPTY);
         this.originalWidth = width;
         this.originalHeight = height;
         this.skinRef = supplier;
+        
         this.skin = skinSupplier != null ? skinSupplier : () -> {
             SkinReference ref = this.skinRef.get();
-            if (ref == null) return null;
-            return SkinPackAdapter.getPack(ref.packId()).getSkin(ref.ordinal());
+            return ref != null ? SkinPackAdapter.getPack(ref.packId()).getSkin(ref.ordinal()) : null;
         };
         
-        Minecraft minecraft = Minecraft.getInstance();
-        String name = minecraft.player != null ? minecraft.player.getName().getString() : "Preview";
+        Minecraft mc = Minecraft.getInstance();
+        String name = mc.player != null ? mc.player.getName().getString() : "Preview";
         this.dummyPlayer = PreviewPlayer.PreviewPlayerPool.get(new GameProfile(dummyUuid, name));
-        initializeWalkAnimationPhase(this.dummyPlayer);
     }
 
-    public boolean isInterpolating() {
-        return targetRotationX != Float.NEGATIVE_INFINITY;
-    }
+    public boolean isInterpolating() { return targetRotationX != Float.NEGATIVE_INFINITY; }
 
-    public void beginInterpolation(float targetRotationX, float targetRotationY, float targetPosX, float targetPosY, float targetScale) {
+    public void beginInterpolation(float targetRotX, float targetRotY, float targetPosX, float targetPosY, float targetScale) {
         if (this.snapX != null && this.snapY != null) {
             this.setX(this.snapX);
             this.setY(this.snapY);
+            this.snapX = this.snapY = null;
         }
 
         this.progress = 0;
         this.start = Util.getMillis();
-        this.prevRotationX = rotationX;
-        this.prevRotationY = rotationY;
-        this.targetRotationX = targetRotationX;
-        this.targetRotationY = targetRotationY;        
-        this.prevPosX = getX();
-        this.prevPosY = getY();
-        this.targetPosX = targetPosX;
-        this.targetPosY = targetPosY;
-        this.prevScale = scale;
-        this.targetScale = targetScale;
         
-        this.snapX = null;
-        this.snapY = null;
+        this.prevRotationX = rotationX; this.prevRotationY = rotationY;
+        this.prevPosX = getX(); this.prevPosY = getY(); this.prevScale = scale;
+        
+        this.targetRotationX = targetRotX; this.targetRotationY = targetRotY;
+        this.targetPosX = targetPosX; this.targetPosY = targetPosY; this.targetScale = targetScale;
         
         if (!this.visible || this.wasHidden) {
-            this.rotationX = targetRotationX;
-            this.rotationY = targetRotationY;
-            this.setX((int) targetPosX);
-            this.setY((int) targetPosY);
+            this.rotationX = targetRotX; this.rotationY = targetRotY;
+            this.setX((int) targetPosX); this.setY((int) targetPosY);
             this.scale = targetScale;
             updateBounds();
             
-            // Overwrite the previous coordinates
-            this.prevPosX = targetPosX;
-            this.prevPosY = targetPosY;
-            this.prevRotationX = targetRotationX;
-            this.prevRotationY = targetRotationY;
-            this.prevScale = targetScale;
+            this.prevPosX = targetPosX; this.prevPosY = targetPosY;
+            this.prevRotationX = targetRotX; this.prevRotationY = targetRotY; this.prevScale = targetScale;
             
             this.start = Util.getMillis() - 200L;
             this.progress = 2;
@@ -140,46 +112,32 @@ public class PlayerSkinWidget extends AbstractWidget {
         }
     }
     
-    public void snapTo(int x, int y) {
-        this.snapX = x;
-        this.snapY = y;
-    }
-
+    public void snapTo(int x, int y) { this.snapX = x; this.snapY = y; }
     public void visible() { this.visible = true; }
-
+    
     public void invisible() {
-        this.wasHidden = true;
-        this.visible = false;
-        this.progress = 2;
+        this.wasHidden = true; this.visible = false; this.progress = 2;
         finishInterpolation();
     }
     
     private void finishInterpolation() {
         if (this.targetRotationX != Float.NEGATIVE_INFINITY) {
-            this.rotationX = this.targetRotationX;
-            this.rotationY = this.targetRotationY;
+            this.rotationX = this.targetRotationX; this.rotationY = this.targetRotationY;
         }
-        this.targetRotationX = Float.NEGATIVE_INFINITY;
-        this.targetRotationY = Float.NEGATIVE_INFINITY;
         
         if (snapX != null && snapY != null) {
-            this.setX(snapX);
-            this.setY(snapY);
-            snapX = null;
-            snapY = null;
+            this.setX(snapX); this.setY(snapY);
+            snapX = snapY = null;
         } else if (this.targetPosX != Float.NEGATIVE_INFINITY) {
-            this.setX((int) this.targetPosX);
-            this.setY((int) targetPosY);
+            this.setX((int) this.targetPosX); this.setY((int) targetPosY);
         }
-        
-        this.targetPosX = Float.NEGATIVE_INFINITY;
-        this.targetPosY = Float.NEGATIVE_INFINITY;
         
         if (this.targetScale != Float.NEGATIVE_INFINITY) {
-            this.scale = targetScale;
-            updateBounds();
+            this.scale = targetScale; updateBounds();
         }
-        this.targetScale = Float.NEGATIVE_INFINITY;
+
+        this.targetRotationX = this.targetRotationY = Float.NEGATIVE_INFINITY;
+        this.targetPosX = this.targetPosY = this.targetScale = Float.NEGATIVE_INFINITY;
 
         if (this.pendingPose != null) {
             setPreviewPose(this.pendingPose);
@@ -209,18 +167,14 @@ public class PlayerSkinWidget extends AbstractWidget {
 
     private void setupDummyPlayerSkin() {
         LoadedSkin loadedSkin = this.skin.get();
-        Minecraft minecraft = Minecraft.getInstance();
-
         dummyPlayer.clearForcedProfileSkin();
         dummyPlayer.clearForcedBody();
         dummyPlayer.clearForcedCape();
 
         if (GuiSkinUtils.isAutoSelectedSkin(loadedSkin)) {
-            GuiSkinUtils.applyAutoSelectedPreview(minecraft, dummyPlayer, dummyUuid);
-        } else if (loadedSkin != null) {
-            GuiSkinUtils.applyLoadedSkinPreview(dummyPlayer, dummyUuid, loadedSkin);
+            GuiSkinUtils.applyAutoSelectedPreview(Minecraft.getInstance(), dummyPlayer, dummyUuid);
         } else {
-            GuiSkinUtils.applyLoadedSkinPreview(dummyPlayer, dummyUuid, null);
+            GuiSkinUtils.applyLoadedSkinPreview(dummyPlayer, dummyUuid, loadedSkin);
         }
     }
 
@@ -228,10 +182,7 @@ public class PlayerSkinWidget extends AbstractWidget {
         if (!visible) return;
 
         long elapsed = Util.getMillis() - start;
-        
-        if (!BedrockSkinsConfig.isSmoothInterpolationEnabled()) {
-            elapsed = (elapsed / 33L) * 33L;
-        }
+        if (!BedrockSkinsConfig.isSmoothInterpolationEnabled()) elapsed = (elapsed / 33L) * 33L;
 
         progress = elapsed / 200f;
         interpolate(progress);
@@ -242,10 +193,8 @@ public class PlayerSkinWidget extends AbstractWidget {
                 skinSetupComplete = true;
             }
 
-            LoadedSkin loadedSkin = this.skin.get();
-            Minecraft mc = Minecraft.getInstance();
-            if (GuiSkinUtils.isAutoSelectedSkin(loadedSkin)) {
-                GuiSkinUtils.refreshAutoSelectedProfileSkin(mc, dummyPlayer);
+            if (GuiSkinUtils.isAutoSelectedSkin(this.skin.get())) {
+                GuiSkinUtils.refreshAutoSelectedProfileSkin(Minecraft.getInstance(), dummyPlayer);
             }
             
             advancePreviewSimulation(dummyPlayer);
@@ -256,17 +205,28 @@ public class PlayerSkinWidget extends AbstractWidget {
             applyLegacyWalkAnimation(dummyPlayer);
             applySwingPose(dummyPlayer);
             
-            float headYawOffset = crouching ? 5.0F : 0.0F;
+            // Scaled Render Bounds
+            int w = (int)(this.getWidth() * VISUAL_SCALE_MULTIPLIER);
+            int h = (int)(this.getHeight() * VISUAL_SCALE_MULTIPLIER);
+            int rx = this.getX() - (w - this.getWidth()) / 2;
+            int ry = this.getY() - (h - this.getHeight());
+            
             com.brandonitaly.bedrockskins.client.gui.GuiUtils.renderEntityInRect(
-                guiGraphics, dummyPlayer, this.rotationY, headYawOffset,
-                this.getX(), this.getY(), this.getX() + this.getWidth(), this.getY() + this.getHeight(), 110
+                guiGraphics, dummyPlayer, this.rotationY, crouching ? 5.0F : 0.0F,
+                rx, ry, rx + w, ry + h, 110
             );
         }
     }
 
     private void applyLegacyWalkAnimation(PreviewPlayer player) {
         long now = Util.getMillis();
-        int totalSteps = (int) ((now - WALK_SYNC_EPOCH_MS) / WALK_STEP_MS);
+        if (now - lastRenderTickMs > 2000L || now < lastRenderTickMs) walkSyncEpochMs = now;
+        lastRenderTickMs = now;
+
+        int totalSteps = Math.max(0, (int) ((now - walkSyncEpochMs) / WALK_STEP_MS));
+        if (totalSteps > 30000) {
+            walkSyncEpochMs = now; totalSteps = 0;
+        }
 
         player.walkAnimation.stop();
         for (int i = 0; i < totalSteps; i++) {
@@ -274,55 +234,33 @@ public class PlayerSkinWidget extends AbstractWidget {
         }
     }
 
-    private void initializeWalkAnimationPhase(PreviewPlayer player) {
-        long now = Util.getMillis();
-        int bootstrapSteps = (int) (((now - WALK_SYNC_EPOCH_MS) / WALK_STEP_MS) % WALK_BOOTSTRAP_MOD_STEPS);
-        if (bootstrapSteps < 0) bootstrapSteps += WALK_BOOTSTRAP_MOD_STEPS;
-
-        player.walkAnimation.stop();
-        for (int i = 0; i < bootstrapSteps; i++) {
-            player.walkAnimation.update(WALK_STEP_SPEED, 1.0F, LEGACY_WALK_DISTANCE);
-        }
-    }
-
     private void advancePreviewSimulation(PreviewPlayer player) {
-        long now = Util.getMillis();
-        long elapsed = now - lastPreviewTickMs;
-        if (elapsed < PREVIEW_TICK_MS) return;
-
-        int ticks = Math.min((int) (elapsed / PREVIEW_TICK_MS), 5);
-        for (int i = 0; i < ticks; i++) {
-            player.tick();
+        int ticks = Math.min((int) ((Util.getMillis() - lastPreviewTickMs) / PREVIEW_TICK_MS), 5);
+        if (ticks > 0) {
+            for (int i = 0; i < ticks; i++) player.tick();
+            lastPreviewTickMs += ticks * PREVIEW_TICK_MS;
         }
-        lastPreviewTickMs += ticks * PREVIEW_TICK_MS;
     }
 
     private void applySwingPose(PreviewPlayer player) {
         if (previewPose != PreviewPose.PUNCHING) return;
-
-        float swingDuration = 6.0F;
-        float swingTimeMs = swingDuration * 50.0F;
-        float timeSinceStart = (Util.getMillis() - WALK_SYNC_EPOCH_MS) % (int)swingTimeMs;
-        float swingProgress = timeSinceStart / swingTimeMs;
-
+        
+        float swingProgress = ((Util.getMillis() - walkSyncEpochMs) % 300L) / 300.0F;
         player.swinging = true;
-        player.swingTime = (int)(swingProgress * swingDuration);
+        player.swingTime = (int)(swingProgress * 6.0F);
         player.swingingArm = InteractionHand.MAIN_HAND;
         player.attackAnim = swingProgress;
     }
 
-    protected void onDrag(double deltaX) {
+    public void onDrag(double deltaX) {
         if (isInterpolating() || !interactable) return;
-        this.rotationX = Mth.clamp(this.rotationX - (float) (double) 0 * 2.5F, -ROTATION_X_LIMIT, ROTATION_X_LIMIT);
-        this.rotationY += (float)deltaX * ROTATION_SENSITIVITY;
-        while (this.rotationY < 0) this.rotationY += 360;
-        this.rotationY = (this.rotationY + 180) % 360 - 180;
+        this.rotationX = Mth.clamp(this.rotationX, -ROTATION_X_LIMIT, ROTATION_X_LIMIT);
+        
+        this.rotationY = Mth.wrapDegrees(this.rotationY + (float)deltaX * ROTATION_SENSITIVITY);
     }
 
     public void playDownSound(SoundManager soundManager) {}
-
     protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {}
-
     public boolean isActive() { return false; }
 
     public void cyclePose(boolean forward) {
@@ -333,33 +271,12 @@ public class PlayerSkinWidget extends AbstractWidget {
         };
     }
 
-    public void resetPose() {
-        previewPose = PreviewPose.STANDING;
-        pendingPose = null;
-    }
-
-    public PreviewPose getPreviewPose() { 
-        return this.pendingPose != null ? this.pendingPose : this.previewPose; 
-    }
-
-    public void setPreviewPose(PreviewPose pose) {
-        this.previewPose = pose != null ? pose : PreviewPose.STANDING;
-    }
-
+    public void resetPose() { previewPose = PreviewPose.STANDING; pendingPose = null; }
+    public PreviewPose getPreviewPose() { return this.pendingPose != null ? this.pendingPose : this.previewPose; }
+    public void setPreviewPose(PreviewPose pose) { this.previewPose = pose != null ? pose : PreviewPose.STANDING; }
     public void setPendingPose(PreviewPose pose) { this.pendingPose = pose; }
-
     public float getRotationX() { return this.rotationX; }
     public float getRotationY() { return this.rotationY; }
-
-    public void cleanup() {
-        GuiSkinUtils.cleanupPreview(dummyUuid);
-    }
-
-    public @Nullable LoadedSkin getCurrentSkin() {
-        return this.skin.get();
-    }
-
-    private boolean isAutoSelectedSkin(LoadedSkin skin) {
-        return GuiSkinUtils.isAutoSelectedSkin(skin);
-    }
+    public void cleanup() { GuiSkinUtils.cleanupPreview(dummyUuid); }
+    public @Nullable LoadedSkin getCurrentSkin() { return this.skin.get(); }
 }

@@ -4,16 +4,16 @@ import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Adapter to organize LoadedSkins into pack-based collections
  * compatible with the Legacy4J carousel system.
  */
 public record SkinPackAdapter(String packId, List<LoadedSkin> skins, String packType) {
-    public SkinPackAdapter(String packId, List<LoadedSkin> skins, String packType) {
-        this.packId = packId;
-        this.skins = new ArrayList<>(skins);
-        this.packType = packType;
+    
+    public SkinPackAdapter {
+        skins = List.copyOf(skins); 
     }
 
     // Legacy constructor for compatibility
@@ -21,43 +21,26 @@ public record SkinPackAdapter(String packId, List<LoadedSkin> skins, String pack
         this(packId, skins, null);
     }
 
-    public int size() {
-        return skins.size();
-    }
+    public int size() { return skins.size(); }
+    public boolean isEmpty() { return skins.isEmpty(); }
+    public int indexOf(LoadedSkin skin) { return skins.indexOf(skin); }
 
     public LoadedSkin getSkin(int ordinal) {
-        if (ordinal >= 0 && ordinal < skins.size()) {
-            return skins.get(ordinal);
-        }
-        return null;
-    }
-
-    public int indexOf(LoadedSkin skin) {
-        return skins.indexOf(skin);
-    }
-
-    public boolean isEmpty() {
-        return skins.isEmpty();
+        return (ordinal >= 0 && ordinal < skins.size()) ? skins.get(ordinal) : null;
     }
 
     /**
      * Gets all available skin packs from the SkinPackLoader.
      */
     public static Map<String, SkinPackAdapter> getAllPacks() {
+        // Automatically group all loaded skins by their packId
+        Map<String, List<LoadedSkin>> packMap = SkinPackLoader.loadedSkins.values().stream()
+                .collect(Collectors.groupingBy(skin -> skin.packId, LinkedHashMap::new, Collectors.toList()));
+
         Map<String, SkinPackAdapter> packs = new LinkedHashMap<>();
-        Map<String, List<LoadedSkin>> packMap = new HashMap<>();
-
-        // Group skins by pack ID
-        for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
-            String packId = skin.packId;
-            packMap.computeIfAbsent(packId, k -> new ArrayList<>()).add(skin);
-        }
-
-        // Create adapters with packType if available
-        for (Map.Entry<String, List<LoadedSkin>> entry : packMap.entrySet()) {
-            String packType = SkinPackLoader.packTypesByPackId.get(entry.getKey());
-            packs.put(entry.getKey(), new SkinPackAdapter(entry.getKey(), entry.getValue(), packType));
-        }
+        packMap.forEach((id, skins) -> 
+            packs.put(id, new SkinPackAdapter(id, skins, SkinPackLoader.packTypesByPackId.get(id)))
+        );
 
         return packs;
     }
@@ -66,13 +49,10 @@ public record SkinPackAdapter(String packId, List<LoadedSkin> skins, String pack
      * Gets a specific pack by ID.
      */
     public static SkinPackAdapter getPack(String packId) {
-        List<LoadedSkin> skins = new ArrayList<>();
-        for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
-            if (skin.packId.equals(packId)) {
-                skins.add(skin);
-            }
-        }
-        String packType = SkinPackLoader.packTypesByPackId.get(packId);
-        return new SkinPackAdapter(packId, skins, packType);
+        List<LoadedSkin> filteredSkins = SkinPackLoader.loadedSkins.values().stream()
+                .filter(skin -> skin.packId.equals(packId))
+                .toList();
+                
+        return new SkinPackAdapter(packId, filteredSkins, SkinPackLoader.packTypesByPackId.get(packId));
     }
 }

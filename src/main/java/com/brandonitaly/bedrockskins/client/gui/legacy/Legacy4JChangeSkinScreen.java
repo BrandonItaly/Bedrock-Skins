@@ -512,7 +512,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             widgets.add(addRenderableWidget(new PlayerSkinWidget(130, 160, minecraft.getEntityModels(), () -> ref, () -> skin)));
         }
 
-        playerSkinWidgetList = PlayerSkinWidgetList.of(boxX + boxW / 2 - 65, boxY + boxH / 2 - 65, widgets.toArray(new PlayerSkinWidget[0]));
+        playerSkinWidgetList = PlayerSkinWidgetList.of(boxX + boxW / 2 - 65, boxY + boxH / 2 - 55, widgets.toArray(new PlayerSkinWidget[0]));
         int targetIndex = ((index % widgets.size()) + widgets.size()) % widgets.size();
         
         playerSkinWidgetList.index = targetIndex; 
