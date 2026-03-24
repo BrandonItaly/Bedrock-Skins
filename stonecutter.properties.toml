@@ -41,11 +41,11 @@ mc_version_range="1.21.11"
 ["26.1-fabric"]
 loom.platform="fabric"
 fabric_loader_version="0.18.4"
-fabric_api_version="0.143.14+26.1"
-mc_version_range="<=26.1-pre.3 >=26.1-pre.2"
+fabric_api_version="0.144.0+26.1"
+mc_version_range="26.1"
 modmenu_version="18.0.0-alpha.6"
 
 ["26.1-neoforge"]
 loom.platform="neoforge"
-neoforge_version="26.1.0.0-alpha.15+pre-3"
-mc_version_range="26.1-pre-3"
+neoforge_version="26.1.0.1-beta"
+mc_version_range="26.1"
