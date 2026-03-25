@@ -105,7 +105,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     public static void init(IEventBus modBus, ModContainer modContainer) {
         modBus.register(BedrockSkinsClient.class);
         NeoForge.EVENT_BUS.register(GameEvents.class);
-        modContainer.registerExtensionPoint(IConfigScreenFactory.class, (container, parent) -> new com.brandonitaly.bedrockskins.client.gui.BedrockSkinsOptionsScreen(parent));
+        modContainer.registerExtensionPoint(IConfigScreenFactory.class, (container, parent) -> new com.brandonitaly.bedrockskins.client.gui.BedrockSkinsConfigScreen(parent));
     }
 
     @SubscribeEvent

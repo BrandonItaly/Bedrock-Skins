@@ -148,4 +148,15 @@ public class BedrockSkinsConfig {
     private static void save() {
         JsonCodecFileStore.write(CONFIG_PATH, CODEC, new ConfigData(scanResourcePacksForSkins, paperDollMode, packSortOrder, paperDollLeftSide, skinAnimations, adjustCameraHeight, smoothInterpolation), "BedrockSkinsConfig");
     }
+
+    public static void resetToDefault() {
+        SCAN_RESOURCE_PACKS.set(DEFAULTS.scanResourcePacksForSkins());
+        SHOW_PAPER_DOLL.set(DEFAULTS.paperDollMode());
+        PACK_SORT_ORDER.set(DEFAULTS.packSortOrder());
+        PAPER_DOLL_LEFT_SIDE.set(DEFAULTS.paperDollLeftSide());
+        SKIN_ANIMATIONS.set(DEFAULTS.skinAnimations());
+        ADJUST_CAMERA_HEIGHT.set(DEFAULTS.adjustCameraHeight());
+        SMOOTH_INTERPOLATION.set(DEFAULTS.smoothInterpolation());
+        save();
+    }
 }
