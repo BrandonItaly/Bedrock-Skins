@@ -174,14 +174,10 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                     return;
                 }
 
-                var id = skin.skinId;
-                if (id != null) {
-                    try {
-                        registerTextureFor.accept(id.toString());
-                        setPreviewSkin.set(uuid.toString(), id.pack(), id.name());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    GuiSkinUtils.applyLoadedSkinPreview(this.player, this.uuid, skin);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
 
