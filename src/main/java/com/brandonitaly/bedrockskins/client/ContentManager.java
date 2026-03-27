@@ -188,7 +188,7 @@ public class ContentManager {
 
                 Path targetFolder = contentDir.resolve(pack.id());
                 if (Files.exists(targetFolder)) {
-                    deleteDirectoryRecursively(targetFolder.toFile());
+                    com.brandonitaly.bedrockskins.util.ExternalAssetUtil.deleteDirectoryRecursively(targetFolder.toFile());
                 }
 
                 if (isZipArchive(downloadedTempFile)) {
@@ -211,34 +211,6 @@ public class ContentManager {
                 LOGGER.warn("Error when downloading content pack to {}: {}", contentDir.resolve(pack.id()), e.getMessage());
             }
         });
-    }
-
-    public static void deletePack(Pack pack, String folderName) {
-        Path contentDir = getContentDir(folderName);
-
-        Path extractedDir = contentDir.resolve(pack.id());
-        if (Files.exists(extractedDir) && Files.isDirectory(extractedDir)) {
-            deleteDirectoryRecursively(extractedDir.toFile());
-        }
-
-        Path directFile = contentDir.resolve(resolveDownloadFileName(pack));
-        try {
-            if (Files.exists(directFile) && !Files.isDirectory(directFile)) {
-                Files.deleteIfExists(directFile);
-            }
-        } catch (IOException e) {
-            LOGGER.warn("Failed to delete content file {}: {}", directFile, e.getMessage());
-        }
-    }
-
-    private static void deleteDirectoryRecursively(File directory) {
-        File[] allContents = directory.listFiles();
-        if (allContents != null) {
-            for (File file : allContents) {
-                deleteDirectoryRecursively(file);
-            }
-        }
-        directory.delete();
     }
 
     private static void extractZip(Path zipFile, Path targetDir) throws IOException {

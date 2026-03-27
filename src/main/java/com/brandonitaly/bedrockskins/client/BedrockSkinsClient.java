@@ -48,6 +48,8 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     public static KeyMapping toggleCapeKey, toggleJacketKey, toggleLeftSleeveKey, toggleRightSleeveKey, toggleLeftPantsKey, toggleRightPantsKey, toggleHatKey, toggleMainHandKey, openKey;
     private static KeyMapping[] ALL_KEYS;
 
+    public static boolean blockUnfairSkins = false; // for dev testing
+
     public static void createKeybinds() {
         KeyMapping.Category cat = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("bedrockskins", "controls"));
 

@@ -160,9 +160,15 @@ final class PckModelConverter {
                     String baseType = baseTypeForBoneName(lowerBoneName);
                     if (baseType != null) {
                         Float offsetY = offsets.get(baseType);
+
                         if (offsetY != null && Math.abs(offsetY) > 0.0001f) {
                             applyOffsetToBoneCubesY(bone, offsetY);
                             applyPivotOffsetY(bone, lowerBoneName, offsetY);
+                        } else if ("BODY".equals(baseType)) {
+                            Float chestOffset = offsets.get("CHEST");
+                            if (chestOffset != null && Math.abs(chestOffset) > 0.0001f) {
+                                applyPivotOffsetY(bone, lowerBoneName, chestOffset);
+                            }
                         }
                     }
                 }
@@ -420,7 +426,7 @@ final class PckModelConverter {
         if (raw == null) return null;
         String up = raw.trim().toUpperCase(Locale.ROOT);
         return switch (up) {
-            case "HEAD", "BODY", "ARM0", "ARM1", "LEG0", "LEG1" -> up;
+            case "HEAD", "BODY", "ARM0", "ARM1", "LEG0", "LEG1", "CHEST" -> up;
             default -> null;
         };
     }

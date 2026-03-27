@@ -2,9 +2,11 @@ package com.brandonitaly.bedrockskins.util;
 
 import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
+import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 
+import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -80,5 +82,54 @@ public class ExternalAssetUtil {
             }
         } catch (Exception ignored) {}
         return new byte[0];
+    }
+
+    public static boolean deletePack(String packId, String storeFolderName) {
+        boolean deleted = false;
+        File storeDir = new File(Minecraft.getInstance().gameDirectory, storeFolderName);
+
+        // Try deleting via loaded AssetSource
+        LoadedSkin firstSkin = null;
+        for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
+            if (packId.equals(skin.packId)) {
+                firstSkin = skin;
+                break;
+            }
+        }
+
+        if (firstSkin != null) {
+            if (firstSkin.texture instanceof AssetSource.File fileSource) {
+                File textureFile = new File(fileSource.path());
+                File targetToDelete = textureFile.getName().endsWith(".png") ? textureFile.getParentFile() : null;
+                if (targetToDelete != null && targetToDelete.exists()) {
+                    deleteDirectoryRecursively(targetToDelete);
+                    deleted = true;
+                }
+            } else if (firstSkin.texture instanceof AssetSource.Bytes bytesSource) {
+                String debugName = bytesSource.getDebugName();
+                if (debugName != null && debugName.toLowerCase().contains(".pck:")) {
+                    String pckFileName = debugName.substring(0, debugName.toLowerCase().indexOf(".pck:") + 4);
+                    File pckFile = new File(storeDir, pckFileName);
+                    if (pckFile.exists() && pckFile.isFile()) {
+                        deleted = pckFile.delete();
+                    }
+                }
+            }
+        }
+        
+        return deleted;
+    }
+
+    public static void deleteDirectoryRecursively(File directory) {
+        if (directory == null || !directory.exists()) return;
+        if (directory.isDirectory()) {
+            File[] allContents = directory.listFiles();
+            if (allContents != null) {
+                for (File file : allContents) {
+                    deleteDirectoryRecursively(file);
+                }
+            }
+        }
+        directory.delete();
     }
 }

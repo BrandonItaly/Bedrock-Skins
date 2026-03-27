@@ -377,7 +377,7 @@ public class SkinSelectionScreen extends Screen {
     private void deletePack(ContentManager.Pack pack) {
         if (isDownloading) return;
 
-        ContentManager.deletePack(pack, STORE_FOLDER);
+        com.brandonitaly.bedrockskins.util.ExternalAssetUtil.deletePack(pack.id(), STORE_FOLDER);
 
         minecraft.execute(() -> {
             needsReload = true; 

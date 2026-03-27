@@ -14,7 +14,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import net.minecraft.client.Minecraft;
@@ -29,11 +28,7 @@ public final class SkinPackLoader {
 
     private static final Codec<List<String>> PACK_ORDER_CODEC = Codec.list(Codec.STRING);
     private static final Map<String, Map<String, String>> translations = new HashMap<>();
-    private static JsonObject vanillaGeometryJson = null;
-
-    private static final int PCK_ASSET_SKIN = 0;
-    private static final int PCK_ASSET_CAPE = 1;
-    private static final int PCK_ASSET_SKIN_DATA_FILE = 11;
+    public static JsonObject vanillaGeometryJson = null;
 
     private SkinPackLoader() {}
 
@@ -76,9 +71,22 @@ public final class SkinPackLoader {
         if (currentSkinPacksDir.exists()) {
             File[] children = currentSkinPacksDir.listFiles();
             if (children != null) {
+                // 1. Convert .pck files to standard folders
                 for (File f : children) {
-                    if (f.isDirectory()) loadExternalPack(f);
-                    else if (f.isFile() && f.getName().toLowerCase(Locale.ROOT).endsWith(".pck")) loadExternalPck(f);
+                    if (f.isFile() && f.getName().toLowerCase(Locale.ROOT).endsWith(".pck")) {
+                        File outputDir = new File(currentSkinPacksDir, PckImporter.stripExtension(f.getName()));
+                        if (PckImporter.importPck(f, outputDir)) {
+                            f.delete(); // Delete original PCK on successful conversion
+                        }
+                    }
+                }
+                
+                // 2. Load all standard folders
+                children = currentSkinPacksDir.listFiles();
+                if (children != null) {
+                    for (File f : children) {
+                        if (f.isDirectory()) loadExternalPack(f);
+                    }
                 }
             }
         }
@@ -220,112 +228,6 @@ public final class SkinPackLoader {
         }
     }
 
-    private static void loadExternalPck(File pckFile) {
-        try {
-            byte[] bytes = Files.readAllBytes(pckFile.toPath());
-            PckFileParser.PckArchive root = PckFileParser.parse(bytes);
-
-            List<PckFileParser.PckAsset> allAssets = collectAllPckAssets(root);
-            if (allAssets.isEmpty()) return;
-
-            List<PckFileParser.PckAsset> skins = new ArrayList<>();
-            List<PckFileParser.PckAsset> generalAssets = new ArrayList<>();
-            Map<String, PckFileParser.PckAsset> capesByName = new HashMap<>();
-            Map<String, PckFileParser.PckAsset> capesByBaseName = new HashMap<>();
-
-            for (PckFileParser.PckAsset asset : allAssets) {
-                if (asset == null || asset.data() == null) continue;
-                
-                String normPath = normalizePckPath(asset.filename());
-                String baseName = stripExtension(fileNameOnly(normPath));
-
-                if (isLikelyCapeAsset(asset, normPath, baseName)) {
-                    capesByName.put(normPath, asset);
-                    capesByBaseName.put(fileNameOnly(normPath), asset);
-                } else if (isLikelySkinAsset(asset, normPath, baseName)) {
-                    skins.add(asset);
-                } else {
-                    generalAssets.add(asset);
-                }
-            }
-
-            String currentLang = getClientLanguage();
-            Map<String, Map<String, String>> pckTranslations = PckLocalizationSupport.loadPckLocalisations(allAssets);
-            String fileBaseName = stripExtension(pckFile.getName());
-            String serializeName = StringUtils.sanitize(fileBaseName);
-            if (serializeName.isEmpty()) serializeName = "legacy_console";
-
-            String packDisplayToken = StringUtils.firstNonBlank(PckLocalizationSupport.findPackDisplayToken(pckTranslations, currentLang), StringUtils.firstNonBlank(getPackDisplayName(generalAssets), fileBaseName)
-            );
-            String packDisplayName = StringUtils.firstNonBlank(PckLocalizationSupport.resolvePckLocalizedToken(packDisplayToken, pckTranslations, currentLang), fileBaseName);
-
-            packTypesByPackId.put("skinpack." + serializeName, "skin_pack");
-
-            for (PckFileParser.PckAsset asset : skins) {
-                String skinKey = stripExtension(fileNameOnly(normalizePckPath(asset.filename())));
-                if (skinKey.isEmpty()) continue;
-
-                String skinDisplayToken = StringUtils.firstNonBlank(
-                    asset.getFirstProperty("DISPLAYNAMEID", "IDS_DISPLAY_NAME", "LOC_KEY"), 
-                    StringUtils.firstNonBlank(asset.getFirstProperty("DISPLAYNAME"), skinKey)
-                );
-                String skinDisplayName = StringUtils.firstNonBlank(PckLocalizationSupport.resolvePckLocalizedToken(skinDisplayToken, pckTranslations, currentLang), skinKey);
-
-                String skinThemeToken = PckLocalizationSupport.deriveSkinThemeToken(asset, skinDisplayToken, skinKey, pckTranslations, currentLang);
-                String resolvedTheme = PckLocalizationSupport.resolvePckLocalizedToken(skinThemeToken, pckTranslations, currentLang);
-                boolean isUnlocalized = resolvedTheme != null && resolvedTheme.equalsIgnoreCase(PckLocalizationSupport.cleanLocText(skinThemeToken));
-                String skinTheme = StringUtils.firstNonBlank(isUnlocalized ? null : resolvedTheme, asset.getFirstProperty("THEMENAME"));
-
-                Long animMask = PckModelConverter.parseAnimMask(asset);
-                boolean slim = PckModelConverter.isSlim(animMask);
-                boolean upsideDown = PckModelConverter.isUpsideDown(animMask);
-                String geometryName = slim ? "geometry.humanoid.customSlim" : "geometry.humanoid.custom";
-
-                JsonObject geometry = PckModelConverter.applyPckDataToGeometry(asset, resolveGeometry(geometryName, null), animMask);
-                if (geometry == null) continue;
-
-                AssetSource capeSource = null;
-                String capePath = asset.getFirstProperty("CAPEPATH");
-                if (capePath != null && !capePath.isBlank()) {
-                    PckFileParser.PckAsset capeAsset = resolveCape(capesByName, capesByBaseName, capePath);
-                    if (capeAsset != null) capeSource = new AssetSource.Bytes(capeAsset.data(), pckFile.getName() + ":" + capeAsset.filename());
-                } else {
-                    String inferredCapeName = inferCapeNameFromSkin(skinKey);
-                    if (inferredCapeName != null) {
-                        PckFileParser.PckAsset capeAsset = resolveCape(capesByName, capesByBaseName, inferredCapeName);
-                        if (capeAsset != null) capeSource = new AssetSource.Bytes(capeAsset.data(), pckFile.getName() + ":" + capeAsset.filename());
-                    }
-                }
-
-                SkinId id = SkinId.of(serializeName, skinKey);
-                String safeSkinTranslationKey = StringUtils.sanitize("skin." + packDisplayName + "." + skinKey);
-                String safePackTranslationKey = StringUtils.sanitize("skinpack." + packDisplayName);
-
-                PckLocalizationSupport.copyLocalizedValueToTranslations(packDisplayToken, safePackTranslationKey, packDisplayName, pckTranslations, translations);
-                PckLocalizationSupport.copyLocalizedValueToTranslations(skinDisplayToken, safeSkinTranslationKey, skinDisplayName, pckTranslations, translations);
-                
-                LoadedSkin loadedSkin = new LoadedSkin(
-                    serializeName, packDisplayName, skinKey, geometry,
-                    new AssetSource.Bytes(asset.data(), pckFile.getName() + ":" + asset.filename()),
-                    capeSource, upsideDown
-                );
-                // Propagate GAME_FLAGS unfair bit (bit 0) to the loaded skin
-                try {
-                    Long gf = PckModelConverter.parseGameFlags(asset);
-                    if (gf != null && (gf & 1L) != 0L) loadedSkin.unfair = true;
-                } catch (Exception ignored) {}
-                
-                if (skinTheme != null && !skinTheme.isBlank()) {
-                    PckLocalizationSupport.copyLocalizedValueToTranslations(skinThemeToken, loadedSkin.safeSkinName + ".description", skinTheme, pckTranslations, translations);
-                }
-
-                loadedSkins.put(id, loadedSkin);
-            }
-        } catch (Exception e) {
-            System.err.println("SkinPackLoader: Error loading PCK skin pack " + pckFile.getName() + ": " + e.getMessage());
-        }
-    }
-
     private static void loadInternalPacks(ResourceManager manager) {
         manager.listResources("skin_packs", idt -> idt.getPath().endsWith("skins.json")).forEach((id, resource) -> {
             try {
@@ -443,7 +345,7 @@ public final class SkinPackLoader {
 
     // --- Helpers: Geometry & Assets ---
 
-    private static JsonObject resolveGeometry(String name, JsonObject localGeo) {
+    public static JsonObject resolveGeometry(String name, JsonObject localGeo) {
         JsonObject raw = findGeometryNode(localGeo, name);
         if (raw == null) raw = findGeometryNode(vanillaGeometryJson, name);
         if (raw == null) return null;
@@ -699,116 +601,6 @@ public final class SkinPackLoader {
             && "animation.player.base_pose.upside_down".equals(entry.animations().get("humanoid_base_pose"));
     }
 
-    private static PckFileParser.PckAsset resolveCape(Map<String, PckFileParser.PckAsset> capesByName, Map<String, PckFileParser.PckAsset> capesByBaseName, String capePath) {
-        String normalized = normalizePckPath(capePath);
-        PckFileParser.PckAsset cape = capesByName.get(normalized);
-        if (cape != null) return cape;
-
-        return capesByBaseName.get(fileNameOnly(normalized));
-    }
-
-    private static List<PckFileParser.PckAsset> collectAllPckAssets(PckFileParser.PckArchive root) {
-        if (root == null || root.assets() == null) return List.of();
-
-        List<PckFileParser.PckAsset> out = new ArrayList<>();
-        Set<Long> visitedPayloads = new HashSet<>();
-        Deque<Map.Entry<PckFileParser.PckArchive, Integer>> stack = new ArrayDeque<>();
-        stack.push(Map.entry(root, 0));
-
-        while (!stack.isEmpty()) {
-            Map.Entry<PckFileParser.PckArchive, Integer> node = stack.pop();
-            PckFileParser.PckArchive archive = node.getKey();
-            int depth = node.getValue();
-            
-            if (archive.assets() == null) continue;
-
-            for (PckFileParser.PckAsset asset : archive.assets()) {
-                out.add(asset);
-
-                if (depth >= 4 || !isLikelyNestedPck(asset)) continue;
-
-                long hash = fastHash(asset.data());
-                if (!visitedPayloads.add(hash)) continue;
-
-                try {
-                    PckFileParser.PckArchive nested = PckFileParser.parse(asset.data());
-                    stack.push(Map.entry(nested, depth + 1));
-                } catch (Exception ignored) {}
-            }
-        }
-        return out;
-    }
-
-    private static boolean isLikelyNestedPck(PckFileParser.PckAsset asset) {
-        if (asset == null || asset.data() == null || asset.data().length < 16) return false;
-        if (asset.type() == PCK_ASSET_SKIN_DATA_FILE) return true;
-        
-        String name = normalizePckPath(asset.filename());
-        return name.endsWith(".pck") || name.contains("skins.pck");
-    }
-
-    private static boolean isLikelySkinAsset(PckFileParser.PckAsset asset, String normPath, String baseName) {
-        if (!normPath.endsWith(".png")) return false;
-        if (asset.type() == PCK_ASSET_SKIN) return true;
-
-        if (baseName.startsWith("dlcskin") || baseName.startsWith("skin")) return true;
-
-        return asset.getFirstProperty("ANIM", "DISPLAYNAME", "DISPLAYNAMEID", "LOC_KEY") != null;
-    }
-
-    private static boolean isLikelyCapeAsset(PckFileParser.PckAsset asset, String normPath, String baseName) {
-        if (!normPath.endsWith(".png")) return false;
-        if (asset.type() == PCK_ASSET_CAPE) return true;
-
-        return baseName.startsWith("dlccape") || baseName.startsWith("cape");
-    }
-
-    private static String inferCapeNameFromSkin(String skinKey) {
-        if (skinKey == null || skinKey.isBlank()) return null;
-        String lower = skinKey.toLowerCase(Locale.ROOT);
-        return lower.startsWith("dlcskin") ? "dlccape" + skinKey.substring(7) + ".png" : null;
-    }
-
-    private static String getPackDisplayName(List<PckFileParser.PckAsset> generalAssets) {
-        if (generalAssets == null || generalAssets.isEmpty()) return null;
-
-        for (PckFileParser.PckAsset asset : generalAssets) {
-            String fromIdsDisplayName = asset.getFirstProperty("IDS_DISPLAY_NAME", "DISPLAYNAMEID");
-            if (fromIdsDisplayName != null && !fromIdsDisplayName.isBlank()) return fromIdsDisplayName;
-        }
-        return null;
-    }
-
-    private static long fastHash(byte[] data) {
-        if (data == null || data.length == 0) return 0;
-        CRC32 crc = new CRC32();
-        crc.update(data, 0, Math.min(data.length, 1024));
-        return ((long) data.length << 32) | crc.getValue();
-    }
-
-    private static String stripExtension(String name) {
-        if (name == null) return "";
-        int idx = name.lastIndexOf('.');
-        return idx >= 0 ? name.substring(0, idx) : name;
-    }
-
-    private static String fileNameOnly(String path) {
-        if (path == null) return "";
-        int idx = path.lastIndexOf('/');
-        return idx >= 0 ? path.substring(idx + 1) : path;
-    }
-
-    private static String normalizePckPath(String path) {
-        if (path == null) return "";
-        if (path.indexOf('\\') >= 0) path = path.replace('\\', '/');
-        
-        path = path.trim();
-        int start = 0;
-        while (start < path.length() && path.charAt(start) == '/') start++;
-        
-        return (start > 0 ? path.substring(start) : path).toLowerCase(Locale.ROOT);
-    }
-    
     private static JsonObject loadJsonOrNull(File file) {
         if (!file.exists()) return null;
         try (Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
