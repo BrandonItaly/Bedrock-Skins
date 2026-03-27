@@ -1,6 +1,7 @@
 package com.brandonitaly.bedrockskins.client.gui.legacy;
 
 //? if <26.0 {
+import com.brandonitaly.bedrockskins.client.BedrockSkinsClient;
 import com.brandonitaly.bedrockskins.client.ClientSkinSync;
 import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
@@ -144,6 +145,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         if (!hasSelectedSkinWidget()) return;
         LoadedSkin skin = playerSkinWidgetList.element3.getCurrentSkin();
         if (skin == null) return;
+        if (BedrockSkinsClient.blockUnfairSkins && skin.unfair) return;
 
         try {
             GuiSkinUtils.applySelectedSkin(minecraft, skin);
@@ -385,9 +387,21 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
             drawScaledCenteredString(guiGraphics, Component.literal(desc), middle, panel.getY() + tooltipBox.getHeight() - 24, 1.5f, 0xffffffff);
         }
         
-        // Render checkmark if this skin is currently selected
-        if (GuiSkinUtils.isSkinCurrentlyEquipped(skin)) {
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.BEACON_CONFIRM, tooltipBox.getX() + tooltipBox.getWidth() - 50, panel.getY() + tooltipBox.getHeight() - 57, 24, 24);
+        int holderX = tooltipBox.getX() + tooltipBox.getWidth() - 50;
+        int holderY = panel.getY() + tooltipBox.getHeight() - 57;
+
+        Identifier iconSprite = null;
+
+        // Determine which sprite to draw
+        if (BedrockSkinsClient.blockUnfairSkins && skin.unfair) {
+            iconSprite = BedrockSkinsSprites.SKIN_DENY;
+        } else if (GuiSkinUtils.isSkinCurrentlyEquipped(skin)) {
+            iconSprite = BedrockSkinsSprites.BEACON_CONFIRM;
+        }
+
+        // Draw sprite centered (20x20 inside the 24x24 holder requires a +2 offset)
+        if (iconSprite != null) {
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, iconSprite, holderX + 2, holderY + 2, 20, 20);
         }
         
         // Render heart if this skin is favorited

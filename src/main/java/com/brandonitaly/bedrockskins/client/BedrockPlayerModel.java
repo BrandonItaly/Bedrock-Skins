@@ -382,29 +382,44 @@ public class BedrockPlayerModel extends PlayerModel {
     public boolean applyArmorVisibility(HumanoidModel armorModel, EquipmentSlot slot) {
         if (armorModel == null || slot == null) return true;
 
+        // Global disable flag
+        if (animFlags.dontShowArmor()) return false;
+
         return switch (slot) {
             case HEAD -> {
-                boolean show = !animFlags.dontShowArmor() && (!animFlags.headDisabled() || animFlags.forceHeadArmor());
+                // Show if the part is NOT disabled, OR if the force override is true
+                boolean show = !animFlags.headDisabled() || animFlags.forceHeadArmor();
                 armorModel.head.visible = show;
+                armorModel.hat.visible = show;
                 yield show;
             }
             case CHEST -> {
-                boolean showBody = !animFlags.dontShowArmor() && (!animFlags.bodyDisabled() || animFlags.forceBodyArmor());
-                boolean showRArm = !animFlags.dontShowArmor() && (!animFlags.rightArmDisabled() || animFlags.forceRightArmArmor());
-                boolean showLArm = !animFlags.dontShowArmor() && (!animFlags.leftArmDisabled() || animFlags.forceLeftArmArmor());
+                boolean showBody = !animFlags.bodyDisabled() || animFlags.forceBodyArmor();
+                boolean showRArm = !animFlags.rightArmDisabled() || animFlags.forceRightArmArmor();
+                boolean showLArm = !animFlags.leftArmDisabled() || animFlags.forceLeftArmArmor();
+                
                 armorModel.body.visible = showBody;
                 armorModel.rightArm.visible = showRArm;
                 armorModel.leftArm.visible = showLArm;
                 yield showBody || showRArm || showLArm;
             }
-            case LEGS, FEET -> {
-                boolean showRLeg = !animFlags.dontShowArmor() && (!animFlags.rightLegDisabled() || animFlags.forceRightLegArmor());
-                boolean showLLeg = !animFlags.dontShowArmor() && (!animFlags.leftLegDisabled() || animFlags.forceLeftLegArmor());
+            case LEGS -> {
+                boolean showRLeg = !animFlags.rightLegDisabled() || animFlags.forceRightLegArmor();
+                boolean showLLeg = !animFlags.leftLegDisabled() || animFlags.forceLeftLegArmor();
+                
                 armorModel.rightLeg.visible = showRLeg;
                 armorModel.leftLeg.visible = showLLeg;
                 yield showRLeg || showLLeg;
             }
-            default -> !animFlags.dontShowArmor();
+            case FEET -> {
+                boolean showRLeg = !animFlags.rightLegDisabled() || animFlags.forceRightLegArmor();
+                boolean showLLeg = !animFlags.leftLegDisabled() || animFlags.forceLeftLegArmor();
+                
+                armorModel.rightLeg.visible = showRLeg;
+                armorModel.leftLeg.visible = showLLeg;
+                yield showRLeg || showLLeg;
+            }
+            default -> true;
         };
     }
 

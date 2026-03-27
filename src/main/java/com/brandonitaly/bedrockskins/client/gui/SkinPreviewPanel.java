@@ -1,5 +1,6 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
+import com.brandonitaly.bedrockskins.client.BedrockSkinsClient;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
@@ -135,6 +136,7 @@ public class SkinPreviewPanel {
 
     private void applySkin() {
         if (selectedSkin == null) return;
+        if (BedrockSkinsClient.blockUnfairSkins && selectedSkin.unfair) return;
         try {
             GuiSkinUtils.applySelectedSkin(minecraft, selectedSkin);
             if (minecraft.player == null) {
@@ -171,13 +173,17 @@ public class SkinPreviewPanel {
     private void updateFavoriteButton() {
         updateActionButtons();
         if (favoriteButton == null) return;
-        
+
         boolean isFav = FavoritesManager.isFavorite(selectedSkin);
         favoriteButton.setSelected(isFav);
         favoriteButton.setActive(currentSkinId != null);
         favoriteButton.setTooltip(Component.translatable(isFav ? "bedrockskins.button.unfavorite" : "bedrockskins.button.favorite"));
-        
-        if (selectButton != null) selectButton.active = selectedSkin != null;
+
+        if (selectButton != null) {
+            boolean enabled = selectedSkin != null;
+            if (enabled && BedrockSkinsClient.blockUnfairSkins && selectedSkin.unfair) enabled = false;
+            selectButton.active = enabled;
+        }
     }
 
     public void renderPreview(GuiGraphics gui, int mouseX) {

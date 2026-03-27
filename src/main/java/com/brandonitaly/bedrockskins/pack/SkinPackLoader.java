@@ -205,12 +205,15 @@ public final class SkinPackLoader {
                 if (capeFile != null && !capeFile.exists()) capeFile = null;
 
                 SkinId id = SkinId.of(manifest.serializeName(), entry.localizationName());
-                loadedSkins.put(id, new LoadedSkin(
+                LoadedSkin ls = new LoadedSkin(
                     manifest.serializeName(), manifest.localizationName(), entry.localizationName(),
                     geometry, new AssetSource.File(textureFile.getAbsolutePath()),
                     capeFile != null ? new AssetSource.File(capeFile.getAbsolutePath()) : null,
                     hasUpsideDownAnimation(entry)
-                ));
+                );
+                // propagate unfair flag from manifest entry
+                try { ls.unfair = entry.unfair(); } catch (Exception ignored) {}
+                loadedSkins.put(id, ls);
             }
         } catch (Exception e) {
             System.err.println("SkinPackLoader: Error loading external pack from " + packDir.getName() + ": " + e);
@@ -306,6 +309,11 @@ public final class SkinPackLoader {
                     new AssetSource.Bytes(asset.data(), pckFile.getName() + ":" + asset.filename()),
                     capeSource, upsideDown
                 );
+                // Propagate GAME_FLAGS unfair bit (bit 0) to the loaded skin
+                try {
+                    Long gf = PckModelConverter.parseGameFlags(asset);
+                    if (gf != null && (gf & 1L) != 0L) loadedSkin.unfair = true;
+                } catch (Exception ignored) {}
                 
                 if (skinTheme != null && !skinTheme.isBlank()) {
                     PckLocalizationSupport.copyLocalizedValueToTranslations(skinThemeToken, loadedSkin.safeSkinName + ".description", skinTheme, pckTranslations, translations);
@@ -354,12 +362,14 @@ public final class SkinPackLoader {
                     }
 
                     SkinId skinId = SkinId.of(manifest.serializeName(), entry.localizationName());
-                    loadedSkins.put(skinId, new LoadedSkin(
+                    LoadedSkin ls = new LoadedSkin(
                         manifest.serializeName(), manifest.localizationName(), entry.localizationName(),
                         geometry, new AssetSource.Resource(textureId),
                         capeId != null ? new AssetSource.Resource(capeId) : null,
                         hasUpsideDownAnimation(entry)
-                    ));
+                    );
+                    try { ls.unfair = entry.unfair(); } catch (Exception ignored) {}
+                    loadedSkins.put(skinId, ls);
                 }
             } catch (Exception e) {
                 System.err.println("SkinPackLoader: Error loading internal pack " + id + ": " + e);
@@ -413,12 +423,14 @@ public final class SkinPackLoader {
                         ZipEntry capeEntry = capePath != null ? zf.getEntry(capePath) : null;
 
                         SkinId id = SkinId.of(manifest.serializeName(), entry.localizationName());
-                        loadedSkins.put(id, new LoadedSkin(
+                        LoadedSkin lsz = new LoadedSkin(
                             manifest.serializeName(), manifest.localizationName(), entry.localizationName(),
                             geometry, new AssetSource.Zip(pack.getAbsolutePath(), texPath),
                             capeEntry != null ? new AssetSource.Zip(pack.getAbsolutePath(), capePath) : null,
                             hasUpsideDownAnimation(entry)
-                        ));
+                        );
+                        try { lsz.unfair = entry.unfair(); } catch (Exception ignored) {}
+                        loadedSkins.put(id, lsz);
                     }
                 } catch (Exception e) {
                     System.err.println("Error loading skin pack from zip directory " + dir + ": " + e);

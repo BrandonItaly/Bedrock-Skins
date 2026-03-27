@@ -9,8 +9,9 @@ public class LoadedSkin {
     public final String skinDisplayName;
     public final JsonObject geometryData;
     public final AssetSource texture;
-    public final AssetSource cape; // nullable
+    public final AssetSource cape;
     public final boolean upsideDown;
+    public boolean unfair = false;
 
     public final SkinId skinId;
     public final String safePackName;

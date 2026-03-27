@@ -77,6 +77,21 @@ final class PckModelConverter {
     static boolean isSlim(Long mask) { return isAnimFlagSet(mask, PCK_ANIM_FLAG_SLIM); }
     static boolean isUpsideDown(Long mask) { return isAnimFlagSet(mask, PCK_ANIM_FLAG_DINNERBONE); }
 
+    static Long parseGameFlags(PckFileParser.PckAsset asset) {
+        String gf = asset.getFirstProperty("GAME_FLAGS", "GAMEFLAGS");
+        if (gf == null || gf.isBlank()) return null;
+
+        String cleaned = gf.trim();
+        try {
+            if (cleaned.startsWith("0x") || cleaned.startsWith("0X")) {
+                return Long.parseUnsignedLong(cleaned.substring(2), 16);
+            }
+            return Long.parseUnsignedLong(cleaned);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
     static JsonObject applyPckDataToGeometry(PckFileParser.PckAsset asset, JsonObject baseWrappedGeometry, Long animMask) {
         if (baseWrappedGeometry == null) return null;
 
