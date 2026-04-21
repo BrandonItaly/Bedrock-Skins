@@ -1,7 +1,7 @@
 package com.brandonitaly.bedrockskins.client.gui.legacy;
 
 //? if <26.0 {
-import com.brandonitaly.bedrockskins.client.BedrockSkinsClient;
+/*import com.brandonitaly.bedrockskins.client.BedrockSkinsClient;
 import com.brandonitaly.bedrockskins.client.ClientSkinSync;
 import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
@@ -19,7 +19,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.resources.Identifier;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -300,7 +300,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
     }
 
     @Override
-    public void renderDefaultBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void renderDefaultBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         LegacyRenderUtil.renderDefaultBackground(wily.factoryapi.base.client.UIAccessor.of(this), guiGraphics, false);
 
         if (queuedChangeSkinPack) {
@@ -316,7 +316,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         if (hasSelectedSkinWidget()) renderSkinInfo(guiGraphics);
     }
     
-    private void renderBackgroundPanels(GuiGraphics guiGraphics) {
+    private void renderBackgroundPanels(GuiGraphicsExtractor guiGraphics) {
         int tx = tooltipBox.getX(), ty = panel.getY(), tw = tooltipBox.getWidth(), th = tooltipBox.getHeight();
         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.SKIN_PANEL, tx - 10, ty + 7, tw, th - 2);
         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.PANEL_FILLER, tx - 5, ty + th - 64, tw - 14, 60);
@@ -360,7 +360,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         return createId("bedrockskins", "skin_packs/vanilla/pack_icon.png");
     }
     
-    private void renderPackName(GuiGraphics guiGraphics) {
+    private void renderPackName(GuiGraphicsExtractor guiGraphics) {
         int middle = tooltipBox.getX() - 5 + (tooltipBox.getWidth() - 18) / 2;
         String packDisplayName = resolvePackDisplayName(focusedPackId, focusedPack);
 
@@ -372,7 +372,7 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         }
     }
     
-    private void renderSkinInfo(GuiGraphics guiGraphics) {
+    private void renderSkinInfo(GuiGraphicsExtractor guiGraphics) {
         LoadedSkin skin = playerSkinWidgetList.element3.getCurrentSkin();
         if (skin == null) return;
         
@@ -412,12 +412,12 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         }
     }
 
-    private void drawScaledCenteredString(GuiGraphics guiGraphics, Component text, int x, int y, float scale, int color) {
+    private void drawScaledCenteredString(GuiGraphicsExtractor guiGraphics, Component text, int x, int y, float scale, int color) {
         var stack = guiGraphics.pose();
         stack.pushMatrix();
         stack.translate(x, y);
         stack.scale(scale, scale);
-        guiGraphics.drawCenteredString(minecraft.font, text, 0, 0, color);
+        guiGraphics.centeredText(minecraft.font, text, 0, 0, color);
         stack.popMatrix();
     }
 
@@ -633,4 +633,4 @@ public class Legacy4JChangeSkinScreen extends PanelVListScreen implements Contro
         super.onClose();
     }
 }
-//?}
+*///?}

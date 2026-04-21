@@ -13,7 +13,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -186,7 +186,7 @@ public class SkinPreviewPanel {
         }
     }
 
-    public void renderPreview(GuiGraphics gui, int mouseX) {
+    public void renderPreview(GuiGraphicsExtractor gui, int mouseX) {
         GuiUtils.drawPanelChrome(gui, x, y, width, height, Component.translatable("bedrockskins.gui.preview"), font);
 
         int PANEL_HEADER_HEIGHT = 24;
@@ -241,15 +241,15 @@ public class SkinPreviewPanel {
                 int tooltipX = Math.max(x + 8, Math.min(centerX - (textWidth / 2), x + width - textWidth - 8));
                 int tooltipCenterX = tooltipX + (textWidth / 2);
 
-                TooltipRenderUtil.renderTooltipBackground(gui, tooltipX, textY, textWidth, textHeight, null);
+                TooltipRenderUtil.extractTooltipBackground(gui, tooltipX, textY, textWidth, textHeight, null);
 
                 int textYCursor = textY;
                 if (hasName) {
-                    gui.drawCenteredString(font, nameToRender, tooltipCenterX, textYCursor, 0xFFFFFFFF);
+                    gui.centeredText(font, nameToRender, tooltipCenterX, textYCursor, 0xFFFFFFFF);
                     textYCursor += font.lineHeight + lineGap;
                 }
                 if (hasDesc) {
-                    gui.drawCenteredString(font, descToRender, tooltipCenterX, textYCursor, 0xFFAAAAAA);
+                    gui.centeredText(font, descToRender, tooltipCenterX, textYCursor, 0xFFAAAAAA);
                 }
             }
         }
@@ -271,7 +271,7 @@ public class SkinPreviewPanel {
         return false;
     }
     
-    private void renderRotatableEntity(GuiGraphics gui, int centerX, int centerY, int boxWidth, int boxHeight, int scale, LivingEntity entity) {
+    private void renderRotatableEntity(GuiGraphicsExtractor gui, int centerX, int centerY, int boxWidth, int boxHeight, int scale, LivingEntity entity) {
         int halfW = boxWidth / 2, halfH = boxHeight / 2;
         GuiUtils.renderEntityInRect(gui, entity, rotationX * 3, centerX - halfW, centerY - halfH, centerX + halfW, centerY + halfH, scale);
     }
@@ -282,7 +282,7 @@ public class SkinPreviewPanel {
         if (favoriteButton != null) favoriteButton.getButton().visible = visible;
     }
 
-    public void renderSprites(GuiGraphics gui) {
+    public void renderSprites(GuiGraphicsExtractor gui) {
         if (favoriteButton != null) favoriteButton.renderSprites(gui);
     }
 
@@ -307,7 +307,7 @@ public class SkinPreviewPanel {
         public void setActive(boolean active) { button.active = active; }
         public void setTooltip(Component tooltip) { button.setTooltip(Tooltip.create(tooltip)); }
 
-        public void renderSprites(GuiGraphics graphics) {
+        public void renderSprites(GuiGraphicsExtractor graphics) {
             if (button.visible && isFavorited) {
                 graphics.blitSprite(RenderPipelines.GUI_TEXTURED, fullSprite, button.getX() + 4, button.getY() + 4, 12, 12);
             }

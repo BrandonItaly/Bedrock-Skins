@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -66,7 +66,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
         return this.getX() + this.width - 6;
     }
 
-    protected void renderSelection(GuiGraphics context, SkinRowEntry entry, int color) {}
+    protected void extractSelection(GuiGraphicsExtractor context, SkinRowEntry entry, int color) {}
 
     public void addEntryPublic(SkinRowEntry entry) {
         super.addEntry(entry);
@@ -100,7 +100,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
 
         // --- Shared Logic ---
 
-        private void renderCommon(GuiGraphics gui, int x, int y, int mouseX, int mouseY) {
+        private void renderCommon(GuiGraphicsExtractor gui, int x, int y, int mouseX, int mouseY) {
             // Calculate grid widget bounds
             int gridLeft = SkinGridWidget.this.getX();
             int gridTop = SkinGridWidget.this.getY();
@@ -112,7 +112,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                 int cx = x + (i * (CELL_WIDTH + CELL_PADDING));
                 // Only allow hover if mouse is inside grid widget
                 boolean isHovered = mouseInGrid && mouseX >= cx && mouseX < cx + CELL_WIDTH && mouseY >= y && mouseY < y + CELL_HEIGHT;
-                cell.render(gui, cx, y, CELL_WIDTH, CELL_HEIGHT, isHovered, mouseX, mouseY);
+                cell.extractRenderState(gui, cx, y, CELL_WIDTH, CELL_HEIGHT, isHovered, mouseX, mouseY);
             }
         }
 
@@ -138,7 +138,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
 
         // --- Version Specific Wrappers ---
 
-        public void renderContent(GuiGraphics gui, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+        public void extractContent(GuiGraphicsExtractor gui, int mouseX, int mouseY, boolean hovered, float tickDelta) {
             renderCommon(gui, getX(), getY(), mouseX, mouseY);
         }
 
@@ -185,7 +185,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                 GuiSkinUtils.cleanupPreview(uuid);
             }
 
-            public void render(GuiGraphics context, int x, int y, int w, int h, boolean hovered, int mouseX, int mouseY) {
+            public void extractRenderState(GuiGraphicsExtractor context, int x, int y, int w, int h, boolean hovered, int mouseX, int mouseY) {
                 LoadedSkin selected = getSelectedSkin.get();
                 boolean isSelected = (selected != null && selected.equals(skin));
                 var cardSprite = isSelected

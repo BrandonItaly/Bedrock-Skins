@@ -4,7 +4,7 @@ plugins {
     id("net.neoforged.moddev") version "2.0.140" apply false
 }
 
-stonecutter active "1.21.11-fabric" /* [SC] DO NOT EDIT */
+stonecutter active "26.1-fabric" /* [SC] DO NOT EDIT */
 
 stonecutter parameters {
     val loader = node.project.property("loom.platform").toString()

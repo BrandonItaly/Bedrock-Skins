@@ -34,8 +34,8 @@ public class BedrockSkins implements ModInitializer {
         ServerSkinHandler.logger.info("Initializing Bedrock Skins Mod");
 
         // Register Payloads
-        PayloadTypeRegistry.playS2C().register(BedrockSkinsNetworking.SkinUpdatePayload.ID, BedrockSkinsNetworking.SkinUpdatePayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(BedrockSkinsNetworking.SetSkinPayload.ID, BedrockSkinsNetworking.SetSkinPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(BedrockSkinsNetworking.SkinUpdatePayload.ID, BedrockSkinsNetworking.SkinUpdatePayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(BedrockSkinsNetworking.SetSkinPayload.ID, BedrockSkinsNetworking.SetSkinPayload.CODEC);
 
         // Handle player joining - send them all existing skins
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> ServerSkinHandler.onPlayerJoin(payload -> ServerPlayNetworking.send(handler.player, payload)));

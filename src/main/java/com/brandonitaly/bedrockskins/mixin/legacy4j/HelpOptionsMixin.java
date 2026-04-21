@@ -1,7 +1,7 @@
 package com.brandonitaly.bedrockskins.mixin.legacy4j;
 
 //? if <26.0 {
-import net.minecraft.client.gui.components.Renderable;
+/*import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
@@ -37,11 +37,11 @@ public abstract class HelpOptionsMixin extends RenderableVListScreen {
         return instance;
     }
 }
-//?} else {
-/*import org.spongepowered.asm.mixin.Mixin;
+*///?} else {
+import org.spongepowered.asm.mixin.Mixin;
 import net.minecraft.client.Minecraft;
 
 @Mixin(Minecraft.class)
 public class HelpOptionsMixin {
 }
-*///?}
+//?}

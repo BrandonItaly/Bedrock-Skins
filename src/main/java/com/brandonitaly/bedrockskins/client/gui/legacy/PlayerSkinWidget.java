@@ -6,7 +6,7 @@ import com.brandonitaly.bedrockskins.client.gui.PreviewPlayer;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.EntityModelSet;
@@ -178,7 +178,7 @@ public class PlayerSkinWidget extends AbstractWidget {
         }
     }
 
-    protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (!visible) return;
 
         long elapsed = Util.getMillis() - start;

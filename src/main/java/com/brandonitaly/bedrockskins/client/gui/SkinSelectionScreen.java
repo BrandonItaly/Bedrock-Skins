@@ -17,7 +17,7 @@ import net.minecraft.client.gui.components.tabs.GridLayoutTab;
 import net.minecraft.client.gui.components.tabs.TabManager;
 import net.minecraft.client.gui.components.tabs.TabNavigationBar;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
@@ -98,7 +98,7 @@ public class SkinSelectionScreen extends Screen {
     public void repositionElements() {
         if (tabNavigationBar != null) {
             //~ if >26.0 '.setWidth' -> '.updateWidth' {
-            tabNavigationBar.setWidth(width);//~}
+            tabNavigationBar.updateWidth(width);//~}
             tabNavigationBar.arrangeElements();
             int top = tabNavigationBar.getRectangle().bottom();
             tabManager.setTabArea(new ScreenRectangle(0, top, width, height - layout.getFooterHeight() - top));
@@ -400,14 +400,14 @@ public class SkinSelectionScreen extends Screen {
 
     // --- Render and Input ---
 
-    public void render(GuiGraphics gui, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor gui, int mouseX, int mouseY, float delta) {
         if (activeTab == 0) {
             GuiUtils.drawPanelChrome(gui, rPacks.x, rPacks.y, rPacks.w, rPacks.h, Component.translatable("bedrockskins.gui.packs"), font);
             GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h, getSkinsPanelTitle(), font);
         }
             
         if (previewPanel != null && activeTab != 2) previewPanel.renderPreview(gui, mouseX);
-        super.render(gui, mouseX, mouseY, delta);
+        super.extractRenderState(gui, mouseX, mouseY, delta);
         if (previewPanel != null && activeTab != 2) previewPanel.renderSprites(gui);
         
         gui.blit(RenderPipelines.GUI_TEXTURED, Screen.FOOTER_SEPARATOR, 0, height - layout.getFooterHeight() - 2, 0.0F, 0.0F, width, 2, 32, 2);
@@ -425,9 +425,9 @@ public class SkinSelectionScreen extends Screen {
             || super.mouseReleased(event);
     }
     
-    protected void renderMenuBackground(GuiGraphics graphics) {
+    protected void renderMenuBackground(GuiGraphicsExtractor graphics) {
         graphics.blit(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.TAB_HEADER_BACKGROUND, 0, 0, 0.0F, 0.0F, width, layout.getHeaderHeight(), 16, 16);
-        super.renderMenuBackground(graphics);
+        super.extractMenuBackground(graphics);
     }
 
     private static class Rect {
@@ -557,7 +557,7 @@ public class SkinSelectionScreen extends Screen {
             this.pack = pack;
         }
 
-        public void renderContent(GuiGraphics gui, int mouseX, int mouseY, boolean isMouseOver, float partialTick) {
+        public void extractContent(GuiGraphicsExtractor gui, int mouseX, int mouseY, boolean isMouseOver, float partialTick) {
             int index = downloadList.children().indexOf(this);
             if (index == -1) return;
 
@@ -581,8 +581,8 @@ public class SkinSelectionScreen extends Screen {
                 desc = font.plainSubstrByWidth(desc, maxTextWidth - font.width("...")) + "...";
             }
 
-            gui.drawString(font, name, rowLeft + 5, y + 5, 0xFFFFFFFF, false);
-            gui.drawString(font, desc, rowLeft + 5, y + 17, 0xFF808080, false);
+            gui.text(font, name, rowLeft + 5, y + 5, 0xFFFFFFFF, false);
+            gui.text(font, desc, rowLeft + 5, y + 17, 0xFF808080, false);
         }
 
         @Override

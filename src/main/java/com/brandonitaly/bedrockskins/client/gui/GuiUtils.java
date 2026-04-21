@@ -6,7 +6,7 @@ import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
@@ -26,7 +26,7 @@ public final class GuiUtils {
      * Standard rendering for basic preview boxes.
      * Locks the head to the body rotation.
      */
-    public static void renderEntityInRect(GuiGraphics gui, LivingEntity entity, float yawOffset, int left, int top, int right, int bottom, int sizeCap) {
+    public static void renderEntityInRect(GuiGraphicsExtractor gui, LivingEntity entity, float yawOffset, int left, int top, int right, int bottom, int sizeCap) {
         renderEntityInRect(gui, entity, yawOffset, 0.0F, left, top, right, bottom, sizeCap);
     }
 
@@ -34,7 +34,7 @@ public final class GuiUtils {
      * Advanced rendering for full customization screens.
      * Allows an independent headYawOffset.
      */
-    public static void renderEntityInRect(GuiGraphics gui, LivingEntity entity, float yawOffset, float headYawOffset, int left, int top, int right, int bottom, int sizeCap) {
+    public static void renderEntityInRect(GuiGraphicsExtractor gui, LivingEntity entity, float yawOffset, float headYawOffset, int left, int top, int right, int bottom, int sizeCap) {
         // Save entity state
         float yBodyRot = entity.yBodyRot;
         float yRot = entity.getYRot();
@@ -92,7 +92,7 @@ public final class GuiUtils {
         quat2.conjugate();
 
         //~ if >=26.0 '.submitEntityRenderState' -> '.entity' {
-        gui.submitEntityRenderState(entityRenderState, renderScale, vector3f, quat, quat2, left, top, right, bottom);
+        gui.entity(entityRenderState, renderScale, vector3f, quat, quat2, left, top, right, bottom);
         //~}
 
         // Restore state
@@ -123,8 +123,8 @@ public final class GuiUtils {
         return skin != null && skin.upsideDown;
     }
 
-    public static void drawPanelChrome(GuiGraphics gui, int x, int y, int w, int h, Component title, Font font) {
+    public static void drawPanelChrome(GuiGraphicsExtractor gui, int x, int y, int w, int h, Component title, Font font) {
         gui.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.PANEL_SPRITE, x-1, y-1, w+2, h+2);
-        gui.drawCenteredString(font, title, x + (w / 2), y + 8, 0xFFFFFFFF);
+        gui.centeredText(font, title, x + (w / 2), y + 8, 0xFFFFFFFF);
     }
 }

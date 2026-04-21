@@ -30,10 +30,10 @@ import net.minecraft.world.level.biome.BiomeGenerationSettings;
 import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
 import net.minecraft.world.level.dimension.DimensionType;
 //? if >=26.0 {
-/*import DimensionType.CardinalLightType;
+import net.minecraft.world.level.CardinalLighting.Type;
 import net.minecraft.world.clock.WorldClock;
 import java.util.Optional;
-*///?}
+//?}
 //? if >=1.21.11 {
 import net.minecraft.world.attribute.EnvironmentAttributeMap;
 //?} else {
@@ -121,18 +121,18 @@ public class DummyClientPacketListener extends ClientPacketListener {
 
     private static void registerDummyDimension() {
         //? if >=26.0 {
-        /*DimensionType dummyDimension = new DimensionType(
+        DimensionType dummyDimension = new DimensionType(
             false, true, false, false, 1.0, -64, 384, 384, BlockTags.INFINIBURN_OVERWORLD, 0.0f,
             new DimensionType.MonsterSettings(ConstantInt.of(0), 0),
             DimensionType.Skybox.OVERWORLD, Type.DEFAULT, EnvironmentAttributeMap.EMPTY, HolderSet.empty(), Optional.empty()
         );
-        *///?} else if >=1.21.11 {
-        DimensionType dummyDimension = new DimensionType(
+        //?} else if >=1.21.11 {
+        /*DimensionType dummyDimension = new DimensionType(
             false, true, false, 1.0, -64, 384, 384, BlockTags.INFINIBURN_OVERWORLD, 0.0f,
             new DimensionType.MonsterSettings(ConstantInt.of(0), 0),
-            DimensionType.Skybox.OVERWORLD, DimensionType.CardinalLightType.DEFAULT, EnvironmentAttributeMap.EMPTY, HolderSet.empty()
+            DimensionType.Skybox.OVERWORLD, net.minecraft.world.level.CardinalLighting.Type.DEFAULT, EnvironmentAttributeMap.EMPTY, HolderSet.empty()
         );
-        //?} else {
+        *///?} else {
         /*DimensionType dummyDimension = new DimensionType(
             OptionalLong.empty(), true, false, false, false, 1.0, true, false, -64, 384, 384,
             BlockTags.INFINIBURN_OVERWORLD, Identifier.withDefaultNamespace("overworld"), 0.0f,

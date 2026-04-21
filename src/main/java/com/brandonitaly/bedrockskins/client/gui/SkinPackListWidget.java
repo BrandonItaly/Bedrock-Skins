@@ -2,7 +2,7 @@ package com.brandonitaly.bedrockskins.client.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -33,7 +33,7 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
     protected int scrollBarX() { return getX() + getWidth() - 6; }
 
     @Override
-    protected void renderSelection(GuiGraphics context, SkinPackEntry entry, int color) {}
+    protected void extractSelection(GuiGraphicsExtractor context, SkinPackEntry entry, int color) {}
 
     public void addEntryPublic(SkinPackEntry entry) { super.addEntry(entry); }
     public void clear() { super.clearEntries(); }
@@ -58,7 +58,7 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
             this.textRenderer = textRenderer;
         }
 
-        private void renderCommon(GuiGraphics context, int x, int y, int mouseX, int mouseY, boolean hovered) {
+        private void renderCommon(GuiGraphicsExtractor context, int x, int y, int mouseX, int mouseY, boolean hovered) {
             boolean isSelected = Boolean.TRUE.equals(isSelectedFn.get());
             String translated = GuiSkinUtils.translatedOrFallback(translationKey, fallbackName);
 
@@ -89,7 +89,7 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
                     ? textRenderer.plainSubstrByWidth(translated, Math.max(0, maxTextWidth - textRenderer.width("..."))) + "..."
                     : translated;
 
-            context.drawString(textRenderer, Component.literal(shown), textX, textY, textColor, false);
+            context.text(textRenderer, Component.literal(shown), textX, textY, textColor, false);
 
             if (hovered && truncated) context.setTooltipForNextFrame(textRenderer, Component.literal(translated), mouseX, mouseY);
         }
@@ -100,7 +100,7 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
             return true;
         }
 
-        public void renderContent(GuiGraphics context, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+        public void extractContent(GuiGraphicsExtractor context, int mouseX, int mouseY, boolean hovered, float tickDelta) {
             renderCommon(context, getX(), getY(), mouseX, mouseY, hovered);
         }
 

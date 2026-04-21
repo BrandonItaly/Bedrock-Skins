@@ -13,7 +13,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
@@ -81,7 +81,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     @Override
     public void onInitializeClient() {
         createKeybinds();
-        for (KeyMapping key : ALL_KEYS) KeyBindingHelper.registerKeyBinding(key);
+        for (KeyMapping key : ALL_KEYS) KeyMappingHelper.registerKeyMapping(key);
 
         ClientTickEvents.END_CLIENT_TICK.register(BedrockSkinsClient::handleTick);
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
