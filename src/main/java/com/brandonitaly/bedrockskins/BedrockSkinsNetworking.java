@@ -46,13 +46,13 @@ public final class BedrockSkinsNetworking {
                 return;
             }
             try {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
                 try (GZIPOutputStream gzip = new GZIPOutputStream(baos)) {
                     gzip.write(string.getBytes(StandardCharsets.UTF_8));
                 }
                 buf.writeByteArray(baos.toByteArray());
             } catch (IOException e) {
-                buf.writeByteArray(new byte[0]); // Safe fallback
+                buf.writeByteArray(new byte[0]);
             }
         }
 

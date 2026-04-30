@@ -267,22 +267,16 @@ public class BedrockPlayerModel extends PlayerModel {
         String mapped = mapBoneName(boneName);
         if (root.hasChild(mapped)) return root.getChild(mapped);
         
-        BoneNode current = nodes.get(boneName);
-        if (current == null) return null;
+        BoneNode node = nodes.get(boneName);
+        if (node == null) return null;
         
-        List<String> path = new ArrayList<>();
-        while (current != null) {
-            path.add(mapBoneName(current.name()));
-            current = current.parent() != null ? nodes.get(current.parent()) : null;
+        if (node.parent() != null) {
+            ModelPart parentPart = resolveHierarchyPart(root, node.parent(), nodes);
+            if (parentPart != null && parentPart.hasChild(mapped)) {
+                return parentPart.getChild(mapped);
+            }
         }
-        
-        Collections.reverse(path);
-        ModelPart part = root;
-        for (String segment : path) {
-            if (!part.hasChild(segment)) return null;
-            part = part.getChild(segment);
-        }
-        return part;
+        return null;
     }
 
     public static String mapBoneName(String name) {
