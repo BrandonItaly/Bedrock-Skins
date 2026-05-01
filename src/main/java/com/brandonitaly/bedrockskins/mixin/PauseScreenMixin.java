@@ -152,6 +152,6 @@ public abstract class PauseScreenMixin extends Screen {
 
         bedrockskins$pausePreviewPlayer.tickCount = (int) (Util.getMillis() / 50L);
         GuiUtils.renderEntityInRect(guiGraphics, bedrockskins$pausePreviewPlayer, bedrockskins$previewYaw, 
-            bedrockskins$getLeft(), bedrockskins$getTop() - 14, bedrockskins$getLeft() + PREVIEW_W, bedrockskins$getTop() + PREVIEW_H, 56);
+            bedrockskins$getLeft() - 40, bedrockskins$getTop() - 14, bedrockskins$getLeft() + PREVIEW_W + 40, bedrockskins$getTop() + PREVIEW_H, 56);
     }
 }

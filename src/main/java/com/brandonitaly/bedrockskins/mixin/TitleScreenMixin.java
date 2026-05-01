@@ -65,8 +65,7 @@ public abstract class TitleScreenMixin extends Screen {
         bedrockskins$leftMouseDown = false;
 
         // Initialize Player
-        minecraft.getGameProfile();
-        String name = minecraft.getGameProfile().name();
+        String name = minecraft.getGameProfile() != null ? minecraft.getGameProfile().name() : "Preview";
         bedrockskins$menuPreviewPlayer = PreviewPlayer.PreviewPlayerPool.get(new GameProfile(bedrockskins$menuPreviewUuid, name));
         bedrockskins$menuPreviewPlayer.setShowNameTag(true);
         bedrockskins$menuPreviewPlayer.setCustomName(Component.literal(name));
@@ -153,7 +152,7 @@ public abstract class TitleScreenMixin extends Screen {
 
         bedrockskins$menuPreviewPlayer.tickCount = (int) (Util.getMillis() / 50L);
         GuiUtils.renderEntityInRect(guiGraphics, bedrockskins$menuPreviewPlayer, bedrockskins$previewYaw, 
-            bedrockskins$getLeft(), bedrockskins$getTop() - 14, bedrockskins$getLeft() + PREVIEW_W, bedrockskins$getTop() + PREVIEW_H, 56);
+            bedrockskins$getLeft() - 40, bedrockskins$getTop() - 14, bedrockskins$getLeft() + PREVIEW_W + 40, bedrockskins$getTop() + PREVIEW_H, 56);
     }
 
     @Inject(method = "removed", at = @At("TAIL"))

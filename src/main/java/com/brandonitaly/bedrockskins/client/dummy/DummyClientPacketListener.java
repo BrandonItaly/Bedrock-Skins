@@ -17,6 +17,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.ServerLinks;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.damagesource.DamageType;
@@ -49,15 +50,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DummyClientPacketListener extends ClientPacketListener {
-    private static DummyClientPacketListener instance;
     private static final MappedRegistry<DimensionType> DUMMY_DIMENSION_TYPE_REGISTRY = new MappedRegistry<>(Registries.DIMENSION_TYPE, Lifecycle.stable());
+    
+    static {
+        registerDummyDimension();
+    }
+    
     private static final RegistryAccess.Frozen DUMMY_REGISTRY_ACCESS = createRegistryAccess();
 
+    private static class InstanceHolder {
+        private static final DummyClientPacketListener INSTANCE = new DummyClientPacketListener();
+    }
+
     public static DummyClientPacketListener getInstance() {
-        if (instance == null) {
-            instance = new DummyClientPacketListener();
-        }
-        return instance;
+        return InstanceHolder.INSTANCE;
     }
 
     static Holder<DimensionType> getDummyDimensionTypeHolder() {
@@ -81,16 +87,14 @@ public class DummyClientPacketListener extends ClientPacketListener {
         );
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private static RegistryAccess.Frozen createRegistryAccess() {
         RegistryAccess.Frozen builtins = RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
-        Map registries = new HashMap();
+        
+        Map<ResourceKey<? extends Registry<?>>, Registry<?>> registries = new HashMap<>();
         builtins.registries().forEach(entry -> registries.put(entry.key(), entry.value()));
 
         registries.put(Registries.BIOME, createDummyBiomeRegistry());
         registries.put(Registries.DAMAGE_TYPE, createDummyDamageTypeRegistry());
-        
-        registerDummyDimension();
         registries.put(Registries.DIMENSION_TYPE, DUMMY_DIMENSION_TYPE_REGISTRY);
 
         return new RegistryAccess.ImmutableRegistryAccess(registries).freeze();
@@ -147,8 +151,8 @@ public class DummyClientPacketListener extends ClientPacketListener {
         MappedRegistry<DamageType> damageTypeRegistry = new MappedRegistry<>(Registries.DAMAGE_TYPE, Lifecycle.stable());
         try {
             for (Field field : DamageTypes.class.getFields()) {
-                if (!field.getType().equals(net.minecraft.resources.ResourceKey.class)) continue;
-                var key = (net.minecraft.resources.ResourceKey<DamageType>) field.get(null);
+                if (!field.getType().equals(ResourceKey.class)) continue;
+                var key = (ResourceKey<DamageType>) field.get(null);
                 
                 //~ if <1.21.11 'identifier' -> 'location' {
                 DamageType type = new DamageType(key.identifier().toString(), 0.0f);
