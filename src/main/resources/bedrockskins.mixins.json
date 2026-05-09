@@ -16,8 +16,7 @@
     "PlayerListEntryMixin",
     "PlayerSkinRenderCacheMixin",
     "TitleScreenMixin",
-    "TranslationStorageMixin",
-    "legacy4j.HelpOptionsMixin"
+    "TranslationStorageMixin"
   ],
   "mixins": [],
   "injectors": {

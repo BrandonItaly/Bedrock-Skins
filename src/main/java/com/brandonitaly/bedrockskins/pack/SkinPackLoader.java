@@ -23,11 +23,13 @@ import net.minecraft.server.packs.resources.ResourceManager;
 
 public final class SkinPackLoader {
     public static final Map<String, String> packTypesByPackId = new HashMap<>();
+    public static final Map<String, Identifier> packIconsByPackId = new HashMap<>();
     public static final Map<SkinId, LoadedSkin> loadedSkins = Collections.synchronizedMap(new LinkedHashMap<>());
     public static List<String> packOrder = Collections.emptyList();
 
     private static final Codec<List<String>> PACK_ORDER_CODEC = Codec.list(Codec.STRING);
     private static final Map<String, Map<String, String>> translations = new HashMap<>();
+    private static final Set<Identifier> dynamicPackIcons = new HashSet<>();
     public static JsonObject vanillaGeometryJson = null;
 
     private SkinPackLoader() {}
@@ -62,6 +64,7 @@ public final class SkinPackLoader {
 
         translations.clear();
         packTypesByPackId.clear();
+        clearPackIcons();
 
         Minecraft client = Minecraft.getInstance();
         ResourceManager manager = client.getResourceManager();
@@ -202,6 +205,7 @@ public final class SkinPackLoader {
 
             loadExternalTranslations(packDir);
             registerPackType(manifest);
+            registerDynamicPackIcon(packIdFor(manifest.serializeName()), findPackIconFile(packDir));
 
             for (SkinEntry entry : manifest.skins()) {
                 JsonObject geometry = resolveGeometry(entry.geometry(), geometryJson);
@@ -249,6 +253,7 @@ public final class SkinPackLoader {
                 
                 registerPackType(manifest);
                 loadInternalTranslations(manager, id.getNamespace(), packPath);
+                registerResourcePackIcon(packIdFor(manifest.serializeName()), findResourcePackIcon(id.getNamespace(), packPath, manager));
 
                 for (SkinEntry entry : manifest.skins()) {
                     JsonObject geometry = resolveGeometry(entry.geometry(), geoJson);
@@ -313,6 +318,7 @@ public final class SkinPackLoader {
 
                     loadExternalTranslationsFromZip(zf, dir);
                     registerPackType(manifest);
+                    registerZipPackIcon(packIdFor(manifest.serializeName()), pack, zf, dir);
 
                     for (SkinEntry entry : manifest.skins()) {
                         JsonObject geometry = resolveGeometry(entry.geometry(), geometryJson);
@@ -564,8 +570,67 @@ public final class SkinPackLoader {
         }
         
         if (packType != null && !packType.isEmpty()) {
-            packTypesByPackId.put("skinpack." + serializeName, packType);
+            packTypesByPackId.put(packIdFor(serializeName), packType);
         }
+    }
+
+    private static String packIdFor(String serializeName) {
+        return serializeName == null ? null : "skinpack." + serializeName;
+    }
+
+    private static void clearPackIcons() {
+        var tm = Minecraft.getInstance().getTextureManager();
+        for (Identifier icon : dynamicPackIcons) tm.release(icon);
+        dynamicPackIcons.clear();
+        packIconsByPackId.clear();
+    }
+
+    private static void registerResourcePackIcon(String packId, Identifier icon) {
+        if (packId == null || icon == null || packIconsByPackId.containsKey(packId)) return;
+        packIconsByPackId.put(packId, icon);
+    }
+
+    private static void registerDynamicPackIcon(String packId, File file) {
+        if (packId == null || file == null || !file.exists() || packIconsByPackId.containsKey(packId)) return;
+        registerDynamicPackIcon(packId, new AssetSource.File(file.getAbsolutePath()));
+    }
+
+    private static File findPackIconFile(File packDir) {
+        if (packDir == null) return null;
+        File icon = new File(packDir, "pack.png");
+        if (icon.exists()) return icon;
+        icon = new File(packDir, "pack_icon.png");
+        return icon.exists() ? icon : null;
+    }
+
+    private static Identifier findResourcePackIcon(String namespace, String packPath, ResourceManager manager) {
+        Identifier icon = createIdentifier(namespace, packPath + "/pack.png");
+        if (manager.getResource(icon).isPresent()) return icon;
+        icon = createIdentifier(namespace, packPath + "/pack_icon.png");
+        return manager.getResource(icon).isPresent() ? icon : null;
+    }
+
+    private static void registerZipPackIcon(String packId, File pack, ZipFile zf, String dir) {
+        if (packId == null || pack == null || zf == null || dir == null || packIconsByPackId.containsKey(packId)) return;
+
+        ZipEntry entry = findZipEntry(zf, dir + "/pack.png");
+        if (entry == null) entry = findZipEntry(zf, dir + "/pack_icon.png");
+        if (entry != null) registerDynamicPackIcon(packId, new AssetSource.Zip(pack.getAbsolutePath(), entry.getName()));
+    }
+
+    private static ZipEntry findZipEntry(ZipFile zf, String path) {
+        ZipEntry entry = zf.getEntry(path);
+        return entry != null ? entry : zf.getEntry(path.toLowerCase(Locale.ROOT));
+    }
+
+    private static void registerDynamicPackIcon(String packId, AssetSource source) {
+        NativeImage image = loadNativeImage(source);
+        if (image == null) return;
+
+        Identifier id = createIdentifier("bedrockskins", "pack_icons/" + StringUtils.sanitize(packId));
+        Minecraft.getInstance().getTextureManager().register(id, new DynamicTexture(() -> "bedrock_pack_icon", image));
+        dynamicPackIcons.add(id);
+        packIconsByPackId.put(packId, id);
     }
 
     private static File getSkinPacksDir() {
