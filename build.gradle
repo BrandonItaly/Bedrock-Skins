@@ -98,25 +98,24 @@ if (loader == "fabric") {
 dependencies {
     def facVer = project.findProperty("factory_api_version") ?: ""
     def legVer = project.findProperty("legacy4j_version") ?: ""
-    def legacyMcVersion = "1.21.10"
 
     if (loader == "fabric") {
         minecraft "com.mojang:minecraft:${stonecutter.current.version}"
         if (!unobfuscated) mappings loom.officialMojangMappings()
     }
 
-    if (facVer && facVer != "[VERSIONED]" && !unobfuscated) {
-        if (loader == "neoforge") compileOnly "wily.factory_api:factory_api-${loader}:${legacyMcVersion}-${facVer}"
-        else modCompileOnly "wily.factory_api:factory_api-${loader}:${legacyMcVersion}-${facVer}"
+    if (facVer && facVer != "[VERSIONED]") {
+        if (loader == "neoforge") compileOnly "maven.modrinth:nkTZHOLD:${stonecutter.current.version}-${facVer}-${loader}"
+        else modCompileOnly "maven.modrinth:nkTZHOLD:${stonecutter.current.version}-${facVer}-${loader}"
     } else {
-        logger.lifecycle("Skipping wily.factory_api dependency for ${project.path} (factory_api_version not set)")
+        logger.lifecycle("Skipping maven.modrinth dependency for ${project.path} (factory_api_version not set)")
     }
 
-    if (legVer && legVer != "[VERSIONED]" && !unobfuscated) {
-        if (loader == "neoforge") compileOnly "wily.legacy:legacy-${loader}:${legacyMcVersion}-${legVer}"
-        else modCompileOnly "wily.legacy:legacy-${loader}:${legacyMcVersion}-${legVer}"
+    if (legVer && legVer != "[VERSIONED]") {
+        if (loader == "neoforge") compileOnly "maven.modrinth:gHvKJofA:${stonecutter.current.version}-${legVer}-${loader}"
+        else modCompileOnly "maven.modrinth:gHvKJofA:${stonecutter.current.version}-${legVer}-${loader}"
     } else {
-        logger.lifecycle("Skipping wily.legacy dependency for ${project.path} (legacy4j_version not set)")
+        logger.lifecycle("Skipping maven.modrinth dependency for ${project.path} (legacy4j_version not set)")
     }
 
     if (loader == "fabric") {

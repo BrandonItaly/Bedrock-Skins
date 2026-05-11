@@ -23,7 +23,6 @@ public class BedrockSkinsConfig {
     private static volatile boolean paperDollLeftSide;
     private static volatile boolean skinAnimations;
     private static volatile boolean adjustCameraHeight;
-    private static volatile boolean smoothInterpolation;
 
     public enum PaperDollMode {
         NONE, BOTH, MAIN_MENU, PAUSE_MENU;
@@ -45,9 +44,9 @@ public class BedrockSkinsConfig {
         );
     }
 
-    private record ConfigData(boolean scanResourcePacksForSkins, PaperDollMode paperDollMode, PackSortOrder packSortOrder, boolean paperDollLeftSide, boolean skinAnimations, boolean adjustCameraHeight, boolean smoothInterpolation) {}
+    private record ConfigData(boolean scanResourcePacksForSkins, PaperDollMode paperDollMode, PackSortOrder packSortOrder, boolean paperDollLeftSide, boolean skinAnimations, boolean adjustCameraHeight) {}
 
-    private static final ConfigData DEFAULTS = new ConfigData(true, PaperDollMode.BOTH, PackSortOrder.A_TO_Z, false, true, false, true);
+    private static final ConfigData DEFAULTS = new ConfigData(true, PaperDollMode.BOTH, PackSortOrder.A_TO_Z, false, true, false);
 
     private static final Codec<ConfigData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         Codec.BOOL.optionalFieldOf("scanResourcePacksForSkins", DEFAULTS.scanResourcePacksForSkins()).forGetter(ConfigData::scanResourcePacksForSkins),
@@ -55,8 +54,7 @@ public class BedrockSkinsConfig {
         PackSortOrder.CODEC.optionalFieldOf("packSortOrder", DEFAULTS.packSortOrder()).forGetter(ConfigData::packSortOrder),
         Codec.BOOL.optionalFieldOf("paperDollLeftSide", DEFAULTS.paperDollLeftSide()).forGetter(ConfigData::paperDollLeftSide),
         Codec.BOOL.optionalFieldOf("skinAnimations", DEFAULTS.skinAnimations()).forGetter(ConfigData::skinAnimations),
-        Codec.BOOL.optionalFieldOf("adjustCameraHeight", DEFAULTS.adjustCameraHeight()).forGetter(ConfigData::adjustCameraHeight),
-        Codec.BOOL.optionalFieldOf("smoothInterpolation", DEFAULTS.smoothInterpolation()).forGetter(ConfigData::smoothInterpolation)
+        Codec.BOOL.optionalFieldOf("adjustCameraHeight", DEFAULTS.adjustCameraHeight()).forGetter(ConfigData::adjustCameraHeight)
     ).apply(instance, ConfigData::new));
 
     static { load(); }
@@ -97,11 +95,6 @@ public class BedrockSkinsConfig {
         }
     );
 
-    public static final OptionInstance<Boolean> SMOOTH_INTERPOLATION = OptionInstance.createBoolean(
-        "bedrockskins.option.smooth_interpolation", value -> Tooltip.create(Component.translatable("bedrockskins.option.smooth_interpolation.tooltip")),
-        isSmoothInterpolationEnabled(), BedrockSkinsConfig::setSmoothInterpolation
-    );
-
     public static boolean isScanResourcePacksForSkinsEnabled() { return scanResourcePacksForSkins; }
     public static void setScanResourcePacksForSkins(boolean enabled) { scanResourcePacksForSkins = enabled; save(); }
 
@@ -123,9 +116,6 @@ public class BedrockSkinsConfig {
     public static boolean isAdjustCameraHeightEnabled() { return adjustCameraHeight; }
     public static void setAdjustCameraHeight(boolean enabled) { if (adjustCameraHeight != enabled) { adjustCameraHeight = enabled; save(); } }
 
-    public static boolean isSmoothInterpolationEnabled() { return smoothInterpolation; }
-    public static void setSmoothInterpolation(boolean enabled) { if (smoothInterpolation != enabled) { smoothInterpolation = enabled; save(); } }
-
     public static OptionInstance<?>[] asOptions() {
         return new OptionInstance<?>[] { PACK_SORT_ORDER, SCAN_RESOURCE_PACKS, SHOW_PAPER_DOLL, PAPER_DOLL_LEFT_SIDE, SKIN_ANIMATIONS, ADJUST_CAMERA_HEIGHT };
     }
@@ -142,11 +132,10 @@ public class BedrockSkinsConfig {
         paperDollLeftSide = data.paperDollLeftSide();
         skinAnimations = data.skinAnimations();
         adjustCameraHeight = data.adjustCameraHeight();
-        smoothInterpolation = data.smoothInterpolation();
     }
 
     private static void save() {
-        JsonCodecFileStore.write(CONFIG_PATH, CODEC, new ConfigData(scanResourcePacksForSkins, paperDollMode, packSortOrder, paperDollLeftSide, skinAnimations, adjustCameraHeight, smoothInterpolation), "BedrockSkinsConfig");
+        JsonCodecFileStore.write(CONFIG_PATH, CODEC, new ConfigData(scanResourcePacksForSkins, paperDollMode, packSortOrder, paperDollLeftSide, skinAnimations, adjustCameraHeight), "BedrockSkinsConfig");
     }
 
     public static void resetToDefault() {
@@ -156,7 +145,6 @@ public class BedrockSkinsConfig {
         PAPER_DOLL_LEFT_SIDE.set(DEFAULTS.paperDollLeftSide());
         SKIN_ANIMATIONS.set(DEFAULTS.skinAnimations());
         ADJUST_CAMERA_HEIGHT.set(DEFAULTS.adjustCameraHeight());
-        SMOOTH_INTERPOLATION.set(DEFAULTS.smoothInterpolation());
         save();
     }
 }

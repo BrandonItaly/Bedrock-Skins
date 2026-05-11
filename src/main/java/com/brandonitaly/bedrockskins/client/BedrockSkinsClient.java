@@ -2,6 +2,9 @@ package com.brandonitaly.bedrockskins.client;
 
 import com.brandonitaly.bedrockskins.BedrockSkinsNetworking;
 import com.brandonitaly.bedrockskins.client.gui.SkinSelectionScreen;
+//? if >=1.21.10 {
+import com.brandonitaly.bedrockskins.client.gui.legacy.Legacy4JMenuIntegration;
+//?}
 import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
 import com.brandonitaly.bedrockskins.util.PlatformUtil;
 import com.brandonitaly.bedrockskins.pack.AssetSource;
@@ -67,13 +70,15 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     }
 
     public static Screen getAppropriateSkinScreen(Screen parent) {
+        //? if >=1.21.10 {
         if (PlatformUtil.isModLoaded("legacy")) {
             try {
-                return (Screen) Class.forName("com.brandonitaly.bedrockskins.client.gui.legacy.Legacy4JChangeSkinScreen").getConstructor(Screen.class).newInstance(parent);
+                return Legacy4JMenuIntegration.createScreen(parent);
             } catch (Throwable t) {
                 System.err.println("BedrockSkinsClient: Failed to open legacy screen, falling back to default screen.");
             }
         }
+        //?}
         return new SkinSelectionScreen(parent);
     }
 
@@ -82,6 +87,17 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     public void onInitializeClient() {
         createKeybinds();
         for (KeyMapping key : ALL_KEYS) KeyMappingHelper.registerKeyMapping(key);
+
+        //? if >=1.21.10 {
+        if (PlatformUtil.isModLoaded("legacy")) {
+            try {
+                Legacy4JMenuIntegration.init();
+            } catch (Throwable throwable) {
+                System.err.println("BedrockSkinsClient: Failed to initialize Legacy4J hosted menu integration.");
+                throwable.printStackTrace();
+            }
+        }
+        //?}
 
         ClientTickEvents.END_CLIENT_TICK.register(BedrockSkinsClient::handleTick);
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
@@ -136,6 +152,9 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     // --- Shared Logic ---
 
     static void handleTick(Minecraft client) {
+        //? if >=1.21.10 {
+        if (PlatformUtil.isModLoaded("legacy")) Legacy4JMenuIntegration.init();
+        //?}
         while (openKey.consumeClick()) client.setScreen(getAppropriateSkinScreen(client.screen));
         if (client.player == null) return;
         

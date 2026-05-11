@@ -17,7 +17,7 @@
     "PlayerSkinRenderCacheMixin",
     "TitleScreenMixin",
     "TranslationStorageMixin",
-    "legacy4j.HelpOptionsMixin"
+    "AvatarRendererCancelMixin"
   ],
   "mixins": [],
   "injectors": {

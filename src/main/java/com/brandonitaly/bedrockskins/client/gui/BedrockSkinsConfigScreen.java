@@ -25,10 +25,6 @@ public class BedrockSkinsConfigScreen extends OptionsSubScreen {
         if (this.list != null) {
             List<OptionInstance<?>> options = new ArrayList<>(Arrays.asList(BedrockSkinsConfig.asOptions()));
             
-            if (PlatformUtil.isModLoaded("legacy")) {
-                options.add(BedrockSkinsConfig.SMOOTH_INTERPOLATION);
-            }
-            
             this.list.addSmall(options.toArray(new OptionInstance[0]));
         }
     }
