@@ -242,7 +242,7 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
             renderState.attackArm = HumanoidArm.RIGHT;
             renderState.attackTime = attackTime;
             renderState.isCrouching = crouchPose;
-            renderState.skin = state.player.getSkin(); 
+            renderState.skin = state.player.getSkin(Minecraft.getInstance()); 
 
             // Calculate Legacy Scale & Translation layout
             int baseHeight = bottom - top;

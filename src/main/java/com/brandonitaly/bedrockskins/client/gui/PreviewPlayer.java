@@ -5,36 +5,50 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.core.ClientAsset;
-import com.brandonitaly.bedrockskins.client.dummy.DummyClientLevel;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.player.PlayerModelPart;
-import net.minecraft.world.entity.player.PlayerSkin;
-import net.minecraft.world.level.GameType;
 import net.minecraft.core.ClientAsset.ResourceTexture;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.PlayerSkin;
 
-public class PreviewPlayer extends RemotePlayer {
+public final class PreviewPlayer {
 
+    private final GameProfile profile;
     private boolean showNameTag = false;
+    private Component displayName;
     private ClientAsset.Texture forcedCapeTexture = null;
     private ClientAsset.Texture forcedBody = null;
     private PlayerSkin forcedProfileSkin = null;
     private boolean useLocalPlayerModel = false;
 
-    public PreviewPlayer(ClientLevel world, GameProfile profile) {
-        super(world, profile);
+    public PreviewPlayer(GameProfile profile) {
+        this.profile = profile;
+        this.displayName = Component.literal(profile.name() == null ? "Preview" : profile.name());
     }
 
-    @Override
+    public UUID getUuid() {
+        return profile.id();
+    }
+
+    public GameProfile getProfile() {
+        return profile;
+    }
+
     public boolean shouldShowName() {
-        return showNameTag || this.isCustomNameVisible();
+        return showNameTag;
+    }
+
+    public Component getDisplayName() {
+        return displayName;
     }
 
     public void setShowNameTag(boolean showNameTag) {
         this.showNameTag = showNameTag;
+    }
+
+    public void setDisplayName(Component displayName) {
+        this.displayName = displayName;
     }
 
     // Sets a cape to be forced on the player preview
@@ -62,31 +76,24 @@ public class PreviewPlayer extends RemotePlayer {
         this.useLocalPlayerModel = useLocalPlayerModel;
     }
 
-    @Override
-    public GameType gameMode() {
-        return GameType.SURVIVAL;
-    }
-
-    @Override
-    public PlayerSkin getSkin() {
-        Minecraft mc = Minecraft.getInstance();
+    public PlayerSkin getSkin(Minecraft minecraft) {
         PlayerSkin original;
 
         if (forcedProfileSkin != null) {
             original = forcedProfileSkin;
-        } else if (mc.getConnection() != null) {
-            original = super.getSkin();
-        } else if (mc.player != null) {
-            original = mc.player.getSkin();
+        } else if (minecraft.getConnection() != null) {
+            original = minecraft.getSkinManager().createLookup(profile, false).get();
+        } else if (minecraft.player != null) {
+            original = minecraft.player.getSkin();
         } else {
-            original = DefaultPlayerSkin.get(this.getUUID());
+            original = DefaultPlayerSkin.get(profile.id());
         }
 
         ClientAsset.Texture finalBody = forcedBody != null ? forcedBody : original.body();
         ClientAsset.Texture finalCape = forcedCapeTexture != null ? forcedCapeTexture : original.cape();
-        
-        var finalModel = (useLocalPlayerModel && mc.player != null) 
-            ? mc.player.getSkin().model() 
+
+        var finalModel = (useLocalPlayerModel && minecraft.player != null)
+            ? minecraft.player.getSkin().model()
             : original.model();
 
         // Only allocate a new PlayerSkin if something actually changed.
@@ -97,30 +104,12 @@ public class PreviewPlayer extends RemotePlayer {
         return new PlayerSkin(finalBody, finalCape, original.elytra(), finalModel, original.secure());
     }
 
-    // Forces outer skin layers to render
-    @Override
-    public boolean isModelPartShown(PlayerModelPart part) {
-        // Respect the client's options so changes update the preview instantly
-        Minecraft mc = Minecraft.getInstance();
-        return mc.options.isModelPartEnabled(part);
-    }
-
     public static final class PreviewPlayerPool {
         private static final Map<UUID, PreviewPlayer> pool = new ConcurrentHashMap<>();
 
-        public static PreviewPlayer get(ClientLevel world, GameProfile profile) {
-            UUID id = profile.id() != null ? profile.id() : UUID.randomUUID();
-
-            return pool.compute(id, (k, existing) -> {
-                if (existing != null && existing.level() == world) {
-                    return existing;
-                }
-                return new PreviewPlayer(world, profile);
-            });
-        }
-
         public static PreviewPlayer get(GameProfile profile) {
-            return get(DummyClientLevel.getPreviewLevel(), profile);
+            UUID id = profile.id() != null ? profile.id() : UUID.randomUUID();
+            return pool.computeIfAbsent(id, ignored -> new PreviewPlayer(profile));
         }
 
         public static void remove(UUID id) { pool.remove(id); }

@@ -15,7 +15,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.Util;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -67,8 +66,7 @@ public abstract class PauseScreenMixin extends Screen {
         String name = minecraft.getGameProfile() != null ? minecraft.getGameProfile().name() : "Preview";
         bedrockskins$pausePreviewPlayer = PreviewPlayer.PreviewPlayerPool.get(new GameProfile(bedrockskins$pausePreviewUuid, name));
         bedrockskins$pausePreviewPlayer.setShowNameTag(true);
-        bedrockskins$pausePreviewPlayer.setCustomName(Component.literal(name));
-        bedrockskins$pausePreviewPlayer.setCustomNameVisible(true);
+        bedrockskins$pausePreviewPlayer.setDisplayName(Component.literal(name));
 
         // Setup Skin
         bedrockskins$updatePreviewSkin();
@@ -149,8 +147,12 @@ public abstract class PauseScreenMixin extends Screen {
         }
         bedrockskins$lastMouseX = mouseX;
 
-        bedrockskins$pausePreviewPlayer.tickCount = (int) (Util.getMillis() / 50L);
         GuiUtils.renderEntityInRect(guiGraphics, bedrockskins$pausePreviewPlayer, bedrockskins$previewYaw, 
             bedrockskins$getLeft() - 40, bedrockskins$getTop() - 14, bedrockskins$getLeft() + PREVIEW_W + 40, bedrockskins$getTop() + PREVIEW_H, 56);
+
+        if (bedrockskins$pausePreviewPlayer.shouldShowName()) {
+            GuiUtils.renderNameTag(guiGraphics, this.font, bedrockskins$pausePreviewPlayer.getDisplayName(),
+                bedrockskins$getLeft() + (PREVIEW_W / 2), Math.max(2, bedrockskins$getTop() - 12));
+        }
     }
 }

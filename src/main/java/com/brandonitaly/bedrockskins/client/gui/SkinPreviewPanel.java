@@ -20,7 +20,6 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
-import net.minecraft.world.entity.LivingEntity;
 
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -201,8 +200,6 @@ public class SkinPreviewPanel {
 
         if (dummyPlayer != null) {
             if (currentSkinId == null && selectedSkin == null) applyAutoSelectedSkinBehavior();
-            dummyPlayer.tickCount = (int)(Util.getMillis() / 50L);
-
             if (isDraggingPreview) {
                 rotationX -= (mouseX - lastMouseX) * 0.5f;
             }
@@ -271,7 +268,7 @@ public class SkinPreviewPanel {
         return false;
     }
     
-    private void renderRotatableEntity(GuiGraphicsExtractor gui, int centerX, int centerY, int boxWidth, int boxHeight, int scale, LivingEntity entity) {
+    private void renderRotatableEntity(GuiGraphicsExtractor gui, int centerX, int centerY, int boxWidth, int boxHeight, int scale, PreviewPlayer entity) {
         int halfW = boxWidth / 2, halfH = boxHeight / 2;
         GuiUtils.renderEntityInRect(gui, entity, rotationX * 3, centerX - halfW, centerY - halfH, centerX + halfW, centerY + halfH, scale);
     }
