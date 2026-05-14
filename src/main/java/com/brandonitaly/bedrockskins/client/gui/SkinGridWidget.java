@@ -169,11 +169,6 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                 this.name = GuiSkinUtils.getSkinDisplayNameText(skin);
                 this.player = PreviewPlayerPool.get(new GameProfile(uuid, ""));
 
-                if (GuiSkinUtils.isAutoSelectedSkin(skin)) {
-                    GuiSkinUtils.applyAutoSelectedPreview(SkinGridWidget.this.minecraft, this.player, this.uuid);
-                    return;
-                }
-
                 try {
                     GuiSkinUtils.applyLoadedSkinPreview(this.player, this.uuid, skin);
                 } catch (Exception e) {

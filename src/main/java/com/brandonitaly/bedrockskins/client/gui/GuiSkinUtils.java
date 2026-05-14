@@ -14,11 +14,8 @@ import net.minecraft.network.chat.Component;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.List;
 
 public final class GuiSkinUtils {
-    public static final String AUTO_SELECTED_TRANSLATION_KEY = "bedrockskins.skin.auto_selected";
-    public static final String AUTO_SELECTED_INTERNAL_NAME = "__auto_selected__";
     public static final String STANDARD_PACK_ID = "skinpack.Standard";
     private static final String FAVORITES_PACK_ID = "skinpack.Favorites";
 
@@ -38,58 +35,7 @@ public final class GuiSkinUtils {
         return translatedOrFallback(skin.safeSkinName, skin.skinDisplayName);
     }
 
-    public static boolean isAutoSelectedSkin(LoadedSkin skin) {
-        return skin != null
-            && "Standard".equals(skin.serializeName)
-            && AUTO_SELECTED_INTERNAL_NAME.equals(skin.skinDisplayName);
-    }
-
-    public static boolean isAutoSelectedSkinId(SkinId skinId) {
-        return skinId != null
-            && "Standard".equals(skinId.pack())
-            && AUTO_SELECTED_INTERNAL_NAME.equals(skinId.name());
-    }
-
-    public static LoadedSkin createAutoSelectedSkin(LoadedSkin template) {
-        if (template == null) {
-            return null;
-        }
-        return new LoadedSkin(
-                "Standard",
-                "Standard",
-                AUTO_SELECTED_INTERNAL_NAME,
-                template.geometryData,
-                template.texture,
-                null,
-                false
-        );
-    }
-
-    public static List<LoadedSkin> withAutoSelectedStandardFirst(List<LoadedSkin> standardSkins) {
-        if (standardSkins == null || standardSkins.isEmpty()) return List.of();
-
-        return java.util.stream.Stream.concat(
-            java.util.stream.Stream.ofNullable(createAutoSelectedSkin(standardSkins.getFirst())),
-            standardSkins.stream().filter(skin -> !isAutoSelectedSkin(skin))
-        ).toList();
-    }
-
-    public static LoadedSkin resolveAutoSelectedFromStandard(List<LoadedSkin> standardSkins) {
-        if (standardSkins == null || standardSkins.isEmpty()) {
-            return null;
-        }
-        for (LoadedSkin skin : standardSkins) {
-            if (isAutoSelectedSkin(skin)) {
-                return skin;
-            }
-        }
-        return createAutoSelectedSkin(standardSkins.getFirst());
-    }
-
     public static Component getSkinDisplayName(LoadedSkin skin) {
-        if (isAutoSelectedSkin(skin)) {
-            return Component.translatable(AUTO_SELECTED_TRANSLATION_KEY);
-        }
         if (skin == null) {
             return Component.empty();
         }
@@ -99,9 +45,6 @@ public final class GuiSkinUtils {
     public static String getSkinDisplayNameText(LoadedSkin skin) {
         if (skin == null) {
             return "";
-        }
-        if (isAutoSelectedSkin(skin)) {
-            return Component.translatable(AUTO_SELECTED_TRANSLATION_KEY).getString();
         }
         return skinDisplayNameText(skin);
     }
@@ -146,15 +89,11 @@ public final class GuiSkinUtils {
 
     public static boolean isSkinCurrentlyEquipped(LoadedSkin skin) {
         SkinId currentSkinKey = SkinManager.getLocalSelectedKey();
-        return isAutoSelectedSkin(skin) ? currentSkinKey == null : Objects.equals(currentSkinKey, skin != null ? skin.skinId : null);
+        return Objects.equals(currentSkinKey, skin != null ? skin.skinId : null);
     }
 
     public static void applySelectedSkin(Minecraft minecraft, LoadedSkin skin) throws Exception {
         if (skin == null) {
-            return;
-        }
-        if (isAutoSelectedSkin(skin)) {
-            resetSelectedSkin(minecraft);
             return;
         }
 

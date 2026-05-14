@@ -1,6 +1,5 @@
 package com.brandonitaly.bedrockskins.pack;
 
-import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
 
 import com.google.gson.JsonArray;
@@ -14,8 +13,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
@@ -74,7 +71,7 @@ public final class SkinPackLoader {
         if (currentSkinPacksDir.exists()) {
             File[] children = currentSkinPacksDir.listFiles();
             if (children != null) {
-                // 1. Convert .pck files to standard folders
+                // Convert .pck files to standard folders
                 for (File f : children) {
                     if (f.isFile() && f.getName().toLowerCase(Locale.ROOT).endsWith(".pck")) {
                         File outputDir = new File(currentSkinPacksDir, PckImporter.stripExtension(f.getName()));
@@ -84,7 +81,7 @@ public final class SkinPackLoader {
                     }
                 }
                 
-                // 2. Load all standard folders
+                // Load all standard folders
                 children = currentSkinPacksDir.listFiles();
                 if (children != null) {
                     for (File f : children) {
@@ -94,34 +91,6 @@ public final class SkinPackLoader {
             }
         }
 
-        if (BedrockSkinsConfig.isScanResourcePacksForSkinsEnabled()) {
-            File resourcepacksDir = getResourcepacksDir();
-            if (resourcepacksDir != null) {
-                Set<String> enabledPacks = new HashSet<>();
-                try {
-                    client.getResourcePackRepository().getSelectedIds().forEach(id ->
-                            enabledPacks.add(id.startsWith("file/") ? id.substring(5) : id)
-                    );
-                } catch (Exception ignored) {}
-
-                File[] packs = resourcepacksDir.listFiles();
-                if (packs != null) {
-                    for (File pack : packs) {
-                        if (enabledPacks.contains(pack.getName())) continue;
-
-                        if (pack.isDirectory()) {
-                            File[] skinPackFolders = new File(pack, "assets/bedrockskins/skin_packs").listFiles(File::isDirectory);
-                            if (skinPackFolders != null) {
-                                for (File folder : skinPackFolders) loadExternalPack(folder);
-                            }
-                        } else if (pack.isFile() && pack.getName().toLowerCase(Locale.ROOT).endsWith(".zip")) {
-                            loadSkinsFromResourcePackZip(pack);
-                        }
-                    }
-                }
-            }
-        }
-        
         loadInternalPacks(manager);
         loadPackOrder(manager);
     }
@@ -282,71 +251,6 @@ public final class SkinPackLoader {
                 System.err.println("SkinPackLoader: Error loading internal pack " + id + ": " + e);
             }
         });
-    }
-
-    private static void loadSkinsFromResourcePackZip(File pack) {
-        try (ZipFile zf = new ZipFile(pack)) {
-            Set<String> packDirs = new HashSet<>();
-            Enumeration<? extends ZipEntry> entries = zf.entries();
-            
-            while (entries.hasMoreElements()) {
-                String name = entries.nextElement().getName();
-                if (name.startsWith("assets/bedrockskins/skin_packs/") && name.endsWith("/skins.json")) {
-                    packDirs.add(name.substring(0, name.lastIndexOf('/')));
-                }
-            }
-
-            for (String dir : packDirs) {
-                try {
-                    ZipEntry skinsEntry = zf.getEntry(dir + "/skins.json");
-                    if (skinsEntry == null) continue;
-
-                    JsonObject geometryJson = null;
-                    ZipEntry geoEntry = zf.getEntry(dir + "/geometry.json");
-                    if (geoEntry != null) {
-                        try (InputStream is = zf.getInputStream(geoEntry); InputStreamReader r = new InputStreamReader(is, StandardCharsets.UTF_8)) {
-                            geometryJson = JsonParser.parseReader(r).getAsJsonObject();
-                        }
-                    }
-
-                    SkinPackManifest manifest;
-                    try (InputStream is = zf.getInputStream(skinsEntry); InputStreamReader r = new InputStreamReader(is, StandardCharsets.UTF_8)) {
-                        manifest = decodeManifest(r, skinsEntry.getName());
-                    }
-                    
-                    if (manifest == null) continue;
-
-                    loadExternalTranslationsFromZip(zf, dir);
-                    registerPackType(manifest);
-                    registerZipPackIcon(packIdFor(manifest.serializeName()), pack, zf, dir);
-
-                    for (SkinEntry entry : manifest.skins()) {
-                        JsonObject geometry = resolveGeometry(entry.geometry(), geometryJson);
-                        if (geometry == null) continue;
-
-                        String texPath = (dir + "/" + entry.texture()).toLowerCase(Locale.ROOT);
-                        if (zf.getEntry(texPath) == null) continue;
-
-                        String capePath = entry.cape() != null ? (dir + "/" + entry.cape()).toLowerCase(Locale.ROOT) : null;
-                        ZipEntry capeEntry = capePath != null ? zf.getEntry(capePath) : null;
-
-                        SkinId id = SkinId.of(manifest.serializeName(), entry.localizationName());
-                        LoadedSkin lsz = new LoadedSkin(
-                            manifest.serializeName(), manifest.localizationName(), entry.localizationName(),
-                            geometry, new AssetSource.Zip(pack.getAbsolutePath(), texPath),
-                            capeEntry != null ? new AssetSource.Zip(pack.getAbsolutePath(), capePath) : null,
-                            hasUpsideDownAnimation(entry)
-                        );
-                        try { lsz.unfair = entry.unfair(); } catch (Exception ignored) {}
-                        loadedSkins.put(id, lsz);
-                    }
-                } catch (Exception e) {
-                    System.err.println("Error loading skin pack from zip directory " + dir + ": " + e);
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Failed to scan resource pack zip " + pack + ": " + e);
-        }
     }
 
     // --- Helpers: Geometry & Assets ---
@@ -511,17 +415,6 @@ public final class SkinPackLoader {
         }
     }
 
-    private static void loadExternalTranslationsFromZip(ZipFile zf, String dir) {
-        try {
-            ZipEntry te = zf.getEntry(dir + "/texts/en_us.lang");
-            if (te != null) {
-                try (InputStream is = zf.getInputStream(te)) {
-                    parseTranslationStream(is, translations.computeIfAbsent("en_us", k -> new HashMap<>()));
-                }
-            }
-        } catch (Exception ignored) {}
-    }
-
     private static void parseTranslationStream(InputStream input, Map<String, String> map) {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
@@ -610,19 +503,6 @@ public final class SkinPackLoader {
         return manager.getResource(icon).isPresent() ? icon : null;
     }
 
-    private static void registerZipPackIcon(String packId, File pack, ZipFile zf, String dir) {
-        if (packId == null || pack == null || zf == null || dir == null || packIconsByPackId.containsKey(packId)) return;
-
-        ZipEntry entry = findZipEntry(zf, dir + "/pack.png");
-        if (entry == null) entry = findZipEntry(zf, dir + "/pack_icon.png");
-        if (entry != null) registerDynamicPackIcon(packId, new AssetSource.Zip(pack.getAbsolutePath(), entry.getName()));
-    }
-
-    private static ZipEntry findZipEntry(ZipFile zf, String path) {
-        ZipEntry entry = zf.getEntry(path);
-        return entry != null ? entry : zf.getEntry(path.toLowerCase(Locale.ROOT));
-    }
-
     private static void registerDynamicPackIcon(String packId, AssetSource source) {
         NativeImage image = loadNativeImage(source);
         if (image == null) return;
@@ -638,14 +518,6 @@ public final class SkinPackLoader {
             return new File(Minecraft.getInstance().gameDirectory, "skin_packs");
         } catch (Exception ignored) {}
         return new File("skin_packs"); 
-    }
-
-    private static File getResourcepacksDir() {
-        try {
-            File resourcepacks = new File(Minecraft.getInstance().gameDirectory, "resourcepacks");
-            if (resourcepacks.exists()) return resourcepacks;
-        } catch (Exception ignored) {}
-        return null;
     }
 
     private static String getClientLanguage() {

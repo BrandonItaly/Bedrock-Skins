@@ -17,7 +17,6 @@ public class BedrockSkinsConfig {
     //? if neoforge
     // private static final Path CONFIG_PATH = net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get().resolve("bedrockskins.json");
 
-    private static volatile boolean scanResourcePacksForSkins;
     private static volatile PaperDollMode paperDollMode;
     private static volatile PackSortOrder packSortOrder;
     private static volatile boolean skinAnimations;
@@ -45,12 +44,11 @@ public class BedrockSkinsConfig {
         );
     }
 
-    private record ConfigData(boolean scanResourcePacksForSkins, PaperDollMode paperDollMode, PackSortOrder packSortOrder, boolean skinAnimations, boolean adjustCameraHeight, int paperDollOffsetX, int paperDollOffsetY) {}
+    private record ConfigData(PaperDollMode paperDollMode, PackSortOrder packSortOrder, boolean skinAnimations, boolean adjustCameraHeight, int paperDollOffsetX, int paperDollOffsetY) {}
 
-    private static final ConfigData DEFAULTS = new ConfigData(true, PaperDollMode.BOTH, PackSortOrder.A_TO_Z, true, false, 0, 0);
+    private static final ConfigData DEFAULTS = new ConfigData(PaperDollMode.BOTH, PackSortOrder.A_TO_Z, true, false, 0, 0);
 
     private static final Codec<ConfigData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-        Codec.BOOL.optionalFieldOf("scanResourcePacksForSkins", DEFAULTS.scanResourcePacksForSkins()).forGetter(ConfigData::scanResourcePacksForSkins),
         PaperDollMode.CODEC.optionalFieldOf("showPaperDoll", DEFAULTS.paperDollMode()).forGetter(ConfigData::paperDollMode),
         PackSortOrder.CODEC.optionalFieldOf("packSortOrder", DEFAULTS.packSortOrder()).forGetter(ConfigData::packSortOrder),
         Codec.BOOL.optionalFieldOf("skinAnimations", DEFAULTS.skinAnimations()).forGetter(ConfigData::skinAnimations),
@@ -60,11 +58,6 @@ public class BedrockSkinsConfig {
     ).apply(instance, ConfigData::new));
 
     static { load(); }
-
-    public static final OptionInstance<Boolean> SCAN_RESOURCE_PACKS = OptionInstance.createBoolean(
-        "bedrockskins.option.scan_resourcepacks", value -> Tooltip.create(Component.translatable("bedrockskins.option.scan_resourcepacks.tooltip")),
-        isScanResourcePacksForSkinsEnabled(), value -> { setScanResourcePacksForSkins(value); reloadSkinPacks(); }
-    );
 
     public static final OptionInstance<PaperDollMode> SHOW_PAPER_DOLL = new OptionInstance<>(
         "bedrockskins.option.show_paper_doll", value -> Tooltip.create(Component.translatable("bedrockskins.option.show_paper_doll.tooltip")),
@@ -91,9 +84,6 @@ public class BedrockSkinsConfig {
         }
     );
 
-    public static boolean isScanResourcePacksForSkinsEnabled() { return scanResourcePacksForSkins; }
-    public static void setScanResourcePacksForSkins(boolean enabled) { scanResourcePacksForSkins = enabled; save(); }
-
     public static PaperDollMode getPaperDollMode() { return paperDollMode; }
     public static void setPaperDollMode(PaperDollMode mode) { paperDollMode = mode == null ? PaperDollMode.BOTH : mode; save(); }
 
@@ -116,7 +106,7 @@ public class BedrockSkinsConfig {
     public static void setPaperDollOffsetY(int offset) { paperDollOffsetY = offset; save(); }
 
     public static OptionInstance<?>[] asOptions() {
-        return new OptionInstance<?>[] { PACK_SORT_ORDER, SCAN_RESOURCE_PACKS, SHOW_PAPER_DOLL, SKIN_ANIMATIONS, ADJUST_CAMERA_HEIGHT };
+        return new OptionInstance<?>[] { PACK_SORT_ORDER, SHOW_PAPER_DOLL, SKIN_ANIMATIONS, ADJUST_CAMERA_HEIGHT };
     }
 
     private static void reloadSkinPacks() {
@@ -125,7 +115,6 @@ public class BedrockSkinsConfig {
 
     private static void load() {
         ConfigData data = JsonCodecFileStore.read(CONFIG_PATH, CODEC, DEFAULTS, "BedrockSkinsConfig");
-        scanResourcePacksForSkins = data.scanResourcePacksForSkins();
         paperDollMode = data.paperDollMode();
         packSortOrder = data.packSortOrder();
         skinAnimations = data.skinAnimations();
@@ -135,11 +124,10 @@ public class BedrockSkinsConfig {
     }
 
     private static void save() {
-        JsonCodecFileStore.write(CONFIG_PATH, CODEC, new ConfigData(scanResourcePacksForSkins, paperDollMode, packSortOrder, skinAnimations, adjustCameraHeight, paperDollOffsetX, paperDollOffsetY), "BedrockSkinsConfig");
+        JsonCodecFileStore.write(CONFIG_PATH, CODEC, new ConfigData(paperDollMode, packSortOrder, skinAnimations, adjustCameraHeight, paperDollOffsetX, paperDollOffsetY), "BedrockSkinsConfig");
     }
 
     public static void resetToDefault() {
-        SCAN_RESOURCE_PACKS.set(DEFAULTS.scanResourcePacksForSkins());
         SHOW_PAPER_DOLL.set(DEFAULTS.paperDollMode());
         PACK_SORT_ORDER.set(DEFAULTS.packSortOrder());
         SKIN_ANIMATIONS.set(DEFAULTS.skinAnimations());

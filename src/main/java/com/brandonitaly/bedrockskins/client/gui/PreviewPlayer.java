@@ -18,6 +18,7 @@ public final class PreviewPlayer {
     private boolean showNameTag = false;
     private Component displayName;
     private ClientAsset.Texture forcedCapeTexture = null;
+    private boolean hasForcedCapeOverride = false;
     private ClientAsset.Texture forcedBody = null;
     private PlayerSkin forcedProfileSkin = null;
     private boolean useLocalPlayerModel = false;
@@ -53,10 +54,12 @@ public final class PreviewPlayer {
 
     // Sets a cape to be forced on the player preview
     public void setForcedCape(Identifier cape) {
+        this.hasForcedCapeOverride = true;
         this.forcedCapeTexture = cape != null ? new ResourceTexture(cape, cape) : null;
     }
 
     public void clearForcedCape() {
+        this.hasForcedCapeOverride = false;
         this.forcedCapeTexture = null;
     }
 
@@ -81,16 +84,19 @@ public final class PreviewPlayer {
 
         if (forcedProfileSkin != null) {
             original = forcedProfileSkin;
-        } else if (minecraft.getConnection() != null) {
-            original = minecraft.getSkinManager().createLookup(profile, false).get();
-        } else if (minecraft.player != null) {
-            original = minecraft.player.getSkin();
         } else {
-            original = DefaultPlayerSkin.get(profile.id());
+            PlayerSkin sessionSkin = BedrockSessionSkin.getSessionPlayerSkin();
+            if (sessionSkin != null) {
+                original = sessionSkin;
+            } else if (minecraft.player != null) {
+                original = minecraft.player.getSkin();
+            } else {
+                original = DefaultPlayerSkin.get(profile.id());
+            }
         }
 
         ClientAsset.Texture finalBody = forcedBody != null ? forcedBody : original.body();
-        ClientAsset.Texture finalCape = forcedCapeTexture != null ? forcedCapeTexture : original.cape();
+        ClientAsset.Texture finalCape = hasForcedCapeOverride ? forcedCapeTexture : original.cape();
 
         var finalModel = (useLocalPlayerModel && minecraft.player != null)
             ? minecraft.player.getSkin().model()

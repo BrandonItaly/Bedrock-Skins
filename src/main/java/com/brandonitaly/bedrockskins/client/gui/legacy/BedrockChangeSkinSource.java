@@ -35,12 +35,10 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
     private static final String REMOTE_PACK_ID = "skinpack.Remote";
     private static final String STANDARD_PACK_ID = "skinpack.Standard";
     private static final String LEGACY_PACK_ID = "skinpack.LegacySkinPack";
-    private static final String AUTO_SELECTED_SKIN_ID = SkinId.of("Standard", GuiSkinUtils.AUTO_SELECTED_INTERNAL_NAME).toString();
     private static final int MAX_PREVIEWS = 96;
     private static final Identifier DEFAULT_PACK_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "skin_packs/vanilla/pack_icon.png");
 
     private final Map<String, PreviewState> previews = new LinkedHashMap<>(16, 0.75F, true);
-    private @Nullable String lastAutoSelectedId;
     
     // Caches to avoid rebuilding Bedrock native structures every frame
     private final LinkedHashMap<String, SkinPack> cachedBedrockPacks = new LinkedHashMap<>();
@@ -130,15 +128,8 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
     public @Nullable String currentAppliedSkinId() {
         SkinId selected = SkinManager.getLocalSelectedKey();
         if (selected != null) return selected.toString();
-        
-        String legacySelected = legacySource.currentAppliedSkinId();
-        if (lastAutoSelectedId == null) {
-            lastAutoSelectedId = SkinIdUtil.isBlankOrAutoSelect(legacySelected)
-                    ? SkinIdUtil.AUTO_SELECT
-                    : AUTO_SELECTED_SKIN_ID;
-        }
-        if (SkinIdUtil.isBlankOrAutoSelect(legacySelected)) return lastAutoSelectedId;
-        return legacySelected;
+
+        return legacySource.currentAppliedSkinId();
     }
 
     @Override
@@ -168,15 +159,6 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
 
     @Override
     public void selectSkin(@Nullable String packId, String skinId) {
-        if (AUTO_SELECTED_SKIN_ID.equals(skinId)) {
-            lastAutoSelectedId = AUTO_SELECTED_SKIN_ID;
-            GuiSkinUtils.resetSelectedSkin(Minecraft.getInstance());
-            legacySource.selectSkin(null, "");
-            return;
-        }
-        if (SkinIdUtil.isAutoSelect(skinId)) {
-            lastAutoSelectedId = SkinIdUtil.AUTO_SELECT;
-        }
         if (isBedrockSkin(skinId)) {
             try {
                 legacySource.selectSkin(null, "");
@@ -195,7 +177,7 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
     public void prewarmPreview(String skinId) {
         if (isBedrockSkin(skinId)) {
             LoadedSkin skin = resolveBedrockSkin(skinId);
-            if (skin != null && !GuiSkinUtils.isAutoSelectedSkin(skin)) {
+            if (skin != null) {
                 com.brandonitaly.bedrockskins.pack.SkinPackLoader.registerTextureFor(skin.skinId);
             }
         } else {
@@ -340,7 +322,7 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
     }
 
     private boolean isBedrockSkin(String skinId) {
-        return skinId != null && (AUTO_SELECTED_SKIN_ID.equals(skinId) || resolveBedrockSkin(skinId) != null);
+        return skinId != null && resolveBedrockSkin(skinId) != null;
     }
 
     private void updateCacheIfNeeded() {
@@ -427,11 +409,6 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
             }
         }
 
-        List<LoadedSkin> standardSkins = skinsByPack.get(GuiSkinUtils.STANDARD_PACK_ID);
-        if (standardSkins != null && !standardSkins.isEmpty()) {
-            skinsByPack.put(GuiSkinUtils.STANDARD_PACK_ID, GuiSkinUtils.withAutoSelectedStandardFirst(standardSkins));
-        }
-
         ArrayList<LoadedSkin> favorites = new ArrayList<>();
         for (String favoriteKey : FavoritesManager.getFavoriteKeys()) {
             LoadedSkin favorite = resolveBedrockSkin(favoriteKey);
@@ -468,11 +445,7 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
     }
 
     private static void applyPreviewSkin(PreviewState state, LoadedSkin skin, String skinId) {
-        if (GuiSkinUtils.isAutoSelectedSkin(skin)) {
-            GuiSkinUtils.applyAutoSelectedPreview(Minecraft.getInstance(), state.player, state.uuid);
-        } else {
-            GuiSkinUtils.applyLoadedSkinPreview(state.player, state.uuid, skin);
-        }
+        GuiSkinUtils.applyLoadedSkinPreview(state.player, state.uuid, skin);
         state.skinId = skinId;
     }
 
@@ -485,23 +458,11 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
     }
 
     private static String skinIdFor(LoadedSkin skin) {
-        return GuiSkinUtils.isAutoSelectedSkin(skin) ? AUTO_SELECTED_SKIN_ID : skin.skinId.toString();
+        return skin.skinId.toString();
     }
 
     private static @Nullable LoadedSkin resolveBedrockSkin(@Nullable String skinId) {
         if (skinId == null || skinId.isBlank()) return null;
-        if (AUTO_SELECTED_SKIN_ID.equals(skinId) || GuiSkinUtils.isAutoSelectedSkinId(SkinId.parse(skinId))) {
-            List<LoadedSkin> standardSkins = null;
-            synchronized (com.brandonitaly.bedrockskins.pack.SkinPackLoader.loadedSkins) {
-                for (LoadedSkin skin : com.brandonitaly.bedrockskins.pack.SkinPackLoader.loadedSkins.values()) {
-                    if (skin != null && GuiSkinUtils.STANDARD_PACK_ID.equals(skin.packId)) {
-                        if (standardSkins == null) standardSkins = new ArrayList<>();
-                        standardSkins.add(skin);
-                    }
-                }
-            }
-            return GuiSkinUtils.resolveAutoSelectedFromStandard(standardSkins);
-        }
         return com.brandonitaly.bedrockskins.pack.SkinPackLoader.getLoadedSkin(SkinId.parse(skinId));
     }
 

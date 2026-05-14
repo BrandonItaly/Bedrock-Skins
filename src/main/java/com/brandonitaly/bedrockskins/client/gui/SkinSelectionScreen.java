@@ -165,30 +165,14 @@ public class SkinSelectionScreen extends Screen {
         for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
             skinCache.computeIfAbsent(skin.packId, k -> new ArrayList<>()).add(skin);
         }
-
-        injectAutoSelectedIntoStandardPack();
         
         List<LoadedSkin> favs = new ArrayList<>();
         for (String key : FavoritesManager.getFavoriteKeys()) {
             SkinId id = SkinId.parse(key);
             LoadedSkin s = SkinPackLoader.getLoadedSkin(id);
-            if (s == null && GuiSkinUtils.isAutoSelectedSkinId(id)) {
-                s = resolveAutoSelectedSkinForFavorites();
-            }
             if (s != null) favs.add(s);
         }
         skinCache.put(FAVORITES_PACK_ID, favs);
-    }
-
-    private void injectAutoSelectedIntoStandardPack() {
-        List<LoadedSkin> standardSkins = skinCache.get(GuiSkinUtils.STANDARD_PACK_ID);
-        if (standardSkins == null || standardSkins.isEmpty()) return;
-        skinCache.put(GuiSkinUtils.STANDARD_PACK_ID, GuiSkinUtils.withAutoSelectedStandardFirst(standardSkins));
-    }
-
-    private LoadedSkin resolveAutoSelectedSkinForFavorites() {
-        List<LoadedSkin> standardSkins = skinCache.get(GuiSkinUtils.STANDARD_PACK_ID);
-        return GuiSkinUtils.resolveAutoSelectedFromStandard(standardSkins);
     }
 
     private void calculateLayout(ScreenRectangle tabArea) {
