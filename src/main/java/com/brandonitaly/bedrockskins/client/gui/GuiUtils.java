@@ -14,6 +14,7 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Util;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.Pose;
@@ -52,6 +53,7 @@ public final class GuiUtils {
         entityRenderState.pose = Pose.STANDING;
         entityRenderState.isBaby = false;
         entityRenderState.scale = 1.0F;
+        entityRenderState.ageInTicks = (float) Util.getMillis() / 50.0F;
         entityRenderState.ageScale = entityRenderState.scale;
         entityRenderState.showHat = isModelPartEnabled(PlayerModelPart.HAT);
         entityRenderState.showJacket = isModelPartEnabled(PlayerModelPart.JACKET);

@@ -20,9 +20,10 @@ public class BedrockSkinsConfig {
     private static volatile boolean scanResourcePacksForSkins;
     private static volatile PaperDollMode paperDollMode;
     private static volatile PackSortOrder packSortOrder;
-    private static volatile boolean paperDollLeftSide;
     private static volatile boolean skinAnimations;
     private static volatile boolean adjustCameraHeight;
+    private static volatile int paperDollOffsetX;
+    private static volatile int paperDollOffsetY;
 
     public enum PaperDollMode {
         NONE, BOTH, MAIN_MENU, PAUSE_MENU;
@@ -44,17 +45,18 @@ public class BedrockSkinsConfig {
         );
     }
 
-    private record ConfigData(boolean scanResourcePacksForSkins, PaperDollMode paperDollMode, PackSortOrder packSortOrder, boolean paperDollLeftSide, boolean skinAnimations, boolean adjustCameraHeight) {}
+    private record ConfigData(boolean scanResourcePacksForSkins, PaperDollMode paperDollMode, PackSortOrder packSortOrder, boolean skinAnimations, boolean adjustCameraHeight, int paperDollOffsetX, int paperDollOffsetY) {}
 
-    private static final ConfigData DEFAULTS = new ConfigData(true, PaperDollMode.BOTH, PackSortOrder.A_TO_Z, false, true, false);
+    private static final ConfigData DEFAULTS = new ConfigData(true, PaperDollMode.BOTH, PackSortOrder.A_TO_Z, true, false, 0, 0);
 
     private static final Codec<ConfigData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         Codec.BOOL.optionalFieldOf("scanResourcePacksForSkins", DEFAULTS.scanResourcePacksForSkins()).forGetter(ConfigData::scanResourcePacksForSkins),
         PaperDollMode.CODEC.optionalFieldOf("showPaperDoll", DEFAULTS.paperDollMode()).forGetter(ConfigData::paperDollMode),
         PackSortOrder.CODEC.optionalFieldOf("packSortOrder", DEFAULTS.packSortOrder()).forGetter(ConfigData::packSortOrder),
-        Codec.BOOL.optionalFieldOf("paperDollLeftSide", DEFAULTS.paperDollLeftSide()).forGetter(ConfigData::paperDollLeftSide),
         Codec.BOOL.optionalFieldOf("skinAnimations", DEFAULTS.skinAnimations()).forGetter(ConfigData::skinAnimations),
-        Codec.BOOL.optionalFieldOf("adjustCameraHeight", DEFAULTS.adjustCameraHeight()).forGetter(ConfigData::adjustCameraHeight)
+        Codec.BOOL.optionalFieldOf("adjustCameraHeight", DEFAULTS.adjustCameraHeight()).forGetter(ConfigData::adjustCameraHeight),
+        Codec.INT.optionalFieldOf("paperDollOffsetX", DEFAULTS.paperDollOffsetX()).forGetter(ConfigData::paperDollOffsetX),
+        Codec.INT.optionalFieldOf("paperDollOffsetY", DEFAULTS.paperDollOffsetY()).forGetter(ConfigData::paperDollOffsetY)
     ).apply(instance, ConfigData::new));
 
     static { load(); }
@@ -74,12 +76,6 @@ public class BedrockSkinsConfig {
         "bedrockskins.option.pack_sort_order", OptionInstance.noTooltip(),
         (caption, value) -> Component.translatable(value.translationKey()), new OptionInstance.Enum<>(Arrays.asList(PackSortOrder.values()), PackSortOrder.CODEC),
         getPackSortOrder(), BedrockSkinsConfig::setPackSortOrder
-    );
-
-    public static final OptionInstance<Boolean> PAPER_DOLL_LEFT_SIDE = new OptionInstance<>(
-        "bedrockskins.option.paper_doll_side", value -> Tooltip.create(Component.translatable("bedrockskins.option.paper_doll_side.tooltip")),
-        (caption, value) -> Component.translatable(value ? "bedrockskins.option.paper_doll_side.left" : "bedrockskins.option.paper_doll_side.right"),
-        OptionInstance.BOOLEAN_VALUES, isPaperDollLeftSideEnabled(), BedrockSkinsConfig::setPaperDollLeftSide
     );
 
     public static final OptionInstance<Boolean> SKIN_ANIMATIONS = OptionInstance.createBoolean(
@@ -107,17 +103,20 @@ public class BedrockSkinsConfig {
     public static boolean isShowPaperDollOnMainMenu() { return paperDollMode == PaperDollMode.BOTH || paperDollMode == PaperDollMode.MAIN_MENU; }
     public static boolean isShowPaperDollOnPauseScreen() { return paperDollMode == PaperDollMode.BOTH || paperDollMode == PaperDollMode.PAUSE_MENU; }
 
-    public static boolean isPaperDollLeftSideEnabled() { return paperDollLeftSide; }
-    public static void setPaperDollLeftSide(boolean enabled) { paperDollLeftSide = enabled; save(); }
-
     public static boolean isSkinAnimationsEnabled() { return skinAnimations; }
     public static void setSkinAnimations(boolean enabled) { if (skinAnimations != enabled) { skinAnimations = enabled; save(); } }
 
     public static boolean isAdjustCameraHeightEnabled() { return adjustCameraHeight; }
     public static void setAdjustCameraHeight(boolean enabled) { if (adjustCameraHeight != enabled) { adjustCameraHeight = enabled; save(); } }
 
+    public static int getPaperDollOffsetX() { return paperDollOffsetX; }
+    public static void setPaperDollOffsetX(int offset) { paperDollOffsetX = offset; save(); }
+
+    public static int getPaperDollOffsetY() { return paperDollOffsetY; }
+    public static void setPaperDollOffsetY(int offset) { paperDollOffsetY = offset; save(); }
+
     public static OptionInstance<?>[] asOptions() {
-        return new OptionInstance<?>[] { PACK_SORT_ORDER, SCAN_RESOURCE_PACKS, SHOW_PAPER_DOLL, PAPER_DOLL_LEFT_SIDE, SKIN_ANIMATIONS, ADJUST_CAMERA_HEIGHT };
+        return new OptionInstance<?>[] { PACK_SORT_ORDER, SCAN_RESOURCE_PACKS, SHOW_PAPER_DOLL, SKIN_ANIMATIONS, ADJUST_CAMERA_HEIGHT };
     }
 
     private static void reloadSkinPacks() {
@@ -129,22 +128,24 @@ public class BedrockSkinsConfig {
         scanResourcePacksForSkins = data.scanResourcePacksForSkins();
         paperDollMode = data.paperDollMode();
         packSortOrder = data.packSortOrder();
-        paperDollLeftSide = data.paperDollLeftSide();
         skinAnimations = data.skinAnimations();
         adjustCameraHeight = data.adjustCameraHeight();
+        paperDollOffsetX = data.paperDollOffsetX();
+        paperDollOffsetY = data.paperDollOffsetY();
     }
 
     private static void save() {
-        JsonCodecFileStore.write(CONFIG_PATH, CODEC, new ConfigData(scanResourcePacksForSkins, paperDollMode, packSortOrder, paperDollLeftSide, skinAnimations, adjustCameraHeight), "BedrockSkinsConfig");
+        JsonCodecFileStore.write(CONFIG_PATH, CODEC, new ConfigData(scanResourcePacksForSkins, paperDollMode, packSortOrder, skinAnimations, adjustCameraHeight, paperDollOffsetX, paperDollOffsetY), "BedrockSkinsConfig");
     }
 
     public static void resetToDefault() {
         SCAN_RESOURCE_PACKS.set(DEFAULTS.scanResourcePacksForSkins());
         SHOW_PAPER_DOLL.set(DEFAULTS.paperDollMode());
         PACK_SORT_ORDER.set(DEFAULTS.packSortOrder());
-        PAPER_DOLL_LEFT_SIDE.set(DEFAULTS.paperDollLeftSide());
         SKIN_ANIMATIONS.set(DEFAULTS.skinAnimations());
         ADJUST_CAMERA_HEIGHT.set(DEFAULTS.adjustCameraHeight());
+        setPaperDollOffsetX(DEFAULTS.paperDollOffsetX());
+        setPaperDollOffsetY(DEFAULTS.paperDollOffsetY());
         save();
     }
 }

@@ -43,24 +43,36 @@ public abstract class TitleScreenMixin extends Screen {
     @Unique
     private boolean bedrockskins$draggingPreview = false;
     @Unique
+    private boolean bedrockskins$movingPreview = false;
+    @Unique
     private boolean bedrockskins$leftMouseDown = false;
     @Unique
-    private double bedrockskins$lastMouseX = 0.0;
+    private boolean bedrockskins$rightMouseDown = false;
+    @Unique
+    private double bedrockskins$lastRotMouseX = 0.0;
+    @Unique
+    private double bedrockskins$lastMoveMouseX = 0.0;
+    @Unique
+    private double bedrockskins$lastMoveMouseY = 0.0;
 
     @Unique
     private int bedrockskins$getLeft() {
-        return (BedrockSkinsConfig.isPaperDollLeftSideEnabled() ? (width / 6) : (width * 5 / 6)) - (PREVIEW_W / 2);
+        return (width * 5 / 6) - (PREVIEW_W / 2) + BedrockSkinsConfig.getPaperDollOffsetX();
     }
 
     @Unique
-    private int bedrockskins$getTop() { return (height - PREVIEW_H) / 2; }
+    private int bedrockskins$getTop() { 
+        return (height - PREVIEW_H) / 2 + BedrockSkinsConfig.getPaperDollOffsetY(); 
+    }
 
     @Inject(method = "init", at = @At("TAIL"))
     private void bedrockskins$initMainMenuPreview(CallbackInfo ci) {
         if (!BedrockSkinsConfig.isShowPaperDollOnMainMenu()) return;
 
         bedrockskins$draggingPreview = false;
+        bedrockskins$movingPreview = false;
         bedrockskins$leftMouseDown = false;
+        bedrockskins$rightMouseDown = false;
 
         // Initialize Player
         minecraft.getGameProfile();
@@ -128,25 +140,47 @@ public abstract class TitleScreenMixin extends Screen {
 
         long window = minecraft.getWindow().handle();
         boolean leftDown = window != 0L && GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        boolean rightDown = window != 0L && GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS;
+        
+        boolean shiftDown = window != 0L && (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS || GLFW.glfwGetKey(window, GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS);
 
         boolean insidePreview = bedrockskins$isMouseOverPreview(mouseX, mouseY);
         
         // Prevent clicking the button from initiating a drag
         boolean insideButton = bedrockskins$openSkinButton != null && bedrockskins$openSkinButton.isHovered();
 
+        // Left-Click for Rotation
         if (leftDown && !bedrockskins$leftMouseDown && insidePreview && !insideButton) {
             bedrockskins$draggingPreview = true;
-            bedrockskins$lastMouseX = mouseX;
+            bedrockskins$lastRotMouseX = mouseX;
         }
         bedrockskins$leftMouseDown = leftDown;
-
         if (!leftDown) bedrockskins$draggingPreview = false;
 
         if (bedrockskins$draggingPreview) {
-            double deltaX = mouseX - bedrockskins$lastMouseX;
+            double deltaX = mouseX - bedrockskins$lastRotMouseX;
             bedrockskins$previewYaw -= (float) deltaX * 1.6F;
+            bedrockskins$lastRotMouseX = mouseX;
         }
-        bedrockskins$lastMouseX = mouseX;
+
+        // Shift + Right-Click for Panning/Moving
+        if (rightDown && shiftDown && !bedrockskins$rightMouseDown && insidePreview && !insideButton) {
+            bedrockskins$movingPreview = true;
+            bedrockskins$lastMoveMouseX = mouseX;
+            bedrockskins$lastMoveMouseY = mouseY;
+        }
+        bedrockskins$rightMouseDown = rightDown;
+        if (!rightDown || !shiftDown) bedrockskins$movingPreview = false;
+
+        if (bedrockskins$movingPreview) {
+            double deltaX = mouseX - bedrockskins$lastMoveMouseX;
+            double deltaY = mouseY - bedrockskins$lastMoveMouseY;
+            BedrockSkinsConfig.setPaperDollOffsetX(BedrockSkinsConfig.getPaperDollOffsetX() + (int) deltaX);
+            BedrockSkinsConfig.setPaperDollOffsetY(BedrockSkinsConfig.getPaperDollOffsetY() + (int) deltaY);
+            bedrockskins$updateLayout();
+            bedrockskins$lastMoveMouseX = mouseX;
+            bedrockskins$lastMoveMouseY = mouseY;
+        }
 
         GuiUtils.renderEntityInRect(guiGraphics, bedrockskins$menuPreviewPlayer, bedrockskins$previewYaw, 
             bedrockskins$getLeft() - 40, bedrockskins$getTop() - 14, bedrockskins$getLeft() + PREVIEW_W + 40, bedrockskins$getTop() + PREVIEW_H, 56);
@@ -164,6 +198,6 @@ public abstract class TitleScreenMixin extends Screen {
         bedrockskins$menuPreviewPlayer = null;
         bedrockskins$openSkinButton = null;
         bedrockskins$draggingPreview = false;
+        bedrockskins$movingPreview = false;
     }
-
 }
