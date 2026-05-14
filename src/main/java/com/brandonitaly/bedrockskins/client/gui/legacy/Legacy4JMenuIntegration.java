@@ -1,6 +1,6 @@
 package com.brandonitaly.bedrockskins.client.gui.legacy;
 
-//? if >=1.21.10 {
+//? if legacy4j {
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;

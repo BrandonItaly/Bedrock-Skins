@@ -10,6 +10,12 @@ stonecutter parameters {
     val loader = node.project.property("loom.platform").toString()
     constants.match(loader, "fabric", "neoforge")
 
+    val legacy4jVersion = node.project.findProperty("legacy4j_version")
+        ?.toString()
+        ?.takeUnless { it.isBlank() || it == "[VERSIONED]" }
+    val legacy4jFlag = if (legacy4jVersion != null) "legacy4j" else ""
+    constants.match(legacy4jFlag, "legacy4j")
+
     replacements {
         string(stonecutter.eval(current.version, ">=1.21.11")) {
             replace("ResourceLocation", "Identifier")

@@ -2,7 +2,7 @@ package com.brandonitaly.bedrockskins.client;
 
 import com.brandonitaly.bedrockskins.BedrockSkinsNetworking;
 import com.brandonitaly.bedrockskins.client.gui.SkinSelectionScreen;
-//? if >=1.21.10 {
+//? if legacy4j {
 import com.brandonitaly.bedrockskins.client.gui.legacy.Legacy4JMenuIntegration;
 //?}
 import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
@@ -70,8 +70,8 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     }
 
     public static Screen getAppropriateSkinScreen(Screen parent) {
-        //? if >=1.21.10 {
-        if (PlatformUtil.isModLoaded("legacy")) {
+        //? if legacy4j {
+            if (PlatformUtil.isModLoaded("legacy")) {
             try {
                 return Legacy4JMenuIntegration.createScreen(parent);
             } catch (Throwable t) {
@@ -88,8 +88,8 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         createKeybinds();
         for (KeyMapping key : ALL_KEYS) KeyMappingHelper.registerKeyMapping(key);
 
-        //? if >=1.21.10 {
-        if (PlatformUtil.isModLoaded("legacy")) {
+        //? if legacy4j {
+            if (PlatformUtil.isModLoaded("legacy")) {
             try {
                 Legacy4JMenuIntegration.init();
             } catch (Throwable throwable) {
@@ -152,8 +152,8 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     // --- Shared Logic ---
 
     static void handleTick(Minecraft client) {
-        //? if >=1.21.10 {
-        if (PlatformUtil.isModLoaded("legacy")) Legacy4JMenuIntegration.init();
+        //? if legacy4j {
+            if (PlatformUtil.isModLoaded("legacy")) Legacy4JMenuIntegration.init();
         //?}
         while (openKey.consumeClick()) client.setScreen(getAppropriateSkinScreen(client.screen));
         if (client.player == null) return;
