@@ -128,7 +128,7 @@ public abstract class TitleScreenMixin extends Screen {
         return mouseX >= l && mouseX <= l + PREVIEW_W && mouseY >= t && mouseY <= t + PREVIEW_H;
     }
 
-    //~ if >=26.0 'render' -> 'extractRenderState' {
+    //~ if >=26.1 'render' -> 'extractRenderState' {
     @Inject(method = "extractRenderState", at = @At("TAIL"))//~}
     private void bedrockskins$renderMainMenuPreview(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         if (bedrockskins$menuPreviewPlayer == null || !BedrockSkinsConfig.isShowPaperDollOnMainMenu()) return;

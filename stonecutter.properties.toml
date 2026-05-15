@@ -57,3 +57,9 @@ neoforge_version="26.1.0.1-beta"
 mc_version_range="26.1,26.1.1,26.1.2"
 factory_api_version="2.2.8"
 legacy4j_version="1.9-pre-2"
+
+["26.2-fabric"]
+loom.platform="fabric"
+fabric_loader_version="0.19.2"
+fabric_api_version="0.148.3+26.2"
+mc_version_range="26.2,26.2-alpha.7"

@@ -16,6 +16,12 @@ stonecutter parameters {
     val legacy4jFlag = if (legacy4jVersion != null) "legacy4j" else ""
     constants.match(legacy4jFlag, "legacy4j")
 
+    val modmenuVersion = node.project.findProperty("modmenu_version")
+        ?.toString()
+        ?.takeUnless { it.isBlank() || it == "[VERSIONED]" }
+    val modmenuFlag = if (modmenuVersion != null) "modmenu" else ""
+    constants.match(modmenuFlag, "modmenu")
+
     replacements {
         string(stonecutter.eval(current.version, ">=1.21.11")) {
             replace("ResourceLocation", "Identifier")
@@ -24,7 +30,7 @@ stonecutter parameters {
             replace("net.minecraft.client.model.PlayerModel", "net.minecraft.client.model.player.PlayerModel")
         }
 
-        string(eval(current.version, ">=26.0")) {
+        string(eval(current.version, ">=26.1")) {
             replace("accessWidener v2 named", "accessWidener v2 official")
             replace("keybinding.v1.KeyBindingHelper", "keymapping.v1.KeyMappingHelper")
             replace("KeyBindingHelper", "KeyMappingHelper")
@@ -43,6 +49,13 @@ stonecutter parameters {
             replace(".renderMenuBackground", ".extractMenuBackground")
             replace("void render(", "void extractRenderState(")
             replace(".render(gui", ".extractRenderState(gui")
+        }
+
+        string(eval(current.version, ">=26.2-snapshot-7")) {
+            replace(".setScreen(", ".gui.setScreen(")
+            replace("::setScreen", ".gui::setScreen")
+            replace("client.screen", "client.gui.screen()")
+            replace("this.minecraft.screen", "this.minecraft.gui.screen()")
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.brandonitaly.bedrockskins.client;
 
-//? if fabric {
+//? if modmenu {
 import com.brandonitaly.bedrockskins.client.gui.BedrockSkinsConfigScreen;
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;

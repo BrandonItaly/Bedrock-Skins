@@ -234,7 +234,7 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
             Quaternionf cameraRotation = new Quaternionf();
 
             // Render!
-            //~ if <26.0 '.entity' -> '.submitEntityRenderState' {
+            //~ if <26.1 '.entity' -> '.submitEntityRenderState' {
             graphics.entity(
                 renderState,
                 legacySize,

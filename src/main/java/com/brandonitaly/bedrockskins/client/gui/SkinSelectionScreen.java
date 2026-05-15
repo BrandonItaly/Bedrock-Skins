@@ -14,6 +14,8 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.tabs.GridLayoutTab;
+//? if >=26.2-snapshot-7
+// import net.minecraft.client.gui.components.tabs.MenuTabBar;
 import net.minecraft.client.gui.components.tabs.TabManager;
 import net.minecraft.client.gui.components.tabs.TabNavigationBar;
 import net.minecraft.client.gui.components.Tooltip;
@@ -73,8 +75,9 @@ public class SkinSelectionScreen extends Screen {
         openToCurrentSkin();
         calculateLayout(null);
         
+        //~ if >=26.2-snapshot-7 'TabNavigationBar.' -> 'MenuTabBar.' {
         tabNavigationBar = TabNavigationBar.builder(tabManager, width)
-            .addTabs(new SkinsTab(), new SkinCustomizationTab(), new DownloadTab()).build();
+            .addTabs(new SkinsTab(), new SkinCustomizationTab(), new DownloadTab()).build();//~}
         addRenderableWidget(tabNavigationBar);
         
         updateFooterButtons();
@@ -97,9 +100,15 @@ public class SkinSelectionScreen extends Screen {
     @Override
     public void repositionElements() {
         if (tabNavigationBar != null) {
-            //~ if >26.0 '.setWidth' -> '.updateWidth' {
-            tabNavigationBar.updateWidth(width);//~}
+            //? if >=26.2-snapshot-7 {
+            /*tabNavigationBar.arrangeElements(width);*/
+            //?} else if >26.1 {
+            tabNavigationBar.updateWidth(width);
             tabNavigationBar.arrangeElements();
+            //?} else {
+            /*tabNavigationBar.setWidth(width);
+            tabNavigationBar.arrangeElements();*/
+            //?}
             int top = tabNavigationBar.getRectangle().bottom();
             tabManager.setTabArea(new ScreenRectangle(0, top, width, height - layout.getFooterHeight() - top));
             layout.setHeaderHeight(top);

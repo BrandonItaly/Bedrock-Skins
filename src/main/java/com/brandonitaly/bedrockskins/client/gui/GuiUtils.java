@@ -16,6 +16,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.EntityType;
+//? if >=26.2-snapshot-7
+// import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.PlayerModelPart;
@@ -43,7 +45,8 @@ public final class GuiUtils {
             entityRenderState.nameTag = preview.getDisplayName();
         }
         entityRenderState.id = -0x5D011;
-        entityRenderState.entityType = EntityType.PLAYER;
+        //~ if >=26.2-snapshot-7 'EntityType.' -> 'EntityTypes.' {
+        entityRenderState.entityType = EntityType.PLAYER;//~}
         entityRenderState.lightCoords = 15728880;
         entityRenderState.boundingBoxHeight = 1.8F;
         entityRenderState.boundingBoxWidth = 0.6F;
@@ -84,7 +87,7 @@ public final class GuiUtils {
         quat.mul(quat2);
         quat2.conjugate();
 
-        //~ if >=26.0 '.submitEntityRenderState' -> '.entity' {
+        //~ if >=26.1 '.submitEntityRenderState' -> '.entity' {
         gui.entity(entityRenderState, renderScale, vector3f, quat, quat2, left, top, right, bottom);
         //~}
     }
