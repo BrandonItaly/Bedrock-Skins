@@ -21,8 +21,10 @@ public class BedrockSkinsConfig {
     private static volatile PackSortOrder packSortOrder;
     private static volatile boolean skinAnimations;
     private static volatile boolean adjustCameraHeight;
-    private static volatile int paperDollOffsetX;
-    private static volatile int paperDollOffsetY;
+    private static volatile int paperDollOffsetXTitle;
+    private static volatile int paperDollOffsetYTitle;
+    private static volatile int paperDollOffsetXPause;
+    private static volatile int paperDollOffsetYPause;
 
     public enum PaperDollMode {
         NONE, BOTH, MAIN_MENU, PAUSE_MENU;
@@ -44,17 +46,19 @@ public class BedrockSkinsConfig {
         );
     }
 
-    private record ConfigData(PaperDollMode paperDollMode, PackSortOrder packSortOrder, boolean skinAnimations, boolean adjustCameraHeight, int paperDollOffsetX, int paperDollOffsetY) {}
+    private record ConfigData(PaperDollMode paperDollMode, PackSortOrder packSortOrder, boolean skinAnimations, boolean adjustCameraHeight, int paperDollOffsetXTitle, int paperDollOffsetYTitle, int paperDollOffsetXPause, int paperDollOffsetYPause) {}
 
-    private static final ConfigData DEFAULTS = new ConfigData(PaperDollMode.BOTH, PackSortOrder.A_TO_Z, true, false, 0, 0);
+    private static final ConfigData DEFAULTS = new ConfigData(PaperDollMode.BOTH, PackSortOrder.A_TO_Z, true, false, 0, 0, 0, 0);
 
     private static final Codec<ConfigData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         PaperDollMode.CODEC.optionalFieldOf("showPaperDoll", DEFAULTS.paperDollMode()).forGetter(ConfigData::paperDollMode),
         PackSortOrder.CODEC.optionalFieldOf("packSortOrder", DEFAULTS.packSortOrder()).forGetter(ConfigData::packSortOrder),
         Codec.BOOL.optionalFieldOf("skinAnimations", DEFAULTS.skinAnimations()).forGetter(ConfigData::skinAnimations),
         Codec.BOOL.optionalFieldOf("adjustCameraHeight", DEFAULTS.adjustCameraHeight()).forGetter(ConfigData::adjustCameraHeight),
-        Codec.INT.optionalFieldOf("paperDollOffsetX", DEFAULTS.paperDollOffsetX()).forGetter(ConfigData::paperDollOffsetX),
-        Codec.INT.optionalFieldOf("paperDollOffsetY", DEFAULTS.paperDollOffsetY()).forGetter(ConfigData::paperDollOffsetY)
+        Codec.INT.optionalFieldOf("paperDollOffsetXTitle", DEFAULTS.paperDollOffsetXTitle()).forGetter(ConfigData::paperDollOffsetXTitle),
+        Codec.INT.optionalFieldOf("paperDollOffsetYTitle", DEFAULTS.paperDollOffsetYTitle()).forGetter(ConfigData::paperDollOffsetYTitle),
+        Codec.INT.optionalFieldOf("paperDollOffsetXPause", DEFAULTS.paperDollOffsetXPause()).forGetter(ConfigData::paperDollOffsetXPause),
+        Codec.INT.optionalFieldOf("paperDollOffsetYPause", DEFAULTS.paperDollOffsetYPause()).forGetter(ConfigData::paperDollOffsetYPause)
     ).apply(instance, ConfigData::new));
 
     static { load(); }
@@ -99,11 +103,23 @@ public class BedrockSkinsConfig {
     public static boolean isAdjustCameraHeightEnabled() { return adjustCameraHeight; }
     public static void setAdjustCameraHeight(boolean enabled) { if (adjustCameraHeight != enabled) { adjustCameraHeight = enabled; save(); } }
 
-    public static int getPaperDollOffsetX() { return paperDollOffsetX; }
-    public static void setPaperDollOffsetX(int offset) { paperDollOffsetX = offset; save(); }
+    public static int getPaperDollOffsetX() { return paperDollOffsetXTitle; }
+    public static void setPaperDollOffsetX(int offset) { setPaperDollOffsetXTitle(offset); }
 
-    public static int getPaperDollOffsetY() { return paperDollOffsetY; }
-    public static void setPaperDollOffsetY(int offset) { paperDollOffsetY = offset; save(); }
+    public static int getPaperDollOffsetY() { return paperDollOffsetYTitle; }
+    public static void setPaperDollOffsetY(int offset) { setPaperDollOffsetYTitle(offset); }
+
+    public static int getPaperDollOffsetXTitle() { return paperDollOffsetXTitle; }
+    public static void setPaperDollOffsetXTitle(int offset) { paperDollOffsetXTitle = offset; save(); }
+
+    public static int getPaperDollOffsetYTitle() { return paperDollOffsetYTitle; }
+    public static void setPaperDollOffsetYTitle(int offset) { paperDollOffsetYTitle = offset; save(); }
+
+    public static int getPaperDollOffsetXPause() { return paperDollOffsetXPause; }
+    public static void setPaperDollOffsetXPause(int offset) { paperDollOffsetXPause = offset; save(); }
+
+    public static int getPaperDollOffsetYPause() { return paperDollOffsetYPause; }
+    public static void setPaperDollOffsetYPause(int offset) { paperDollOffsetYPause = offset; save(); }
 
     public static OptionInstance<?>[] asOptions() {
         return new OptionInstance<?>[] { PACK_SORT_ORDER, SHOW_PAPER_DOLL, SKIN_ANIMATIONS, ADJUST_CAMERA_HEIGHT };
@@ -119,12 +135,14 @@ public class BedrockSkinsConfig {
         packSortOrder = data.packSortOrder();
         skinAnimations = data.skinAnimations();
         adjustCameraHeight = data.adjustCameraHeight();
-        paperDollOffsetX = data.paperDollOffsetX();
-        paperDollOffsetY = data.paperDollOffsetY();
+        paperDollOffsetXTitle = data.paperDollOffsetXTitle();
+        paperDollOffsetYTitle = data.paperDollOffsetYTitle();
+        paperDollOffsetXPause = data.paperDollOffsetXPause();
+        paperDollOffsetYPause = data.paperDollOffsetYPause();
     }
 
     private static void save() {
-        JsonCodecFileStore.write(CONFIG_PATH, CODEC, new ConfigData(paperDollMode, packSortOrder, skinAnimations, adjustCameraHeight, paperDollOffsetX, paperDollOffsetY), "BedrockSkinsConfig");
+        JsonCodecFileStore.write(CONFIG_PATH, CODEC, new ConfigData(paperDollMode, packSortOrder, skinAnimations, adjustCameraHeight, paperDollOffsetXTitle, paperDollOffsetYTitle, paperDollOffsetXPause, paperDollOffsetYPause), "BedrockSkinsConfig");
     }
 
     public static void resetToDefault() {
@@ -132,8 +150,10 @@ public class BedrockSkinsConfig {
         PACK_SORT_ORDER.set(DEFAULTS.packSortOrder());
         SKIN_ANIMATIONS.set(DEFAULTS.skinAnimations());
         ADJUST_CAMERA_HEIGHT.set(DEFAULTS.adjustCameraHeight());
-        setPaperDollOffsetX(DEFAULTS.paperDollOffsetX());
-        setPaperDollOffsetY(DEFAULTS.paperDollOffsetY());
+        setPaperDollOffsetXTitle(DEFAULTS.paperDollOffsetXTitle());
+        setPaperDollOffsetYTitle(DEFAULTS.paperDollOffsetYTitle());
+        setPaperDollOffsetXPause(DEFAULTS.paperDollOffsetXPause());
+        setPaperDollOffsetYPause(DEFAULTS.paperDollOffsetYPause());
         save();
     }
 }

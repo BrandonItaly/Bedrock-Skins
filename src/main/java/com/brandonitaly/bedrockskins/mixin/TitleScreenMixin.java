@@ -58,12 +58,12 @@ public abstract class TitleScreenMixin extends Screen {
 
     @Unique
     private int bedrockskins$getLeft() {
-        return (width * 5 / 6) - (PREVIEW_W / 2) + BedrockSkinsConfig.getPaperDollOffsetX();
+        return (width * 5 / 6) - (PREVIEW_W / 2) + BedrockSkinsConfig.getPaperDollOffsetXTitle();
     }
 
     @Unique
     private int bedrockskins$getTop() { 
-        return (height - PREVIEW_H) / 2 + BedrockSkinsConfig.getPaperDollOffsetY(); 
+        return (height - PREVIEW_H) / 2 + BedrockSkinsConfig.getPaperDollOffsetYTitle(); 
     }
 
     @Inject(method = "init", at = @At("TAIL"))
@@ -177,8 +177,8 @@ public abstract class TitleScreenMixin extends Screen {
         if (bedrockskins$movingPreview) {
             double deltaX = mouseX - bedrockskins$lastMoveMouseX;
             double deltaY = mouseY - bedrockskins$lastMoveMouseY;
-            BedrockSkinsConfig.setPaperDollOffsetX(BedrockSkinsConfig.getPaperDollOffsetX() + (int) deltaX);
-            BedrockSkinsConfig.setPaperDollOffsetY(BedrockSkinsConfig.getPaperDollOffsetY() + (int) deltaY);
+            BedrockSkinsConfig.setPaperDollOffsetXTitle(BedrockSkinsConfig.getPaperDollOffsetXTitle() + (int) deltaX);
+            BedrockSkinsConfig.setPaperDollOffsetYTitle(BedrockSkinsConfig.getPaperDollOffsetYTitle() + (int) deltaY);
             bedrockskins$updateLayout();
             bedrockskins$lastMoveMouseX = mouseX;
             bedrockskins$lastMoveMouseY = mouseY;

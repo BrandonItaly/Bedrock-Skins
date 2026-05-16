@@ -58,12 +58,12 @@ public abstract class PauseScreenMixin extends Screen {
 
     @Unique
     private int bedrockskins$getLeft() {
-        return (width * 5 / 6) - (PREVIEW_W / 2) + BedrockSkinsConfig.getPaperDollOffsetX();
+        return (width * 5 / 6) - (PREVIEW_W / 2) + BedrockSkinsConfig.getPaperDollOffsetXPause();
     }
 
     @Unique
     private int bedrockskins$getTop() { 
-        return (height - PREVIEW_H) / 2 + BedrockSkinsConfig.getPaperDollOffsetY(); 
+        return (height - PREVIEW_H) / 2 + BedrockSkinsConfig.getPaperDollOffsetYPause(); 
     }
 
     @Inject(method = "init", at = @At("TAIL"))
@@ -176,8 +176,8 @@ public abstract class PauseScreenMixin extends Screen {
         if (bedrockskins$movingPreview) {
             double deltaX = mouseX - bedrockskins$lastMoveMouseX;
             double deltaY = mouseY - bedrockskins$lastMoveMouseY;
-            BedrockSkinsConfig.setPaperDollOffsetX(BedrockSkinsConfig.getPaperDollOffsetX() + (int) deltaX);
-            BedrockSkinsConfig.setPaperDollOffsetY(BedrockSkinsConfig.getPaperDollOffsetY() + (int) deltaY);
+            BedrockSkinsConfig.setPaperDollOffsetXPause(BedrockSkinsConfig.getPaperDollOffsetXPause() + (int) deltaX);
+            BedrockSkinsConfig.setPaperDollOffsetYPause(BedrockSkinsConfig.getPaperDollOffsetYPause() + (int) deltaY);
             bedrockskins$updateLayout();
             bedrockskins$lastMoveMouseX = mouseX;
             bedrockskins$lastMoveMouseY = mouseY;
