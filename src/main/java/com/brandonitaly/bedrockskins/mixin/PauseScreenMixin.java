@@ -11,6 +11,7 @@ import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.gui.components.SpriteIconButton;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -86,6 +87,7 @@ public abstract class PauseScreenMixin extends Screen {
         // Setup Button
         bedrockskins$openSkinButton = SpriteIconButton.builder(Component.empty(), b -> minecraft.setScreen(BedrockSkinsClient.getAppropriateSkinScreen(this)), true)
             .size(BTN_SIZE, BTN_SIZE).sprite(BedrockSkinsSprites.HANGAR_ICON, 16, 16).build();
+        bedrockskins$openSkinButton.setTooltip(Tooltip.create(Component.translatable("bedrockskins.button.change_skin.tooltip")));
         
         bedrockskins$updateLayout();
         addRenderableWidget(bedrockskins$openSkinButton);
