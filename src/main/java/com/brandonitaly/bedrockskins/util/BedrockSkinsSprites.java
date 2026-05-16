@@ -9,16 +9,6 @@ public class BedrockSkinsSprites {
     public static final Identifier CARD_IDLE = Identifier.fromNamespaceAndPath("bedrockskins", "container/card");
     public static final Identifier CARD_HOVER = Identifier.fromNamespaceAndPath("bedrockskins", "container/card_hover");
     public static final Identifier CARD_SELECTED = Identifier.fromNamespaceAndPath("bedrockskins", "container/card_selected");
-    public static final Identifier SKIN_DENY = Identifier.fromNamespaceAndPath("bedrockskins", "container/deny");
-
-    // Legacy4J textures
-    public static final Identifier SKIN_BOX = Identifier.fromNamespaceAndPath("legacy", "tiles/skin_box");
-    public static final Identifier SKIN_PANEL = Identifier.fromNamespaceAndPath("legacy", "tiles/skin_panel");
-    public static final Identifier PANEL_FILLER = Identifier.fromNamespaceAndPath("legacy", "tiles/panel_filler");
-    public static final Identifier PACK_NAME_BOX = Identifier.fromNamespaceAndPath("legacy", "tiles/pack_name_box");
-    public static final Identifier SQUARE_RECESSED_PANEL = Identifier.fromNamespaceAndPath("legacy", "tiles/square_recessed_panel");
-    public static final Identifier ICON_HOLDER = Identifier.fromNamespaceAndPath("legacy", "container/icon_holder");
-    public static final Identifier BEACON_CONFIRM = Identifier.fromNamespaceAndPath("legacy", "container/beacon_check");
 
     // Vanilla textures
     public static final Identifier TAB_HEADER_BACKGROUND = Identifier.withDefaultNamespace("textures/gui/tab_header_background.png");
