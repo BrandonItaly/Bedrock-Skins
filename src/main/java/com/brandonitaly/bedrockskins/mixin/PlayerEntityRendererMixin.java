@@ -9,7 +9,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer./*? if <1.21.11 {*//*RenderType*//*?} else {*/rendertype.RenderTypes/*?}*/;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
@@ -29,73 +28,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class PlayerEntityRendererMixin {
 
     @Unique
-    private boolean bedrockSkins$overrideActive;
-
-    @Unique
-    private SkinId bedrockSkins$overrideSkinId;
-
-    @Unique
-    private ModelPart bedrockSkins$overrideBedrockArm;
-
-    @Unique
-    private ModelPart bedrockSkins$overrideBedrockSleeve;
-
-    @Unique
-    private boolean bedrockSkins$overrideSleeveIsChild;
-
-    @Unique
-    private void bedrockSkins$clearOverride() {
-        this.bedrockSkins$overrideActive = false;
-        this.bedrockSkins$overrideSkinId = null;
-        this.bedrockSkins$overrideBedrockArm = null;
-        this.bedrockSkins$overrideBedrockSleeve = null;
-        this.bedrockSkins$overrideSleeveIsChild = false;
-    }
-
-    @Unique
-    private static ModelPart bedrockSkins$getVanillaSleeve(HumanoidModel<?> model, boolean isRightArm) {
-        if (model instanceof PlayerModel playerModel) {
-            return isRightArm ? playerModel.rightSleeve : playerModel.leftSleeve;
-        }
-        return null;
-    }
-
-    @Unique
-    private boolean bedrockSkins$resolveArmParts(boolean isRightArm, SkinId skinId) {
-        if (skinId == null) return false;
-        var bedrockModel = BedrockModelManager.getModel(skinId);
-        if (bedrockModel == null) return false;
-
-        ModelPart arm = isRightArm ? bedrockModel.customRightArm : bedrockModel.customLeftArm;
-        if (arm == null) return false;
-
-        ModelPart sleeve = null;
-        boolean isChild = false;
-
-        if (isRightArm) {
-            if (arm.hasChild("right_sleeve")) { sleeve = arm.getChild("right_sleeve"); isChild = true; }
-            else if (arm.hasChild("rightSleeve")) { sleeve = arm.getChild("rightSleeve"); isChild = true; }
-            else {
-                sleeve = bedrockModel.partsMap.get("right_sleeve");
-                if (sleeve == null) sleeve = bedrockModel.partsMap.get("rightSleeve");
-            }
-        } else {
-            if (arm.hasChild("left_sleeve")) { sleeve = arm.getChild("left_sleeve"); isChild = true; }
-            else if (arm.hasChild("leftSleeve")) { sleeve = arm.getChild("leftSleeve"); isChild = true; }
-            else {
-                sleeve = bedrockModel.partsMap.get("left_sleeve");
-                if (sleeve == null) sleeve = bedrockModel.partsMap.get("leftSleeve");
-            }
-        }
-
-        this.bedrockSkins$overrideBedrockArm = arm;
-        this.bedrockSkins$overrideBedrockSleeve = sleeve;
-        this.bedrockSkins$overrideSleeveIsChild = isChild;
-        return true;
-    }
-
-    @Unique
-    private void bedrockSkins$renderArm(PoseStack matrices, int light, Identifier skinTexture, boolean sleeveVisible, ModelPart vanillaArm, ModelPart vanillaSleeve, SkinId skinId, ModelPart bedrockArm, ModelPart bedrockSleeve, boolean sleeveIsChild, SubmitNodeCollector queue) {
+    private void bedrockSkins$renderArm(PoseStack matrices, int light, Identifier skinTexture, boolean sleeveVisible, ModelPart vanillaArm, SkinId skinId, ModelPart bedrockArm, ModelPart bedrockSleeve, boolean sleeveIsChild, SubmitNodeCollector queue) {
         var bedrockSkin = SkinPackLoader.getLoadedSkin(skinId);
         var texture = (bedrockSkin != null && bedrockSkin.identifier != null) ? bedrockSkin.identifier : skinTexture;
 
@@ -115,6 +48,7 @@ public abstract class PlayerEntityRendererMixin {
             bedrockArm.resetPose();
             bedrockArm.loadPose(armPose);
             bedrockArm.visible = true;
+            
             if (bedrockSleeve != null) {
                 if (!sleeveIsChild) {
                     bedrockSleeve.resetPose();
@@ -128,11 +62,6 @@ public abstract class PlayerEntityRendererMixin {
             if (bedrockSleeve != null && !sleeveIsChild && sleeveVisible) {
                 bedrockSleeve.render(ms, consumer, light, OverlayTexture.NO_OVERLAY);
             }
-
-            vanillaArm.skipDraw = false;
-            if (vanillaSleeve != null) {
-                vanillaSleeve.skipDraw = false;
-            }
         });
     }
 
@@ -145,44 +74,36 @@ public abstract class PlayerEntityRendererMixin {
         }
     }
 
-    @Inject(method = "renderHand", at = @At("HEAD"))
-    private void bedrockSkins$hideVanillaHand(PoseStack matrices, SubmitNodeCollector queue, int light, Identifier tex, ModelPart arm, boolean sleeve, CallbackInfo ci) {
-        this.bedrockSkins$clearOverride();
-
-        HumanoidModel<?> model = ((AvatarRenderer<?>)(Object)this).getModel();
-        boolean isRightArm = (arm == model.rightArm);
-        SkinId skinId = SkinManager.getLocalSelectedKey();
-
-        arm.skipDraw = false;
-
-        boolean hasParts = bedrockSkins$resolveArmParts(isRightArm, skinId);
-        
-        if (hasParts) {
-            this.bedrockSkins$overrideActive = true;
-            this.bedrockSkins$overrideSkinId = skinId;
-
-            arm.skipDraw = true;
-
-            ModelPart vanillaSleeve = bedrockSkins$getVanillaSleeve(model, isRightArm);
-            if (vanillaSleeve != null) vanillaSleeve.skipDraw = true;
-        }
-    }
-
     @Inject(method = "renderHand", at = @At("TAIL"))
     private void bedrockSkins$renderBedrockHand(PoseStack matrices, SubmitNodeCollector queue, int light, Identifier tex, ModelPart arm, boolean sleeveVisible, CallbackInfo ci) {
-        if (!this.bedrockSkins$overrideActive || this.bedrockSkins$overrideSkinId == null || this.bedrockSkins$overrideBedrockArm == null) {
-            return;
-        }
+        SkinId skinId = SkinManager.getLocalSelectedKey();
+        if (skinId == null) return;
+
+        var bedrockModel = BedrockModelManager.getModel(skinId);
+        if (bedrockModel == null) return;
 
         HumanoidModel<?> model = ((AvatarRenderer<?>)(Object)this).getModel();
         boolean isRightArm = (arm == model.rightArm);
-        ModelPart vanillaSleeve = bedrockSkins$getVanillaSleeve(model, isRightArm);
 
-        try {
-            bedrockSkins$renderArm(matrices, light, tex, sleeveVisible, arm, vanillaSleeve, this.bedrockSkins$overrideSkinId, this.bedrockSkins$overrideBedrockArm, this.bedrockSkins$overrideBedrockSleeve, this.bedrockSkins$overrideSleeveIsChild, queue);
-        } finally {
-            this.bedrockSkins$clearOverride();
+        ModelPart bedrockArm = isRightArm ? bedrockModel.customRightArm : bedrockModel.customLeftArm;
+        if (bedrockArm == null) return;
+
+        ModelPart bedrockSleeve = null;
+        boolean sleeveIsChild = false;
+
+        String prefix = isRightArm ? "right" : "left";
+        if (bedrockArm.hasChild(prefix + "_sleeve")) {
+            bedrockSleeve = bedrockArm.getChild(prefix + "_sleeve");
+            sleeveIsChild = true;
+        } else if (bedrockArm.hasChild(prefix + "Sleeve")) {
+            bedrockSleeve = bedrockArm.getChild(prefix + "Sleeve");
+            sleeveIsChild = true;
+        } else {
+            bedrockSleeve = bedrockModel.partsMap.get(prefix + "_sleeve");
+            if (bedrockSleeve == null) bedrockSleeve = bedrockModel.partsMap.get(prefix + "Sleeve");
         }
+
+        bedrockSkins$renderArm(matrices, light, tex, sleeveVisible, arm, skinId, bedrockArm, bedrockSleeve, sleeveIsChild, queue);
     }
 
     @Inject(method = "isEntityUpsideDown", at = @At("HEAD"), cancellable = true)
