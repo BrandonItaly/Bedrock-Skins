@@ -4,12 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.mojang.blaze3d.platform.NativeImage;
 
-import javax.imageio.ImageIO;
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -53,13 +50,11 @@ public class PckImporter {
 
             if (skins.isEmpty()) return false;
 
-            // Prepare Folders
             if (!outputDir.exists() && !outputDir.mkdirs()) return false;
             File textsDir = new File(outputDir, "texts");
             if (!textsDir.exists()) textsDir.mkdirs();
 
-            // Pack Metadata
-            String currentLang = "en_us"; // Default export to en_us
+            String currentLang = "en_us";
             Map<String, Map<String, String>> pckTranslations = PckLocalizationSupport.loadPckLocalisations(allAssets);
             String fileBaseName = stripExtension(pckFile.getName());
             String serializeName = StringUtils.sanitize(fileBaseName);
@@ -67,11 +62,8 @@ public class PckImporter {
 
             String packDisplayToken = StringUtils.firstNonBlank(PckLocalizationSupport.findPackDisplayToken(pckTranslations, currentLang), StringUtils.firstNonBlank(getPackDisplayName(generalAssets), fileBaseName));
             String packDisplayName = StringUtils.firstNonBlank(PckLocalizationSupport.resolvePckLocalizedToken(packDisplayToken, pckTranslations, currentLang), fileBaseName);
-            
-            // Standardize Translation Keys
             String safePackTranslationKey = "skinpack." + serializeName;
 
-            // Master JSONs
             JsonObject manifest = new JsonObject();
             JsonArray skinsArray = new JsonArray();
             manifest.addProperty("serialize_name", serializeName);
@@ -91,7 +83,6 @@ public class PckImporter {
                 if (skinKey.isEmpty()) continue;
 
                 String safeSkinTranslationKey = "skin." + serializeName + "." + skinKey;
-
                 String skinDisplayToken = StringUtils.firstNonBlank(asset.getFirstProperty("DISPLAYNAMEID", "IDS_DISPLAY_NAME", "LOC_KEY"), StringUtils.firstNonBlank(asset.getFirstProperty("DISPLAYNAME"), skinKey));
                 String skinDisplayName = StringUtils.firstNonBlank(PckLocalizationSupport.resolvePckLocalizedToken(skinDisplayToken, pckTranslations, currentLang), skinKey);
                 langBuilder.append(safeSkinTranslationKey).append("=").append(skinDisplayName).append("\n");
@@ -138,10 +129,40 @@ public class PckImporter {
 
                 // Skin resizing/writing
                 String skinFileName = skinKey + ".png";
-                byte[] finalSkinData = convertToSquare(asset.data());
-                Files.write(new File(outputDir, skinFileName).toPath(), finalSkinData);
+                java.nio.file.Path skinFilePath = new File(outputDir, skinFileName).toPath();
+                byte[] skinData = asset.data();
+                boolean skinSaved = false;
+                
+                try (NativeImage image = NativeImage.read(new ByteArrayInputStream(skinData))) {
+                    int width = image.getWidth();
+                    int height = image.getHeight();
 
-                // Manifest entry
+                    // If it is a legacy 64x32 aspect ratio, scale it up to 64x64
+                    if (width == height * 2 && (width == 64 || width == 128)) {
+                        int s = width / 64; 
+                        try (NativeImage converted = new NativeImage(width, width, true)) {
+                            converted.copyFrom(image);
+                            converted.fillRect(0, 32 * s, width, 32 * s, 0);
+                            
+                            int[] srcX = {4, 8, 0, 4, 8, 12, 44, 48, 40, 44, 48, 52};
+                            int[] srcY = {16, 16, 20, 20, 20, 20, 16, 16, 20, 20, 20, 20};
+                            int[] dstX = {16, 32, 24, 16, 8, 16, -8, -8, 0, -8, -16, -8};
+                            int[] w = {4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4};
+                            int[] h = {4, 4, 12, 12, 12, 12, 4, 4, 12, 12, 12, 12};
+                            
+                            for (int i = 0; i < srcX.length; i++) {
+                                converted.copyRect(srcX[i] * s, srcY[i] * s, dstX[i] * s, 32 * s, w[i] * s, h[i] * s, true, false);
+                            }
+                            
+                            converted.writeToFile(skinFilePath);
+                            skinSaved = true;
+                        }
+                    }
+                } catch (Exception ignored) {}
+                
+                // If we didn't convert and save the image, save the raw bytes now
+                if (!skinSaved) Files.write(skinFilePath, skinData);
+
                 JsonObject skinEntry = new JsonObject();
                 skinEntry.addProperty("localization_name", skinKey);
                 skinEntry.addProperty("geometry", uniqueGeoId);
@@ -156,9 +177,7 @@ public class PckImporter {
                 }
                 
                 Long gf = PckModelConverter.parseGameFlags(asset);
-                if (gf != null && (gf & 1L) != 0L) {
-                    skinEntry.addProperty("unfair", true);
-                }
+                if (gf != null && (gf & 1L) != 0L) skinEntry.addProperty("unfair", true);
                 
                 skinsArray.add(skinEntry);
             }
@@ -175,71 +194,6 @@ public class PckImporter {
             return false;
         }
     }
-
-    // --- Dynamic Skin Conversion (Standard Java API) ---
-    
-    private static byte[] convertToSquare(byte[] imageData) {
-        try {
-            BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageData));
-            if (image == null) return imageData;
-            int width = image.getWidth();
-            int height = image.getHeight();
-
-            // If it is already square, just return original data
-            if (width == height) {
-                return imageData; 
-            }
-
-            // Standard legacy dimension conversion (e.g. 64x32 -> 64x64 or 128x64 -> 128x128)
-            if (width == height * 2) {
-                int s = width / 64; // Scale multiplier (1 for 64x32, 2 for 128x64)
-                BufferedImage converted = new BufferedImage(width, width, BufferedImage.TYPE_INT_ARGB);
-                Graphics2D g = converted.createGraphics();
-                
-                // Copy original image into the top half
-                g.drawImage(image, 0, 0, null);
-                g.dispose();
-
-                // Copy and mirror left arm and left leg from right arm and right leg
-                // Params: src, dst, srcX, srcY, deltaX, deltaY, width, height, flipX, flipY
-                copyRect(image, converted, 4*s, 16*s, 16*s, 32*s, 4*s, 4*s, true, false); // Left Leg Top
-                copyRect(image, converted, 8*s, 16*s, 16*s, 32*s, 4*s, 4*s, true, false); // Left Leg Bottom
-                copyRect(image, converted, 0*s, 20*s, 24*s, 32*s, 4*s, 12*s, true, false); // Left Leg Right
-                copyRect(image, converted, 4*s, 20*s, 16*s, 32*s, 4*s, 12*s, true, false); // Left Leg Front
-                copyRect(image, converted, 8*s, 20*s, 8*s, 32*s, 4*s, 12*s, true, false);  // Left Leg Left
-                copyRect(image, converted, 12*s, 20*s, 16*s, 32*s, 4*s, 12*s, true, false); // Left Leg Back
-                
-                copyRect(image, converted, 44*s, 16*s, -8*s, 32*s, 4*s, 4*s, true, false); // Left Arm Top
-                copyRect(image, converted, 48*s, 16*s, -8*s, 32*s, 4*s, 4*s, true, false); // Left Arm Bottom
-                copyRect(image, converted, 40*s, 20*s, 0*s, 32*s, 4*s, 12*s, true, false); // Left Arm Right
-                copyRect(image, converted, 44*s, 20*s, -8*s, 32*s, 4*s, 12*s, true, false); // Left Arm Front
-                copyRect(image, converted, 48*s, 20*s, -16*s, 32*s, 4*s, 12*s, true, false); // Left Arm Left
-                copyRect(image, converted, 52*s, 20*s, -8*s, 32*s, 4*s, 12*s, true, false); // Left Arm Back
-
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ImageIO.write(converted, "png", baos);
-                return baos.toByteArray();
-            }
-        } catch (Exception e) {
-            System.err.println("Failed to resize skin: " + e.getMessage());
-        }
-        return imageData; // Fallback to original bytes
-    }
-
-    private static void copyRect(BufferedImage src, BufferedImage dst, int srcX, int srcY, int dx, int dy, int width, int height, boolean flipX, boolean flipY) {
-        int dstX = srcX + dx;
-        int dstY = srcY + dy;
-        int sx1 = flipX ? srcX + width : srcX;
-        int sy1 = flipY ? srcY + height : srcY;
-        int sx2 = flipX ? srcX : srcX + width;
-        int sy2 = flipY ? srcY : srcY + height;
-
-        Graphics2D g = dst.createGraphics();
-        g.drawImage(src, dstX, dstY, dstX + width, dstY + height, sx1, sy1, sx2, sy2, null);
-        g.dispose();
-    }
-
-    // --- Extracted Helpers ---
 
     private static List<PckFileParser.PckAsset> collectAllPckAssets(PckFileParser.PckArchive root) {
         if (root == null || root.assets() == null) return List.of();

@@ -36,7 +36,7 @@ public abstract class LivingEntityRendererMixin {
         java.util.UUID uuid = skinState.bedrockSkins$getUniqueId();
         if (uuid == null) return;
         
-        var skinId = SkinManager.getSkin(uuid.toString());
+        var skinId = SkinManager.getSkin(uuid);
         if (skinId == null) return;
         
         BedrockPlayerModel bedrockModel = BedrockModelManager.getModel(skinId);

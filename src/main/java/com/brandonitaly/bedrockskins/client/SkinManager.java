@@ -25,14 +25,9 @@ public final class SkinManager {
 
         try {
             String selected = StateManager.readState().selected();
-            if (selected != null && !selected.isBlank()) {
-                playerSkins.put(localUuid, SkinId.parse(selected));
-            } else {
-                playerSkins.remove(localUuid);
-            }
-        } catch (Exception e) {
-            LOGGER.error("SkinManager: load failed", e);
-        }
+            if (selected != null && !selected.isBlank()) playerSkins.put(localUuid, SkinId.parse(selected));
+            else playerSkins.remove(localUuid);
+        } catch (Exception e) { LOGGER.error("SkinManager: load failed", e); }
     }
 
     public static void clearOtherPlayers() {
@@ -42,9 +37,7 @@ public final class SkinManager {
 
     public static SkinId getLocalSelectedKey() {
         UUID localUuid = getLocalPlayerUuid();
-        if (localUuid != null && playerSkins.containsKey(localUuid)) {
-            return playerSkins.get(localUuid);
-        }
+        if (localUuid != null && playerSkins.containsKey(localUuid)) return playerSkins.get(localUuid);
         
         try {
             String selected = StateManager.readState().selected();
@@ -57,20 +50,12 @@ public final class SkinManager {
 
     public static void setSkin(UUID uuid, SkinId id) {
         SkinId previous = playerSkins.put(uuid, id);
-        
         if (!Objects.equals(previous, id)) releaseIfUnused(previous);
         
         if (uuid.equals(getLocalPlayerUuid())) {
-            try {
-                StateManager.saveState(FavoritesManager.getFavoriteKeys(), id.toString());
-            } catch (Exception e) {
-                LOGGER.error("SkinManager: failed to save selected skin", e);
-            }
+            try { StateManager.saveState(FavoritesManager.getFavoriteKeys(), id.toString()); } 
+            catch (Exception e) { LOGGER.error("SkinManager: failed to save selected skin", e); }
         }
-    }
-
-    public static void setPreviewSkin(String uuidStr, String packName, String skinName) {
-        setPreviewSkin(UUID.fromString(uuidStr), packName, skinName);
     }
 
     public static void setPreviewSkin(UUID uuid, String packName, String skinName) {
@@ -79,16 +64,8 @@ public final class SkinManager {
         if (!Objects.equals(previous, id)) releaseIfUnused(previous);
     }
 
-    public static void resetPreviewSkin(String uuidStr) {
-        resetPreviewSkin(UUID.fromString(uuidStr));
-    }
-
     public static void resetPreviewSkin(UUID uuid) {
         releaseIfUnused(previewSkins.remove(uuid));
-    }
-
-    public static SkinId getSkin(String uuidStr) {
-        return uuidStr == null ? null : getSkin(UUID.fromString(uuidStr));
     }
 
     public static SkinId getSkin(UUID uuid) {
@@ -101,11 +78,8 @@ public final class SkinManager {
         SkinId previous = playerSkins.remove(uuid);
         if (previous != null) {
             if (uuid.equals(getLocalPlayerUuid())) {
-                try {
-                    StateManager.saveState(FavoritesManager.getFavoriteKeys(), null);
-                } catch (Exception e) {
-                    LOGGER.error("SkinManager: failed to clear selected skin", e);
-                }
+                try { StateManager.saveState(FavoritesManager.getFavoriteKeys(), null); } 
+                catch (Exception e) { LOGGER.error("SkinManager: failed to clear selected skin", e); }
             }
             releaseIfUnused(previous);
         }
@@ -118,8 +92,6 @@ public final class SkinManager {
 
     private static void releaseIfUnused(SkinId id) {
         if (id == null) return;
-        if (!playerSkins.containsValue(id) && !previewSkins.containsValue(id)) {
-            SkinPackLoader.releaseSkinAssets(id);
-        }
+        if (!playerSkins.containsValue(id) && !previewSkins.containsValue(id)) SkinPackLoader.releaseSkinAssets(id);
     }
 }

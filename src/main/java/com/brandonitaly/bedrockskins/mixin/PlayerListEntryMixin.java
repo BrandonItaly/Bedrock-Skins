@@ -27,7 +27,7 @@ public abstract class PlayerListEntryMixin {
         if (id == null) return;
 
         // Fetch the skin ID, exit early if none exists
-        SkinId skinId = SkinManager.getSkin(id.toString());
+        SkinId skinId = SkinManager.getSkin(id);
         if (skinId == null) return;
 
         // Fetch the loaded skin, exit early if it failed to load

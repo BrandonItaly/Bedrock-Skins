@@ -309,7 +309,7 @@ public final class SkinPackLoader {
         if (skin.identifier != null) return;
         var tm = Minecraft.getInstance().getTextureManager();
 
-        NativeImage img = convertLegacySkinIfNeeded(loadNativeImage(skin.texture), skin);
+        NativeImage img = loadNativeImage(skin.texture);
         if (img != null) {
             skin.identifier = createIdentifier("bedrockskins", "skins/" + skin.safePackName + "/" + skin.safeSkinName);
             tm.register(skin.identifier, new DynamicTexture(() -> "bedrock_skin", img));
@@ -329,32 +329,6 @@ public final class SkinPackLoader {
         try {
             return data.length > 0 ? NativeImage.read(new ByteArrayInputStream(data)) : null;
         } catch (IOException e) { return null; }
-    }
-
-    private static NativeImage convertLegacySkinIfNeeded(NativeImage image, LoadedSkin skin) {
-        if (image == null || skin == null || image.getWidth() != 64 || image.getHeight() != 32 || !usesDefaultHumanoidGeometry(skin)) return image;
-
-        NativeImage converted = new NativeImage(64, 64, true);
-        try {
-            converted.copyFrom(image);
-            converted.fillRect(0, 32, 64, 32, 0);
-            
-            int[] srcX = {4, 8, 0, 4, 8, 12, 44, 48, 40, 44, 48, 52};
-            int[] srcY = {16, 16, 20, 20, 20, 20, 16, 16, 20, 20, 20, 20};
-            int[] dstX = {16, 32, 24, 16, 8, 16, -8, -8, 0, -8, -16, -8};
-            int[] w = {4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4};
-            int[] h = {4, 4, 12, 12, 12, 12, 4, 4, 12, 12, 12, 12};
-            
-            for (int i = 0; i < srcX.length; i++) {
-                converted.copyRect(srcX[i], srcY[i], dstX[i], 32, w[i], h[i], true, false);
-            }
-
-            image.close();
-            return converted;
-        } catch (Exception e) {
-            converted.close();
-            return image;
-        }
     }
 
     private static boolean usesDefaultHumanoidGeometry(LoadedSkin skin) {
