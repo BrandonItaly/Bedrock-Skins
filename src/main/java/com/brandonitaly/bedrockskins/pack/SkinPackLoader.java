@@ -11,20 +11,21 @@ import com.mojang.blaze3d.platform.NativeImage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 
 public final class SkinPackLoader {
-    public static final Map<String, String> packTypesByPackId = new HashMap<>();
-    public static final Map<String, Identifier> packIconsByPackId = new HashMap<>();
+    public static final Map<String, String> packTypesByPackId = new ConcurrentHashMap<>();
+    public static final Map<String, Identifier> packIconsByPackId = new ConcurrentHashMap<>();
     public static final Map<SkinId, LoadedSkin> loadedSkins = Collections.synchronizedMap(new LinkedHashMap<>());
-    public static List<String> packOrder = Collections.emptyList();
+    public static volatile List<String> packOrder = Collections.emptyList();
 
     private static final Codec<List<String>> PACK_ORDER_CODEC = Codec.list(Codec.STRING);
-    private static final Map<String, Map<String, String>> translations = new HashMap<>();
-    private static final Set<Identifier> dynamicPackIcons = new HashSet<>();
+    private static final Map<String, Map<String, String>> translations = new ConcurrentHashMap<>();
+    private static final Set<Identifier> dynamicPackIcons = ConcurrentHashMap.newKeySet();
     public static JsonObject vanillaGeometryJson = null;
 
     private SkinPackLoader() {}
@@ -55,11 +56,11 @@ public final class SkinPackLoader {
         result = getLangValue("en_us", normalizedKey);
         if (result != null) return result;
 
-        return translations.values().stream()
-                .map(map -> map.get(normalizedKey))
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(null);
+        for (Map<String, String> map : translations.values()) {
+            String val = map.get(normalizedKey);
+            if (val != null) return val;
+        }
+        return null;
     }
 
     private static String getLangValue(String lang, String key) {
@@ -372,7 +373,7 @@ public final class SkinPackLoader {
             for (File file : files) {
                 try (InputStream is = new FileInputStream(file)) {
                     String lang = file.getName().substring(0, file.getName().lastIndexOf('.')).toLowerCase(Locale.ROOT);
-                    parseTranslationStream(is, translations.computeIfAbsent(lang, k -> new HashMap<>()));
+                    parseTranslationStream(is, translations.computeIfAbsent(lang, k -> new ConcurrentHashMap<>()));
                 } catch (Exception ignored) {}
             }
         }
@@ -382,7 +383,7 @@ public final class SkinPackLoader {
         for (String lang : new LinkedHashSet<>(Arrays.asList(getClientLanguage(), "en_us"))) {
             manager.getResource(createIdentifier(namespace, packPath + "/texts/" + lang + ".lang")).ifPresent(res -> {
                 try (InputStream is = res.open()) {
-                    parseTranslationStream(is, translations.computeIfAbsent(lang, k -> new HashMap<>()));
+                    parseTranslationStream(is, translations.computeIfAbsent(lang, k -> new ConcurrentHashMap<>()));
                 } catch (Exception ignored) {}
             });
         }

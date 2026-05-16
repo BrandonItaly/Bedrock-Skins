@@ -20,8 +20,10 @@ public record SkinId(String pack, String name, String safePackName, String safeS
 
     public static SkinId parse(String key) {
         if (key == null || key.isEmpty()) return null;
-        String[] parts = key.split(":", 2);
-        return new SkinId(parts[0], parts.length > 1 ? parts[1] : "");
+        
+        int colonIndex = key.indexOf(':');
+        if (colonIndex < 0) return new SkinId(key, "");
+        return new SkinId(key.substring(0, colonIndex), key.substring(colonIndex + 1));
     }
 
     @Override

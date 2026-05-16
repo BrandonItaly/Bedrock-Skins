@@ -16,8 +16,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class GuiSkinUtils {
-    public static final String STANDARD_PACK_ID = "skinpack.Standard";
-    private static final String FAVORITES_PACK_ID = "skinpack.Favorites";
 
     private GuiSkinUtils() {}
 

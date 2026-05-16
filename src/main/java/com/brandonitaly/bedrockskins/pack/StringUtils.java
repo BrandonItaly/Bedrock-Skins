@@ -1,10 +1,16 @@
 package com.brandonitaly.bedrockskins.pack;
 
+import java.util.Locale;
+import java.util.regex.Pattern;
+
 public final class StringUtils {
+    private static final Pattern SANITIZE_PATTERN = Pattern.compile("[^a-z0-9/._-]");
+
     private StringUtils() {}
 
     public static String sanitize(String name) {
-        return name.toLowerCase().replaceAll("[^a-z0-9/._-]", "_");
+        if (name == null) return "";
+        return SANITIZE_PATTERN.matcher(name.toLowerCase(Locale.ROOT)).replaceAll("_");
     }
 
     public static String firstNonBlank(String first, String fallback) {
