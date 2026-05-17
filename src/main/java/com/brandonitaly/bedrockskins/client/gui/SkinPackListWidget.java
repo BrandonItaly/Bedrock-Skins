@@ -43,17 +43,20 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
         private final String translationKey;
         private final String fallbackName;
         private final Consumer<String> onSelect;
+        private final Consumer<String> onEdit;
         private final Supplier<Boolean> isSelectedFn;
         private final Font textRenderer;
 
         public SkinPackEntry(String packId, String translationKey, String fallbackName,
                              Consumer<String> onSelect,
+                             Consumer<String> onEdit,
                              Supplier<Boolean> isSelectedFn,
                              Font textRenderer) {
             this.packId = packId;
             this.translationKey = translationKey;
             this.fallbackName = fallbackName;
             this.onSelect = onSelect;
+            this.onEdit = onEdit;
             this.isSelectedFn = isSelectedFn;
             this.textRenderer = textRenderer;
         }
@@ -67,21 +70,14 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
             int rowY = y + Math.max(0, (rowSlotHeight - rowHeight) / 2);
 
             int textColor = isSelected ? 0xFFFFFFF0 : hovered ? 0xFFFFFFFF : 0xFFD7D7D7;
-                var cardSprite = isSelected
-                    ? BedrockSkinsSprites.CARD_SELECTED
-                    : (hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE);
+            var cardSprite = isSelected
+                ? BedrockSkinsSprites.CARD_SELECTED
+                : (hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE);
 
-            context.blitSprite(
-                    RenderPipelines.GUI_TEXTURED,
-                    cardSprite,
-                    x,
-                        rowY,
-                    rowWidth,
-                    rowHeight
-            );
+            context.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, rowY, rowWidth, rowHeight);
 
             int textX = x + 6;
-                    int textY = rowY + (rowHeight - textRenderer.lineHeight) / 2;
+            int textY = rowY + (rowHeight - textRenderer.lineHeight) / 2;
             int maxTextWidth = Math.max(20, rowWidth - 12);
 
             boolean truncated = textRenderer.width(translated) > maxTextWidth;
@@ -105,6 +101,11 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
         }
 
         public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
+            if (click.button() == 1 && onEdit != null) {
+                onEdit.accept(packId);
+                GuiUtils.playButtonClickSound();
+                return true;
+            }
             return clickCommon();
         }
 

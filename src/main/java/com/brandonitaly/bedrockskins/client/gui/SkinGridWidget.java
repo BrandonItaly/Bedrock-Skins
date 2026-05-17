@@ -25,38 +25,34 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
     public static final int CELL_PADDING = 5;
 
     private final Consumer<LoadedSkin> onSelectSkin;
+    private final Consumer<LoadedSkin> onEditSkin;
     private final Supplier<LoadedSkin> getSelectedSkin;
     private final Font textRenderer;
 
     public SkinGridWidget(
             Minecraft client, int width, int height, int y, int itemHeight,
-            Consumer<LoadedSkin> onSelectSkin, Supplier<LoadedSkin> getSelectedSkin, Font textRenderer
+            Consumer<LoadedSkin> onSelectSkin, Consumer<LoadedSkin> onEditSkin, Supplier<LoadedSkin> getSelectedSkin, Font textRenderer
     ) {
         super(client, width, height, y, itemHeight);
         this.onSelectSkin = onSelectSkin;
+        this.onEditSkin = onEditSkin;
         this.getSelectedSkin = getSelectedSkin;
         this.textRenderer = textRenderer;
     }
 
     @Override
-    public int getRowWidth() {
-        return this.width - 10;
-    }
+    public int getRowWidth() { return this.width - 10; }
 
     @Override
-    protected int scrollBarX() {
-        return this.getX() + this.width - 6;
-    }
+    protected int scrollBarX() { return this.getX() + this.width - 6; }
 
     protected void extractSelection(GuiGraphicsExtractor context, SkinRowEntry entry, int color) {}
 
-    public void addEntryPublic(SkinRowEntry entry) {
-        super.addEntry(entry);
-    }
+    public void addEntryPublic(SkinRowEntry entry) { super.addEntry(entry); }
 
-    public void addSkinsRow(List<LoadedSkin> skins) {
-        addEntryPublic(new SkinRowEntry(skins));
-    }
+    public void addSkinsRow(List<LoadedSkin> skins) { addEntryPublic(new SkinRowEntry(skins)); }
+
+    public void addActionRow(Component label, Runnable onClick) { addEntryPublic(new SkinRowEntry(label, onClick)); }
 
     public void clear() {
         for (SkinRowEntry row : this.children()) row.cleanup();
@@ -68,6 +64,10 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
 
         public SkinRowEntry(List<LoadedSkin> skins) {
             for (LoadedSkin skin : skins) cells.add(new SkinCell(skin));
+        }
+
+        public SkinRowEntry(Component label, Runnable onClick) {
+            cells.add(new SkinCell(label, onClick));
         }
 
         public void cleanup() {
@@ -94,9 +94,9 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                 int cellStart = index * (CELL_WIDTH + CELL_PADDING);
                 if (localX >= cellStart && localX <= cellStart + CELL_WIDTH) {
                     SkinCell cell = cells.get(index);
-                    onSelectSkin.accept(cell.skin);
+                    cell.activate();
                     GuiUtils.playButtonClickSound();
-                    if (doubled) onSelectSkin.accept(cell.skin);
+                    if (doubled && !cell.isActionCell()) cell.activate();
                     return true;
                 }
             }
@@ -108,6 +108,19 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
         }
 
         public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
+            if (click.button() == 1) {
+                int localX = (int) (click.x() - getX());
+                if (localX < 0) return false;
+                int index = localX / (CELL_WIDTH + CELL_PADDING);
+                if (index < cells.size()) {
+                    SkinCell cell = cells.get(index);
+                    if (!cell.isActionCell() && cell.skin != null && onEditSkin != null) {
+                        onEditSkin.accept(cell.skin);
+                        GuiUtils.playButtonClickSound();
+                        return true;
+                    }
+                }
+            }
             return clickCommon((int) (click.x() - getX()), doubled);
         }
 
@@ -115,10 +128,13 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
         public Component getNarration() { return Component.empty(); }
 
         public class SkinCell {
-            private final LoadedSkin skin;
+            public final LoadedSkin skin;
+            private final Runnable onClick;
+            private final Component label;
             private PreviewPlayer player;
             private final UUID uuid = UUID.randomUUID();
             private final String name;
+            private final boolean actionCell;
 
             private float hoverYaw = 0f; 
             private long lastHoverTime = Util.getMillis();
@@ -127,6 +143,9 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
 
             public SkinCell(LoadedSkin skin) {
                 this.skin = skin;
+                this.onClick = null;
+                this.label = null;
+                this.actionCell = false;
                 this.name = GuiSkinUtils.getSkinDisplayNameText(skin);
                 this.player = PreviewPlayerPool.get(new GameProfile(uuid, ""));
 
@@ -135,15 +154,41 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                 } catch (Exception e) { e.printStackTrace(); }
             }
 
+            public SkinCell(Component label, Runnable onClick) {
+                this.skin = null;
+                this.onClick = onClick;
+                this.label = label;
+                this.actionCell = true;
+                this.name = label.getString();
+            }
+
+            public boolean isActionCell() { return actionCell; }
+
+            public void activate() {
+                if (onClick != null) onClick.run();
+                else if (skin != null) onSelectSkin.accept(skin);
+            }
+
             public void cleanup() {
-                GuiSkinUtils.cleanupPreview(uuid);
+                if (!actionCell) GuiSkinUtils.cleanupPreview(uuid);
             }
 
             public void extractRenderState(GuiGraphicsExtractor context, int x, int y, int w, int h, boolean hovered, int mouseX, int mouseY) {
-                boolean isSelected = (getSelectedSkin.get() != null && getSelectedSkin.get().equals(skin));
+                boolean isSelected = !actionCell && (getSelectedSkin.get() != null && getSelectedSkin.get().equals(skin));
                 var cardSprite = isSelected ? BedrockSkinsSprites.CARD_SELECTED : (hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE);
 
                 context.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, y, w, h);
+
+                if (actionCell) {
+                    int plusCenterX = x + (w / 2);
+                    int plusCenterY = y + (h / 2) - 2;
+                    int arm = 13;
+                    int thickness = 4;
+                    context.fill(plusCenterX - arm, plusCenterY - (thickness / 2), plusCenterX + arm, plusCenterY + (thickness / 2) + 1, 0xFFFFFFFF);
+                    context.fill(plusCenterX - (thickness / 2), plusCenterY - arm, plusCenterX + (thickness / 2) + 1, plusCenterY + arm, 0xFFFFFFFF);
+                    if (hovered && label != null) context.setTooltipForNextFrame(textRenderer, label, mouseX, mouseY);
+                    return;
+                }
 
                 if (player != null) {
                     long now = Util.getMillis();

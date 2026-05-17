@@ -48,8 +48,13 @@ public abstract class PlayerListEntryMixin {
         // Overwrite cape and elytra if a custom Bedrock cape exists
         if (loadedSkin.capeIdentifier != null) {
             capeAsset = new ClientAsset.ResourceTexture(loadedSkin.capeIdentifier, loadedSkin.capeIdentifier);
-            Identifier elytraId = Identifier.withDefaultNamespace("textures/entity/equipment/wings/elytra.png");
-            elytraAsset = new ClientAsset.ResourceTexture(elytraId, elytraId);
+
+            if (!loadedSkin.hasElytra) {
+                Identifier elytraId = Identifier.withDefaultNamespace("textures/entity/equipment/wings/elytra.png");
+                elytraAsset = new ClientAsset.ResourceTexture(elytraId, elytraId);
+            } else {
+                elytraAsset = capeAsset;
+            }
         }
 
         // Apply the newly assembled skin

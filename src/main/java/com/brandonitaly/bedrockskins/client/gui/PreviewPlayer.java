@@ -67,6 +67,10 @@ public final class PreviewPlayer {
         this.forcedBody = null;
     }
 
+    public void setForcedBody(Identifier body) {
+        this.forcedBody = body != null ? new ResourceTexture(body, body) : null;
+    }
+
     public void setForcedProfileSkin(PlayerSkin skin) {
         this.forcedProfileSkin = skin;
     }

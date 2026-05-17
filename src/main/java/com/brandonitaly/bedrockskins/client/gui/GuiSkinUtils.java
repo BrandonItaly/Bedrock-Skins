@@ -112,6 +112,7 @@ public final class GuiSkinUtils {
         if (skin.skinId != null) {
             SkinManager.setPreviewSkin(previewUuid, skin.skinId.pack(), skin.skinId.name());
             SkinPackLoader.registerTextureFor(skin.skinId);
+            previewPlayer.setForcedBody(skin.identifier);
         }
         
         previewPlayer.setForcedCape(skin.capeIdentifier);

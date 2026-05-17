@@ -319,9 +319,29 @@ public final class SkinPackLoader {
             NativeImage capeImg = loadNativeImage(skin.cape);
             if (capeImg != null) {
                 skin.capeIdentifier = createIdentifier("bedrockskins", "capes/" + skin.safePackName + "/" + skin.safeSkinName);
+                skin.hasElytra = checkElytraPixels(capeImg);
                 tm.register(skin.capeIdentifier, new DynamicTexture(() -> "bedrock_cape", capeImg));
             }
         }
+    }
+
+    private static boolean checkElytraPixels(NativeImage img) {
+        if (img == null) return false;
+        int w = img.getWidth();
+        int h = img.getHeight();
+        int startX = Math.max(0, w / 2);
+        int endX = w;
+        int startY = Math.max(0, h / 4);
+        int endY = Math.min(h, (3 * h) / 4);
+
+        for (int x = startX; x < endX; x++) {
+            for (int y = startY; y < endY; y++) {
+                int pixel = img.getPixel(x, y);
+                int alpha = (pixel >> 24) & 0xFF;
+                if (alpha != 0) return true;
+            }
+        }
+        return false;
     }
 
     private static NativeImage loadNativeImage(AssetSource source) {
