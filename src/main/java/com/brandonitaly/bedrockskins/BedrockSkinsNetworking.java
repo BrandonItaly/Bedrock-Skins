@@ -118,4 +118,78 @@ public final class BedrockSkinsNetworking {
         @Override
         public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return ID; }
     }
+
+    private static final StreamCodec<RegistryFriendlyByteBuf, String> HASH_CODEC = new StreamCodec<>() {
+        @Override
+        public void encode(RegistryFriendlyByteBuf buf, String hash) {
+            buf.writeUtf(hash == null ? "" : hash, 256);
+        }
+
+        @Override
+        public String decode(RegistryFriendlyByteBuf buf) {
+            return buf.readUtf(256);
+        }
+    };
+
+    public static String computeHash(String geometry, byte[] textureData) {
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            if (geometry != null) {
+                digest.update(geometry.getBytes(StandardCharsets.UTF_8));
+            }
+            if (textureData != null) {
+                digest.update(textureData);
+            }
+            byte[] hashBytes = digest.digest();
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hashBytes) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
+    }
+
+    // Skin Announce Payload (Server -> Client)
+    public record SkinAnnouncePayload(UUID uuid, SkinId skinId, String hash) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<SkinAnnouncePayload> ID = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("bedrockskins", "skin_announce"));
+        
+        public static final StreamCodec<RegistryFriendlyByteBuf, SkinAnnouncePayload> CODEC = StreamCodec.composite(
+            UUIDUtil.STREAM_CODEC, SkinAnnouncePayload::uuid,
+            OPTIONAL_SKIN_ID_CODEC, SkinAnnouncePayload::skinId,
+            HASH_CODEC, SkinAnnouncePayload::hash,
+            SkinAnnouncePayload::new
+        );
+
+        public SkinAnnouncePayload(UUID uuid, SkinId skinId, String hash) {
+            this.uuid = uuid;
+            this.skinId = skinId;
+            this.hash = hash == null ? "" : hash;
+        }
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return ID; }
+    }
+
+    // Request Skin Data Payload (Client -> Server)
+    public record RequestSkinDataPayload(String hash) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<RequestSkinDataPayload> ID = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("bedrockskins", "request_skin_data"));
+        
+        public static final StreamCodec<RegistryFriendlyByteBuf, RequestSkinDataPayload> CODEC = StreamCodec.composite(
+            HASH_CODEC, RequestSkinDataPayload::hash,
+            RequestSkinDataPayload::new
+        );
+
+        public RequestSkinDataPayload(String hash) {
+            this.hash = hash == null ? "" : hash;
+        }
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return ID; }
+    }
 }

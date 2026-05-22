@@ -18,6 +18,15 @@ public final class ClientSkinSync {
         //?}
     }
 
+    public static void sendRequestSkinDataPayload(String hash) {
+        var payload = new BedrockSkinsNetworking.RequestSkinDataPayload(hash);
+        //? if fabric {
+        ClientPlayNetworking.send(payload);
+        //?} else if neoforge {
+        /*net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(payload);*/
+        //?}
+    }
+
     private static final byte[] EMPTY_TEXTURE = new byte[0];
 
     public static void sendResetSkinPayload() {

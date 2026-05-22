@@ -21,6 +21,7 @@ public class LoadedSkin {
     public Identifier identifier;
     public Identifier capeIdentifier;
     public boolean hasElytra = false;
+    public String hash = "";
 
     public LoadedSkin(String serializeName, String packDisplayName, String skinDisplayName, JsonObject geometryData, AssetSource texture) {
         this(serializeName, packDisplayName, skinDisplayName, geometryData, texture, null, false);

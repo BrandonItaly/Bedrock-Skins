@@ -109,6 +109,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         ClientPlayConnectionEvents.JOIN.register((h, s, client) -> applySavedSkinOnJoin(client));
         ClientPlayConnectionEvents.DISCONNECT.register((h, client) -> client.execute(BedrockSkinsClient::clearAllRemoteSkins));
         ClientPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.SkinUpdatePayload.ID, (payload, context) -> context.client().execute(() -> handleSkinUpdate(payload)));
+        ClientPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.SkinAnnouncePayload.ID, (payload, context) -> context.client().execute(() -> handleSkinAnnounce(payload)));
     }
 
     private static final class Reloader implements IdentifiableResourceReloadListener, ResourceManagerReloadListener {
@@ -139,6 +140,10 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
 
     public static void handleSkinUpdatePacket(BedrockSkinsNetworking.SkinUpdatePayload payload) {
         handleSkinUpdate(payload);
+    }
+
+    public static void handleSkinAnnouncePacket(BedrockSkinsNetworking.SkinAnnouncePayload payload) {
+        handleSkinAnnounce(payload);
     }
 
     public static class GameEvents {
@@ -215,6 +220,37 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         } catch (Exception e) { e.printStackTrace(); }
     }
 
+    private static final java.util.Set<String> requestedHashes = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private static final Map<UUID, SkinIdAnnounce> playerAnnouncedSkins = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private record SkinIdAnnounce(SkinId skinId, String hash) {}
+
+    static void handleSkinAnnounce(BedrockSkinsNetworking.SkinAnnouncePayload p) {
+        UUID playerUuid = p.uuid();
+        SkinId skinId = p.skinId();
+        String hash = p.hash();
+
+        if (skinId == null || hash == null || hash.isEmpty()) {
+            playerAnnouncedSkins.remove(playerUuid);
+            SkinManager.resetSkin(playerUuid);
+            return;
+        }
+
+        playerAnnouncedSkins.put(playerUuid, new SkinIdAnnounce(skinId, hash));
+
+        // Check if we already have this skin in SkinPackLoader.loadedSkins with a matching hash
+        LoadedSkin existing = SkinPackLoader.getLoadedSkin(skinId);
+        if (existing != null && hash.equals(existing.hash)) {
+            // Apply immediately
+            SkinManager.setSkin(playerUuid, skinId);
+        } else {
+            // Lazily request skin data if not already requested
+            if (requestedHashes.add(hash)) {
+                ClientSkinSync.sendRequestSkinDataPayload(hash);
+            }
+        }
+    }
+
     static void handleSkinUpdate(BedrockSkinsNetworking.SkinUpdatePayload p) {
         SkinId id = p.skinId();
         UUID playerUuid = p.uuid();
@@ -222,8 +258,23 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         if (id == null) {
             SkinManager.resetSkin(playerUuid);
         } else {
-            SkinPackLoader.registerRemoteSkin(id.toString(), p.geometry(), p.textureData());
+            String hash = BedrockSkinsNetworking.computeHash(p.geometry(), p.textureData());
+            SkinPackLoader.registerRemoteSkin(id.toString(), p.geometry(), p.textureData(), hash);
+            
+            // Set for the main player in the payload
             SkinManager.setSkin(playerUuid, id);
+
+            // Apply to any other players who have been announced with this hash
+            playerAnnouncedSkins.forEach((uuid, announce) -> {
+                if (hash.equals(announce.hash)) {
+                    if (announce.skinId != null) {
+                        SkinPackLoader.registerRemoteSkin(announce.skinId.toString(), p.geometry(), p.textureData(), hash);
+                        SkinManager.setSkin(uuid, announce.skinId);
+                    }
+                }
+            });
+
+            requestedHashes.remove(hash);
         }
     }
 
@@ -242,6 +293,9 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
                 SkinPackLoader.loadedSkins.remove(id);
             }
         }
+        
+        requestedHashes.clear();
+        playerAnnouncedSkins.clear();
         
         if (!toRemove.isEmpty()) System.out.println("BedrockSkinsClient: Cleared " + toRemove.size() + " remote skins from memory.");
     }

@@ -2,16 +2,12 @@ package com.brandonitaly.bedrockskins.pack;
 
 import com.mojang.serialization.Codec;
 
-public record SkinId(String pack, String name, String safePackName, String safeSkinName) {
+public record SkinId(String pack, String name) {
     public static final Codec<SkinId> CODEC = Codec.STRING.xmap(SkinId::parse, SkinId::toString);
 
-    public SkinId(String pack, String name) {
-        this(
-            pack == null ? "" : pack,
-            name == null ? "" : name,
-            StringUtils.sanitize("skinpack." + (pack == null ? "" : pack)),
-            StringUtils.sanitize("skin." + (pack == null ? "" : pack) + "." + (name == null ? "" : name))
-        );
+    public SkinId {
+        if (pack == null) pack = "";
+        if (name == null) name = "";
     }
 
     public static SkinId of(String pack, String name) {

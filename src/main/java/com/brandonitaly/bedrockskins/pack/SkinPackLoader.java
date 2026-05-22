@@ -129,6 +129,10 @@ public final class SkinPackLoader {
     }
 
     public static void registerRemoteSkin(String key, String geometryJson, byte[] textureData) {
+        registerRemoteSkin(key, geometryJson, textureData, null);
+    }
+
+    public static void registerRemoteSkin(String key, String geometryJson, byte[] textureData, String hash) {
         SkinId idKey = SkinId.parse(key);
         if (loadedSkins.containsKey(idKey) || !validateRemoteData(textureData, geometryJson)) return;
         
@@ -148,6 +152,7 @@ public final class SkinPackLoader {
                 LoadedSkin ls = new LoadedSkin("Remote", "Remote", key,
                     geometryObject, AssetSource.Remote.INSTANCE);
                 ls.identifier = id;
+                ls.hash = (hash == null || hash.isEmpty()) ? com.brandonitaly.bedrockskins.BedrockSkinsNetworking.computeHash(geometryJson, textureData) : hash;
                 loadedSkins.put(idKey, ls);
                 success = true;
             } finally {
