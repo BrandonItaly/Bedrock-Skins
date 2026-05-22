@@ -437,9 +437,11 @@ public class EditSkinScreen extends SkinDialogScreen {
     }
 
     private void cleanupGeometryPreviews() {
-        if (customGeometryPreview != null) { SkinPackLoader.releaseSkinAssets(customGeometryPreview.skinId); SkinPackLoader.loadedSkins.remove(customGeometryPreview.skinId); }
-        if (customSlimGeometryPreview != null) { SkinPackLoader.releaseSkinAssets(customSlimGeometryPreview.skinId); SkinPackLoader.loadedSkins.remove(customSlimGeometryPreview.skinId); }
-        if (hasCustomCurrentGeometry && currentGeometryPreview != null) { SkinPackLoader.releaseSkinAssets(currentGeometryPreview.skinId); SkinPackLoader.loadedSkins.remove(currentGeometryPreview.skinId); }
+        synchronized (SkinPackLoader.loadedSkins) {
+            if (customGeometryPreview != null) { SkinPackLoader.releaseSkinAssets(customGeometryPreview.skinId); SkinPackLoader.loadedSkins.remove(customGeometryPreview.skinId); }
+            if (customSlimGeometryPreview != null) { SkinPackLoader.releaseSkinAssets(customSlimGeometryPreview.skinId); SkinPackLoader.loadedSkins.remove(customSlimGeometryPreview.skinId); }
+            if (hasCustomCurrentGeometry && currentGeometryPreview != null) { SkinPackLoader.releaseSkinAssets(currentGeometryPreview.skinId); SkinPackLoader.loadedSkins.remove(currentGeometryPreview.skinId); }
+        }
     }
 
     private static JsonObject createGeometryData(String geometryId) {

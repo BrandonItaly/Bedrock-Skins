@@ -71,7 +71,7 @@ public class ContentManager {
 
     public static CompletableFuture<List<Pack>> fetchIndex(String indexUrl) {
         return CompletableFuture.supplyAsync(() -> {
-            try (InputStreamReader reader = new InputStreamReader(new URL(indexUrl).openStream())) {
+            try (InputStreamReader reader = new InputStreamReader(java.net.URI.create(indexUrl).toURL().openStream())) {
                 JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
                 return Pack.LIST_CODEC.parse(JsonOps.INSTANCE, json.get("packs"))
                         .resultOrPartial(LOGGER::warn)
@@ -170,10 +170,11 @@ public class ContentManager {
 
         Path contentDir = getContentDir(folderName);
         CompletableFuture.runAsync(() -> {
+            Path downloadedTempFile = null;
             try {
-                Path downloadedTempFile = Files.createTempFile("legacy_pack_", ".download");
+                downloadedTempFile = Files.createTempFile("legacy_pack_", ".download");
                 
-                try (InputStream stream = new URL(pack.downloadURI()).openStream()) {
+                try (InputStream stream = java.net.URI.create(pack.downloadURI()).toURL().openStream()) {
                     Files.copy(stream, downloadedTempFile, StandardCopyOption.REPLACE_EXISTING);
                 }
 
@@ -181,7 +182,6 @@ public class ContentManager {
                     String fileHash = readFileCheckSum(downloadedTempFile);
                     if (!pack.checkSum().get().equals(fileHash)) {
                         LOGGER.warn("Checksum mismatch for pack {}. Expected {}, got {}", pack.id(), pack.checkSum().get(), fileHash);
-                        Files.deleteIfExists(downloadedTempFile);
                         return; 
                     }
                 }
@@ -204,11 +204,17 @@ public class ContentManager {
                     Files.move(downloadedTempFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
                 }
 
-                Files.deleteIfExists(downloadedTempFile);
-
                 Minecraft.getInstance().execute(onFinished);
             } catch (Exception e) {
                 LOGGER.warn("Error when downloading content pack to {}: {}", contentDir.resolve(pack.id()), e.getMessage());
+            } finally {
+                if (downloadedTempFile != null) {
+                    try {
+                        Files.deleteIfExists(downloadedTempFile);
+                    } catch (IOException e) {
+                        LOGGER.warn("Failed to delete temp file {}: {}", downloadedTempFile, e.getMessage());
+                    }
+                }
             }
         });
     }
@@ -254,7 +260,7 @@ public class ContentManager {
 
     private static String resolveDownloadFileName(Pack pack) {
         try {
-            String path = new URL(pack.downloadURI()).getPath();
+            String path = java.net.URI.create(pack.downloadURI()).toURL().getPath();
             String name = Paths.get(path).getFileName() != null ? Paths.get(path).getFileName().toString() : "";
             if (!name.isBlank()) return name;
         } catch (Exception ignored) {}

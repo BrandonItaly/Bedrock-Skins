@@ -311,13 +311,15 @@ public class AddSkinScreen extends SkinDialogScreen {
     }
 
     private void cleanupGeometryPreviews() {
-        if (customGeometryPreview != null) {
-            SkinPackLoader.releaseSkinAssets(customGeometryPreview.skinId);
-            SkinPackLoader.loadedSkins.remove(customGeometryPreview.skinId);
-        }
-        if (customSlimGeometryPreview != null) {
-            SkinPackLoader.releaseSkinAssets(customSlimGeometryPreview.skinId);
-            SkinPackLoader.loadedSkins.remove(customSlimGeometryPreview.skinId);
+        synchronized (SkinPackLoader.loadedSkins) {
+            if (customGeometryPreview != null) {
+                SkinPackLoader.releaseSkinAssets(customGeometryPreview.skinId);
+                SkinPackLoader.loadedSkins.remove(customGeometryPreview.skinId);
+            }
+            if (customSlimGeometryPreview != null) {
+                SkinPackLoader.releaseSkinAssets(customSlimGeometryPreview.skinId);
+                SkinPackLoader.loadedSkins.remove(customSlimGeometryPreview.skinId);
+            }
         }
     }
 

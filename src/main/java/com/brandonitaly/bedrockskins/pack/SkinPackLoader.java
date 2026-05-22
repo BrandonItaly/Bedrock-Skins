@@ -133,16 +133,35 @@ public final class SkinPackLoader {
         if (loadedSkins.containsKey(idKey) || !validateRemoteData(textureData, geometryJson)) return;
         
         try {
+            // Parse geometry JSON first to fail fast before any native allocations
+            JsonObject geometryObject = JsonParser.parseString(geometryJson).getAsJsonObject();
+
             NativeImage img = NativeImage.read(new ByteArrayInputStream(textureData));
-            DynamicTexture texture = new DynamicTexture(() -> "bedrock_skin_remote", img);
-            Identifier id = createIdentifier("bedrockskins", "skins/remote/" + StringUtils.sanitize(key));
+            DynamicTexture texture = null;
+            Identifier id = null;
+            boolean success = false;
+            try {
+                texture = new DynamicTexture(() -> "bedrock_skin_remote", img);
+                id = createIdentifier("bedrockskins", "skins/remote/" + StringUtils.sanitize(key));
+                Minecraft.getInstance().getTextureManager().register(id, texture);
 
-            Minecraft.getInstance().getTextureManager().register(id, texture);
-
-            LoadedSkin ls = new LoadedSkin("Remote", "Remote", key,
-                JsonParser.parseString(geometryJson).getAsJsonObject(), AssetSource.Remote.INSTANCE);
-            ls.identifier = id;
-            loadedSkins.put(idKey, ls);
+                LoadedSkin ls = new LoadedSkin("Remote", "Remote", key,
+                    geometryObject, AssetSource.Remote.INSTANCE);
+                ls.identifier = id;
+                loadedSkins.put(idKey, ls);
+                success = true;
+            } finally {
+                if (!success) {
+                    if (texture != null) {
+                        texture.close();
+                    } else {
+                        img.close();
+                    }
+                    if (id != null) {
+                        Minecraft.getInstance().getTextureManager().release(id);
+                    }
+                }
+            }
         } catch (Exception e) {
             System.err.println("Failed to register remote skin " + key + ": " + e.getMessage());
         }
@@ -311,16 +330,44 @@ public final class SkinPackLoader {
 
         NativeImage img = loadNativeImage(skin.texture);
         if (img != null) {
-            skin.identifier = createIdentifier("bedrockskins", "skins/" + skin.safePackName + "/" + skin.safeSkinName);
-            tm.register(skin.identifier, new DynamicTexture(() -> "bedrock_skin", img));
+            boolean success = false;
+            DynamicTexture texture = null;
+            try {
+                skin.identifier = createIdentifier("bedrockskins", "skins/" + skin.safePackName + "/" + skin.safeSkinName);
+                texture = new DynamicTexture(() -> "bedrock_skin", img);
+                tm.register(skin.identifier, texture);
+                success = true;
+            } catch (Exception e) {
+                System.err.println("Failed to register skin texture: " + e.getMessage());
+                skin.identifier = null;
+                if (texture != null) {
+                    texture.close();
+                } else {
+                    img.close();
+                }
+            }
         }
 
         if (skin.capeIdentifier == null && skin.cape != null) {
             NativeImage capeImg = loadNativeImage(skin.cape);
             if (capeImg != null) {
-                skin.capeIdentifier = createIdentifier("bedrockskins", "capes/" + skin.safePackName + "/" + skin.safeSkinName);
-                skin.hasElytra = checkElytraPixels(capeImg);
-                tm.register(skin.capeIdentifier, new DynamicTexture(() -> "bedrock_cape", capeImg));
+                boolean success = false;
+                DynamicTexture texture = null;
+                try {
+                    skin.capeIdentifier = createIdentifier("bedrockskins", "capes/" + skin.safePackName + "/" + skin.safeSkinName);
+                    skin.hasElytra = checkElytraPixels(capeImg);
+                    texture = new DynamicTexture(() -> "bedrock_cape", capeImg);
+                    tm.register(skin.capeIdentifier, texture);
+                    success = true;
+                } catch (Exception e) {
+                    System.err.println("Failed to register cape texture: " + e.getMessage());
+                    skin.capeIdentifier = null;
+                    if (texture != null) {
+                        texture.close();
+                    } else {
+                        capeImg.close();
+                    }
+                }
             }
         }
     }

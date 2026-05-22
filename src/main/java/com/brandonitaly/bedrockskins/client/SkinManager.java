@@ -32,7 +32,17 @@ public final class SkinManager {
 
     public static void clearOtherPlayers() {
         UUID localUuid = getLocalPlayerUuid();
-        playerSkins.keySet().removeIf(uuid -> !uuid.equals(localUuid));
+        java.util.List<SkinId> toRelease = new java.util.ArrayList<>();
+        playerSkins.entrySet().removeIf(entry -> {
+            if (!entry.getKey().equals(localUuid)) {
+                toRelease.add(entry.getValue());
+                return true;
+            }
+            return false;
+        });
+        for (SkinId id : toRelease) {
+            releaseIfUnused(id);
+        }
     }
 
     public static SkinId getLocalSelectedKey() {

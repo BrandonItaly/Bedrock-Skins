@@ -90,10 +90,12 @@ public class ExternalAssetUtil {
 
         // Try deleting via loaded AssetSource
         LoadedSkin firstSkin = null;
-        for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
-            if (packId.equals(skin.packId)) {
-                firstSkin = skin;
-                break;
+        synchronized (SkinPackLoader.loadedSkins) {
+            for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
+                if (packId.equals(skin.packId)) {
+                    firstSkin = skin;
+                    break;
+                }
             }
         }
 

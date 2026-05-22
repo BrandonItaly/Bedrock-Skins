@@ -169,8 +169,10 @@ public class SkinSelectionScreen extends Screen {
         for (String packId : SkinPackLoader.packTypesByPackId.keySet()) {
             skinCache.putIfAbsent(packId, new ArrayList<>());
         }
-        for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
-            skinCache.computeIfAbsent(skin.packId, k -> new ArrayList<>()).add(skin);
+        synchronized (SkinPackLoader.loadedSkins) {
+            for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
+                skinCache.computeIfAbsent(skin.packId, k -> new ArrayList<>()).add(skin);
+            }
         }
         
         List<LoadedSkin> favs = new ArrayList<>();
