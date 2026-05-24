@@ -20,13 +20,9 @@ public class CreateSkinPackScreen extends SkinDialogScreen {
 
     @Override
     protected void init() {
-        int startX = popupX();
-        int startY = popupY();
-        int contentLeft = startX + 12;
-        int contentWidth = popupWidth() - 24;
-        int yOffset = startY + 30;
+        int y = contentTopY();
 
-        this.packNameBox = new EditBox(this.font, contentLeft, yOffset, contentWidth, 20, Component.translatable("bedrockskins.gui.create_skin_pack.name"));
+        this.packNameBox = new EditBox(this.font, contentLeft(), y, contentWidth(), ELEMENT_HEIGHT, Component.translatable("bedrockskins.gui.create_skin_pack.name"));
         this.packNameBox.setMaxLength(32);
         this.packNameBox.setHint(Component.translatable("bedrockskins.gui.create_skin_pack.name.hint"));
         if (!packNameValue.isEmpty()) {
@@ -34,15 +30,15 @@ public class CreateSkinPackScreen extends SkinDialogScreen {
         }
         this.addRenderableWidget(this.packNameBox);
         
-        yOffset += 28; 
+        y = nextY(y);
 
-        int buttonWidth = (contentWidth - 6) / 2; 
+        int buttonWidth = splitButtonWidth(); 
         
         this.addRenderableWidget(Button.builder(Component.translatable("bedrockskins.button.cancel"), b -> this.onClose())
-            .bounds(contentLeft, yOffset, buttonWidth, 20).build());
+            .bounds(contentLeft(), y, buttonWidth, ELEMENT_HEIGHT).build());
 
         this.addRenderableWidget(Button.builder(Component.translatable("bedrockskins.button.create"), b -> createPack())
-            .bounds(contentLeft + buttonWidth + 6, yOffset, buttonWidth, 20).build());
+            .bounds(splitButtonRightX(), y, buttonWidth, ELEMENT_HEIGHT).build());
     }
 
     private void createPack() {

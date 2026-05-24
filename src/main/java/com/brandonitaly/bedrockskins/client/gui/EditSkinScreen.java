@@ -62,14 +62,14 @@ public class EditSkinScreen extends SkinDialogScreen {
     private String skinNameValue = "";
     private Component textureButtonLabel = Component.translatable("bedrockskins.button.update_texture");
     private Component capeButtonLabel = Component.translatable("bedrockskins.button.update_cape");
+    private boolean capeRemoved = false;
 
     private int geometrySectionX;
     private int geometrySectionY;
-    private final int geometrySectionWidth = 200;
     private final int geometryCardsTopPadding = 18;
 
     public EditSkinScreen(SkinSelectionScreen parent, String packId, LoadedSkin existingSkin) {
-        super(parent, Component.translatable("bedrockskins.gui.edit_skin.title"), 248, 300);
+        super(parent, Component.translatable("bedrockskins.gui.edit_skin.title"), 224, 296);
         this.packId = packId;
         this.existingSkin = existingSkin;
         this.skinNameValue = GuiSkinUtils.getSkinDisplayNameText(existingSkin);
@@ -88,28 +88,33 @@ public class EditSkinScreen extends SkinDialogScreen {
                                      && !currentGeometryId.equals("geometry.humanoid.customSlim");
     }
 
+    private void refreshPreview() {
+        customGeometryPreview = null;
+        customSlimGeometryPreview = null;
+        currentGeometryPreview = null;
+        ensureGeometryOptions();
+        registerGeometryPreviews();
+        setupGeometryPlayers();
+    }
+
     @Override
     protected void init() {
-        int startX = popupX();
-        int startY = popupY();
-        int contentLeft = startX + 24;
-        int contentWidth = 200;
-        int yOffset = startY + 28; 
+        int y = contentTopY();
 
-        this.skinNameBox = new EditBox(this.font, contentLeft, yOffset, contentWidth, 20, Component.translatable("bedrockskins.gui.add_skin.name"));
+        this.skinNameBox = new EditBox(this.font, contentLeft(), y, contentWidth(), ELEMENT_HEIGHT, Component.translatable("bedrockskins.gui.add_skin.name"));
         this.skinNameBox.setMaxLength(32);
         this.skinNameBox.setValue(skinNameValue);
         this.addRenderableWidget(this.skinNameBox);
         
-        yOffset += 26; 
+        y = nextY(y); 
 
         ensureGeometryOptions();
         registerGeometryPreviews();
         setupGeometryPlayers();
-        geometrySectionX = contentLeft;
-        geometrySectionY = yOffset;
+        geometrySectionX = contentLeft();
+        geometrySectionY = y;
         
-        yOffset += geometryCardsTopPadding + 120 + 8; 
+        y = nextY(y, geometryCardsTopPadding + 120); 
 
         this.selectTextureBtn = Button.builder(Component.translatable("bedrockskins.button.update_texture"), b -> {
             String path = openFileDialog("Select New Skin Texture", "*.png");
@@ -117,38 +122,66 @@ public class EditSkinScreen extends SkinDialogScreen {
                 newTexturePath = path;
                 textureButtonLabel = Component.literal(new File(path).getName());
                 b.setMessage(textureButtonLabel);
+                refreshPreview();
             }
-        }).bounds(contentLeft, yOffset, contentWidth, 20).build();
+        }).bounds(contentLeft(), y, contentWidth(), ELEMENT_HEIGHT).build();
         this.selectTextureBtn.setMessage(textureButtonLabel);
         this.addRenderableWidget(this.selectTextureBtn);
         
-        yOffset += 24;
+        y = nextY(y);
 
-        this.selectCapeBtn = Button.builder(Component.translatable("bedrockskins.button.update_cape"), b -> {
-            String path = openFileDialog("Select New Cape Texture", "*.png");
-            if (path != null) {
-                newCapePath = path;
-                capeButtonLabel = Component.literal(new File(path).getName());
-                b.setMessage(capeButtonLabel);
-            }
-        }).bounds(contentLeft, yOffset, contentWidth, 20).build();
-        this.selectCapeBtn.setMessage(capeButtonLabel);
-        this.addRenderableWidget(this.selectCapeBtn);
+        if (existingSkin.cape != null) {
+            int capeButtonWidth = splitButtonWidth();
+
+            this.selectCapeBtn = Button.builder(Component.translatable("bedrockskins.button.update_cape"), b -> {
+                String path = openFileDialog("Select New Cape Texture", "*.png");
+                if (path != null) {
+                    newCapePath = path;
+                    capeRemoved = false;
+                    capeButtonLabel = Component.literal(new File(path).getName());
+                    b.setMessage(capeButtonLabel);
+                    refreshPreview();
+                }
+            }).bounds(contentLeft(), y, capeButtonWidth, ELEMENT_HEIGHT).build();
+            this.selectCapeBtn.setMessage(capeButtonLabel);
+            this.addRenderableWidget(this.selectCapeBtn);
+
+            this.addRenderableWidget(Button.builder(Component.translatable("bedrockskins.button.remove_cape"), b -> {
+                capeRemoved = true;
+                newCapePath = null;
+                capeButtonLabel = Component.translatable("bedrockskins.button.update_cape");
+                this.selectCapeBtn.setMessage(capeButtonLabel);
+                refreshPreview();
+            }).bounds(splitButtonRightX(), y, capeButtonWidth, ELEMENT_HEIGHT).build());
+        } else {
+            this.selectCapeBtn = Button.builder(Component.translatable("bedrockskins.button.update_cape"), b -> {
+                String path = openFileDialog("Select New Cape Texture", "*.png");
+                if (path != null) {
+                    newCapePath = path;
+                    capeRemoved = false;
+                    capeButtonLabel = Component.literal(new File(path).getName());
+                    b.setMessage(capeButtonLabel);
+                    refreshPreview();
+                }
+            }).bounds(contentLeft(), y, contentWidth(), ELEMENT_HEIGHT).build();
+            this.selectCapeBtn.setMessage(capeButtonLabel);
+            this.addRenderableWidget(this.selectCapeBtn);
+        }
         
-        yOffset += 26; 
+        y = nextY(y); 
         
         this.addRenderableWidget(Button.builder(Component.translatable("bedrockskins.gui.edit_skin.delete"), b -> deleteSkin())
-                .bounds(contentLeft, yOffset, contentWidth, 20).build());
+                .bounds(contentLeft(), y, contentWidth(), ELEMENT_HEIGHT).build());
 
-        yOffset += 26; 
+        y = nextY(y); 
 
-        int buttonWidth = (contentWidth - 6) / 2;
+        int buttonWidth = splitButtonWidth();
 
         this.addRenderableWidget(Button.builder(Component.translatable("bedrockskins.button.cancel"), b -> this.onClose())
-                .bounds(contentLeft, yOffset, buttonWidth, 20).build());
+                .bounds(contentLeft(), y, buttonWidth, ELEMENT_HEIGHT).build());
 
         this.addRenderableWidget(Button.builder(Component.translatable("bedrockskins.button.save"), b -> saveSkin())
-                .bounds(contentLeft + buttonWidth + 6, yOffset, buttonWidth, 20).build());
+                .bounds(splitButtonRightX(), y, buttonWidth, ELEMENT_HEIGHT).build());
     }
 
     @Override
@@ -185,7 +218,9 @@ public class EditSkinScreen extends SkinDialogScreen {
             }
 
             String capeName = null;
-            if (newCapePath != null) {
+            if (capeRemoved) {
+                // Cape removed, capeName remains null
+            } else if (newCapePath != null) {
                 capeName = fallbackId + "_cape.png";
                 if (existingSkin.cape instanceof AssetSource.File f) capeName = new File(f.path()).getName();
                 Path targetCape = storeDir.resolve(capeName);
@@ -206,7 +241,15 @@ public class EditSkinScreen extends SkinDialogScreen {
                         if (skin.has("localization_name") && skin.get("localization_name").getAsString().equals(internalSkinId)) {
                             skin.addProperty("geometry", selectedGeometry);
                             if (textureName != null) skin.addProperty("texture", textureName);
-                            if (capeName != null) skin.addProperty("cape", capeName);
+                            if (capeRemoved) {
+                                skin.remove("cape");
+                                if (existingSkin.cape instanceof AssetSource.File f) {
+                                    File capeFile = new File(f.path());
+                                    if (capeFile.exists()) capeFile.delete();
+                                }
+                            } else if (capeName != null) {
+                                skin.addProperty("cape", capeName);
+                            }
                             break;
                         }
                     }
@@ -304,7 +347,15 @@ public class EditSkinScreen extends SkinDialogScreen {
     private LoadedSkin createGeometryPreview(String displayName, JsonObject geoData) {
         AssetSource tex = existingSkin.texture;
         if (newTexturePath != null) tex = new AssetSource.File(newTexturePath);
-        return new LoadedSkin("geometry", "Geometry", displayName, geoData, tex);
+        AssetSource capeSource = null;
+        if (!capeRemoved) {
+            if (newCapePath != null) {
+                capeSource = new AssetSource.File(newCapePath);
+            } else {
+                capeSource = existingSkin.cape;
+            }
+        }
+        return new LoadedSkin("geometry", "Geometry", displayName, geoData, tex, capeSource);
     }
 
     private void selectGeometry(LoadedSkin skin) {
@@ -360,7 +411,7 @@ public class EditSkinScreen extends SkinDialogScreen {
         int currentX = geometrySectionX;
 
         gui.text(font, Component.translatable("bedrockskins.gui.geometry"), geometrySectionX, geometrySectionY, 0xFFDADADA, false);
-        gui.fill(geometrySectionX, geometrySectionY + 11, geometrySectionX + geometrySectionWidth, geometrySectionY + 12, 0x33FFFFFF);
+        gui.fill(geometrySectionX, geometrySectionY + 11, geometrySectionX + contentWidth(), geometrySectionY + 12, 0x33FFFFFF);
 
         if (hasCustomCurrentGeometry) {
             renderGeometryCard(gui, currentX, cardY, cardW, cardH, currentGeometryPlayer, Component.translatable("bedrockskins.gui.geometry.current"), selectedGeometry.equals(currentGeometryId), mouseX, mouseY);

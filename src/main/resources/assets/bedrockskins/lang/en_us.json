@@ -35,6 +35,7 @@
   "bedrockskins.button.select_cape": "Optional: Select Cape (.png)",
   "bedrockskins.button.update_texture": "Update Texture (.png)",
   "bedrockskins.button.update_cape": "Update Cape (.png)",
+  "bedrockskins.button.remove_cape": "Remove Cape",
   "bedrockskins.status.downloading": "Downloading...",
   "bedrockskins.packType.skin_pack": "Skin Pack",
   "bedrockskins.packType.mashup_pack": "Mash-up Pack",

@@ -49,24 +49,19 @@ public class AddSkinScreen extends SkinDialogScreen {
 
     private int geometrySectionX;
     private int geometrySectionY;
-    private final int geometrySectionWidth = 200;
     private final int geometryCardsTopPadding = 18;
 
     public AddSkinScreen(SkinSelectionScreen parent, String packId, String texturePath) {
-        super(parent, Component.translatable("bedrockskins.gui.import_skin"), 248, 260);
+        super(parent, Component.translatable("bedrockskins.gui.import_skin"), 224, 248);
         this.packId = packId;
         this.texturePath = texturePath;
     }
 
     @Override
     protected void init() {
-        int startX = popupX();
-        int startY = popupY();
-        int contentLeft = startX + 24;
-        int contentWidth = 200;
-        int yOffset = startY + 32; 
+        int y = contentTopY();
 
-        this.skinNameBox = new EditBox(this.font, contentLeft, yOffset, contentWidth, 20, Component.translatable("bedrockskins.gui.add_skin.name"));
+        this.skinNameBox = new EditBox(this.font, contentLeft(), y, contentWidth(), ELEMENT_HEIGHT, Component.translatable("bedrockskins.gui.add_skin.name"));
         this.skinNameBox.setMaxLength(32);
         this.skinNameBox.setHint(Component.translatable("bedrockskins.gui.add_skin.name.hint"));
         if (!skinNameValue.isEmpty()) {
@@ -74,15 +69,15 @@ public class AddSkinScreen extends SkinDialogScreen {
         }
         this.addRenderableWidget(this.skinNameBox);
         
-        yOffset += 26; 
+        y = nextY(y); 
 
         ensureGeometryOptions();
         registerGeometryPreviews();
         setupGeometryPlayers();
-        geometrySectionX = contentLeft;
-        geometrySectionY = yOffset;
+        geometrySectionX = contentLeft();
+        geometrySectionY = y;
         
-        yOffset += geometryCardsTopPadding + 120 + 8; 
+        y = nextY(y, geometryCardsTopPadding + 120); 
 
         this.selectCapeBtn = Button.builder(Component.translatable("bedrockskins.button.select_cape"), b -> {
             String path = openFileDialog("Select Cape Texture", "*.png");
@@ -91,19 +86,19 @@ public class AddSkinScreen extends SkinDialogScreen {
                 capeButtonLabel = Component.literal(new File(path).getName());
                 b.setMessage(capeButtonLabel);
             }
-        }).bounds(contentLeft, yOffset, contentWidth, 20).build();
+        }).bounds(contentLeft(), y, contentWidth(), ELEMENT_HEIGHT).build();
         this.selectCapeBtn.setMessage(capeButtonLabel);
         this.addRenderableWidget(this.selectCapeBtn);
         
-        yOffset += 28; 
+        y = nextY(y); 
 
-        int buttonWidth = (contentWidth - 6) / 2;
+        int buttonWidth = splitButtonWidth();
 
         this.addRenderableWidget(Button.builder(Component.translatable("bedrockskins.button.cancel"), b -> this.onClose())
-                .bounds(contentLeft, yOffset, buttonWidth, 20).build());
+                .bounds(contentLeft(), y, buttonWidth, ELEMENT_HEIGHT).build());
 
         this.addRenderableWidget(Button.builder(Component.translatable("bedrockskins.button.confirm"), b -> addSkin())
-                .bounds(contentLeft + buttonWidth + 6, yOffset, buttonWidth, 20).build());
+                .bounds(splitButtonRightX(), y, buttonWidth, ELEMENT_HEIGHT).build());
     }
 
     @Override
@@ -239,7 +234,7 @@ public class AddSkinScreen extends SkinDialogScreen {
         int rightX = geometrySectionX + cardW + gap;
 
         gui.text(font, Component.translatable("bedrockskins.gui.geometry"), geometrySectionX, geometrySectionY, 0xFFDADADA, false);
-        gui.fill(geometrySectionX, geometrySectionY + 11, geometrySectionX + geometrySectionWidth, geometrySectionY + 12, 0x33FFFFFF);
+        gui.fill(geometrySectionX, geometrySectionY + 11, geometrySectionX + contentWidth(), geometrySectionY + 12, 0x33FFFFFF);
 
         renderGeometryCard(gui, leftX, cardY, cardW, cardH, customGeometryPlayer, Component.translatable("bedrockskins.gui.geometry.wide"), "geometry.humanoid.custom".equals(selectedGeometry), mouseX, mouseY);
         renderGeometryCard(gui, rightX, cardY, cardW, cardH, customSlimGeometryPlayer, Component.translatable("bedrockskins.gui.geometry.slim"), "geometry.humanoid.customSlim".equals(selectedGeometry), mouseX, mouseY);

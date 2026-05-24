@@ -5,6 +5,12 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 public abstract class SkinDialogScreen extends Screen {
+    protected static final int PADDING_SIDE = 12;
+    protected static final int CONTENT_TOP = 30;
+    protected static final int SPACING_V = 4;
+    protected static final int ELEMENT_HEIGHT = 20;
+    protected static final int BUTTON_GAP_H = 4;
+
     protected final SkinSelectionScreen parent;
     private final int popupWidth;
     private final int popupHeight;
@@ -30,6 +36,34 @@ public abstract class SkinDialogScreen extends Screen {
 
     protected final int popupHeight() {
         return popupHeight;
+    }
+
+    protected final int contentLeft() {
+        return popupX() + PADDING_SIDE;
+    }
+
+    protected final int contentWidth() {
+        return popupWidth() - (PADDING_SIDE * 2);
+    }
+
+    protected final int contentTopY() {
+        return popupY() + CONTENT_TOP;
+    }
+
+    protected final int nextY(int currentY) {
+        return currentY + ELEMENT_HEIGHT + SPACING_V;
+    }
+
+    protected final int nextY(int currentY, int customHeight) {
+        return currentY + customHeight + SPACING_V;
+    }
+
+    protected final int splitButtonWidth() {
+        return (contentWidth() - BUTTON_GAP_H) / 2;
+    }
+
+    protected final int splitButtonRightX() {
+        return contentLeft() + splitButtonWidth() + BUTTON_GAP_H;
     }
 
     protected void captureDialogState() {}
