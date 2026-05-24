@@ -22,6 +22,11 @@ public abstract class PauseScreenMixin extends Screen {
 
     @Inject(method = "init", at = @At("TAIL"))
     private void bedrockskins$initPausePreview(CallbackInfo ci) {
+        if (bedrockskins$helper != null) {
+            bedrockskins$helper.removed();
+            bedrockskins$helper = null;
+        }
+
         if (!((PauseScreen) (Object) this).showsPauseMenu() || !BedrockSkinsConfig.isShowPaperDollOnPauseScreen()) return;
 
         bedrockskins$helper = new PaperDollHelper(this, false);

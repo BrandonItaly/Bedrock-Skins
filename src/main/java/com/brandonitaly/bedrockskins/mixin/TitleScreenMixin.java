@@ -22,6 +22,11 @@ public abstract class TitleScreenMixin extends Screen {
 
     @Inject(method = "init", at = @At("TAIL"))
     private void bedrockskins$initMainMenuPreview(CallbackInfo ci) {
+        if (bedrockskins$helper != null) {
+            bedrockskins$helper.removed();
+            bedrockskins$helper = null;
+        }
+
         if (!BedrockSkinsConfig.isShowPaperDollOnMainMenu()) return;
         
         bedrockskins$helper = new PaperDollHelper(this, true);

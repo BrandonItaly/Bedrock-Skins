@@ -493,6 +493,9 @@ public class EditSkinScreen extends SkinDialogScreen {
             if (customSlimGeometryPreview != null) { SkinPackLoader.releaseSkinAssets(customSlimGeometryPreview.skinId); SkinPackLoader.loadedSkins.remove(customSlimGeometryPreview.skinId); }
             if (hasCustomCurrentGeometry && currentGeometryPreview != null) { SkinPackLoader.releaseSkinAssets(currentGeometryPreview.skinId); SkinPackLoader.loadedSkins.remove(currentGeometryPreview.skinId); }
         }
+        GuiSkinUtils.cleanupPreview(customGeometryUuid);
+        GuiSkinUtils.cleanupPreview(customSlimUuid);
+        GuiSkinUtils.cleanupPreview(currentGeometryUuid);
     }
 
     private static JsonObject createGeometryData(String geometryId) {

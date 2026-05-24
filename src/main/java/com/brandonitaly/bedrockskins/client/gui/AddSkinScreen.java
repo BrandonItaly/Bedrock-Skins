@@ -315,6 +315,8 @@ public class AddSkinScreen extends SkinDialogScreen {
                 SkinPackLoader.loadedSkins.remove(customSlimGeometryPreview.skinId);
             }
         }
+        GuiSkinUtils.cleanupPreview(customGeometryUuid);
+        GuiSkinUtils.cleanupPreview(customSlimUuid);
     }
 
     private static JsonObject createGeometryData(String geometryId) {
