@@ -1,7 +1,7 @@
 package com.brandonitaly.bedrockskins.mixin;
 
 import com.brandonitaly.bedrockskins.client.BedrockModelManager;
-import com.brandonitaly.bedrockskins.client.BedrockRenderStateAccessor;
+import com.brandonitaly.bedrockskins.client.BedrockRenderStateStore;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.pack.SkinId;
@@ -67,10 +67,10 @@ public abstract class PlayerEntityRendererMixin {
 
     @Inject(method = "extractRenderState", at = @At("RETURN"))
     private void updateRenderState(Avatar player, AvatarRenderState state, float tickDelta, CallbackInfo ci) {
-        if (player instanceof AbstractClientPlayer cp && state instanceof BedrockRenderStateAccessor skinState) {
+        if (player instanceof AbstractClientPlayer cp) {
             java.util.UUID uuid = cp.getUUID();
-            skinState.bedrockSkins$setUniqueId(uuid);
-            skinState.bedrockSkins$setBedrockSkinId(SkinManager.getSkin(uuid));
+            BedrockRenderStateStore.setUniqueId(state, uuid);
+            BedrockRenderStateStore.setSkinId(state, SkinManager.getSkin(uuid));
         }
     }
 
@@ -119,14 +119,12 @@ public abstract class PlayerEntityRendererMixin {
 
     @Inject(method = "getTextureLocation", at = @At("HEAD"), cancellable = true)
     private void getTexture(AvatarRenderState state, CallbackInfoReturnable<Identifier> ci) {
-        if (state instanceof BedrockRenderStateAccessor skinState) {
-            java.util.UUID uuid = skinState.bedrockSkins$getUniqueId();
-            if (uuid != null) {
-                SkinId skinId = SkinManager.getSkin(uuid);
-                if (skinId != null) {
-                    var skin = SkinPackLoader.getLoadedSkin(skinId);
-                    if (skin != null && skin.identifier != null) ci.setReturnValue(skin.identifier);
-                }
+        java.util.UUID uuid = BedrockRenderStateStore.getUniqueId(state);
+        if (uuid != null) {
+            SkinId skinId = SkinManager.getSkin(uuid);
+            if (skinId != null) {
+                var skin = SkinPackLoader.getLoadedSkin(skinId);
+                if (skin != null && skin.identifier != null) ci.setReturnValue(skin.identifier);
             }
         }
     }

@@ -1,7 +1,7 @@
 package com.brandonitaly.bedrockskins.mixin;
 
 import com.brandonitaly.bedrockskins.client.BedrockModelManager;
-import com.brandonitaly.bedrockskins.client.BedrockRenderStateAccessor;
+import com.brandonitaly.bedrockskins.client.BedrockRenderStateStore;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.client.BedrockPlayerModel;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class LivingEntityRendererMixin {
 
     @Shadow
-    protected EntityModel model;
+    protected EntityModel<?> model;
 
     @Unique
     private Object originalModel;
@@ -31,20 +31,24 @@ public abstract class LivingEntityRendererMixin {
 
     @Unique
     private void bedrockSkins$swapModel(LivingEntityRenderState state) {
-        if (!(state instanceof AvatarRenderState) || !(state instanceof BedrockRenderStateAccessor skinState)) return;
-        
-        java.util.UUID uuid = skinState.bedrockSkins$getUniqueId();
-        if (uuid == null) return;
-        
+        if (!(state instanceof AvatarRenderState))
+            return;
+
+        java.util.UUID uuid = BedrockRenderStateStore.getUniqueId(state);
+        if (uuid == null)
+            return;
+
         var skinId = SkinManager.getSkin(uuid);
-        if (skinId == null) return;
-        
+        if (skinId == null)
+            return;
+
         BedrockPlayerModel bedrockModel = BedrockModelManager.getModel(skinId);
-        if (bedrockModel == null) return;
+        if (bedrockModel == null)
+            return;
 
         this.originalModel = this.model;
         this.model = bedrockModel;
-        
+
         if (this.originalModel instanceof net.minecraft.client.model.player.PlayerModel playerModel) {
             bedrockModel.copyFromVanilla(playerModel);
         }
@@ -53,7 +57,7 @@ public abstract class LivingEntityRendererMixin {
     @Unique
     private void bedrockSkins$restoreModel() {
         if (this.originalModel != null) {
-            this.model = (EntityModel) this.originalModel;
+            this.model = (EntityModel<?>) this.originalModel;
             this.originalModel = null;
         }
     }
@@ -61,12 +65,14 @@ public abstract class LivingEntityRendererMixin {
     // --- Injectors ---
 
     @Inject(method = "submit", at = @At("HEAD"))
-    private void onRenderHead(LivingEntityRenderState state, PoseStack matrices, SubmitNodeCollector queue, CameraRenderState camera, CallbackInfo ci) {
+    private void onRenderHead(LivingEntityRenderState state, PoseStack matrices, SubmitNodeCollector queue,
+            CameraRenderState camera, CallbackInfo ci) {
         this.bedrockSkins$swapModel(state);
     }
 
     @Inject(method = "submit", at = @At("RETURN"))
-    private void onRenderReturn(LivingEntityRenderState state, PoseStack matrices, SubmitNodeCollector queue, CameraRenderState camera, CallbackInfo ci) {
+    private void onRenderReturn(LivingEntityRenderState state, PoseStack matrices, SubmitNodeCollector queue,
+            CameraRenderState camera, CallbackInfo ci) {
         this.bedrockSkins$restoreModel();
     }
 }

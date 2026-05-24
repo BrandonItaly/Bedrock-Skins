@@ -69,7 +69,18 @@ public final class SkinPackLoader {
     }
 
     public static void loadPacks() {
-        loadedSkins.values().removeIf(skin -> !(skin.texture instanceof AssetSource.Remote));
+        synchronized (loadedSkins) {
+            List<SkinId> toRemove = new ArrayList<>();
+            loadedSkins.forEach((id, skin) -> {
+                if (!(skin.texture instanceof AssetSource.Remote)) {
+                    toRemove.add(id);
+                }
+            });
+            for (SkinId id : toRemove) {
+                releaseSkinAssets(id);
+                loadedSkins.remove(id);
+            }
+        }
         translations.clear();
         packTypesByPackId.clear();
         clearPackIcons();
@@ -335,13 +346,11 @@ public final class SkinPackLoader {
 
         NativeImage img = loadNativeImage(skin.texture);
         if (img != null) {
-            boolean success = false;
             DynamicTexture texture = null;
             try {
                 skin.identifier = createIdentifier("bedrockskins", "skins/" + skin.safePackName + "/" + skin.safeSkinName);
                 texture = new DynamicTexture(() -> "bedrock_skin", img);
                 tm.register(skin.identifier, texture);
-                success = true;
             } catch (Exception e) {
                 System.err.println("Failed to register skin texture: " + e.getMessage());
                 skin.identifier = null;
@@ -356,14 +365,12 @@ public final class SkinPackLoader {
         if (skin.capeIdentifier == null && skin.cape != null) {
             NativeImage capeImg = loadNativeImage(skin.cape);
             if (capeImg != null) {
-                boolean success = false;
                 DynamicTexture texture = null;
                 try {
                     skin.capeIdentifier = createIdentifier("bedrockskins", "capes/" + skin.safePackName + "/" + skin.safeSkinName);
                     skin.hasElytra = checkElytraPixels(capeImg);
                     texture = new DynamicTexture(() -> "bedrock_cape", capeImg);
                     tm.register(skin.capeIdentifier, texture);
-                    success = true;
                 } catch (Exception e) {
                     System.err.println("Failed to register cape texture: " + e.getMessage());
                     skin.capeIdentifier = null;
@@ -401,14 +408,6 @@ public final class SkinPackLoader {
         try {
             return data.length > 0 ? NativeImage.read(new ByteArrayInputStream(data)) : null;
         } catch (IOException e) { return null; }
-    }
-
-    private static boolean usesDefaultHumanoidGeometry(LoadedSkin skin) {
-        try {
-            String identifier = skin.geometryData.getAsJsonArray("minecraft:geometry").get(0).getAsJsonObject()
-                    .getAsJsonObject("description").get("identifier").getAsString();
-            return "geometry.humanoid.custom".equals(identifier) || "geometry.humanoid.customSlim".equals(identifier);
-        } catch (Exception ignored) { return false; }
     }
 
     // --- Helpers: Translations & Misc ---

@@ -1,7 +1,6 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
 import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
-import com.brandonitaly.bedrockskins.util.PlatformUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.layouts.LinearLayout;

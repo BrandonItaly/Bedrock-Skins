@@ -69,25 +69,7 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
             int rowHeight = Math.max(MIN_VISUAL_ROW_HEIGHT, rowSlotHeight - 2);
             int rowY = y + Math.max(0, (rowSlotHeight - rowHeight) / 2);
 
-            int textColor = isSelected ? 0xFFFFFFF0 : hovered ? 0xFFFFFFFF : 0xFFD7D7D7;
-            var cardSprite = isSelected
-                ? BedrockSkinsSprites.CARD_SELECTED
-                : (hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE);
-
-            context.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, rowY, rowWidth, rowHeight);
-
-            int textX = x + 6;
-            int textY = rowY + (rowHeight - textRenderer.lineHeight) / 2;
-            int maxTextWidth = Math.max(20, rowWidth - 12);
-
-            boolean truncated = textRenderer.width(translated) > maxTextWidth;
-            String shown = truncated
-                    ? textRenderer.plainSubstrByWidth(translated, Math.max(0, maxTextWidth - textRenderer.width("..."))) + "..."
-                    : translated;
-
-            context.text(textRenderer, Component.literal(shown), textX, textY, textColor, false);
-
-            if (hovered && truncated) context.setTooltipForNextFrame(textRenderer, Component.literal(translated), mouseX, mouseY);
+            GuiUtils.renderPackCard(context, textRenderer, translated, x, rowY, rowWidth, rowHeight, hovered, isSelected, mouseX, mouseY);
         }
 
         private boolean clickCommon() {

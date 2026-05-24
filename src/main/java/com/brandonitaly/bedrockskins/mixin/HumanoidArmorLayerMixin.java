@@ -2,7 +2,7 @@ package com.brandonitaly.bedrockskins.mixin;
 
 import com.brandonitaly.bedrockskins.client.BedrockModelManager;
 import com.brandonitaly.bedrockskins.client.BedrockPlayerModel;
-import com.brandonitaly.bedrockskins.client.BedrockRenderStateAccessor;
+import com.brandonitaly.bedrockskins.client.BedrockRenderStateStore;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -26,11 +26,9 @@ public abstract class HumanoidArmorLayerMixin<S extends HumanoidRenderState, M e
 
     @Inject(method = "submit", at = @At("HEAD"), cancellable = true)
     private void bedrockSkins$hideArmor(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, float yRot, float xRot, CallbackInfo ci) {
-        if (!(state instanceof BedrockRenderStateAccessor skinState)) return;
-
-        SkinId skinId = skinState.bedrockSkins$getBedrockSkinId();
+        SkinId skinId = BedrockRenderStateStore.getSkinId(state);
         if (skinId == null) {
-            UUID uuid = skinState.bedrockSkins$getUniqueId();
+            UUID uuid = BedrockRenderStateStore.getUniqueId(state);
             skinId = uuid == null ? null : SkinManager.getSkin(uuid);
         }
         if (skinId == null) return;
@@ -43,11 +41,9 @@ public abstract class HumanoidArmorLayerMixin<S extends HumanoidRenderState, M e
 
     @Inject(method = "renderArmorPiece", at = @At("HEAD"), cancellable = true)
     private void bedrockSkins$applyPieceVisibility(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, ItemStack itemStack, EquipmentSlot slot, int lightCoords, S state, CallbackInfo ci) {
-        if (!(state instanceof BedrockRenderStateAccessor skinState)) return;
-
-        SkinId skinId = skinState.bedrockSkins$getBedrockSkinId();
+        SkinId skinId = BedrockRenderStateStore.getSkinId(state);
         if (skinId == null) {
-            UUID uuid = skinState.bedrockSkins$getUniqueId();
+            UUID uuid = BedrockRenderStateStore.getUniqueId(state);
             skinId = uuid == null ? null : SkinManager.getSkin(uuid);
         }
         if (skinId == null) return;

@@ -28,7 +28,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 public class AddSkinScreen extends SkinDialogScreen {
-    private static final String PREVIEW_PACK_ID = "__geometry_preview";
     private final String packId;
     private final String texturePath;
     

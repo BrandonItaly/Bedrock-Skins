@@ -49,26 +49,35 @@ public class BedrockPlayerModel extends PlayerModel {
 
     public record PartTransform(float x, float y, float z, float pitch, float yaw, float roll) {}
 
-    public record BedrockAnimFlags(
-        boolean armsOutFront, boolean singleArm, boolean stationaryLegs, boolean singleLeg,
-        boolean dontShowArmor, boolean headDisabled, boolean bodyDisabled, boolean rightArmDisabled,
-        boolean leftArmDisabled, boolean rightLegDisabled, boolean leftLegDisabled,
-        boolean forceHeadArmor, boolean forceBodyArmor, boolean forceRightArmArmor,
-        boolean forceLeftArmArmor, boolean forceRightLegArmor, boolean forceLeftLegArmor
-    ) {
-        public static BedrockAnimFlags fromGeometry(BedrockGeometry g) {
-            return new BedrockAnimFlags(
-                isTrue(g.getAnimationArmsOutFront()), isTrue(g.getAnimationSingleArmAnimation()),
-                isTrue(g.getAnimationStationaryLegs()), isTrue(g.getAnimationSingleLegAnimation()),
-                isTrue(g.getAnimationDontShowArmor()), isTrue(g.getAnimationHeadDisabled()),
-                isTrue(g.getAnimationBodyDisabled()), isTrue(g.getAnimationRightArmDisabled()),
-                isTrue(g.getAnimationLeftArmDisabled()), isTrue(g.getAnimationRightLegDisabled()),
-                isTrue(g.getAnimationLeftLegDisabled()), isTrue(g.getAnimationForceHeadArmor()),
-                isTrue(g.getAnimationForceBodyArmor()), isTrue(g.getAnimationForceRightArmArmor()),
-                isTrue(g.getAnimationForceLeftArmArmor()), isTrue(g.getAnimationForceRightLegArmor()),
-                isTrue(g.getAnimationForceLeftLegArmor())
-            );
+    public static class BedrockAnimFlags {
+        private final BedrockGeometry geometry;
+
+        public BedrockAnimFlags(BedrockGeometry geometry) {
+            this.geometry = geometry;
         }
+
+        public static BedrockAnimFlags fromGeometry(BedrockGeometry g) {
+            return new BedrockAnimFlags(g);
+        }
+
+        public boolean armsOutFront() { return isTrue(geometry.getAnimationArmsOutFront()); }
+        public boolean singleArm() { return isTrue(geometry.getAnimationSingleArmAnimation()); }
+        public boolean stationaryLegs() { return isTrue(geometry.getAnimationStationaryLegs()); }
+        public boolean singleLeg() { return isTrue(geometry.getAnimationSingleLegAnimation()); }
+        public boolean dontShowArmor() { return isTrue(geometry.getAnimationDontShowArmor()); }
+        public boolean headDisabled() { return isTrue(geometry.getAnimationHeadDisabled()); }
+        public boolean bodyDisabled() { return isTrue(geometry.getAnimationBodyDisabled()); }
+        public boolean rightArmDisabled() { return isTrue(geometry.getAnimationRightArmDisabled()); }
+        public boolean leftArmDisabled() { return isTrue(geometry.getAnimationLeftArmDisabled()); }
+        public boolean rightLegDisabled() { return isTrue(geometry.getAnimationRightLegDisabled()); }
+        public boolean leftLegDisabled() { return isTrue(geometry.getAnimationLeftLegDisabled()); }
+        public boolean forceHeadArmor() { return isTrue(geometry.getAnimationForceHeadArmor()); }
+        public boolean forceBodyArmor() { return isTrue(geometry.getAnimationForceBodyArmor()); }
+        public boolean forceRightArmArmor() { return isTrue(geometry.getAnimationForceRightArmArmor()); }
+        public boolean forceLeftArmArmor() { return isTrue(geometry.getAnimationForceLeftArmArmor()); }
+        public boolean forceRightLegArmor() { return isTrue(geometry.getAnimationForceRightLegArmor()); }
+        public boolean forceLeftLegArmor() { return isTrue(geometry.getAnimationForceLeftLegArmor()); }
+
         private static boolean isTrue(Boolean b) { return Boolean.TRUE.equals(b); }
     }
 
@@ -373,7 +382,7 @@ public class BedrockPlayerModel extends PlayerModel {
 
     public boolean shouldHideArmor() { return animFlags.dontShowArmor(); }
 
-    public boolean applyArmorVisibility(HumanoidModel armorModel, EquipmentSlot slot) {
+    public boolean applyArmorVisibility(HumanoidModel<?> armorModel, EquipmentSlot slot) {
         if (armorModel == null || slot == null) return true;
 
         // Global disable flag

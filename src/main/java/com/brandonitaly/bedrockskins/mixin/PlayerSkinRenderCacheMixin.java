@@ -7,7 +7,6 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import net.minecraft.client.renderer.PlayerSkinRenderCache;
 import net.minecraft.core.ClientAsset;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerSkin;
 import net.minecraft.world.item.component.ResolvableProfile;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,12 +18,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class PlayerSkinRenderCacheMixin {
 
     @Inject(method = "createLookup", at = @At("RETURN"), cancellable = true)
-    private void bedrockSkins$overridePlayerGlyphLookup(ResolvableProfile profile, CallbackInfoReturnable<Supplier<PlayerSkinRenderCache.RenderInfo>> cir) {
+    private void bedrockSkins$overridePlayerGlyphLookup(ResolvableProfile profile,
+            CallbackInfoReturnable<Supplier<PlayerSkinRenderCache.RenderInfo>> cir) {
         Supplier<PlayerSkinRenderCache.RenderInfo> original = cir.getReturnValue();
 
         cir.setReturnValue(() -> {
             PlayerSkinRenderCache.RenderInfo base = original.get();
-            if (base == null) return null;
+            if (base == null)
+                return null;
 
             UUID uuid = profile.partialProfile().id();
             if (uuid == null || (uuid.getMostSignificantBits() == 0L && uuid.getLeastSignificantBits() == 0L)) {
@@ -32,17 +33,22 @@ public abstract class PlayerSkinRenderCacheMixin {
             }
 
             SkinId skinId = SkinManager.getSkin(uuid);
-            if (skinId == null) return base;
+            if (skinId == null)
+                return base;
 
             var loadedSkin = SkinPackLoader.getLoadedSkin(skinId);
-            if (loadedSkin == null || loadedSkin.identifier == null) return base;
+            if (loadedSkin == null || loadedSkin.identifier == null)
+                return base;
 
             PlayerSkin current = base.playerSkin();
-            ClientAsset.Texture bodyAsset = new ClientAsset.ResourceTexture(loadedSkin.identifier, loadedSkin.identifier);
+            ClientAsset.Texture bodyAsset = new ClientAsset.ResourceTexture(loadedSkin.identifier,
+                    loadedSkin.identifier);
 
-            PlayerSkin replaced = new PlayerSkin(bodyAsset, current.cape(), current.elytra(), current.model(), current.secure());
+            PlayerSkin replaced = new PlayerSkin(bodyAsset, current.cape(), current.elytra(), current.model(),
+                    current.secure());
 
-            return ((PlayerSkinRenderCache) (Object) this).new RenderInfo(base.gameProfile(), replaced, profile.skinPatch());
+            return ((PlayerSkinRenderCache) (Object) this).new RenderInfo(base.gameProfile(), replaced,
+                    profile.skinPatch());
         });
     }
 }

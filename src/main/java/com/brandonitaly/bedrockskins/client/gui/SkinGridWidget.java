@@ -139,8 +139,6 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
             private float hoverYaw = 0f; 
             private long lastHoverTime = Util.getMillis();
 
-            private static final Identifier EQUIPPED_BORDER = Identifier.fromNamespaceAndPath("bedrockskins", "container/equipped_item_border");
-
             public SkinCell(LoadedSkin skin) {
                 this.skin = skin;
                 this.onClick = null;
@@ -174,21 +172,13 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
             }
 
             public void extractRenderState(GuiGraphicsExtractor context, int x, int y, int w, int h, boolean hovered, int mouseX, int mouseY) {
-                boolean isSelected = !actionCell && (getSelectedSkin.get() != null && getSelectedSkin.get().equals(skin));
-                var cardSprite = isSelected ? BedrockSkinsSprites.CARD_SELECTED : (hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE);
-
-                context.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, y, w, h);
-
                 if (actionCell) {
-                    int plusCenterX = x + (w / 2);
-                    int plusCenterY = y + (h / 2) - 2;
-                    int arm = 13;
-                    int thickness = 4;
-                    context.fill(plusCenterX - arm, plusCenterY - (thickness / 2), plusCenterX + arm, plusCenterY + (thickness / 2) + 1, 0xFFFFFFFF);
-                    context.fill(plusCenterX - (thickness / 2), plusCenterY - arm, plusCenterX + (thickness / 2) + 1, plusCenterY + arm, 0xFFFFFFFF);
-                    if (hovered && label != null) context.setTooltipForNextFrame(textRenderer, label, mouseX, mouseY);
+                    GuiUtils.renderActionCard(context, textRenderer, label, x, y, w, h, hovered, mouseX, mouseY);
                     return;
                 }
+
+                boolean isSelected = getSelectedSkin.get() != null && getSelectedSkin.get().equals(skin);
+                boolean isEquipped = GuiSkinUtils.isSkinCurrentlyEquipped(skin);
 
                 if (player != null) {
                     long now = Util.getMillis();
@@ -200,14 +190,9 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                     } else {
                         hoverYaw = 0f;
                     }
-                    GuiUtils.renderEntityInRect(context, player, hoverYaw, x, y, x + w, y + h, 72);
                 }
 
-                if (GuiSkinUtils.isSkinCurrentlyEquipped(skin)) {
-                    context.blitSprite(RenderPipelines.GUI_TEXTURED, EQUIPPED_BORDER, x, y, w, h);
-                }
-
-                if (hovered) context.setTooltipForNextFrame(textRenderer, Component.literal(name), mouseX, mouseY);
+                GuiUtils.renderSkinCard(context, textRenderer, Component.literal(name), x, y, w, h, hovered, isSelected, isEquipped, player, hoverYaw, mouseX, mouseY);
             }
         }
     }

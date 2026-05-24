@@ -1,6 +1,6 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
-import com.brandonitaly.bedrockskins.client.BedrockRenderStateAccessor;
+import com.brandonitaly.bedrockskins.client.BedrockRenderStateStore;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
@@ -13,6 +13,7 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.EntityType;
@@ -33,12 +34,10 @@ public final class GuiUtils {
         Minecraft minecraft = Minecraft.getInstance();
         var options = minecraft.options;
 
-        if (state instanceof BedrockRenderStateAccessor accessor) {
-            accessor.bedrockSkins$setUniqueId(preview.getUuid());
-            accessor.bedrockSkins$setBedrockSkinId(skinId);
-        }
+        BedrockRenderStateStore.setUniqueId(state, preview.getUuid());
+        BedrockRenderStateStore.setSkinId(state, skinId);
 
-        if (preview.shouldShowName()) state.nameTag = preview.getDisplayName();
+        state.nameTag = preview.shouldShowName() ? preview.getDisplayName() : null;
 
         state.id = -0x5D011;
         //~ if >=26.2-snapshot-7 'EntityType.' -> 'EntityTypes.' {
@@ -68,6 +67,11 @@ public final class GuiUtils {
         state.skin = preview.getSkin(minecraft);
     }
 
+    private static final Vector3f TEMP_TRANSLATE = new Vector3f();
+    private static final Quaternionf TEMP_BODY_ROT = new Quaternionf();
+    private static final Quaternionf TEMP_CAM_ROT = new Quaternionf();
+    private static final Identifier EQUIPPED_BORDER = Identifier.fromNamespaceAndPath("bedrockskins", "container/equipped_item_border");
+
     public static void renderEntityInRect(GuiGraphicsExtractor gui, PreviewPlayer preview, float yawOffset, int left, int top, int right, int bottom, int sizeCap) {
         AvatarRenderState state = new AvatarRenderState();
         setupAvatarRenderState(state, preview, SkinManager.getSkin(preview.getUuid()), 180.0F + yawOffset, false, 0.0F);
@@ -77,13 +81,67 @@ public final class GuiUtils {
 
         int size = Math.min((bottom - top) / 3, sizeCap);
         float centerY = isUpsideDown(preview.getUuid()) ? -0.9F : 0.9F;
-        Vector3f translate = new Vector3f(0.0F, centerY, 0.0F);
-        Quaternionf bodyRotation = new Quaternionf().rotationZ((float) Math.PI);
-        Quaternionf cameraRotation = new Quaternionf(); 
+        TEMP_TRANSLATE.set(0.0F, centerY, 0.0F);
+        TEMP_BODY_ROT.identity().rotationZ((float) Math.PI);
+        TEMP_CAM_ROT.identity(); 
 
         //~ if >=26.1 '.submitEntityRenderState' -> '.entity' {
-        gui.entity(state, size, translate, bodyRotation, cameraRotation, left, top, right, bottom);
+        gui.entity(state, size, TEMP_TRANSLATE, TEMP_BODY_ROT, TEMP_CAM_ROT, left, top, right, bottom);
         //~}
+    }
+
+    public static void renderActionCard(GuiGraphicsExtractor gui, Font font, Component tooltipText, int x, int y, int w, int h, boolean hovered, int mouseX, int mouseY) {
+        var cardSprite = hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE;
+        gui.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, y, w, h);
+
+        int plusCenterX = x + (w / 2);
+        int plusCenterY = y + (h / 2) - 2;
+        int arm = 13;
+        int thickness = 4;
+        gui.fill(plusCenterX - arm, plusCenterY - (thickness / 2), plusCenterX + arm, plusCenterY + (thickness / 2) + 1, 0xFFFFFFFF);
+        gui.fill(plusCenterX - (thickness / 2), plusCenterY - arm, plusCenterX + (thickness / 2) + 1, plusCenterY + arm, 0xFFFFFFFF);
+
+        if (hovered && tooltipText != null) {
+            gui.setTooltipForNextFrame(font, tooltipText, mouseX, mouseY);
+        }
+    }
+
+    public static void renderSkinCard(GuiGraphicsExtractor gui, Font font, Component tooltipText, int x, int y, int w, int h, boolean hovered, boolean selected, boolean equipped, PreviewPlayer player, float hoverYaw, int mouseX, int mouseY) {
+        var cardSprite = selected ? BedrockSkinsSprites.CARD_SELECTED : (hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE);
+        gui.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, y, w, h);
+
+        if (player != null) {
+            renderEntityInRect(gui, player, hoverYaw, x, y, x + w, y + h, 72);
+        }
+
+        if (equipped) {
+            gui.blitSprite(RenderPipelines.GUI_TEXTURED, EQUIPPED_BORDER, x, y, w, h);
+        }
+
+        if (hovered && tooltipText != null) {
+            gui.setTooltipForNextFrame(font, tooltipText, mouseX, mouseY);
+        }
+    }
+
+    public static void renderPackCard(GuiGraphicsExtractor gui, Font font, String text, int x, int y, int w, int h, boolean hovered, boolean selected, int mouseX, int mouseY) {
+        var cardSprite = selected ? BedrockSkinsSprites.CARD_SELECTED : (hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE);
+        gui.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, y, w, h);
+
+        int textColor = selected ? 0xFFFFFFF0 : hovered ? 0xFFFFFFFF : 0xFFD7D7D7;
+        int textX = x + 6;
+        int textY = y + (h - font.lineHeight) / 2;
+        int maxTextWidth = Math.max(20, w - 12);
+
+        boolean truncated = font.width(text) > maxTextWidth;
+        String shown = truncated
+                ? font.plainSubstrByWidth(text, Math.max(0, maxTextWidth - font.width("..."))) + "..."
+                : text;
+
+        gui.text(font, Component.literal(shown), textX, textY, textColor, false);
+
+        if (hovered && truncated) {
+            gui.setTooltipForNextFrame(font, Component.literal(text), mouseX, mouseY);
+        }
     }
 
     public static void safeRegisterTexture(String key) { 

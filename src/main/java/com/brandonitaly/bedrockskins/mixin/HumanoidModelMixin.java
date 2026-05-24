@@ -2,7 +2,7 @@ package com.brandonitaly.bedrockskins.mixin;
 
 import com.brandonitaly.bedrockskins.client.BedrockModelManager;
 import com.brandonitaly.bedrockskins.client.BedrockPlayerModel;
-import com.brandonitaly.bedrockskins.client.BedrockRenderStateAccessor;
+import com.brandonitaly.bedrockskins.client.BedrockRenderStateStore;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import java.util.UUID;
@@ -35,11 +35,9 @@ public abstract class HumanoidModelMixin<T extends HumanoidRenderState> {
             applyBedrockPartVisibility(bedrockPlayerModel, state);
             return;
         }
-        if (!(state instanceof BedrockRenderStateAccessor skinState)) return;
-
-        SkinId skinId = skinState.bedrockSkins$getBedrockSkinId();
+        SkinId skinId = BedrockRenderStateStore.getSkinId(state);
         if (skinId == null) {
-            UUID uuid = skinState.bedrockSkins$getUniqueId();
+            UUID uuid = BedrockRenderStateStore.getUniqueId(state);
             skinId = SkinManager.getSkin(uuid);
         }
         if (skinId == null) return;
@@ -76,9 +74,7 @@ public abstract class HumanoidModelMixin<T extends HumanoidRenderState> {
 
     @Unique
     private boolean hasActualCape(T state) {
-        if (!(state instanceof BedrockRenderStateAccessor skinState)) return false;
-
-        UUID uuid = skinState.bedrockSkins$getUniqueId();
+        UUID uuid = BedrockRenderStateStore.getUniqueId(state);
         if (uuid == null) return false;
 
         try {

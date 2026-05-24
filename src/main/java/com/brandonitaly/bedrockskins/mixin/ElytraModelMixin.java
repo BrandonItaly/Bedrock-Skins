@@ -2,7 +2,7 @@ package com.brandonitaly.bedrockskins.mixin;
 
 import com.brandonitaly.bedrockskins.client.BedrockModelManager;
 import com.brandonitaly.bedrockskins.client.BedrockPlayerModel;
-import com.brandonitaly.bedrockskins.client.BedrockRenderStateAccessor;
+import com.brandonitaly.bedrockskins.client.BedrockRenderStateStore;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import net.minecraft.client.model.geom.ModelPart;
@@ -29,11 +29,9 @@ public abstract class ElytraModelMixin {
 
     @Inject(method = "setupAnim", at = @At("RETURN"))
     private void bedrockSkins$syncElytraPivots(HumanoidRenderState state, CallbackInfo ci) {
-        if (!(state instanceof BedrockRenderStateAccessor skinState)) return;
-
-        SkinId skinId = skinState.bedrockSkins$getBedrockSkinId();
+        SkinId skinId = BedrockRenderStateStore.getSkinId(state);
         if (skinId == null) {
-            UUID uuid = skinState.bedrockSkins$getUniqueId();
+            UUID uuid = BedrockRenderStateStore.getUniqueId(state);
             if (uuid == null) return;
             skinId = SkinManager.getSkin(uuid);
         }

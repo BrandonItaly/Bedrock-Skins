@@ -1,7 +1,6 @@
 package com.brandonitaly.bedrockskins.client.gui.legacy;
 
 //? if legacy4j {
-import com.brandonitaly.bedrockskins.client.BedrockRenderStateAccessor;
 import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
@@ -19,9 +18,6 @@ import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.HumanoidArm;
-import net.minecraft.world.entity.Pose;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -31,7 +27,6 @@ import wily.legacy.skins.skin.SkinPack;
 import wily.legacy.skins.skin.SkinIdUtil;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
     private static final ChangeSkinScreenSource legacySource = ChangeSkinScreenSource.Default.INSTANCE;

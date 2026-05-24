@@ -1,6 +1,5 @@
 package com.brandonitaly.bedrockskins.client;
 
-import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.OptionInstance;
@@ -117,10 +116,6 @@ public class BedrockSkinsConfig {
 
     public static OptionInstance<?>[] asOptions() {
         return new OptionInstance<?>[] { PACK_SORT_ORDER, SHOW_PAPER_DOLL, SKIN_ANIMATIONS, ADJUST_CAMERA_HEIGHT };
-    }
-
-    private static void reloadSkinPacks() {
-        try { SkinPackLoader.loadPacks(); SkinPackLoader.registerTextures(); } catch (Exception ignored) {}
     }
 
     private static void load() {

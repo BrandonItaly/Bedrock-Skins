@@ -3,18 +3,14 @@ package com.brandonitaly.bedrockskins.util;
 import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
-import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class ExternalAssetUtil {
-
-
 
     /**
      * Helper to load texture data directly from a LoadedSkin object.
@@ -44,7 +40,6 @@ public class ExternalAssetUtil {
 
     public static boolean deletePack(String packId, String storeFolderName) {
         boolean deleted = false;
-        File storeDir = new File(Minecraft.getInstance().gameDirectory, storeFolderName);
 
         // Try deleting via loaded AssetSource
         LoadedSkin firstSkin = null;
