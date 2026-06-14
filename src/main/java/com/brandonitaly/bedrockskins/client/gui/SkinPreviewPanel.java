@@ -15,6 +15,8 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.options.SkinCustomizationScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
@@ -32,6 +34,7 @@ public class SkinPreviewPanel {
     private int x, y, width, height;
     private FavoriteHeartButton favoriteButton;
     private Button selectButton, resetButton;
+    private SpriteIconButton customizationButton;
     private LoadedSkin selectedSkin;
     private SkinId currentSkinId;
     private PreviewPlayer dummyPlayer;
@@ -49,7 +52,7 @@ public class SkinPreviewPanel {
     
     public LoadedSkin getSelectedSkin() { return selectedSkin; }
 
-    public void init(int x, int y, int w, int h, Consumer<AbstractWidget> widgetAdder) {
+    public void init(int x, int y, int w, int h, Screen parentScreen, Consumer<AbstractWidget> widgetAdder) {
         selectButton = Button.builder(Component.translatable("bedrockskins.button.select"), b -> applySkin()).bounds(0, 0, 10, 20).build();
         widgetAdder.accept(selectButton);
 
@@ -58,6 +61,12 @@ public class SkinPreviewPanel {
 
         resetButton = Button.builder(Component.translatable("bedrockskins.button.reset"), b -> resetSkin()).bounds(0, 0, 10, 20).build();
         widgetAdder.accept(resetButton);
+
+        customizationButton = SpriteIconButton.builder(Component.empty(), b -> {
+            minecraft.setScreen(new SkinCustomizationScreen(parentScreen, minecraft.options));
+        }, true).size(20, 20).sprite(BedrockSkinsSprites.CHARACTER_CREATOR_ICON, 16, 16).build();
+        customizationButton.setTooltip(Tooltip.create(Component.translatable("options.skinCustomisation.title")));
+        widgetAdder.accept(customizationButton);
         
         reposition(x, y, w, h);
         initPreviewState();
@@ -85,6 +94,10 @@ public class SkinPreviewPanel {
         }
         if (resetButton != null) {
             resetButton.setX(btnX + 22); resetButton.setY(middleY); resetButton.setWidth(btnW - 22);
+        }
+        if (customizationButton != null) {
+            customizationButton.setX(x + w - 22);
+            customizationButton.setY(y + 2);
         }
     }
 
@@ -276,6 +289,7 @@ public class SkinPreviewPanel {
         if (selectButton != null) selectButton.visible = visible;
         if (resetButton != null) resetButton.visible = visible;
         if (favoriteButton != null) favoriteButton.getButton().visible = visible;
+        if (customizationButton != null) customizationButton.visible = visible;
     }
 
     public void renderSprites(GuiGraphicsExtractor gui) {

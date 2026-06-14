@@ -9,12 +9,11 @@ import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import com.brandonitaly.bedrockskins.util.PackSortUtil;
-import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.ObjectSelectionList;
+import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.tabs.GridLayoutTab;
-//? if >=26.2-snapshot-7
+//? if >=26.2-pre-3
 // import net.minecraft.client.gui.components.tabs.MenuTabBar;
 import net.minecraft.client.gui.components.tabs.TabManager;
 import net.minecraft.client.gui.components.tabs.TabNavigationBar;
@@ -29,7 +28,6 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
-import net.minecraft.world.entity.player.PlayerModelPart;
 
 import java.io.File;
 import java.util.*;
@@ -48,13 +46,13 @@ public class SkinSelectionScreen extends Screen {
     private SkinPreviewPanel previewPanel;
     private final Screen parent; 
 
-    private int activeTab = 0; // 0=skins, 1=customization, 2=store
+    private int activeTab = 0; // 0=skins, 1=store
     private String selectedPackId;
     private final Map<String, List<LoadedSkin>> skinCache = new HashMap<>();
 
     private final Rect rPacks = new Rect(), rSkins = new Rect(), rPreview = new Rect();
-    private final List<AbstractWidget> customizationWidgets = new ArrayList<>();
-    private Button openPacksButton, doneButton, createPackButton;
+    private Button openPacksButton, doneButton;
+    private SpriteIconButton createPackButton;
 
     // --- Store Tab Elements
     private ContentPackList downloadList;
@@ -75,10 +73,9 @@ public class SkinSelectionScreen extends Screen {
         openToCurrentSkin();
         calculateLayout(null);
         
-        //~ if >=26.2-snapshot-7 'TabNavigationBar.' -> 'MenuTabBar.' {
+        //~ if >=26.2-pre-3 'TabNavigationBar.' -> 'MenuTabBar.' {
         tabNavigationBar = TabNavigationBar.builder(tabManager, width)
-            .addTabs(new SkinsTab(), new SkinCustomizationTab(), new DownloadTab()).build();//~}
-        addRenderableWidget(tabNavigationBar);
+            .addTabs(new SkinsTab(), new DownloadTab()).build();//~}
         
         updateFooterButtons();
         tabNavigationBar.selectTab(activeTab, false);
@@ -98,7 +95,7 @@ public class SkinSelectionScreen extends Screen {
     @Override
     public void repositionElements() {
         if (tabNavigationBar != null) {
-            //? if >=26.2-snapshot-7 {
+            //? if >=26.2-pre-3 {
             /*tabNavigationBar.arrangeElements(width);*/
             //?} else if >26.1 {
             tabNavigationBar.updateWidth(width);
@@ -116,11 +113,11 @@ public class SkinSelectionScreen extends Screen {
     }
     
     private void applyTabState(ScreenRectangle tabArea, int tabIndex) {
-        if (this.activeTab == 2 && tabIndex != 2) triggerReloadIfNeeded();
+        if (this.activeTab == 1 && tabIndex != 1) triggerReloadIfNeeded();
+        if (this.activeTab != tabIndex) selectedPackId = null;
         
         activeTab = tabIndex;
         calculateLayout(tabArea);
-        clearCustomizationWidgets();
         initWidgets(tabArea);
         
         boolean isSkins = activeTab == 0;
@@ -129,39 +126,75 @@ public class SkinSelectionScreen extends Screen {
         if (createPackButton != null) createPackButton.visible = isSkins;
         if (previewPanel != null) {
             previewPanel.reposition(rPreview.x, rPreview.y, rPreview.w, rPreview.h);
-            previewPanel.setButtonsVisible(true);
+            previewPanel.setButtonsVisible(activeTab == 0);
         }
 
-        boolean isDownload = activeTab == 2;
+        boolean isDownload = activeTab == 1;
         if (downloadList != null) downloadList.visible = isDownload;
         if (downloadButton != null) downloadButton.visible = isDownload;
         
-        if (activeTab == 1) createCustomizationWidgets();
+        updateFooterButtons();
     }
 
     private void setDownloadTabActive(boolean active) {
         if (tabNavigationBar == null) return;
-        tabNavigationBar.setTabActiveState(2, active);
-        if (!active && activeTab == 2) tabNavigationBar.selectTab(0, false);
+        tabNavigationBar.setTabActiveState(1, active);
+        if (!active && activeTab == 1) tabNavigationBar.selectTab(0, false);
+        
+        this.removeWidget(tabNavigationBar);
+        if (active) {
+            this.addRenderableWidget(tabNavigationBar);
+        }
     }
 
     private void updateFooterButtons() {
         int btnW = 150, btnH = 20, btnY = height - 28;
+        boolean isDownload = (activeTab == 1);
         
         if (openPacksButton == null) {
             openPacksButton = Button.builder(Component.translatable("bedrockskins.button.open_packs"), b -> openSkinPacksFolder()).build();
             addRenderableWidget(openPacksButton);
         }
-        openPacksButton.setX(width / 2 - 154); openPacksButton.setY(btnY);
-        openPacksButton.setWidth(btnW); openPacksButton.setHeight(btnH);
         openPacksButton.setTooltip(Tooltip.create(Component.translatable("pack.folderInfo")));
 
         if (doneButton == null) {
             doneButton = Button.builder(CommonComponents.GUI_DONE, b -> onClose()).build();
             addRenderableWidget(doneButton);
         }
-        doneButton.setX(width / 2 + 4); doneButton.setY(btnY);
-        doneButton.setWidth(btnW); doneButton.setHeight(btnH);
+
+        if (downloadButton == null) {
+            downloadButton = Button.builder(Component.translatable("bedrockskins.button.download"), btn -> {
+                ContentPackEntry selected = downloadList.getSelected();
+                if (selected != null) {
+                    if (ContentManager.isPackInstalled(selected.pack, STORE_FOLDER)) deletePack(selected.pack);
+                    else downloadPack(selected.pack);
+                }
+            }).build();
+            addRenderableWidget(downloadButton);
+            if (downloadList != null) {
+                downloadList.setSelected(downloadList.getSelected());
+            }
+        }
+
+        if (isDownload) {
+            openPacksButton.visible = false;
+            
+            downloadButton.setX(width / 2 - 154); downloadButton.setY(btnY);
+            downloadButton.setWidth(btnW); downloadButton.setHeight(btnH);
+            downloadButton.visible = true;
+
+            doneButton.setX(width / 2 + 4); doneButton.setY(btnY);
+            doneButton.setWidth(btnW); doneButton.setHeight(btnH);
+        } else {
+            openPacksButton.setX(width / 2 - 154); openPacksButton.setY(btnY);
+            openPacksButton.setWidth(btnW); openPacksButton.setHeight(btnH);
+            openPacksButton.visible = true;
+
+            downloadButton.visible = false;
+
+            doneButton.setX(width / 2 + 4); doneButton.setY(btnY);
+            doneButton.setWidth(btnW); doneButton.setHeight(btnH);
+        }
     }
 
     private void buildSkinCache() {
@@ -207,7 +240,7 @@ public class SkinSelectionScreen extends Screen {
         int pHead = 24, pPad = 4;
 
         // Skins Widgets
-        int plY = rPacks.y + pHead + pPad, plH = rPacks.h - pHead - (pPad * 2) - 24;
+        int plY = rPacks.y + pHead + pPad, plH = rPacks.h - pHead - (pPad * 2);
         if (packList == null) {
             packList = new SkinPackListWidget(minecraft, rPacks.w - pPad * 2, plH, plY, 28);
             addRenderableWidget(packList);
@@ -216,19 +249,18 @@ public class SkinSelectionScreen extends Screen {
         packList.setWidth(Math.max(10, rPacks.w - pPad * 2)); packList.setHeight(Math.max(10, plH));
 
         if (createPackButton == null) {
-            createPackButton = Button.builder(Component.translatable("bedrockskins.button.create_skin_pack"), b -> {
+            createPackButton = SpriteIconButton.builder(Component.empty(), b -> {
                 minecraft.setScreen(new CreateSkinPackScreen(this));
-            }).build();
+            }, true).size(20, 20).sprite(BedrockSkinsSprites.ADDON_ICON, 16, 16).build();
+            createPackButton.setTooltip(Tooltip.create(Component.translatable("bedrockskins.button.create_skin_pack")));
             addRenderableWidget(createPackButton);
         }
-        createPackButton.setX(rPacks.x + pPad);
-        createPackButton.setY(packList.getBottom() + 4);
-        createPackButton.setWidth(packList.getWidth());
-        createPackButton.setHeight(20);
+        createPackButton.setX(rPacks.x + rPacks.w - 22);
+        createPackButton.setY(rPacks.y + 2);
 
         if (previewPanel == null) {
             previewPanel = new SkinPreviewPanel(minecraft, font, this::onFavoritesChanged);
-            previewPanel.init(rPreview.x, rPreview.y, rPreview.w, rPreview.h, this::addRenderableWidget);
+            previewPanel.init(rPreview.x, rPreview.y, rPreview.w, rPreview.h, this, this::addRenderableWidget);
         }
 
         int sgY = rSkins.y + pHead + pPad, sgH = rSkins.h - pHead - (pPad * 2);
@@ -244,7 +276,7 @@ public class SkinSelectionScreen extends Screen {
 
         // Store Widgets
         if (tabArea != null && downloadList == null) {
-            downloadList = new ContentPackList(minecraft, tabArea.width(), tabArea.height() - 40, tabArea.top(), 36);
+            downloadList = new ContentPackList(minecraft, tabArea.width(), tabArea.height() - 3, tabArea.top(), 36);
             addRenderableWidget(downloadList);
 
             ContentManager.getCategory(STORE_CATEGORY_ID).ifPresent(category -> 
@@ -263,23 +295,7 @@ public class SkinSelectionScreen extends Screen {
             downloadList.setX(tabArea.left());
             downloadList.setY(tabArea.top());
             downloadList.setWidth(tabArea.width());
-            downloadList.setHeight(tabArea.height() - 40);
-        }
-
-        if (tabArea != null && downloadButton == null) {
-            downloadButton = Button.builder(Component.translatable("bedrockskins.button.download"), btn -> {
-                ContentPackEntry selected = downloadList.getSelected();
-                if (selected != null) {
-                    if (ContentManager.isPackInstalled(selected.pack, STORE_FOLDER)) deletePack(selected.pack);
-                    else downloadPack(selected.pack);
-                }
-            }).bounds(0, 0, 150, 20).build();
-            addRenderableWidget(downloadButton);
-        }
-
-        if (downloadButton != null && tabArea != null) {
-            downloadButton.setX(tabArea.left() + (tabArea.width() - 150) / 2);
-            downloadButton.setY(tabArea.bottom() - 30);
+            downloadList.setHeight(tabArea.height() - 2);
         }
 
         refreshPackList();
@@ -291,47 +307,6 @@ public class SkinSelectionScreen extends Screen {
         if (FAVORITES_PACK_ID.equals(selectedPackId)) selectPack(FAVORITES_PACK_ID);
     }
 
-    private void clearCustomizationWidgets() {
-        for (AbstractWidget w : customizationWidgets) removeWidget(w);
-        customizationWidgets.clear();
-    }
-
-    private void createCustomizationWidgets() {
-        int contentX = rSkins.x + 4, contentY = rSkins.y + 28, contentW = rSkins.w - 8, contentH = rSkins.h - 32;
-        int btnH = 20, gapX = 8, gapY = 6;
-        
-        int cols = contentW > 210 ? 2 : 1;
-        int btnW = Math.min(cols == 2 ? (contentW - gapX) / 2 : contentW, 150);
-        int totalW = cols == 2 ? (btnW * 2) + gapX : btnW;
-        int startX = contentX + (contentW - totalW) / 2;
-
-        var options = Minecraft.getInstance().options;
-        PlayerModelPart[] parts = PlayerModelPart.values();
-
-        for (int i = 0; i <= parts.length; i++) {
-            int col = cols == 1 ? 0 : i % 2;
-            int row = cols == 1 ? i : i / 2;
-            int x = startX + col * (btnW + gapX);
-            int y = contentY + row * (btnH + gapY);
-
-            if (y + btnH > contentY + contentH) break;
-
-            AbstractWidget btn;
-            if (i < parts.length) {
-                PlayerModelPart part = parts[i];
-                btn = CycleButton.onOffBuilder(options.isModelPartEnabled(part))
-                        .create(x, y, btnW, btnH, part.getName(), (b, val) -> {
-                            options.setModelPart(part, val);
-                            options.save();
-                        });
-            } else {
-                btn = options.mainHand().createButton(options);
-                btn.setX(x); btn.setY(y); btn.setWidth(btnW); btn.setHeight(btnH);
-            }
-            addRenderableWidget(btn);
-            customizationWidgets.add(btn);
-        }
-    }
 
     private Component getSkinsPanelTitle() {
         if (selectedPackId == null) return Component.translatable("bedrockskins.gui.skins");
@@ -458,22 +433,22 @@ public class SkinSelectionScreen extends Screen {
             GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h, getSkinsPanelTitle(), font);
         }
             
-        if (previewPanel != null && activeTab != 2) previewPanel.renderPreview(gui, mouseX);
+        if (previewPanel != null && activeTab != 1) previewPanel.renderPreview(gui, mouseX);
         super.extractRenderState(gui, mouseX, mouseY, delta);
-        if (previewPanel != null && activeTab != 2) previewPanel.renderSprites(gui);
+        if (previewPanel != null && activeTab != 1) previewPanel.renderSprites(gui);
         
         gui.blit(RenderPipelines.GUI_TEXTURED, Screen.FOOTER_SEPARATOR, 0, height - layout.getFooterHeight() - 2, 0.0F, 0.0F, width, 2, 32, 2);
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean handled) {
-        return (!handled && previewPanel != null && activeTab != 2 && previewPanel.mouseClicked(event.x(), event.y(), event.button())) 
+        return (!handled && previewPanel != null && activeTab != 1 && previewPanel.mouseClicked(event.x(), event.y(), event.button())) 
             || super.mouseClicked(event, handled);
     }
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        return (previewPanel != null && activeTab != 2 && previewPanel.mouseReleased(event.button()))
+        return (previewPanel != null && activeTab != 1 && previewPanel.mouseReleased(event.button()))
             || super.mouseReleased(event);
     }
     
@@ -502,15 +477,10 @@ public class SkinSelectionScreen extends Screen {
         public SkinsTab() { super(Component.translatable("bedrockskins.gui.skins")); }
         @Override public void doLayout(ScreenRectangle tabArea) { applyTabState(tabArea, 0); }
     }
-    
-    private class SkinCustomizationTab extends GridLayoutTab {
-        public SkinCustomizationTab() { super(Component.translatable("options.skinCustomisation.title")); }
-        @Override public void doLayout(ScreenRectangle tabArea) { applyTabState(tabArea, 1); }
-    }
 
     private class DownloadTab extends GridLayoutTab {
         public DownloadTab() { super(Component.translatable("bedrockskins.gui.download")); }
-        @Override public void doLayout(ScreenRectangle tabArea) { applyTabState(tabArea, 2); }
+        @Override public void doLayout(ScreenRectangle tabArea) { applyTabState(tabArea, 1); }
     }
 
     // --- Inner Classes for Store List ---
@@ -519,6 +489,9 @@ public class SkinSelectionScreen extends Screen {
         public ContentPackList(Minecraft mc, int w, int h, int y, int itemH) { super(mc, w, h, y, itemH); }
         public void addPack(ContentPackEntry entry) { super.addEntry(entry); }
         @Override public int getRowWidth() { return 300; }
+
+        @Override
+        protected void extractListSeparators(GuiGraphicsExtractor graphics) {}
 
         @Override
         public void setSelected(ContentPackEntry entry) {
@@ -546,7 +519,17 @@ public class SkinSelectionScreen extends Screen {
             if (index == -1) return;
 
             int rowLeft = downloadList.getRowLeft(), y = downloadList.getRowTop(index);
-            int maxTextWidth = downloadList.getRowWidth() - 10;
+            
+            // Draw Icon
+            net.minecraft.resources.Identifier iconId = com.brandonitaly.bedrockskins.client.StoreIconManager.getIcon(pack.id(), pack.imageUrl());
+            if (iconId != null) {
+                gui.blit(RenderPipelines.GUI_TEXTURED, iconId, rowLeft + 2, y + 2, 0.0F, 0.0F, 32, 32, 32, 32);
+            } else {
+                gui.blitSprite(RenderPipelines.GUI_TEXTURED, com.brandonitaly.bedrockskins.util.BedrockSkinsSprites.MY_CHARACTERS_ICON, rowLeft + 2, y + 2, 32, 32);
+            }
+
+            int textOffset = 37;
+            int maxTextWidth = downloadList.getRowWidth() - textOffset - 10;
 
             String name = pack.name() + (ContentManager.isPackInstalled(pack, STORE_FOLDER) ? " (Installed)" : "");
             if (font.width(name) > maxTextWidth) name = font.plainSubstrByWidth(name, maxTextWidth - font.width("...")) + "...";
@@ -554,8 +537,8 @@ public class SkinSelectionScreen extends Screen {
             String desc = pack.description() != null ? pack.description().replace("\n", " ").replace("\r", "") : "";
             if (font.width(desc) > maxTextWidth) desc = font.plainSubstrByWidth(desc, maxTextWidth - font.width("...")) + "...";
 
-            gui.text(font, name, rowLeft + 5, y + 5, 0xFFFFFFFF, false);
-            gui.text(font, desc, rowLeft + 5, y + 17, 0xFF808080, false);
+            gui.text(font, name, rowLeft + textOffset, y + 5, 0xFFFFFFFF, false);
+            gui.text(font, desc, rowLeft + textOffset, y + 17, 0xFF808080, false);
         }
 
         @Override

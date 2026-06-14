@@ -41,6 +41,9 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
     }
 
     @Override
+    protected void extractListSeparators(GuiGraphicsExtractor graphics) {}
+
+    @Override
     public int getRowWidth() { return this.width - 10; }
 
     @Override

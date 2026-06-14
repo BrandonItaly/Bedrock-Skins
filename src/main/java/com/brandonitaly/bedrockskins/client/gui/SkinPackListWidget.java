@@ -5,9 +5,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -22,6 +20,9 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
         super(client, width, height, y, itemHeight);
         this.rowSlotHeight = itemHeight;
     }
+
+    @Override
+    protected void extractListSeparators(GuiGraphicsExtractor graphics) {}
 
     @Override
     public int getRowWidth() { return Math.max(10, getWidth() - ROW_RIGHT_PADDING); }

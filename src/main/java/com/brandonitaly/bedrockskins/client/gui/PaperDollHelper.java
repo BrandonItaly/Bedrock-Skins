@@ -67,7 +67,7 @@ public class PaperDollHelper {
         updatePreviewSkin(minecraft);
 
         openSkinButton = SpriteIconButton.builder(Component.empty(), b -> minecraft.setScreen(BedrockSkinsClient.getAppropriateSkinScreen(parentScreen)), true)
-            .size(BTN_SIZE, BTN_SIZE).sprite(BedrockSkinsSprites.HANGAR_ICON, 16, 16).build();
+            .size(BTN_SIZE, BTN_SIZE).sprite(BedrockSkinsSprites.MY_CHARACTERS_ICON, 16, 16).build();
         openSkinButton.setTooltip(Tooltip.create(Component.translatable("bedrockskins.button.change_skin.tooltip")));
         
         updateLayout(width, height);
