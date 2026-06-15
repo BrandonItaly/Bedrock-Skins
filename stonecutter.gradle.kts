@@ -51,7 +51,7 @@ stonecutter parameters {
             replace(".render(gui", ".extractRenderState(gui")
         }
 
-        string(eval(current.version, ">=26.2-snapshot-7")) {
+        string(eval(current.version, ">=26.2-rc-2")) {
             replace(".setScreen(", ".gui.setScreen(")
             replace("::setScreen", ".gui::setScreen")
             replace("client.screen", "client.gui.screen()")

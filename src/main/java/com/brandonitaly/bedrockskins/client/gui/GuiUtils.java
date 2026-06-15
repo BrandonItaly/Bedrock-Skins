@@ -17,7 +17,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.EntityType;
-//? if >=26.2-snapshot-7
+//? if >=26.2-rc-2
 // import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.Pose;
@@ -40,7 +40,7 @@ public final class GuiUtils {
         state.nameTag = preview.shouldShowName() ? preview.getDisplayName() : null;
 
         state.id = -0x5D011;
-        //~ if >=26.2-snapshot-7 'EntityType.' -> 'EntityTypes.' {
+        //~ if >=26.2-rc-2 'EntityType.' -> 'EntityTypes.' {
         state.entityType = EntityType.PLAYER;
         //~}
         state.lightCoords = 15728880;

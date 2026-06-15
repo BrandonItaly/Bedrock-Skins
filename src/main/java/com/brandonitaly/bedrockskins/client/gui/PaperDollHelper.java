@@ -1,5 +1,7 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
+import com.brandonitaly.bedrockskins.client.BedrockModelManager;
+import com.brandonitaly.bedrockskins.client.BedrockPlayerModel;
 import com.brandonitaly.bedrockskins.client.BedrockSkinsClient;
 import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 import com.brandonitaly.bedrockskins.client.SkinManager;
@@ -19,7 +21,13 @@ import org.lwjgl.glfw.GLFW;
 import java.util.UUID;
 
 public class PaperDollHelper {
-    private static final int PREVIEW_W = 78, PREVIEW_H = 112, BTN_SIZE = 20, BTN_GAP = -16;
+    private static final int PREVIEW_W = 78, PREVIEW_H = 112, BTN_SIZE = 20;
+    private static final int RENDER_PADDING_TOP = 14;
+    private static final int SIZE_CAP = 56;
+    private static final double Y_TRANSLATION = 0.9;
+    private static final double PLAYER_HEIGHT_BLOCKS = 1.8;
+    private static final int SPACER = 8;
+    private static final int HOVER_PADDING = 5;
 
     private PreviewPlayer previewPlayer;
     private final UUID previewUuid = UUID.randomUUID();
@@ -55,6 +63,29 @@ public class PaperDollHelper {
         return Math.round((float) ((height / 2.0) - (PREVIEW_H / 2.0) + (getOffsetY() * height))); 
     }
 
+    private double getModelFeet(int top) {
+        int renderTop = top - RENDER_PADDING_TOP;
+        int renderBottom = top + PREVIEW_H;
+        int size = Math.min((renderBottom - renderTop) / 3, SIZE_CAP);
+        double centerY = (renderTop + renderBottom) / 2.0;
+        return centerY + Y_TRANSLATION * size;
+    }
+
+    private double getModelTop(int top) {
+        float heightMultiplier = 1.0f;
+        SkinId selected = SkinManager.getLocalSelectedKey();
+        if (selected != null) {
+            BedrockPlayerModel model = BedrockModelManager.getModel(selected);
+            if (model != null) {
+                heightMultiplier = model.heightMultiplier;
+            }
+        }
+        int renderTop = top - RENDER_PADDING_TOP;
+        int renderBottom = top + PREVIEW_H;
+        int size = Math.min((renderBottom - renderTop) / 3, SIZE_CAP);
+        return getModelFeet(top) - (PLAYER_HEIGHT_BLOCKS * size * heightMultiplier);
+    }
+
     public SpriteIconButton init(Minecraft minecraft, int width, int height) {
         draggingPreview = false; movingPreview = false;
         leftMouseDown = false; rightMouseDown = false;
@@ -76,8 +107,9 @@ public class PaperDollHelper {
 
     private void updateLayout(int width, int height) {
         if (openSkinButton != null) {
+            int top = getTop(height);
             openSkinButton.setX(getLeft(width) + (PREVIEW_W - BTN_SIZE) / 2);
-            openSkinButton.setY(getTop(height) + PREVIEW_H + BTN_GAP);
+            openSkinButton.setY((int) Math.round(getModelFeet(top) + SPACER));
         }
     }
 
@@ -104,7 +136,7 @@ public class PaperDollHelper {
 
     private boolean isMouseOverPreview(int width, int height, double mouseX, double mouseY) {
         int l = getLeft(width), t = getTop(height);
-        return mouseX >= l && mouseX <= l + PREVIEW_W && mouseY >= t && mouseY <= t + PREVIEW_H;
+        return mouseX >= l && mouseX <= l + PREVIEW_W && mouseY >= getModelTop(t) - HOVER_PADDING && mouseY <= getModelFeet(t) + HOVER_PADDING;
     }
 
     public void render(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, int width, int height, Font font, Minecraft minecraft) {
@@ -157,10 +189,11 @@ public class PaperDollHelper {
         }
 
         int left = getLeft(width), top = getTop(height);
-        GuiUtils.renderEntityInRect(guiGraphics, previewPlayer, previewYaw, left - 40, top - 14, left + PREVIEW_W + 40, top + PREVIEW_H, 56);
+        GuiUtils.renderEntityInRect(guiGraphics, previewPlayer, previewYaw, left - 40, top - RENDER_PADDING_TOP, left + PREVIEW_W + 40, top + PREVIEW_H, SIZE_CAP);
 
         if (previewPlayer.shouldShowName()) {
-            GuiUtils.renderNameTag(guiGraphics, font, previewPlayer.getDisplayName(), left + (PREVIEW_W / 2), Math.max(2, top - 12));
+            int nametagTopY = (int) Math.round(getModelTop(top) - SPACER - font.lineHeight);
+            GuiUtils.renderNameTag(guiGraphics, font, previewPlayer.getDisplayName(), left + (PREVIEW_W / 2), Math.max(2, nametagTopY));
         }
     }
 
