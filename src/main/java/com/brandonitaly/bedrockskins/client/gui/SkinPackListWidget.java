@@ -24,7 +24,9 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
     protected void extractListSeparators(GuiGraphicsExtractor graphics) {}
 
     @Override
-    public int getRowWidth() { return Math.max(10, getWidth() - ROW_RIGHT_PADDING); }
+    public int getRowWidth() {
+        return Math.max(10, getWidth() - (getItemCount() * rowSlotHeight > getHeight() ? ROW_RIGHT_PADDING : ROW_LEFT_PADDING * 2));
+    }
 
     @Override
     public int getRowLeft() { return getX() + ROW_LEFT_PADDING; }
