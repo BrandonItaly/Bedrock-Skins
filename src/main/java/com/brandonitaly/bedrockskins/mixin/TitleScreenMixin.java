@@ -34,6 +34,14 @@ public abstract class TitleScreenMixin extends Screen {
     }
 
     //~ if >=26.1 'render' -> 'extractRenderState' {
+    @Inject(method = "extractRenderState", at = @At("HEAD"))//~}
+    private void bedrockskins$updateMainMenuLayout(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+        if (bedrockskins$helper != null && BedrockSkinsConfig.isShowPaperDollOnMainMenu()) {
+            bedrockskins$helper.updateLayout(this.width, this.height);
+        }
+    }
+
+    //~ if >=26.1 'render' -> 'extractRenderState' {
     @Inject(method = "extractRenderState", at = @At("TAIL"))//~}
     private void bedrockskins$renderMainMenuPreview(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         if (bedrockskins$helper != null && BedrockSkinsConfig.isShowPaperDollOnMainMenu()) {

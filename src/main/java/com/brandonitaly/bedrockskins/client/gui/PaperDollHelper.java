@@ -105,7 +105,7 @@ public class PaperDollHelper {
         return openSkinButton;
     }
 
-    private void updateLayout(int width, int height) {
+    public void updateLayout(int width, int height) {
         if (openSkinButton != null) {
             int top = getTop(height);
             openSkinButton.setX(getLeft(width) + (PREVIEW_W - BTN_SIZE) / 2);
