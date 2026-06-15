@@ -121,6 +121,17 @@ public class BedrockSkins {
 class ServerSkinHandler {
     static final Logger logger = LoggerFactory.getLogger("bedrockskins");
     private static final Map<UUID, Long> lastSkinChange = new ConcurrentHashMap<>();
+    private static final long RATE_LIMIT_NANOS = 5_000_000_000L; // 5 seconds
+    private static final int MAX_TEXTURE_SIZE = 512 * 1024;
+    private static final byte[] PNG_HEADER = {(byte) 0x89, 0x50, 0x4E, 0x47};
+
+    static boolean isValidPngHeader(byte[] data) {
+        if (data == null || data.length < PNG_HEADER.length) return false;
+        for (int i = 0; i < PNG_HEADER.length; i++) {
+            if (data[i] != PNG_HEADER[i]) return false;
+        }
+        return true;
+    }
 
     static void onPlayerJoin(Consumer<BedrockSkinsNetworking.SkinAnnouncePayload> packetSender) {
         ServerSkinManager.getAllActiveSkins().forEach((uuid, active) -> {
@@ -137,22 +148,22 @@ class ServerSkinHandler {
 
     static void handleSetSkin(ServerPlayer player, SkinId skinId, String geometry, byte[] textureData, Consumer<BedrockSkinsNetworking.SkinAnnouncePayload> broadcaster) {
         final UUID uuid = player.getUUID();
-        final long now = System.currentTimeMillis();
+        final long now = System.nanoTime();
         final Long last = lastSkinChange.get(uuid);
 
         // Security: Rate Limiting / cooldown (5s)
-        if (last != null && now - last < 5_000L) {
+        if (last != null && now - last < RATE_LIMIT_NANOS) {
             logger.warn("Player {} is changing skins too quickly.", player.getName().getString());
             return;
         }
 
         // Security: Server-side Validation
         if (skinId != null) {
-            if (textureData.length > 512 * 1024) {
+            if (textureData.length > MAX_TEXTURE_SIZE) {
                 logger.warn("Player {} sent oversized texture ({} bytes).", player.getName().getString(), textureData.length);
                 return;
             }
-            if (textureData.length < 8 || textureData[0] != (byte)0x89 || textureData[1] != (byte)0x50 || textureData[2] != (byte)0x4E || textureData[3] != (byte)0x47) {
+            if (!isValidPngHeader(textureData)) {
                 logger.warn("Player {} sent invalid texture format (not PNG).", player.getName().getString());
                 return;
             }

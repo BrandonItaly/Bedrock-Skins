@@ -14,6 +14,12 @@ public final class StringUtils {
     }
 
     public static String firstNonBlank(String first, String fallback) {
-        return first != null && !first.isBlank() ? first : (fallback == null ? "" : fallback);
+        return first != null && !first.isBlank() ? first : fallback;
+    }
+
+    public static String stripExtension(String name) {
+        if (name == null) return "";
+        int idx = name.lastIndexOf('.');
+        return idx >= 0 ? name.substring(0, idx) : name;
     }
 }

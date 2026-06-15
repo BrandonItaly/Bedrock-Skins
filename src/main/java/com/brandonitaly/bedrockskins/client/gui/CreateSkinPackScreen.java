@@ -1,15 +1,19 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
+import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class CreateSkinPackScreen extends SkinDialogScreen {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private EditBox packNameBox;
     private String packNameValue = "";
 
@@ -46,7 +50,7 @@ public class CreateSkinPackScreen extends SkinDialogScreen {
 
         try {
             String safePackId = packName.replaceAll("[^a-zA-Z0-9_-]", "").toLowerCase();
-            Path storeDir = Minecraft.getInstance().gameDirectory.toPath().resolve("skin_packs").resolve(safePackId);
+            Path storeDir = com.brandonitaly.bedrockskins.pack.SkinPackLoader.getSkinPacksDir().toPath().resolve(safePackId);
             
             if (!Files.exists(storeDir)) {
                 Files.createDirectories(storeDir);
@@ -76,7 +80,7 @@ public class CreateSkinPackScreen extends SkinDialogScreen {
             });
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to create skin pack {}", packName, e);
         }
     }
 

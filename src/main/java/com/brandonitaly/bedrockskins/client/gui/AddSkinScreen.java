@@ -9,6 +9,7 @@ import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import com.mojang.authlib.GameProfile;
+import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -18,9 +19,8 @@ import net.minecraft.client.renderer.RenderPipelines;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
+import org.slf4j.Logger;
 
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,6 +28,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 public class AddSkinScreen extends SkinDialogScreen {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private final String packId;
     private final String texturePath;
     
@@ -82,7 +84,7 @@ public class AddSkinScreen extends SkinDialogScreen {
             String path = openFileDialog("Select Cape Texture", "*.png");
             if (path != null) {
                 capePath = path;
-                capeButtonLabel = Component.literal(new File(path).getName());
+                capeButtonLabel = Component.literal(Path.of(path).getFileName().toString());
                 b.setMessage(capeButtonLabel);
             }
         }).bounds(contentLeft(), y, contentWidth(), ELEMENT_HEIGHT).build();
@@ -119,7 +121,7 @@ public class AddSkinScreen extends SkinDialogScreen {
         if (skinName.isEmpty() || texturePath == null) return;
 
         try {
-            Path storeDir = Minecraft.getInstance().gameDirectory.toPath().resolve("skin_packs").resolve(packId.replace("skinpack.", ""));
+            Path storeDir = SkinPackLoader.getSkinPacksDir().toPath().resolve(packId.replace("skinpack.", ""));
             if (!Files.exists(storeDir)) return;
 
             String safeSkinId = skinName.replaceAll("[^a-zA-Z0-9_-]", "").toLowerCase();
@@ -136,12 +138,12 @@ public class AddSkinScreen extends SkinDialogScreen {
                 capeFileName = targetCape.getFileName().toString();
             }
 
-            File skinsJsonFile = storeDir.resolve("skins.json").toFile();
+            Path skinsJsonFile = storeDir.resolve("skins.json");
             JsonObject rootObj = new JsonObject();
             JsonArray skinsArray = new JsonArray();
             
-            if (skinsJsonFile.exists()) {
-                try (FileReader reader = new FileReader(skinsJsonFile)) {
+            if (Files.exists(skinsJsonFile)) {
+                try (var reader = Files.newBufferedReader(skinsJsonFile)) {
                     rootObj = JsonParser.parseReader(reader).getAsJsonObject();
                     if (rootObj.has("skins")) {
                         skinsArray = rootObj.getAsJsonArray("skins");
@@ -160,11 +162,11 @@ public class AddSkinScreen extends SkinDialogScreen {
             
             skinsArray.add(newSkin);
             rootObj.add("skins", skinsArray);
-            Files.writeString(skinsJsonFile.toPath(), rootObj.toString());
+            Files.writeString(skinsJsonFile, rootObj.toString());
 
             Path textsDir = storeDir.resolve("texts");
             Path langFile = textsDir.resolve("en_us.lang");
-            String newLangEntry = String.format("\nskin.%s.%s=%s", packId.replace("skinpack.", ""), safeSkinId, skinName);
+            String newLangEntry = "\nskin.%s.%s=%s".formatted(packId.replace("skinpack.", ""), safeSkinId, skinName);
             if (Files.exists(langFile)) {
                 Files.writeString(langFile, Files.readString(langFile) + newLangEntry);
             }
@@ -178,7 +180,7 @@ public class AddSkinScreen extends SkinDialogScreen {
             });
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to add skin to pack {}", packId, e);
         }
     }
 

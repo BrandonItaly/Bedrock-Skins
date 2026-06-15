@@ -8,6 +8,7 @@ import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.authlib.GameProfile;
+import com.mojang.logging.LogUtils;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.SpriteIconButton;
@@ -24,8 +25,11 @@ import net.minecraft.resources.Identifier;
 
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
 
 public class SkinPreviewPanel {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private final Minecraft minecraft;
     private final Font font;
     private final Runnable onFavoritesChanged;
@@ -154,7 +158,9 @@ public class SkinPreviewPanel {
                 updatePreviewModel(dummyUuid, selectedSkin.skinId);
                 updateActionButtons();
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            LOGGER.error("Failed to apply selected skin {}", selectedSkin.skinId, e);
+        }
     }
 
     private void resetSkin() {
@@ -207,7 +213,7 @@ public class SkinPreviewPanel {
         int contentBottom = y + height - BUTTONS_RESERVED_HEIGHT;
         int centerX = x + width / 2;
 
-        int rotateW = Math.max(30, Math.min((int)(width * 0.3f), 90));
+        int rotateW = Math.clamp((int)(width * 0.3f), 30, 90);
         int rotateH = (int)Math.ceil(rotateW * (7.0f / 45.0f));
 
         if (dummyPlayer != null) {
@@ -247,7 +253,7 @@ public class SkinPreviewPanel {
                 int textWidth = Math.max(hasName ? font.width(nameToRender) : 0, hasDesc ? font.width(descToRender) : 0);
                 int textHeight = font.lineHeight + (hasName && hasDesc ? font.lineHeight + lineGap : 0) - 1;
 
-                int tooltipX = Math.max(x + 8, Math.min(centerX - (textWidth / 2), x + width - textWidth - 8));
+                int tooltipX = Math.clamp(centerX - (textWidth / 2), x + 8, x + width - textWidth - 8);
                 int tooltipCenterX = tooltipX + (textWidth / 2);
 
                 TooltipRenderUtil.extractTooltipBackground(gui, tooltipX, textY, textWidth, textHeight, null);

@@ -1,9 +1,12 @@
 package com.brandonitaly.bedrockskins;
 
 import com.brandonitaly.bedrockskins.pack.SkinId;
+
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public final class ServerSkinManager {
     private ServerSkinManager() {}
@@ -20,7 +23,7 @@ public final class ServerSkinManager {
             return null;
         }
 
-        String hash = com.brandonitaly.bedrockskins.BedrockSkinsNetworking.computeHash(geometry, textureData);
+        String hash = BedrockSkinsNetworking.computeHash(geometry, textureData);
         
         // Deduplicate: store skin data in registry if not already present
         skinRegistry.computeIfAbsent(hash, h -> new PlayerSkinData(skinId, geometry, textureData));
@@ -56,10 +59,9 @@ public final class ServerSkinManager {
     }
 
     public static void cleanUnusedSkins() {
-        java.util.Set<String> activeHashes = new java.util.HashSet<>();
-        for (ActiveSkin active : playerActiveSkins.values()) {
-            activeHashes.add(active.hash());
-        }
+        Set<String> activeHashes = playerActiveSkins.values().stream()
+                .map(ActiveSkin::hash)
+                .collect(Collectors.toSet());
         skinRegistry.keySet().retainAll(activeHashes);
     }
 }

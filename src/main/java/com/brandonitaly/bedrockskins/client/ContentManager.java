@@ -15,10 +15,14 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import org.slf4j.Logger;
 
 import java.io.*;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,8 +34,11 @@ import java.util.zip.ZipInputStream;
 public class ContentManager {
     
     private static final Logger LOGGER = LogUtils.getLogger();
+    static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
     private static final String CATEGORIES_FILE = "store_categories.json";
-    public static final List<Category> CATEGORIES = new ArrayList<>();
+    private static final List<Category> CATEGORIES = new ArrayList<>();
 
     public record Category(
         String id,
@@ -68,23 +75,34 @@ public class ContentManager {
     }
 
     public static CompletableFuture<List<Pack>> fetchIndex(String indexUrl) {
-        return CompletableFuture.supplyAsync(() -> {
-            try (InputStreamReader reader = new InputStreamReader(java.net.URI.create(indexUrl).toURL().openStream())) {
-                JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
-                return Pack.LIST_CODEC.parse(JsonOps.INSTANCE, json.get("packs"))
-                        .resultOrPartial(LOGGER::warn)
-                        .orElseGet(ArrayList::new);
-            } catch (Exception e) {
-                LOGGER.warn("Failed to fetch content index from {}: {}", indexUrl, e.getMessage());
-                return new ArrayList<>();
-            }
-        });
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(java.net.URI.create(indexUrl))
+                .GET()
+                .build();
+        return HTTP_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
+                .thenApply(response -> {
+                    if (response.statusCode() >= 400) {
+                        throw new UncheckedIOException(new IOException("HTTP error status code: " + response.statusCode()));
+                    }
+                    try (InputStreamReader reader = new InputStreamReader(response.body())) {
+                        JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
+                        return Pack.LIST_CODEC.parse(JsonOps.INSTANCE, json.get("packs"))
+                                .resultOrPartial(LOGGER::warn)
+                                .orElseGet(List::of);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                })
+                .exceptionally(e -> {
+                    LOGGER.warn("Failed to fetch content index from {}: {}", indexUrl, e.getMessage());
+                    return List.of();
+                });
     }
 
     public static void reloadCategories(ResourceManager resourceManager) {
         CATEGORIES.clear();
         List<String> namespaces = new ArrayList<>(resourceManager.getNamespaces());
-        Collections.sort(namespaces);
+        namespaces.sort(null);
 
         for (String namespace : namespaces) {
             resourceManager.getResource(Identifier.fromNamespaceAndPath(namespace, CATEGORIES_FILE)).ifPresent(resource -> {
@@ -106,6 +124,10 @@ public class ContentManager {
 
     public static Optional<Category> getCategory(String id) {
         return CATEGORIES.stream().filter(c -> c.id().equals(id)).findFirst();
+    }
+
+    public static List<Category> getCategories() {
+        return List.copyOf(CATEGORIES);
     }
 
     public static Path getContentDir(String folderName) {
@@ -131,7 +153,8 @@ public class ContentManager {
     }
 
     public static boolean isPackInstalled(Pack pack, String folderName) {
-        Path path = getContentDir(folderName).resolve(pack.id());
+        Path contentDir = getContentDir(folderName);
+        Path path = contentDir.resolve(pack.id());
         if (Files.exists(path) && Files.isDirectory(path)) {
             if (pack.checkSum().isPresent()) {
                 Path checksumFile = path.resolve(".md5");
@@ -149,7 +172,7 @@ public class ContentManager {
             return true;
         }
 
-        Path directFile = getContentDir(folderName).resolve(resolveDownloadFileName(pack));
+        Path directFile = contentDir.resolve(resolveDownloadFileName(pack));
         if (!Files.exists(directFile) || Files.isDirectory(directFile)) return false;
 
         if (pack.checkSum().isPresent()) {
@@ -172,8 +195,13 @@ public class ContentManager {
             try {
                 downloadedTempFile = Files.createTempFile("legacy_pack_", ".download");
                 
-                try (InputStream stream = java.net.URI.create(pack.downloadURI()).toURL().openStream()) {
-                    Files.copy(stream, downloadedTempFile, StandardCopyOption.REPLACE_EXISTING);
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(java.net.URI.create(pack.downloadURI()))
+                        .GET()
+                        .build();
+                HttpResponse<Path> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofFile(downloadedTempFile, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING));
+                if (response.statusCode() >= 400) {
+                    throw new IOException("HTTP error status code: " + response.statusCode());
                 }
 
                 if (pack.checkSum().isPresent()) {
@@ -261,7 +289,9 @@ public class ContentManager {
             String path = java.net.URI.create(pack.downloadURI()).toURL().getPath();
             String name = Paths.get(path).getFileName() != null ? Paths.get(path).getFileName().toString() : "";
             if (!name.isBlank()) return name;
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.debug("Failed to resolve download filename for {} from {}", pack.id(), pack.downloadURI(), e);
+        }
 
         return pack.id() + ".pck";
     }

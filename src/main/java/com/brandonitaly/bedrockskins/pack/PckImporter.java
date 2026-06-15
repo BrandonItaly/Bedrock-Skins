@@ -5,6 +5,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -14,6 +16,7 @@ import java.util.*;
 import java.util.zip.CRC32;
 
 public class PckImporter {
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final int PCK_ASSET_SKIN = 0;
@@ -36,7 +39,7 @@ public class PckImporter {
             for (PckFileParser.PckAsset asset : allAssets) {
                 if (asset == null || asset.data() == null) continue;
                 String normPath = normalizePckPath(asset.filename());
-                String baseName = stripExtension(fileNameOnly(normPath));
+                String baseName = StringUtils.stripExtension(fileNameOnly(normPath));
 
                 if (isLikelyCapeAsset(asset, normPath, baseName)) {
                     capesByName.put(normPath, asset);
@@ -56,7 +59,7 @@ public class PckImporter {
 
             String currentLang = "en_us";
             Map<String, Map<String, String>> pckTranslations = PckLocalizationSupport.loadPckLocalisations(allAssets);
-            String fileBaseName = stripExtension(pckFile.getName());
+            String fileBaseName = StringUtils.stripExtension(pckFile.getName());
             String serializeName = StringUtils.sanitize(fileBaseName);
             if (serializeName.isEmpty()) serializeName = "legacy_console";
 
@@ -79,7 +82,7 @@ public class PckImporter {
             langBuilder.append(safePackTranslationKey).append("=").append(packDisplayName).append("\n");
 
             for (PckFileParser.PckAsset asset : skins) {
-                String skinKey = stripExtension(fileNameOnly(normalizePckPath(asset.filename())));
+                String skinKey = StringUtils.stripExtension(fileNameOnly(normalizePckPath(asset.filename())));
                 if (skinKey.isEmpty()) continue;
 
                 String safeSkinTranslationKey = "skin." + serializeName + "." + skinKey;
@@ -190,7 +193,7 @@ public class PckImporter {
 
             return true;
         } catch (Exception e) {
-            System.err.println("Failed to import PCK file: " + pckFile.getName() + " - " + e.getMessage());
+            LOGGER.warn("Failed to import PCK file {}", pckFile.getName(), e);
             return false;
         }
     }
@@ -250,11 +253,11 @@ public class PckImporter {
 
     private static String getPackDisplayName(List<PckFileParser.PckAsset> generalAssets) {
         if (generalAssets == null || generalAssets.isEmpty()) return null;
-        for (PckFileParser.PckAsset asset : generalAssets) {
-            String fromIdsDisplayName = asset.getFirstProperty("IDS_DISPLAY_NAME", "DISPLAYNAMEID");
-            if (fromIdsDisplayName != null && !fromIdsDisplayName.isBlank()) return fromIdsDisplayName;
-        }
-        return null;
+        return generalAssets.stream()
+                .map(asset -> asset.getFirstProperty("IDS_DISPLAY_NAME", "DISPLAYNAMEID"))
+                .filter(name -> name != null && !name.isBlank())
+                .findFirst()
+                .orElse(null);
     }
 
     private static long fastHash(byte[] data) {
@@ -264,11 +267,6 @@ public class PckImporter {
         return ((long) data.length << 32) | crc.getValue();
     }
 
-    public static String stripExtension(String name) {
-        if (name == null) return "";
-        int idx = name.lastIndexOf('.');
-        return idx >= 0 ? name.substring(0, idx) : name;
-    }
 
     private static String fileNameOnly(String path) {
         if (path == null) return "";

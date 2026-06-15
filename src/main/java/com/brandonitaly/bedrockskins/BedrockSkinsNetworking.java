@@ -13,12 +13,19 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HexFormat;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public final class BedrockSkinsNetworking {
     private BedrockSkinsNetworking() {}
+
+    private static final HexFormat HEX = HexFormat.of();
+    private static final byte[] EMPTY_BYTES = new byte[0];
+
+    private static String nullToEmpty(String s) { return s == null ? "" : s; }
+    private static byte[] nullToEmpty(byte[] b) { return b == null ? EMPTY_BYTES : b; }
 
     private static final StreamCodec<RegistryFriendlyByteBuf, SkinId> OPTIONAL_SKIN_ID_CODEC = new StreamCodec<>() {
         @Override
@@ -90,8 +97,8 @@ public final class BedrockSkinsNetworking {
         public SkinUpdatePayload(UUID uuid, SkinId skinId, String geometry, byte[] textureData) {
             this.uuid = uuid;
             this.skinId = skinId;
-            this.geometry = geometry == null ? "" : geometry;
-            this.textureData = textureData == null ? new byte[0] : textureData;
+            this.geometry = nullToEmpty(geometry);
+            this.textureData = nullToEmpty(textureData);
         }
 
         @Override
@@ -111,8 +118,8 @@ public final class BedrockSkinsNetworking {
 
         public SetSkinPayload(SkinId skinId, String geometry, byte[] textureData) {
             this.skinId = skinId;
-            this.geometry = geometry == null ? "" : geometry;
-            this.textureData = textureData == null ? new byte[0] : textureData;
+            this.geometry = nullToEmpty(geometry);
+            this.textureData = nullToEmpty(textureData);
         }
 
         @Override
@@ -134,22 +141,9 @@ public final class BedrockSkinsNetworking {
     public static String computeHash(String geometry, byte[] textureData) {
         try {
             java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-            if (geometry != null) {
-                digest.update(geometry.getBytes(StandardCharsets.UTF_8));
-            }
-            if (textureData != null) {
-                digest.update(textureData);
-            }
-            byte[] hashBytes = digest.digest();
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hashBytes) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) {
-                    hexString.append('0');
-                }
-                hexString.append(hex);
-            }
-            return hexString.toString();
+            if (geometry != null) digest.update(geometry.getBytes(StandardCharsets.UTF_8));
+            if (textureData != null) digest.update(textureData);
+            return HEX.formatHex(digest.digest());
         } catch (java.security.NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 not available", e);
         }
@@ -169,7 +163,7 @@ public final class BedrockSkinsNetworking {
         public SkinAnnouncePayload(UUID uuid, SkinId skinId, String hash) {
             this.uuid = uuid;
             this.skinId = skinId;
-            this.hash = hash == null ? "" : hash;
+            this.hash = nullToEmpty(hash);
         }
 
         @Override
@@ -186,7 +180,7 @@ public final class BedrockSkinsNetworking {
         );
 
         public RequestSkinDataPayload(String hash) {
-            this.hash = hash == null ? "" : hash;
+            this.hash = nullToEmpty(hash);
         }
 
         @Override

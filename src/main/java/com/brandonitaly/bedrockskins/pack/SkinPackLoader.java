@@ -5,6 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.blaze3d.platform.NativeImage;
@@ -16,12 +17,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
+import org.slf4j.Logger;
 
 public final class SkinPackLoader {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     public static final Map<String, String> packTypesByPackId = new ConcurrentHashMap<>();
     public static final Map<String, Identifier> packIconsByPackId = new ConcurrentHashMap<>();
     public static final Map<SkinId, LoadedSkin> loadedSkins = Collections.synchronizedMap(new LinkedHashMap<>());
-    public static volatile List<String> packOrder = Collections.emptyList();
+    public static volatile List<String> packOrder = List.of();
 
     private static final Codec<List<String>> PACK_ORDER_CODEC = Codec.list(Codec.STRING);
     private static final Map<String, Map<String, String>> translations = new ConcurrentHashMap<>();
@@ -40,7 +44,9 @@ public final class SkinPackLoader {
         if (colonIndex > 0 && colonIndex < path.length() - 1) {
             try {
                 return createIdentifier(path.substring(0, colonIndex), path.substring(colonIndex + 1));
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                LOGGER.debug("Ignoring invalid asset identifier {}", path, e);
+            }
         }
         return null;
     }
@@ -70,16 +76,13 @@ public final class SkinPackLoader {
 
     public static void loadPacks() {
         synchronized (loadedSkins) {
-            List<SkinId> toRemove = new ArrayList<>();
-            loadedSkins.forEach((id, skin) -> {
-                if (!(skin.texture instanceof AssetSource.Remote)) {
-                    toRemove.add(id);
+            loadedSkins.entrySet().removeIf(entry -> {
+                if (!(entry.getValue().texture instanceof AssetSource.Remote)) {
+                    releaseSkinAssets(entry.getKey());
+                    return true;
                 }
+                return false;
             });
-            for (SkinId id : toRemove) {
-                releaseSkinAssets(id);
-                loadedSkins.remove(id);
-            }
         }
         translations.clear();
         packTypesByPackId.clear();
@@ -95,7 +98,7 @@ public final class SkinPackLoader {
                 // Convert .pck files to standard folders
                 for (File f : children) {
                     if (f.isFile() && f.getName().toLowerCase(Locale.ROOT).endsWith(".pck")) {
-                        File outputDir = new File(currentSkinPacksDir, PckImporter.stripExtension(f.getName()));
+                        File outputDir = new File(currentSkinPacksDir, StringUtils.stripExtension(f.getName()));
                         if (PckImporter.importPck(f, outputDir)) f.delete();
                     }
                 }
@@ -179,7 +182,7 @@ public final class SkinPackLoader {
                 }
             }
         } catch (Exception e) {
-            System.err.println("Failed to register remote skin " + key + ": " + e.getMessage());
+            LOGGER.warn("Failed to register remote skin {}", key, e);
         }
     }
 
@@ -190,7 +193,7 @@ public final class SkinPackLoader {
             try (Reader r = new InputStreamReader(res.open(), StandardCharsets.UTF_8)) {
                 vanillaGeometryJson = JsonParser.parseReader(r).getAsJsonObject();
             } catch (Exception e) { 
-                System.err.println("ERROR loading vanilla geometry: " + e.getMessage()); 
+                LOGGER.warn("Failed to load vanilla geometry", e);
             }
         });
     }
@@ -225,11 +228,11 @@ public final class SkinPackLoader {
                     hasUpsideDownAnimation(entry)
                 );
                 
-                try { ls.unfair = entry.unfair(); } catch (Exception ignored) {}
+                ls.unfair = entry.unfair();
                 loadedSkins.put(id, ls);
             }
         } catch (Exception e) {
-            System.err.println("Error loading external pack from " + packDir.getName() + ": " + e);
+            LOGGER.warn("Failed to load external pack from {}", packDir.getName(), e);
         }
     }
 
@@ -242,7 +245,10 @@ public final class SkinPackLoader {
                 JsonObject geoJson = manager.getResource(geoId).map(res -> {
                     try (Reader r = new InputStreamReader(res.open(), StandardCharsets.UTF_8)) {
                         return JsonParser.parseReader(r).getAsJsonObject();
-                    } catch (Exception e) { return null; }
+                    } catch (Exception e) {
+                        LOGGER.warn("Failed to load geometry for internal pack {}", id, e);
+                        return null;
+                    }
                 }).orElse(null);
 
                 SkinPackManifest manifest;
@@ -271,11 +277,11 @@ public final class SkinPackLoader {
                         capeId != null ? new AssetSource.Resource(capeId) : null,
                         hasUpsideDownAnimation(entry)
                     );
-                    try { ls.unfair = entry.unfair(); } catch (Exception ignored) {}
+                    ls.unfair = entry.unfair();
                     loadedSkins.put(skinId, ls);
                 }
             } catch (Exception e) {
-                System.err.println("Error loading internal pack " + id + ": " + e);
+                LOGGER.warn("Failed to load internal pack {}", id, e);
             }
         });
     }
@@ -352,7 +358,7 @@ public final class SkinPackLoader {
                 texture = new DynamicTexture(() -> "bedrock_skin", img);
                 tm.register(skin.identifier, texture);
             } catch (Exception e) {
-                System.err.println("Failed to register skin texture: " + e.getMessage());
+                LOGGER.warn("Failed to register skin texture for {}:{}", skin.serializeName, skin.skinDisplayName, e);
                 skin.identifier = null;
                 if (texture != null) {
                     texture.close();
@@ -372,7 +378,7 @@ public final class SkinPackLoader {
                     texture = new DynamicTexture(() -> "bedrock_cape", capeImg);
                     tm.register(skin.capeIdentifier, texture);
                 } catch (Exception e) {
-                    System.err.println("Failed to register cape texture: " + e.getMessage());
+                    LOGGER.warn("Failed to register cape texture for {}:{}", skin.serializeName, skin.skinDisplayName, e);
                     skin.capeIdentifier = null;
                     if (texture != null) {
                         texture.close();
@@ -407,7 +413,10 @@ public final class SkinPackLoader {
         byte[] data = ExternalAssetUtil.loadTextureData(source, Minecraft.getInstance());
         try {
             return data.length > 0 ? NativeImage.read(new ByteArrayInputStream(data)) : null;
-        } catch (IOException e) { return null; }
+        } catch (IOException e) {
+            LOGGER.warn("Failed to load native image from {}", source, e);
+            return null;
+        }
     }
 
     // --- Helpers: Translations & Misc ---
@@ -417,9 +426,11 @@ public final class SkinPackLoader {
         if (files != null) {
             for (File file : files) {
                 try (InputStream is = new FileInputStream(file)) {
-                    String lang = file.getName().substring(0, file.getName().lastIndexOf('.')).toLowerCase(Locale.ROOT);
+                    String lang = StringUtils.stripExtension(file.getName()).toLowerCase(Locale.ROOT);
                     parseTranslationStream(is, translations.computeIfAbsent(lang, k -> new ConcurrentHashMap<>()));
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to load translations from {}", file, e);
+                }
             }
         }
     }
@@ -429,7 +440,9 @@ public final class SkinPackLoader {
             manager.getResource(createIdentifier(namespace, packPath + "/texts/" + lang + ".lang")).ifPresent(res -> {
                 try (InputStream is = res.open()) {
                     parseTranslationStream(is, translations.computeIfAbsent(lang, k -> new ConcurrentHashMap<>()));
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to load {} translations for {}", lang, packPath, e);
+                }
             });
         }
     }
@@ -439,31 +452,36 @@ public final class SkinPackLoader {
             reader.mark(1);
             if (reader.read() != 0xFEFF) reader.reset();
 
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split("=", 2);
-                if (parts.length == 2) {
-                    map.put(parts[0].trim().toLowerCase(Locale.ROOT), parts[1].split("\\t#")[0].trim());
-                }
-            }
-        } catch (Exception ignored) {}
+            reader.lines()
+                    .map(line -> line.split("=", 2))
+                    .filter(parts -> parts.length == 2)
+                    .forEach(parts -> map.put(parts[0].trim().toLowerCase(Locale.ROOT), parts[1].split("\\t#")[0].trim()));
+        } catch (Exception e) {
+            LOGGER.warn("Failed to parse translation stream", e);
+        }
     }
 
     private static void loadPackOrder(ResourceManager manager) {
         manager.getResource(createIdentifier("bedrockskins", "order_overrides.json")).ifPresent(res -> {
             try (Reader r = new InputStreamReader(res.open(), StandardCharsets.UTF_8)) {
                 packOrder = PACK_ORDER_CODEC.parse(JsonOps.INSTANCE, JsonParser.parseReader(r))
-                    .resultOrPartial(msg -> {}).orElse(Collections.emptyList());
-            } catch (Exception ignored) {}
+                    .resultOrPartial(msg -> LOGGER.warn("Failed to decode pack order: {}", msg))
+                    .orElse(List.of());
+            } catch (Exception e) {
+                LOGGER.warn("Failed to load pack order", e);
+            }
         });
     }
 
     private static SkinPackManifest decodeManifest(Reader reader, String source) {
         try {
             return SkinPackManifest.CODEC.parse(JsonOps.INSTANCE, JsonParser.parseReader(reader))
-                .resultOrPartial(msg -> System.err.println("Failed decoding manifest " + source + ": " + msg))
+                .resultOrPartial(msg -> LOGGER.warn("Failed decoding manifest {}: {}", source, msg))
                 .orElse(null);
-        } catch (Exception e) { return null; }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to read manifest {}", source, e);
+            return null;
+        }
     }
     
     private static void registerPackType(SkinPackManifest manifest) {
@@ -524,14 +542,17 @@ public final class SkinPackLoader {
         packIconsByPackId.put(packId, id);
     }
 
-    private static File getSkinPacksDir() {
+    public static File getSkinPacksDir() {
         return new File(Minecraft.getInstance().gameDirectory, "skin_packs"); 
     }
 
     private static String getClientLanguage() {
         try {
             return Minecraft.getInstance().getLanguageManager().getSelected().toLowerCase(Locale.ROOT);
-        } catch (Exception ignored) { return "en_us"; }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to resolve client language; using en_us", e);
+            return "en_us";
+        }
     }
 
     private static boolean validateRemoteData(byte[] data, String geo) {
@@ -549,6 +570,9 @@ public final class SkinPackLoader {
         if (!file.exists()) return null;
         try (Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
             return JsonParser.parseReader(reader).getAsJsonObject();
-        } catch (Exception e) { return null; }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to load JSON from {}", file, e);
+            return null;
+        }
     }
 }

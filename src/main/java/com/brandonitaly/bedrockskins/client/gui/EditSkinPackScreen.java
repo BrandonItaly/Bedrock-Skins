@@ -1,9 +1,11 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
+import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
+import org.slf4j.Logger;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
@@ -17,6 +19,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class EditSkinPackScreen extends SkinDialogScreen {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private final String packId;
     private EditBox packNameBox;
     private String packNameValue = "";
@@ -75,7 +79,7 @@ public class EditSkinPackScreen extends SkinDialogScreen {
         if (newName.isEmpty()) return;
 
         try {
-            Path storeDir = Minecraft.getInstance().gameDirectory.toPath().resolve("skin_packs").resolve(packId.replace("skinpack.", ""));
+            Path storeDir = com.brandonitaly.bedrockskins.pack.SkinPackLoader.getSkinPacksDir().toPath().resolve(packId.replace("skinpack.", ""));
             if (!Files.exists(storeDir)) return;
 
             Path langFile = storeDir.resolve("texts").resolve("en_us.lang");
@@ -93,19 +97,15 @@ public class EditSkinPackScreen extends SkinDialogScreen {
             }
 
             closeAndReload();
-        } catch (IOException e) { e.printStackTrace(); }
+        } catch (IOException e) {
+            LOGGER.error("Failed to save skin pack {}", packId, e);
+        }
     }
 
     private void deletePack() {
-        try {
-            Path storeDir = Minecraft.getInstance().gameDirectory.toPath().resolve("skin_packs").resolve(packId.replace("skinpack.", ""));
-            if (Files.exists(storeDir)) {
-                try (Stream<Path> walk = Files.walk(storeDir)) {
-                    walk.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
-                }
-            }
-            closeAndReload();
-        } catch (IOException e) { e.printStackTrace(); }
+        Path storeDir = com.brandonitaly.bedrockskins.pack.SkinPackLoader.getSkinPacksDir().toPath().resolve(packId.replace("skinpack.", ""));
+        com.brandonitaly.bedrockskins.util.ExternalAssetUtil.deleteDirectoryRecursively(storeDir.toFile());
+        closeAndReload();
     }
 
     private void closeAndReload() {

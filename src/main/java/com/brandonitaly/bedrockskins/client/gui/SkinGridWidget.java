@@ -3,6 +3,7 @@ package com.brandonitaly.bedrockskins.client.gui;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.client.gui.PreviewPlayer.PreviewPlayerPool;
 import com.mojang.authlib.GameProfile;
+import com.mojang.logging.LogUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -17,8 +18,10 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
+import org.slf4j.Logger;
 
 public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEntry> {
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     public static final int CELL_WIDTH = 60;
     public static final int CELL_HEIGHT = 85;
@@ -40,7 +43,6 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
         this.textRenderer = textRenderer;
     }
 
-    @Override
     protected void extractListSeparators(GuiGraphicsExtractor graphics) {}
 
     @Override
@@ -152,7 +154,9 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
 
                 try {
                     GuiSkinUtils.applyLoadedSkinPreview(this.player, this.uuid, skin);
-                } catch (Exception e) { e.printStackTrace(); }
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to apply skin preview for {}", skin != null ? skin.skinId : null, e);
+                }
             }
 
             public SkinCell(Component label, Runnable onClick) {

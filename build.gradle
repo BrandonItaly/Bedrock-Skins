@@ -26,9 +26,8 @@ base.archivesName = project.archives_base_name
 version = "${stonecutter.current.version}-${mod_version}"
 group = rootProject.maven_group
 
-def isJava21 = stonecutter.eval(stonecutter.current.version, ">=1.20.5")
 def isJava25 = stonecutter.eval(stonecutter.current.version, ">=26.0")
-def javaRelease = isJava25 ? 25 : (isJava21 ? 21 : 17)
+def javaRelease = isJava25 ? 25 : 21
 def javaCompat = JavaVersion.toVersion(javaRelease)
 
 java {
@@ -227,7 +226,7 @@ publishMods {
     else if (loader == "forge" && stonecutter.eval(stonecutter.current.version, "<=1.20.1")) modLoaders.add "neoforge"
     
     def versions = mc_version_range.split(",")
-    def supportedJavaVersions = isJava25 ? [JavaVersion.VERSION_25] : (isJava21 ? [JavaVersion.VERSION_21] : [JavaVersion.VERSION_17, JavaVersion.VERSION_18])
+    def supportedJavaVersions = isJava25 ? [JavaVersion.VERSION_25] : [JavaVersion.VERSION_21]
 
     curseforge {
         projectId = curseforge_id

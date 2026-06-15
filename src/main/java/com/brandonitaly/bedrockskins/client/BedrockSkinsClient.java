@@ -11,6 +11,7 @@ import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
+import com.mojang.logging.LogUtils;
 import com.mojang.blaze3d.platform.InputConstants;
 //? if fabric {
 import net.fabricmc.api.ClientModInitializer;
@@ -41,6 +42,7 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.PlayerModelPart;
 import org.lwjgl.glfw.GLFW;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +50,8 @@ import java.util.Map;
 import java.util.UUID;
 
 public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitializer /*?}*/ {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     public static KeyMapping toggleCapeKey, toggleJacketKey, toggleLeftSleeveKey, toggleRightSleeveKey, toggleLeftPantsKey, toggleRightPantsKey, toggleHatKey, toggleMainHandKey, openKey;
     private static KeyMapping[] ALL_KEYS;
 
@@ -75,7 +79,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
             try {
                 return Legacy4JMenuIntegration.createScreen(parent);
             } catch (Throwable t) {
-                System.err.println("BedrockSkinsClient: Failed to open legacy screen, falling back to default screen.");
+                LOGGER.warn("Failed to open Legacy4J skin screen; falling back to default screen", t);
             }
         }
         //?}
@@ -93,8 +97,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
             try {
                 Legacy4JMenuIntegration.init();
             } catch (Throwable throwable) {
-                System.err.println("BedrockSkinsClient: Failed to initialize Legacy4J hosted menu integration.");
-                throwable.printStackTrace();
+                LOGGER.warn("Failed to initialize Legacy4J hosted menu integration", throwable);
             }
         }
         //?}
@@ -197,7 +200,9 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
                 SkinId id = SkinManager.getSkin(playerUuid);
                 if (id != null) SkinManager.setSkin(playerUuid, id);
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            LOGGER.error("Failed to reload Bedrock Skins resources", e);
+        }
     }
 
     static void applySavedSkinOnJoin(Minecraft client) {
@@ -214,10 +219,12 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
                 byte[] textureData = ExternalAssetUtil.loadTextureData(loadedSkin, client);
                 if (textureData.length > 0) {
                     ClientSkinSync.sendSetSkinPayload(savedSkinId, loadedSkin.geometryData.toString(), textureData);
-                    System.out.println("BedrockSkinsClient: Synced skin " + savedKey);
+                    LOGGER.debug("Synced saved skin {}", savedKey);
                 }
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            LOGGER.error("Failed to apply saved skin on join", e);
+        }
     }
 
     private static final java.util.Set<String> requestedHashes = java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -297,6 +304,6 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         requestedHashes.clear();
         playerAnnouncedSkins.clear();
         
-        if (!toRemove.isEmpty()) System.out.println("BedrockSkinsClient: Cleared " + toRemove.size() + " remote skins from memory.");
+        if (!toRemove.isEmpty()) LOGGER.debug("Cleared {} remote skins from memory", toRemove.size());
     }
 }

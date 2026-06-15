@@ -9,6 +9,7 @@ import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import com.mojang.authlib.GameProfile;
+import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -18,9 +19,8 @@ import net.minecraft.client.renderer.RenderPipelines;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
+import org.slf4j.Logger;
 
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,6 +29,8 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class EditSkinScreen extends SkinDialogScreen {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private final String packId;
     private final LoadedSkin existingSkin;
     
@@ -120,7 +122,7 @@ public class EditSkinScreen extends SkinDialogScreen {
             String path = openFileDialog("Select New Skin Texture", "*.png");
             if (path != null) {
                 newTexturePath = path;
-                textureButtonLabel = Component.literal(new File(path).getName());
+                textureButtonLabel = Component.literal(Path.of(path).getFileName().toString());
                 b.setMessage(textureButtonLabel);
                 refreshPreview();
             }
@@ -138,7 +140,7 @@ public class EditSkinScreen extends SkinDialogScreen {
                 if (path != null) {
                     newCapePath = path;
                     capeRemoved = false;
-                    capeButtonLabel = Component.literal(new File(path).getName());
+                    capeButtonLabel = Component.literal(Path.of(path).getFileName().toString());
                     b.setMessage(capeButtonLabel);
                     refreshPreview();
                 }
@@ -159,7 +161,7 @@ public class EditSkinScreen extends SkinDialogScreen {
                 if (path != null) {
                     newCapePath = path;
                     capeRemoved = false;
-                    capeButtonLabel = Component.literal(new File(path).getName());
+                    capeButtonLabel = Component.literal(Path.of(path).getFileName().toString());
                     b.setMessage(capeButtonLabel);
                     refreshPreview();
                 }
@@ -203,7 +205,7 @@ public class EditSkinScreen extends SkinDialogScreen {
         if (newName.isEmpty()) return;
 
         try {
-            Path storeDir = Minecraft.getInstance().gameDirectory.toPath().resolve("skin_packs").resolve(packId.replace("skinpack.", ""));
+            Path storeDir = SkinPackLoader.getSkinPacksDir().toPath().resolve(packId.replace("skinpack.", ""));
             if (!Files.exists(storeDir)) return;
 
             String internalSkinId = existingSkin.skinDisplayName; 
@@ -212,7 +214,7 @@ public class EditSkinScreen extends SkinDialogScreen {
             String textureName = null;
             if (newTexturePath != null) {
                 textureName = fallbackId + ".png";
-                if (existingSkin.texture instanceof AssetSource.File f) textureName = new File(f.path()).getName();
+                if (existingSkin.texture instanceof AssetSource.File f) textureName = Path.of(f.path()).getFileName().toString();
                 Path targetTexture = storeDir.resolve(textureName);
                 Files.copy(Path.of(newTexturePath), targetTexture, StandardCopyOption.REPLACE_EXISTING);
             }
@@ -222,15 +224,15 @@ public class EditSkinScreen extends SkinDialogScreen {
                 // Cape removed, capeName remains null
             } else if (newCapePath != null) {
                 capeName = fallbackId + "_cape.png";
-                if (existingSkin.cape instanceof AssetSource.File f) capeName = new File(f.path()).getName();
+                if (existingSkin.cape instanceof AssetSource.File f) capeName = Path.of(f.path()).getFileName().toString();
                 Path targetCape = storeDir.resolve(capeName);
                 Files.copy(Path.of(newCapePath), targetCape, StandardCopyOption.REPLACE_EXISTING);
             }
 
-            File skinsJsonFile = storeDir.resolve("skins.json").toFile();
-            if (skinsJsonFile.exists()) {
+            Path skinsJsonFile = storeDir.resolve("skins.json");
+            if (Files.exists(skinsJsonFile)) {
                 JsonObject rootObj;
-                try (FileReader reader = new FileReader(skinsJsonFile)) {
+                try (var reader = Files.newBufferedReader(skinsJsonFile)) {
                     rootObj = JsonParser.parseReader(reader).getAsJsonObject();
                 }
 
@@ -244,8 +246,7 @@ public class EditSkinScreen extends SkinDialogScreen {
                             if (capeRemoved) {
                                 skin.remove("cape");
                                 if (existingSkin.cape instanceof AssetSource.File f) {
-                                    File capeFile = new File(f.path());
-                                    if (capeFile.exists()) capeFile.delete();
+                                    Files.deleteIfExists(Path.of(f.path()));
                                 }
                             } else if (capeName != null) {
                                 skin.addProperty("cape", capeName);
@@ -253,7 +254,7 @@ public class EditSkinScreen extends SkinDialogScreen {
                             break;
                         }
                     }
-                    Files.writeString(skinsJsonFile.toPath(), rootObj.toString());
+                    Files.writeString(skinsJsonFile, rootObj.toString());
                 }
             }
 
@@ -272,20 +273,22 @@ public class EditSkinScreen extends SkinDialogScreen {
             }
 
             closeAndReload();
-        } catch (IOException e) { e.printStackTrace(); }
+        } catch (IOException e) {
+            LOGGER.error("Failed to save skin {} in pack {}", existingSkin.skinId, packId, e);
+        }
     }
 
     private void deleteSkin() {
         try {
-            Path storeDir = Minecraft.getInstance().gameDirectory.toPath().resolve("skin_packs").resolve(packId.replace("skinpack.", ""));
+            Path storeDir = SkinPackLoader.getSkinPacksDir().toPath().resolve(packId.replace("skinpack.", ""));
             if (!Files.exists(storeDir)) return;
             
             String internalSkinId = existingSkin.skinDisplayName;
 
-            File skinsJsonFile = storeDir.resolve("skins.json").toFile();
-            if (skinsJsonFile.exists()) {
+            Path skinsJsonFile = storeDir.resolve("skins.json");
+            if (Files.exists(skinsJsonFile)) {
                 JsonObject rootObj;
-                try (FileReader reader = new FileReader(skinsJsonFile)) {
+                try (var reader = Files.newBufferedReader(skinsJsonFile)) {
                     rootObj = JsonParser.parseReader(reader).getAsJsonObject();
                 }
                 if (rootObj.has("skins")) {
@@ -297,17 +300,15 @@ public class EditSkinScreen extends SkinDialogScreen {
                             updatedArray.add(skin);
                         } else {
                             if (skin.has("texture")) {
-                                File tex = storeDir.resolve(skin.get("texture").getAsString()).toFile();
-                                if (tex.exists()) tex.delete();
+                                Files.deleteIfExists(storeDir.resolve(skin.get("texture").getAsString()));
                             }
                             if (skin.has("cape")) {
-                                File cape = storeDir.resolve(skin.get("cape").getAsString()).toFile();
-                                if (cape.exists()) cape.delete();
+                                Files.deleteIfExists(storeDir.resolve(skin.get("cape").getAsString()));
                             }
                         }
                     }
                     rootObj.add("skins", updatedArray);
-                    Files.writeString(skinsJsonFile.toPath(), rootObj.toString());
+                    Files.writeString(skinsJsonFile, rootObj.toString());
                 }
             }
 
@@ -322,7 +323,9 @@ public class EditSkinScreen extends SkinDialogScreen {
             }
 
             closeAndReload();
-        } catch (IOException e) { e.printStackTrace(); }
+        } catch (IOException e) {
+            LOGGER.error("Failed to delete skin {} from pack {}", existingSkin.skinId, packId, e);
+        }
     }
 
     private void closeAndReload() {

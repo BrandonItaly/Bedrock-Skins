@@ -12,6 +12,7 @@ import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.util.PackSortUtil;
 import com.mojang.authlib.GameProfile;
+import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
@@ -21,6 +22,7 @@ import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.slf4j.Logger;
 import wily.legacy.skins.client.screen.ChangeSkinScreenSource;
 import wily.legacy.skins.skin.SkinEntry;
 import wily.legacy.skins.skin.SkinPack;
@@ -29,6 +31,8 @@ import wily.legacy.skins.skin.SkinIdUtil;
 import java.util.*;
 
 public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private static final ChangeSkinScreenSource legacySource = ChangeSkinScreenSource.Default.INSTANCE;
 
     private static final String FAVORITES_PACK_ID = "skinpack.Favorites";
@@ -162,7 +166,7 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
                 legacySource.selectSkin(null, "");
                 GuiSkinUtils.applySelectedSkin(Minecraft.getInstance(), skin);
             } catch (Exception exception) {
-                exception.printStackTrace();
+                LOGGER.error("Failed to select Bedrock skin through Legacy4J source {}", skin.skinId, exception);
             }
         } else {
             GuiSkinUtils.resetSelectedSkin(Minecraft.getInstance());

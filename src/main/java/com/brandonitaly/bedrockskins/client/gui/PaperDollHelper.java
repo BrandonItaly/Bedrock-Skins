@@ -48,11 +48,11 @@ public class PaperDollHelper {
     private void setOffsetY(double val) { if (isTitleScreen) BedrockSkinsConfig.setPaperDollOffsetYTitle(val); else BedrockSkinsConfig.setPaperDollOffsetYPause(val); }
 
     private int getLeft(int width) { 
-        return (int) ((width * 5 / 6.0) - (PREVIEW_W / 2.0) + (getOffsetX() * width)); 
+        return Math.round((float) ((width * 5 / 6.0) - (PREVIEW_W / 2.0) + (getOffsetX() * width))); 
     }
     
     private int getTop(int height) { 
-        return (int) ((height / 2.0) - (PREVIEW_H / 2.0) + (getOffsetY() * height)); 
+        return Math.round((float) ((height / 2.0) - (PREVIEW_H / 2.0) + (getOffsetY() * height))); 
     }
 
     public SpriteIconButton init(Minecraft minecraft, int width, int height) {

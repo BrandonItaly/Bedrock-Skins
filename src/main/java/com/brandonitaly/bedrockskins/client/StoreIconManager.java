@@ -8,7 +8,11 @@ import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CompletableFuture;
@@ -31,22 +35,33 @@ public final class StoreIconManager {
 
         if (!downloading.containsKey(packId)) {
             downloading.put(packId, true);
-            CompletableFuture.runAsync(() -> {
-                try {
-                    NativeImage img;
-                    try (InputStream stream = URI.create(imageUrl).toURL().openStream()) {
-                        img = NativeImage.read(stream);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(imageUrl))
+                    .GET()
+                    .build();
+            ContentManager.HTTP_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
+                .thenApply(response -> {
+                    if (response.statusCode() >= 400) {
+                        throw new UncheckedIOException(new java.io.IOException("HTTP error status code: " + response.statusCode()));
                     }
+                    try (InputStream stream = response.body()) {
+                        return NativeImage.read(stream);
+                    } catch (java.io.IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                })
+                .thenAccept(img -> {
                     if (img != null) {
                         Minecraft.getInstance().execute(() -> {
                             Minecraft.getInstance().getTextureManager().register(texIdx, new DynamicTexture(() -> "store_icon", img));
                             cachedIcons.put(packId, texIdx);
                         });
                     }
-                } catch (Exception e) {
+                })
+                .exceptionally(e -> {
                     LOGGER.warn("Failed to download store icon for " + packId + " from " + imageUrl + ": " + e.getMessage());
-                }
-            });
+                    return null;
+                });
         }
 
         return null;

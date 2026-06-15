@@ -21,7 +21,6 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
         this.rowSlotHeight = itemHeight;
     }
 
-    @Override
     protected void extractListSeparators(GuiGraphicsExtractor graphics) {}
 
     @Override

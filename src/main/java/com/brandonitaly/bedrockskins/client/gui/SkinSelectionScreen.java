@@ -200,7 +200,7 @@ public class SkinSelectionScreen extends Screen {
     private void buildSkinCache() {
         skinCache.clear();
         for (String packId : SkinPackLoader.packTypesByPackId.keySet()) {
-            skinCache.putIfAbsent(packId, new ArrayList<>());
+            skinCache.put(packId, new ArrayList<>());
         }
         synchronized (SkinPackLoader.loadedSkins) {
             for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
@@ -208,11 +208,11 @@ public class SkinSelectionScreen extends Screen {
             }
         }
         
-        List<LoadedSkin> favs = new ArrayList<>();
-        for (String key : FavoritesManager.getFavoriteKeys()) {
-            LoadedSkin s = SkinPackLoader.getLoadedSkin(SkinId.parse(key));
-            if (s != null) favs.add(s);
-        }
+        List<LoadedSkin> favs = FavoritesManager.getFavoriteKeys().stream()
+                .map(SkinId::parse)
+                .map(SkinPackLoader::getLoadedSkin)
+                .filter(Objects::nonNull)
+                .toList();
         skinCache.put(FAVORITES_PACK_ID, favs);
     }
 
@@ -324,13 +324,13 @@ public class SkinSelectionScreen extends Screen {
         Set<String> packIds = new LinkedHashSet<>(SkinPackLoader.packTypesByPackId.keySet());
         packIds.addAll(skinCache.keySet());
 
-        List<String> sortedPacks = new ArrayList<>(packIds);
-        sortedPacks.remove(FAVORITES_PACK_ID);
-        sortedPacks.remove("skinpack.Remote");
-        sortedPacks.sort(PackSortUtil.buildPackComparator(BedrockSkinsConfig.getPackSortOrder(), pid -> {
-            List<LoadedSkin> s = skinCache.get(pid);
-            return GuiSkinUtils.getPackDisplayName(pid, (s != null && !s.isEmpty()) ? s.getFirst() : null);
-        }));
+        List<String> sortedPacks = packIds.stream()
+                .filter(pid -> !FAVORITES_PACK_ID.equals(pid) && !"skinpack.Remote".equals(pid))
+                .sorted(PackSortUtil.buildPackComparator(BedrockSkinsConfig.getPackSortOrder(), pid -> {
+                    List<LoadedSkin> s = skinCache.get(pid);
+                    return GuiSkinUtils.getPackDisplayName(pid, (s != null && !s.isEmpty()) ? s.getFirst() : null);
+                }))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
 
         if (!FavoritesManager.getFavoriteKeys().isEmpty()) sortedPacks.addFirst(FAVORITES_PACK_ID);
 
@@ -353,7 +353,7 @@ public class SkinSelectionScreen extends Screen {
             skinGrid.clear();
             skinGrid.setScrollAmount(0.0);
             
-            List<LoadedSkin> skins = skinCache.getOrDefault(packId, Collections.emptyList());
+            List<LoadedSkin> skins = skinCache.getOrDefault(packId, List.of());
             int cols = Math.max(1, (rSkins.w - 18) / 65);
             for (int i = 0; i < skins.size(); i += cols) {
                 skinGrid.addSkinsRow(skins.subList(i, Math.min(i + cols, skins.size())));
@@ -490,7 +490,6 @@ public class SkinSelectionScreen extends Screen {
         public void addPack(ContentPackEntry entry) { super.addEntry(entry); }
         @Override public int getRowWidth() { return 300; }
 
-        @Override
         protected void extractListSeparators(GuiGraphicsExtractor graphics) {}
 
         @Override

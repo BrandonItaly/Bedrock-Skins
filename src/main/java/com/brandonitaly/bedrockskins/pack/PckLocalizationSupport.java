@@ -103,11 +103,11 @@ final class PckLocalizationSupport {
             if (!isLikelyPckLocAsset(asset)) continue;
 
             try {
-                Map<String, Map<String, String>> parsed = parseLocFile(asset.data());
-                for (Map.Entry<String, Map<String, String>> languageEntry : parsed.entrySet()) {
-                    if (languageEntry.getValue().isEmpty()) continue;
-                    outTranslations.computeIfAbsent(languageEntry.getKey(), k -> new HashMap<>()).putAll(languageEntry.getValue());
-                }
+                parseLocFile(asset.data()).forEach((lang, translationMap) -> {
+                    if (!translationMap.isEmpty()) {
+                        outTranslations.computeIfAbsent(lang, k -> new HashMap<>()).putAll(translationMap);
+                    }
+                });
             } catch (Exception ignored) {}
         }
         return outTranslations;
@@ -218,7 +218,7 @@ final class PckLocalizationSupport {
         boolean hasRemaining() { return pos < data.length; }
         int remaining() { return data.length - pos; }
         int position() { return pos; }
-        void setPosition(int newPos) { pos = Math.max(0, Math.min(data.length, newPos)); }
+        void setPosition(int newPos) { pos = Math.clamp(newPos, 0, data.length); }
 
         int readU8() { return remaining() < 1 ? 0 : (data[pos++] & 0xFF); }
 
