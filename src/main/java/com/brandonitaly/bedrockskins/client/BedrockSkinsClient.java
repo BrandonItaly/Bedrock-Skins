@@ -200,6 +200,10 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
                 SkinId id = SkinManager.getSkin(playerUuid);
                 if (id != null) SkinManager.setSkin(playerUuid, id);
             }
+
+            if (client.screen instanceof SkinSelectionScreen selectionScreen) {
+                selectionScreen.onResourcesReloaded();
+            }
         } catch (Exception e) {
             LOGGER.error("Failed to reload Bedrock Skins resources", e);
         }

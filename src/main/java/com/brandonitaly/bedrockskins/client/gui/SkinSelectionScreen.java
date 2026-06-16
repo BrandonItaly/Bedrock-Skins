@@ -419,11 +419,22 @@ public class SkinSelectionScreen extends Screen {
 
     public void triggerReloadIfNeeded() {
         if (needsReload) {
-            SkinPackLoader.loadPacks();
-            buildSkinCache();
-            refreshPackList();
             minecraft.reloadResourcePacks();
             needsReload = false;
+        }
+    }
+
+    public void onResourcesReloaded() {
+        buildSkinCache();
+        refreshPackList();
+        if (previewPanel != null) {
+            LoadedSkin oldSelected = previewPanel.getSelectedSkin();
+            if (oldSelected != null) {
+                LoadedSkin newSelected = SkinPackLoader.getLoadedSkin(oldSelected.skinId);
+                previewPanel.setSelectedSkin(newSelected);
+            } else {
+                previewPanel.initPreviewState();
+            }
         }
     }
 

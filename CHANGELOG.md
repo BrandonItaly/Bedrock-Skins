@@ -1,6 +1,5 @@
-- Added a new "Skin Customization" button which opens the Skin Customization screen (was previously a tab).
-- Updated the appearance of the "Change Skin" and "Create Skin Pack" buttons.
-- Skin packs in the "Download Packs" tab now have icons.
-- Updated the mod icon.
+- Ported to 26.2.
+- Added the ability to import skins from a player's profile with their username.
+- Fixed the issue where the game window would not come back into focus after importing a skin from an image.
 
 **Full Changelog**: https://github.com/BrandonItaly/Bedrock-Skins/commits/master

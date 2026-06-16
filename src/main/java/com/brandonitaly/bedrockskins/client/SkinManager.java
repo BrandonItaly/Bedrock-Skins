@@ -19,7 +19,6 @@ public final class SkinManager {
     private static final Map<UUID, SkinId> previewSkins = new HashMap<>();
 
     public static void load() {
-        previewSkins.clear();
         UUID localUuid = getLocalPlayerUuid();
         if (localUuid == null) return;
 

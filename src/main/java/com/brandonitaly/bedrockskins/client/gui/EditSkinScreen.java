@@ -196,7 +196,15 @@ public class EditSkinScreen extends SkinDialogScreen {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             PointerBuffer filters = stack.mallocPointer(1);
             filters.put(stack.UTF8(filter)).flip();
-            return TinyFileDialogs.tinyfd_openFileDialog(title, "", filters, filter + " files", false);
+            String path = TinyFileDialogs.tinyfd_openFileDialog(title, "", filters, filter + " files", false);
+            Minecraft.getInstance().execute(() -> {
+                long handle = Minecraft.getInstance().getWindow().handle();
+                if (handle != 0L) {
+                    org.lwjgl.glfw.GLFW.glfwRestoreWindow(handle);
+                    org.lwjgl.glfw.GLFW.glfwFocusWindow(handle);
+                }
+            });
+            return path;
         }
     }
 
@@ -441,7 +449,7 @@ public class EditSkinScreen extends SkinDialogScreen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean handled) {
-        if (!handled && handleGeometryClick((int) event.x(), (int) event.y())) return true;
+        if (handleGeometryClick((int) event.x(), (int) event.y())) return true;
         return super.mouseClicked(event, handled);
     }
 

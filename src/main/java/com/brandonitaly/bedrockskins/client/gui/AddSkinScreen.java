@@ -32,6 +32,8 @@ public class AddSkinScreen extends SkinDialogScreen {
 
     private final String packId;
     private final String texturePath;
+    private boolean deleteTextureOnClose = false;
+    private boolean deleteCapeOnClose = false;
     
     private EditBox skinNameBox;
     private Button selectCapeBtn;
@@ -56,6 +58,24 @@ public class AddSkinScreen extends SkinDialogScreen {
         super(parent, Component.translatable("bedrockskins.gui.import_skin"), 224, 248);
         this.packId = packId;
         this.texturePath = texturePath;
+    }
+
+    public AddSkinScreen(SkinSelectionScreen parent, String packId, String texturePath, String capePath, String defaultName, boolean isSlim, boolean deleteTempFiles) {
+        super(parent, Component.translatable("bedrockskins.gui.import_skin"), 224, 248);
+        this.packId = packId;
+        this.texturePath = texturePath;
+        this.capePath = capePath;
+        if (capePath != null) {
+            this.capeButtonLabel = Component.literal(Path.of(capePath).getFileName().toString());
+        }
+        if (defaultName != null) {
+            this.skinNameValue = defaultName;
+        }
+        if (isSlim) {
+            this.selectedGeometry = "geometry.humanoid.customSlim";
+        }
+        this.deleteTextureOnClose = deleteTempFiles;
+        this.deleteCapeOnClose = deleteTempFiles;
     }
 
     @Override
@@ -112,7 +132,15 @@ public class AddSkinScreen extends SkinDialogScreen {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             PointerBuffer filters = stack.mallocPointer(1);
             filters.put(stack.UTF8(filter)).flip();
-            return TinyFileDialogs.tinyfd_openFileDialog(title, "", filters, filter + " files", false);
+            String path = TinyFileDialogs.tinyfd_openFileDialog(title, "", filters, filter + " files", false);
+            Minecraft.getInstance().execute(() -> {
+                long handle = Minecraft.getInstance().getWindow().handle();
+                if (handle != 0L) {
+                    org.lwjgl.glfw.GLFW.glfwRestoreWindow(handle);
+                    org.lwjgl.glfw.GLFW.glfwFocusWindow(handle);
+                }
+            });
+            return path;
         }
     }
 
@@ -194,7 +222,8 @@ public class AddSkinScreen extends SkinDialogScreen {
     }
 
     private LoadedSkin createGeometryPreview(String displayName, String geometryId) {
-        return new LoadedSkin("geometry", "Geometry", displayName, createGeometryData(geometryId), new AssetSource.File(texturePath));
+        AssetSource capeSource = capePath != null ? new AssetSource.File(capePath) : null;
+        return new LoadedSkin("geometry", "Geometry", displayName, createGeometryData(geometryId), new AssetSource.File(texturePath), capeSource);
     }
 
     private void selectGeometry(LoadedSkin skin) {
@@ -257,7 +286,7 @@ public class AddSkinScreen extends SkinDialogScreen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean handled) {
-        if (!handled && handleGeometryClick((int) event.x(), (int) event.y())) return true;
+        if (handleGeometryClick((int) event.x(), (int) event.y())) return true;
         return super.mouseClicked(event, handled);
     }
 
@@ -285,6 +314,12 @@ public class AddSkinScreen extends SkinDialogScreen {
     @Override
     public void onClose() {
         cleanupGeometryPreviews();
+        if (deleteTextureOnClose && texturePath != null) {
+            try { Files.deleteIfExists(Path.of(texturePath)); } catch (IOException ignored) {}
+        }
+        if (deleteCapeOnClose && capePath != null) {
+            try { Files.deleteIfExists(Path.of(capePath)); } catch (IOException ignored) {}
+        }
         super.onClose();
     }
 

@@ -64,14 +64,7 @@ public class EditSkinPackScreen extends SkinDialogScreen {
     }
 
     private void importSkin() {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            PointerBuffer filters = stack.mallocPointer(1);
-            filters.put(stack.UTF8("*.png")).flip();
-            String path = TinyFileDialogs.tinyfd_openFileDialog("Select Skin Texture", "", filters, "PNG files", false);
-            if (path != null) {
-                this.minecraft.setScreen(new AddSkinScreen((SkinSelectionScreen) parent, packId, path));
-            }
-        }
+        this.minecraft.setScreen(new ImportSkinChoiceScreen((SkinSelectionScreen) parent, packId));
     }
 
     private void savePack() {
