@@ -26,6 +26,15 @@ public final class BedrockSessionSkin {
         requestSessionSkin(mc, profile);
     }
 
+    public static void clearCache() {
+        cachedSessionProfileKey = null;
+        cachedSessionProfile = null;
+        cachedSessionSkinKey = null;
+        cachedSessionSkin = null;
+        cachedLookupKey = null;
+        cachedLookup = null;
+    }
+
     public static PlayerSkin getSessionPlayerSkin() {
         Minecraft mc = Minecraft.getInstance();
         if (mc == null) return null;

@@ -81,7 +81,7 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
         }
 
         public void extractContent(GuiGraphicsExtractor context, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-            renderCommon(context, getX(), getY(), mouseX, mouseY, hovered);
+            renderCommon(context, getRowLeft(), getY(), mouseX, mouseY, hovered);
         }
 
         public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {

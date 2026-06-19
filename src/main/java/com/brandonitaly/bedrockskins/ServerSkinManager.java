@@ -16,7 +16,7 @@ public final class ServerSkinManager {
     private static final Map<String, PlayerSkinData> skinRegistry = new ConcurrentHashMap<>();
     private static final Map<UUID, ActiveSkin> playerActiveSkins = new ConcurrentHashMap<>();
 
-    public static String setSkin(UUID uuid, SkinId skinId, String geometry, byte[] textureData) {
+    public static String setSkin(UUID uuid, SkinId skinId, String geometry, byte[] textureData, byte[] capeData) {
         if (uuid == null) return null;
         if (skinId == null) {
             removeSkin(uuid);
@@ -26,7 +26,7 @@ public final class ServerSkinManager {
         String hash = BedrockSkinsNetworking.computeHash(geometry, textureData);
         
         // Deduplicate: store skin data in registry if not already present
-        skinRegistry.computeIfAbsent(hash, h -> new PlayerSkinData(skinId, geometry, textureData));
+        skinRegistry.computeIfAbsent(hash, h -> new PlayerSkinData(skinId, geometry, textureData, capeData));
         
         playerActiveSkins.put(uuid, new ActiveSkin(skinId, hash));
         cleanUnusedSkins();

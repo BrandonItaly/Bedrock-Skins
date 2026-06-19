@@ -3,6 +3,10 @@ package com.brandonitaly.bedrockskins.client.gui;
 import com.brandonitaly.bedrockskins.client.BedrockSkinsClient;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
+import com.brandonitaly.bedrockskins.client.CapeManager;
+import com.brandonitaly.bedrockskins.client.CapeManager.MinecraftCape;
+import com.brandonitaly.bedrockskins.client.ClientSkinSync;
+import java.util.concurrent.CompletableFuture;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
@@ -40,7 +44,9 @@ public class SkinPreviewPanel {
     private Button selectButton, resetButton;
     private SpriteIconButton customizationButton;
     private LoadedSkin selectedSkin;
+    private MinecraftCape selectedCape;
     private SkinId currentSkinId;
+    private Screen parentScreen;
     private PreviewPlayer dummyPlayer;
     private UUID dummyUuid = UUID.randomUUID();
     private float rotationX = 0;
@@ -55,8 +61,31 @@ public class SkinPreviewPanel {
     }
     
     public LoadedSkin getSelectedSkin() { return selectedSkin; }
+    public MinecraftCape getSelectedCape() { return selectedCape; }
+
+    public void setSelectedCape(MinecraftCape cape) {
+        this.selectedCape = cape;
+        if (dummyPlayer != null) {
+            if (cape == null) {
+                dummyPlayer.clearForcedCape();
+                this.rotationX = 0.0f;
+            } else if ("none".equals(cape.id)) {
+                if (parentScreen instanceof SkinSelectionScreen selectionScreen && "skinpack".equals(selectionScreen.getSelectedCapesCategory())) {
+                    dummyPlayer.clearForcedCape();
+                } else {
+                    dummyPlayer.setForcedCape(null);
+                }
+                this.rotationX = 0.0f;
+            } else {
+                dummyPlayer.setForcedCape(cape.textureIdentifier);
+                this.rotationX = 60.0f;
+            }
+        }
+        updateFavoriteButton();
+    }
 
     public void init(int x, int y, int w, int h, Screen parentScreen, Consumer<AbstractWidget> widgetAdder) {
+        this.parentScreen = parentScreen;
         selectButton = Button.builder(Component.translatable("bedrockskins.button.select"), b -> applySkin()).bounds(0, 0, 10, 20).build();
         widgetAdder.accept(selectButton);
 
@@ -141,7 +170,7 @@ public class SkinPreviewPanel {
         if (skinId == null) {
             applyAutoSelectedSkinBehavior();
         } else {
-            GuiSkinUtils.applyLoadedSkinPreview(dummyPlayer, uuid, selectedSkin);
+            GuiSkinUtils.applyLoadedSkinPreview(dummyPlayer, uuid, selectedSkin, false);
         }
     }
 
@@ -150,6 +179,10 @@ public class SkinPreviewPanel {
     }
 
     private void applySkin() {
+        if (parentScreen instanceof SkinSelectionScreen selectionScreen && selectionScreen.getActiveTab() == 1) {
+            applyCape();
+            return;
+        }
         if (selectedSkin == null) return;
         if (BedrockSkinsClient.blockUnfairSkins && selectedSkin.unfair) return;
         try {
@@ -161,6 +194,73 @@ public class SkinPreviewPanel {
         } catch (Exception e) {
             LOGGER.error("Failed to apply selected skin {}", selectedSkin.skinId, e);
         }
+    }
+
+    private void applyCape() {
+        if (selectedCape == null) return;
+
+        if (parentScreen instanceof SkinSelectionScreen selectionScreen && "skinpack".equals(selectionScreen.getSelectedCapesCategory())) {
+            if (selectedCape.id.equals("none")) {
+                SkinManager.setLocalCapeOverride(SkinManager.CAPE_NONE_SKIN_ID);
+            } else {
+                String prefix = "skinpack:";
+                if (selectedCape.id.startsWith(prefix)) {
+                    SkinId capeSkinId = SkinId.parse(selectedCape.id.substring(prefix.length()));
+                    SkinManager.setLocalCapeOverride(capeSkinId);
+                }
+            }
+            SkinManager.setLocalAccountCapeOverride(null); // Clear account override
+            BedrockSessionSkin.clearCache();
+            selectionScreen.onCapeChanged(selectedCape.id);
+            ClientSkinSync.syncCurrentSkin(minecraft);
+            return;
+        }
+
+        // Disable skin pack cape so the account cape is used
+        SkinManager.setLocalCapeOverride(SkinManager.CAPE_NONE_SKIN_ID);
+
+        String token = minecraft.getUser().getAccessToken();
+        if (token == null || token.isEmpty() || "0".equals(token) || token.length() < 10) {
+            return;
+        }
+
+        if (selectButton != null) {
+            selectButton.active = false;
+            selectButton.setMessage(Component.literal("Equipping..."));
+        }
+
+        CompletableFuture<Void> future;
+        if (selectedCape.id.equals("none")) {
+            future = CapeManager.unequipCape(token);
+        } else {
+            future = CapeManager.equipCape(token, selectedCape.id);
+        }
+
+        future.thenRun(() -> minecraft.execute(() -> {
+            if (selectButton != null) {
+                selectButton.active = true;
+                selectButton.setMessage(Component.translatable("bedrockskins.button.equip_cape"));
+            }
+            if (selectedCape.id.equals("none")) {
+                SkinManager.setLocalAccountCapeOverride(SkinManager.CAPE_NONE);
+            } else {
+                SkinManager.setLocalAccountCapeOverride(selectedCape.textureIdentifier);
+            }
+            BedrockSessionSkin.clearCache();
+            if (parentScreen instanceof SkinSelectionScreen selectionScreen) {
+                selectionScreen.onCapeChanged(selectedCape.id);
+            }
+            ClientSkinSync.syncCurrentSkin(minecraft);
+        })).exceptionally(e -> {
+            minecraft.execute(() -> {
+                if (selectButton != null) {
+                    selectButton.active = true;
+                    selectButton.setMessage(Component.translatable("bedrockskins.button.equip_cape"));
+                }
+                LOGGER.error("Failed to equip cape", e);
+            });
+            return null;
+        });
     }
 
     private void resetSkin() {
@@ -189,6 +289,13 @@ public class SkinPreviewPanel {
 
     private void updateFavoriteButton() {
         updateActionButtons();
+        if (parentScreen instanceof SkinSelectionScreen selectionScreen && selectionScreen.getActiveTab() == 1) {
+            if (selectButton != null) {
+                selectButton.active = selectedCape != null;
+            }
+            return;
+        }
+
         if (favoriteButton == null) return;
 
         boolean isFav = FavoritesManager.isFavorite(selectedSkin);
@@ -218,6 +325,17 @@ public class SkinPreviewPanel {
 
         if (dummyPlayer != null) {
             if (currentSkinId == null && selectedSkin == null) applyAutoSelectedSkinBehavior();
+            if (selectedCape != null) {
+                if (selectedCape.id.equals("none")) {
+                    if (parentScreen instanceof SkinSelectionScreen selectionScreen && "skinpack".equals(selectionScreen.getSelectedCapesCategory())) {
+                        dummyPlayer.clearForcedCape();
+                    } else {
+                        dummyPlayer.setForcedCape(null);
+                    }
+                } else {
+                    dummyPlayer.setForcedCape(selectedCape.textureIdentifier);
+                }
+            }
             if (isDraggingPreview) {
                 rotationX -= (mouseX - lastMouseX) * 0.5f;
             }
@@ -226,9 +344,23 @@ public class SkinPreviewPanel {
             String nameToRender = null;
             String descToRender = null;
 
-            if (selectedSkin != null) {
-                nameToRender = GuiSkinUtils.getSkinDisplayNameText(selectedSkin);
-                descToRender = GuiSkinUtils.getSkinDescriptionText(selectedSkin).orElse(null);
+            int activeTab = (parentScreen instanceof SkinSelectionScreen selectionScreen) ? selectionScreen.getActiveTab() : 0;
+            if (activeTab == 1) {
+                if (selectedCape != null) {
+                    nameToRender = Component.translatable(selectedCape.alias).getString();
+                    if (selectedCape.id.equals("none")) {
+                        descToRender = Component.translatable("bedrockskins.capes.description.none").getString();
+                    } else if (selectedCape.id.startsWith("skinpack:")) {
+                        descToRender = Component.translatable("bedrockskins.capes.description.skinpack").getString();
+                    } else {
+                        descToRender = Component.translatable("bedrockskins.capes.description.account").getString();
+                    }
+                }
+            } else {
+                if (selectedSkin != null) {
+                    nameToRender = GuiSkinUtils.getSkinDisplayNameText(selectedSkin);
+                    descToRender = GuiSkinUtils.getSkinDescriptionText(selectedSkin).orElse(null);
+                }
             }
 
             int textGap = 4;
@@ -296,6 +428,32 @@ public class SkinPreviewPanel {
         if (resetButton != null) resetButton.visible = visible;
         if (favoriteButton != null) favoriteButton.getButton().visible = visible;
         if (customizationButton != null) customizationButton.visible = visible;
+    }
+
+    public void updateButtonsForTab(int tabIndex) {
+        reposition(x, y, width, height);
+        if (tabIndex == 0) { // Skins
+            this.rotationX = 0.0f;
+            if (selectButton != null) {
+                selectButton.visible = true;
+                selectButton.setMessage(Component.translatable("bedrockskins.button.select"));
+            }
+            if (favoriteButton != null) favoriteButton.getButton().visible = true;
+            if (resetButton != null) resetButton.visible = true;
+            if (customizationButton != null) customizationButton.visible = true;
+        } else if (tabIndex == 1) { // Capes
+            this.rotationX = 60.0f;
+            if (selectButton != null) {
+                selectButton.visible = true;
+                selectButton.setMessage(Component.translatable("bedrockskins.button.equip_cape"));
+            }
+            if (favoriteButton != null) favoriteButton.getButton().visible = false;
+            if (resetButton != null) resetButton.visible = false;
+            if (customizationButton != null) customizationButton.visible = true;
+        } else { // Store
+            setButtonsVisible(false);
+        }
+        updateFavoriteButton();
     }
 
     public void renderSprites(GuiGraphicsExtractor gui) {

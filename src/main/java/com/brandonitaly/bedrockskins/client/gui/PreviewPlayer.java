@@ -100,7 +100,23 @@ public final class PreviewPlayer {
         }
 
         ClientAsset.Texture finalBody = forcedBody != null ? forcedBody : original.body();
-        ClientAsset.Texture finalCape = hasForcedCapeOverride ? forcedCapeTexture : original.cape();
+        ClientAsset.Texture finalCape = original.cape();
+        if (hasForcedCapeOverride) {
+            if (forcedCapeTexture == null) {
+                finalCape = null;
+            } else {
+                Identifier path = forcedCapeTexture.texturePath();
+                if (path.getNamespace().equals("bedrockskins") && path.getPath().startsWith("capes/mojang/")) {
+                    if (com.brandonitaly.bedrockskins.client.CapeManager.isCapeRegistered(path)) {
+                        finalCape = forcedCapeTexture;
+                    } else {
+                        finalCape = null;
+                    }
+                } else {
+                    finalCape = forcedCapeTexture;
+                }
+            }
+        }
 
         var finalModel = (useLocalPlayerModel && minecraft.player != null)
             ? minecraft.player.getSkin().model()

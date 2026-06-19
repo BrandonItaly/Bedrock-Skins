@@ -7,9 +7,9 @@ import com.brandonitaly.bedrockskins.client.StateManager;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
-import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -60,9 +60,9 @@ public final class GuiSkinUtils {
         SkinId skinId = skin.skinId != null ? skin.skinId : SkinId.of(skin.serializeName, skin.skinDisplayName);
         
         if (minecraft.player != null) {
+            SkinManager.setLocalCapeOverride(null); // Clear custom cape override on skin equip
             SkinManager.setSkin(minecraft.player.getUUID(), skinId);
-            byte[] textureData = ExternalAssetUtil.loadTextureData(skin, minecraft);
-            ClientSkinSync.sendSetSkinPayload(skinId, skin.geometryData.toString(), textureData);
+            ClientSkinSync.syncCurrentSkin(minecraft);
             minecraft.player.refreshDimensions();
         } else {
             StateManager.saveState(FavoritesManager.getFavoriteKeys(), skinId.toString());
@@ -84,7 +84,19 @@ public final class GuiSkinUtils {
         
         SkinManager.resetPreviewSkin(previewUuid);
         previewPlayer.clearForcedBody();
-        previewPlayer.clearForcedCape();
+        SkinId capeOverrideId = SkinManager.getLocalCapeOverride();
+        Identifier capeId = null;
+        if (capeOverrideId != null) {
+            var capeSkin = SkinPackLoader.getLoadedSkin(capeOverrideId);
+            if (capeSkin != null) {
+                capeId = capeSkin.capeIdentifier;
+            }
+        }
+        if (capeId != null) {
+            previewPlayer.setForcedCape(capeId);
+        } else {
+            previewPlayer.clearForcedCape();
+        }
         refreshAutoSelectedProfileSkin(minecraft, previewPlayer);
         previewPlayer.setUseLocalPlayerModel(false);
     }
@@ -97,6 +109,10 @@ public final class GuiSkinUtils {
     }
 
     public static void applyLoadedSkinPreview(PreviewPlayer previewPlayer, UUID previewUuid, LoadedSkin skin) {
+        applyLoadedSkinPreview(previewPlayer, previewUuid, skin, true);
+    }
+
+    public static void applyLoadedSkinPreview(PreviewPlayer previewPlayer, UUID previewUuid, LoadedSkin skin, boolean ignoreCapeOverrides) {
         if (previewPlayer == null) return;
 
         previewPlayer.clearForcedProfileSkin();
@@ -105,7 +121,7 @@ public final class GuiSkinUtils {
 
         if (skin == null) {
             SkinManager.resetPreviewSkin(previewUuid);
-            previewPlayer.clearForcedCape();
+            previewPlayer.setForcedCape(null);
             return;
         }
 
@@ -115,7 +131,20 @@ public final class GuiSkinUtils {
             previewPlayer.setForcedBody(skin.identifier);
         }
         
-        previewPlayer.setForcedCape(skin.capeIdentifier);
+        SkinManager.ResolvedCape resolved = SkinManager.resolveCape(previewUuid, skin, !ignoreCapeOverrides);
+        if (resolved != null) {
+            if (resolved.capeId.equals(SkinManager.CAPE_NONE)) {
+                previewPlayer.setForcedCape(null);
+            } else {
+                previewPlayer.setForcedCape(resolved.capeId);
+            }
+        } else {
+            if (ignoreCapeOverrides) {
+                previewPlayer.setForcedCape(null);
+            } else {
+                previewPlayer.clearForcedCape();
+            }
+        }
     }
 
     public static void cleanupPreview(UUID previewUuid) {

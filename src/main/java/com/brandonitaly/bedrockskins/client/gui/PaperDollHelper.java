@@ -3,7 +3,6 @@ package com.brandonitaly.bedrockskins.client.gui;
 import com.brandonitaly.bedrockskins.client.BedrockModelManager;
 import com.brandonitaly.bedrockskins.client.BedrockPlayerModel;
 import com.brandonitaly.bedrockskins.client.BedrockSkinsClient;
-import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
@@ -15,6 +14,9 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.PlainTextButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
@@ -35,12 +37,8 @@ public class PaperDollHelper {
     
     private float previewYaw = 0.0F;
     private boolean draggingPreview = false;
-    private boolean movingPreview = false;
     private boolean leftMouseDown = false;
-    private boolean rightMouseDown = false;
     private double lastRotMouseX = 0.0;
-    private double lastMoveMouseX = 0.0;
-    private double lastMoveMouseY = 0.0;
 
     private final Screen parentScreen;
     private final boolean isTitleScreen;
@@ -50,17 +48,42 @@ public class PaperDollHelper {
         this.isTitleScreen = isTitleScreen;
     }
 
-    private double getOffsetX() { return isTitleScreen ? BedrockSkinsConfig.getPaperDollOffsetXTitle() : BedrockSkinsConfig.getPaperDollOffsetXPause(); }
-    private void setOffsetX(double val) { if (isTitleScreen) BedrockSkinsConfig.setPaperDollOffsetXTitle(val); else BedrockSkinsConfig.setPaperDollOffsetXPause(val); }
-    private double getOffsetY() { return isTitleScreen ? BedrockSkinsConfig.getPaperDollOffsetYTitle() : BedrockSkinsConfig.getPaperDollOffsetYPause(); }
-    private void setOffsetY(double val) { if (isTitleScreen) BedrockSkinsConfig.setPaperDollOffsetYTitle(val); else BedrockSkinsConfig.setPaperDollOffsetYPause(val); }
+    private AbstractWidget findMenuTargetButton() {
+        AbstractWidget target = null;
+        for (var child : parentScreen.children()) {
+            if (child instanceof Button widget && widget.visible && widget != openSkinButton) {
+                if (!(widget instanceof PlainTextButton) && !(widget instanceof SpriteIconButton)) {
+                    if (target == null) {
+                        target = widget;
+                    } else {
+                        if (widget.getY() > target.getY()) {
+                            target = widget;
+                        } else if (widget.getY() == target.getY()) {
+                            if (widget.getX() > target.getX()) {
+                                target = widget;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return target;
+    }
 
     private int getLeft(int width) { 
-        return Math.round((float) ((width * 5 / 6.0) - (PREVIEW_W / 2.0) + (getOffsetX() * width))); 
+        AbstractWidget target = findMenuTargetButton();
+        if (target != null) {
+            return target.getX() + target.getWidth() + 20;
+        }
+        return Math.round((float) ((width * 5 / 6.0) - (PREVIEW_W / 2.0))); 
     }
     
     private int getTop(int height) { 
-        return Math.round((float) ((height / 2.0) - (PREVIEW_H / 2.0) + (getOffsetY() * height))); 
+        AbstractWidget target = findMenuTargetButton();
+        if (target != null) {
+            return target.getY() + target.getHeight() - 115;
+        }
+        return Math.round((float) ((height / 2.0) - (PREVIEW_H / 2.0))); 
     }
 
     private double getModelFeet(int top) {
@@ -87,8 +110,8 @@ public class PaperDollHelper {
     }
 
     public SpriteIconButton init(Minecraft minecraft, int width, int height) {
-        draggingPreview = false; movingPreview = false;
-        leftMouseDown = false; rightMouseDown = false;
+        draggingPreview = false;
+        leftMouseDown = false;
 
         String name = minecraft.getGameProfile() != null ? minecraft.getGameProfile().name() : "Preview";
         previewPlayer = PreviewPlayer.PreviewPlayerPool.get(new GameProfile(previewUuid, name));
@@ -120,17 +143,26 @@ public class PaperDollHelper {
             SkinPackLoader.registerTextureFor(selected);
             previewPlayer.clearForcedProfileSkin();
             previewPlayer.clearForcedBody();
-            previewPlayer.clearForcedCape();
-
-            LoadedSkin loaded = SkinPackLoader.getLoadedSkin(selected);
-            if (loaded != null) previewPlayer.setForcedCape(loaded.capeIdentifier);
         } else {
             SkinManager.resetPreviewSkin(previewUuid);
             previewPlayer.clearForcedBody();
-            previewPlayer.clearForcedCape();
             var profile = minecraft.getGameProfile();
             if (profile != null) previewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(profile, false).get());
         }
+
+        // Determine what cape to show
+        LoadedSkin loaded = selected != null ? SkinPackLoader.getLoadedSkin(selected) : null;
+        SkinManager.ResolvedCape resolved = SkinManager.resolveCape(previewUuid, loaded, true);
+        if (resolved != null) {
+            if (resolved.capeId.equals(SkinManager.CAPE_NONE)) {
+                previewPlayer.setForcedCape(null);
+            } else {
+                previewPlayer.setForcedCape(resolved.capeId);
+            }
+        } else {
+            previewPlayer.clearForcedCape();
+        }
+
         previewPlayer.setUseLocalPlayerModel(false);
     }
 
@@ -148,8 +180,6 @@ public class PaperDollHelper {
 
         long window = minecraft.getWindow().handle();
         boolean leftDown = window != 0L && GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
-        boolean rightDown = window != 0L && GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS;
-        boolean shiftDown = window != 0L && (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS || GLFW.glfwGetKey(window, GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS);
 
         boolean insidePreview = isMouseOverPreview(width, height, mouseX, mouseY);
         boolean insideButton = openSkinButton != null && openSkinButton.isHovered();
@@ -165,27 +195,6 @@ public class PaperDollHelper {
         if (draggingPreview) {
             previewYaw -= (float) (mouseX - lastRotMouseX) * 1.6F;
             lastRotMouseX = mouseX;
-        }
-
-        // Panning relative to screen size
-        if (rightDown && shiftDown && !rightMouseDown && insidePreview && !insideButton) {
-            movingPreview = true;
-            lastMoveMouseX = mouseX;
-            lastMoveMouseY = mouseY;
-        }
-        rightMouseDown = rightDown;
-        if (!rightDown || !shiftDown) movingPreview = false;
-
-        if (movingPreview) {
-            double deltaX = (mouseX - lastMoveMouseX) / (double) width;
-            double deltaY = (mouseY - lastMoveMouseY) / (double) height;
-            
-            setOffsetX(getOffsetX() + deltaX);
-            setOffsetY(getOffsetY() + deltaY);
-            updateLayout(width, height);
-            
-            lastMoveMouseX = mouseX;
-            lastMoveMouseY = mouseY;
         }
 
         int left = getLeft(width), top = getTop(height);

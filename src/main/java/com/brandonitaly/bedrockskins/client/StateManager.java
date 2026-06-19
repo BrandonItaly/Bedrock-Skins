@@ -14,7 +14,13 @@ public final class StateManager {
     }
 
     public static void saveState(List<String> favorites, String selected) {
-        LocalSkinConfig state = new LocalSkinConfig(favorites, selected);
+        LocalSkinConfig existing = readState();
+        LocalSkinConfig state = new LocalSkinConfig(favorites, selected, existing.selectedCape());
+        JsonCodecFileStore.writeAtomic(stateFile.toPath(), LocalSkinConfig.CODEC, state, "StateManager");
+    }
+
+    public static void saveState(List<String> favorites, String selected, String selectedCape) {
+        LocalSkinConfig state = new LocalSkinConfig(favorites, selected, selectedCape);
         JsonCodecFileStore.writeAtomic(stateFile.toPath(), LocalSkinConfig.CODEC, state, "StateManager");
     }
 }

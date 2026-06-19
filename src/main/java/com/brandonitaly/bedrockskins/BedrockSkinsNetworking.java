@@ -83,7 +83,7 @@ public final class BedrockSkinsNetworking {
     };
 
     // Skin Update Payload (Server -> Client)
-    public record SkinUpdatePayload(UUID uuid, SkinId skinId, String geometry, byte[] textureData) implements CustomPacketPayload {
+    public record SkinUpdatePayload(UUID uuid, SkinId skinId, String geometry, byte[] textureData, byte[] capeData) implements CustomPacketPayload {
         public static final CustomPacketPayload.Type<SkinUpdatePayload> ID = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("bedrockskins", "skin_update"));
         
         public static final StreamCodec<RegistryFriendlyByteBuf, SkinUpdatePayload> CODEC = StreamCodec.composite(
@@ -91,14 +91,16 @@ public final class BedrockSkinsNetworking {
             OPTIONAL_SKIN_ID_CODEC, SkinUpdatePayload::skinId,
             COMPRESSED_GEOMETRY_CODEC, SkinUpdatePayload::geometry,
             ByteBufCodecs.byteArray(1048576), SkinUpdatePayload::textureData,
+            ByteBufCodecs.byteArray(262144), SkinUpdatePayload::capeData,
             SkinUpdatePayload::new
         );
 
-        public SkinUpdatePayload(UUID uuid, SkinId skinId, String geometry, byte[] textureData) {
+        public SkinUpdatePayload(UUID uuid, SkinId skinId, String geometry, byte[] textureData, byte[] capeData) {
             this.uuid = uuid;
             this.skinId = skinId;
             this.geometry = nullToEmpty(geometry);
             this.textureData = nullToEmpty(textureData);
+            this.capeData = nullToEmpty(capeData);
         }
 
         @Override
@@ -106,20 +108,22 @@ public final class BedrockSkinsNetworking {
     }
 
     // Set Skin Payload (Client -> Server)
-    public record SetSkinPayload(SkinId skinId, String geometry, byte[] textureData) implements CustomPacketPayload {
+    public record SetSkinPayload(SkinId skinId, String geometry, byte[] textureData, byte[] capeData) implements CustomPacketPayload {
         public static final CustomPacketPayload.Type<SetSkinPayload> ID = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("bedrockskins", "set_skin"));
         
         public static final StreamCodec<RegistryFriendlyByteBuf, SetSkinPayload> CODEC = StreamCodec.composite(
             OPTIONAL_SKIN_ID_CODEC, SetSkinPayload::skinId,
             COMPRESSED_GEOMETRY_CODEC, SetSkinPayload::geometry,
             ByteBufCodecs.byteArray(1048576), SetSkinPayload::textureData,
+            ByteBufCodecs.byteArray(262144), SetSkinPayload::capeData,
             SetSkinPayload::new
         );
 
-        public SetSkinPayload(SkinId skinId, String geometry, byte[] textureData) {
+        public SetSkinPayload(SkinId skinId, String geometry, byte[] textureData, byte[] capeData) {
             this.skinId = skinId;
             this.geometry = nullToEmpty(geometry);
             this.textureData = nullToEmpty(textureData);
+            this.capeData = nullToEmpty(capeData);
         }
 
         @Override

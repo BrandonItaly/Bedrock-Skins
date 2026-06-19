@@ -8,12 +8,13 @@ import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
+import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
 import com.brandonitaly.bedrockskins.util.PackSortUtil;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.tabs.GridLayoutTab;
-//? if >=26.2-pre-3
+//? if >=26.2
 // import net.minecraft.client.gui.components.tabs.MenuTabBar;
 import net.minecraft.client.gui.components.tabs.TabManager;
 import net.minecraft.client.gui.components.tabs.TabNavigationBar;
@@ -28,11 +29,16 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
+import com.brandonitaly.bedrockskins.client.CapeManager;
+import com.brandonitaly.bedrockskins.client.CapeManager.MinecraftCape;
+import net.minecraft.resources.Identifier;
 
 import java.io.File;
 import java.util.*;
+import java.util.function.Supplier;
 
 public class SkinSelectionScreen extends Screen {
+    private static final org.slf4j.Logger MOD_LOGGER = com.mojang.logging.LogUtils.getLogger();
     private static final String STORE_CATEGORY_ID = "bedrock_skins";
     private static final String STORE_FOLDER = "skin_packs";
     private static final String FAVORITES_PACK_ID = "skinpack.Favorites";
@@ -60,6 +66,17 @@ public class SkinSelectionScreen extends Screen {
     private boolean isDownloading = false;
     private boolean needsReload = false;
 
+    // --- Capes Tab Elements
+    private CapeGridWidget capeGrid;
+    private CapeSidebarListWidget capeSidebar;
+    private String selectedCapesCategory = "owned";
+    private List<MinecraftCape> ownedCapes = null;
+    private boolean isFetchingCapes = false;
+    private String capeFetchError = null;
+
+    public int getActiveTab() { return activeTab; }
+    public String getSelectedCapesCategory() { return selectedCapesCategory; }
+
     public SkinSelectionScreen(Screen parent) {
         super(Component.translatable("bedrockskins.gui.title"));
         this.parent = parent;
@@ -72,11 +89,18 @@ public class SkinSelectionScreen extends Screen {
         buildSkinCache();
         openToCurrentSkin();
         calculateLayout(null);
+
+        if (previewPanel == null) {
+            previewPanel = new SkinPreviewPanel(minecraft, font, this::onFavoritesChanged);
+        }
+        previewPanel.init(rPreview.x, rPreview.y, rPreview.w, rPreview.h, this, this::addRenderableWidget);
         
-        //~ if >=26.2-pre-3 'TabNavigationBar.' -> 'MenuTabBar.' {
+        //~ if >=26.2 'TabNavigationBar.' -> 'MenuTabBar.' {
         tabNavigationBar = TabNavigationBar.builder(tabManager, width)
-            .addTabs(new SkinsTab(), new DownloadTab()).build();//~}
+            .addTabs(new SkinsTab(), new CapesTab(), new DownloadTab()).build();//~}
         
+        this.addRenderableWidget(tabNavigationBar);
+
         updateFooterButtons();
         tabNavigationBar.selectTab(activeTab, false);
         setDownloadTabActive(ContentManager.getCategory(STORE_CATEGORY_ID).isPresent());
@@ -95,7 +119,7 @@ public class SkinSelectionScreen extends Screen {
     @Override
     public void repositionElements() {
         if (tabNavigationBar != null) {
-            //? if >=26.2-pre-3 {
+            //? if >=26.2 {
             /*tabNavigationBar.arrangeElements(width);*/
             //?} else if >26.1 {
             tabNavigationBar.updateWidth(width);
@@ -113,8 +137,15 @@ public class SkinSelectionScreen extends Screen {
     }
     
     private void applyTabState(ScreenRectangle tabArea, int tabIndex) {
-        if (this.activeTab == 1 && tabIndex != 1) triggerReloadIfNeeded();
-        if (this.activeTab != tabIndex) selectedPackId = null;
+        if (this.activeTab == 2 && tabIndex != 2) triggerReloadIfNeeded();
+        if (this.activeTab != tabIndex) {
+            selectedPackId = null;
+            if (previewPanel != null) {
+                previewPanel.setSelectedCape(null);
+                previewPanel.setSelectedSkin(null);
+                previewPanel.initPreviewState();
+            }
+        }
         
         activeTab = tabIndex;
         calculateLayout(tabArea);
@@ -126,30 +157,35 @@ public class SkinSelectionScreen extends Screen {
         if (createPackButton != null) createPackButton.visible = isSkins;
         if (previewPanel != null) {
             previewPanel.reposition(rPreview.x, rPreview.y, rPreview.w, rPreview.h);
-            previewPanel.setButtonsVisible(activeTab == 0);
+            previewPanel.updateButtonsForTab(activeTab);
         }
 
-        boolean isDownload = activeTab == 1;
+        boolean isDownload = activeTab == 2;
         if (downloadList != null) downloadList.visible = isDownload;
         if (downloadButton != null) downloadButton.visible = isDownload;
+
+        boolean isCapes = activeTab == 1;
+        if (capeGrid != null) capeGrid.visible = isCapes;
+        if (capeSidebar != null) capeSidebar.visible = isCapes;
+        if (isCapes) {
+            refreshCapeGrid();
+            if ("owned".equals(selectedCapesCategory) && ownedCapes == null && !isFetchingCapes) {
+                fetchCapes();
+            }
+        }
         
         updateFooterButtons();
     }
 
     private void setDownloadTabActive(boolean active) {
         if (tabNavigationBar == null) return;
-        tabNavigationBar.setTabActiveState(1, active);
-        if (!active && activeTab == 1) tabNavigationBar.selectTab(0, false);
-        
-        this.removeWidget(tabNavigationBar);
-        if (active) {
-            this.addRenderableWidget(tabNavigationBar);
-        }
+        tabNavigationBar.setTabActiveState(2, active);
+        if (!active && activeTab == 2) tabNavigationBar.selectTab(0, false);
     }
 
     private void updateFooterButtons() {
         int btnW = 150, btnH = 20, btnY = height - 28;
-        boolean isDownload = (activeTab == 1);
+        boolean isDownload = (activeTab == 2);
         
         if (openPacksButton == null) {
             openPacksButton = Button.builder(Component.translatable("bedrockskins.button.open_packs"), b -> openSkinPacksFolder()).build();
@@ -258,10 +294,6 @@ public class SkinSelectionScreen extends Screen {
         createPackButton.setX(rPacks.x + rPacks.w - 22);
         createPackButton.setY(rPacks.y + 2);
 
-        if (previewPanel == null) {
-            previewPanel = new SkinPreviewPanel(minecraft, font, this::onFavoritesChanged);
-            previewPanel.init(rPreview.x, rPreview.y, rPreview.w, rPreview.h, this, this::addRenderableWidget);
-        }
 
         int sgY = rSkins.y + pHead + pPad, sgH = rSkins.h - pHead - (pPad * 2);
         if (skinGrid == null) {
@@ -290,6 +322,39 @@ public class SkinSelectionScreen extends Screen {
                 })
             );
         }
+        
+        // Capes Widgets
+        int cgY = rSkins.y + pHead + pPad;
+        int cgH = rSkins.h - pHead - (pPad * 2);
+        if (capeSidebar == null) {
+            capeSidebar = new CapeSidebarListWidget(minecraft, rPacks.w - pPad * 2, cgH, cgY, 28);
+            capeSidebar.addEntryPublic(capeSidebar.new SidebarEntry("owned", Component.translatable("bedrockskins.capes.owned"), 
+                () -> selectCapesCategory("owned"), () -> "owned".equals(selectedCapesCategory)));
+            capeSidebar.addEntryPublic(capeSidebar.new SidebarEntry("skinpack", Component.translatable("bedrockskins.capes.skinpack"), 
+                () -> selectCapesCategory("skinpack"), () -> "skinpack".equals(selectedCapesCategory)));
+            addRenderableWidget(capeSidebar);
+        }
+        capeSidebar.setX(rPacks.x + pPad);
+        capeSidebar.setY(cgY);
+        capeSidebar.setWidth(Math.max(10, rPacks.w - pPad * 2));
+        capeSidebar.setHeight(Math.max(10, cgH));
+        capeSidebar.visible = (activeTab == 1);
+
+        if (capeGrid == null) {
+            capeGrid = new CapeGridWidget(minecraft, rSkins.w - pPad * 2, cgH, cgY, 65,
+                    cape -> {
+                        if (previewPanel != null) {
+                            previewPanel.setSelectedCape(cape);
+                        }
+                    },
+                    () -> previewPanel != null ? previewPanel.getSelectedCape() : null, font);
+            addRenderableWidget(capeGrid);
+        }
+        capeGrid.setX(rSkins.x + pPad);
+        capeGrid.setY(cgY);
+        capeGrid.setWidth(Math.max(10, rSkins.w - pPad * 2));
+        capeGrid.setHeight(Math.max(10, cgH));
+        capeGrid.visible = (activeTab == 1);
 
         if (downloadList != null && tabArea != null) {
             downloadList.setX(tabArea.left());
@@ -406,7 +471,7 @@ public class SkinSelectionScreen extends Screen {
 
     private void deletePack(ContentManager.Pack pack) {
         if (isDownloading) return;
-        com.brandonitaly.bedrockskins.util.ExternalAssetUtil.deletePack(pack.id(), STORE_FOLDER);
+        ExternalAssetUtil.deletePack(pack.id());
         minecraft.execute(() -> {
             needsReload = true; 
             if (downloadList != null) downloadList.setSelected(downloadList.getSelected());
@@ -419,7 +484,7 @@ public class SkinSelectionScreen extends Screen {
 
     public void triggerReloadIfNeeded() {
         if (needsReload) {
-            minecraft.reloadResourcePacks();
+            com.brandonitaly.bedrockskins.client.BedrockSkinsClient.reloadResources(minecraft);
             needsReload = false;
         }
     }
@@ -442,24 +507,55 @@ public class SkinSelectionScreen extends Screen {
         if (activeTab == 0) {
             GuiUtils.drawPanelChrome(gui, rPacks.x, rPacks.y, rPacks.w, rPacks.h, Component.translatable("bedrockskins.gui.packs"), font);
             GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h, getSkinsPanelTitle(), font);
+        } else if (activeTab == 1) {
+            GuiUtils.drawPanelChrome(gui, rPacks.x, rPacks.y, rPacks.w, rPacks.h, Component.translatable("bedrockskins.gui.categories"), font);
+            Component gridTitle = "owned".equals(selectedCapesCategory) 
+                ? Component.translatable("bedrockskins.capes.owned") 
+                : Component.translatable("bedrockskins.capes.skinpack");
+            GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h, gridTitle, font);
+
+            int centerX = rSkins.x + rSkins.w / 2;
+            int centerY = rSkins.y + rSkins.h / 2;
+            if ("owned".equals(selectedCapesCategory)) {
+                if (capeFetchError != null) {
+                    gui.centeredText(font, Component.literal(capeFetchError), centerX, centerY, 0xFFFF5555);
+                } else if (isFetchingCapes) {
+                    gui.centeredText(font, Component.translatable("bedrockskins.status.loading"), centerX, centerY, 0xFFFFAA00);
+                } else if (ownedCapes != null && ownedCapes.isEmpty()) {
+                    gui.centeredText(font, Component.translatable("bedrockskins.capes.none_owned"), centerX, centerY, 0xFFAAAAAA);
+                }
+            } else if ("skinpack".equals(selectedCapesCategory)) {
+                boolean hasCapes = false;
+                for (List<LoadedSkin> skins : skinCache.values()) {
+                    for (LoadedSkin skin : skins) {
+                        if (skin.cape != null) {
+                            hasCapes = true;
+                            break;
+                        }
+                    }
+                }
+                if (!hasCapes) {
+                    gui.centeredText(font, Component.literal("No capes in skin packs"), centerX, centerY, 0xFFAAAAAA);
+                }
+            }
         }
             
-        if (previewPanel != null && activeTab != 1) previewPanel.renderPreview(gui, mouseX);
+        if (previewPanel != null && activeTab != 2) previewPanel.renderPreview(gui, mouseX);
         super.extractRenderState(gui, mouseX, mouseY, delta);
-        if (previewPanel != null && activeTab != 1) previewPanel.renderSprites(gui);
+        if (previewPanel != null && activeTab != 2) previewPanel.renderSprites(gui);
         
         gui.blit(RenderPipelines.GUI_TEXTURED, Screen.FOOTER_SEPARATOR, 0, height - layout.getFooterHeight() - 2, 0.0F, 0.0F, width, 2, 32, 2);
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean handled) {
-        return (!handled && previewPanel != null && activeTab != 1 && previewPanel.mouseClicked(event.x(), event.y(), event.button())) 
+        return (!handled && previewPanel != null && activeTab != 2 && previewPanel.mouseClicked(event.x(), event.y(), event.button())) 
             || super.mouseClicked(event, handled);
     }
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        return (previewPanel != null && activeTab != 1 && previewPanel.mouseReleased(event.button()))
+        return (previewPanel != null && activeTab != 2 && previewPanel.mouseReleased(event.button()))
             || super.mouseReleased(event);
     }
     
@@ -491,7 +587,196 @@ public class SkinSelectionScreen extends Screen {
 
     private class DownloadTab extends GridLayoutTab {
         public DownloadTab() { super(Component.translatable("bedrockskins.gui.download")); }
+        @Override public void doLayout(ScreenRectangle tabArea) { applyTabState(tabArea, 2); }
+    }
+
+    private class CapesTab extends GridLayoutTab {
+        public CapesTab() { super(Component.translatable("bedrockskins.gui.capes")); }
         @Override public void doLayout(ScreenRectangle tabArea) { applyTabState(tabArea, 1); }
+    }
+
+    private void fetchCapes() {
+        String token = minecraft.getUser().getAccessToken();
+        if (token == null || token.isEmpty() || "0".equals(token) || token.length() < 10) {
+            capeFetchError = "Offline/invalid session. Log in to a Minecraft account.";
+            return;
+        }
+
+        isFetchingCapes = true;
+        capeFetchError = null;
+        if (capeGrid != null) capeGrid.clear();
+
+        CapeManager.fetchOwnedCapes(token).thenAccept(capes -> minecraft.execute(() -> {
+            isFetchingCapes = false;
+            ownedCapes = new ArrayList<>();
+            ownedCapes.add(new MinecraftCape("none", "INACTIVE", "", "bedrockskins.capes.none"));
+            ownedCapes.addAll(capes);
+            
+            boolean hasActive = false;
+            for (MinecraftCape c : capes) {
+                if (c.state.equals("ACTIVE")) {
+                    hasActive = true;
+                    break;
+                }
+            }
+            if (!hasActive) {
+                ownedCapes.set(0, new MinecraftCape("none", "ACTIVE", "", "bedrockskins.capes.none"));
+            }
+
+            autoSelectActiveCape();
+
+            for (MinecraftCape cape : capes) {
+                CapeManager.downloadAndRegisterCape(cape, () -> {
+                    if (activeTab == 1) {
+                        refreshCapeGrid();
+                    }
+                });
+            }
+
+            if (activeTab == 1) {
+                refreshCapeGrid();
+            }
+        })).exceptionally(e -> {
+            minecraft.execute(() -> {
+                isFetchingCapes = false;
+                capeFetchError = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+                MOD_LOGGER.error("Failed to fetch Minecraft account capes", e);
+            });
+            return null;
+        });
+    }
+
+    private void autoSelectActiveCape() {
+        if (ownedCapes == null || previewPanel == null) return;
+        MinecraftCape activeCape = null;
+        Identifier accountOverride = SkinManager.getLocalAccountCapeOverride();
+        if (accountOverride != null) {
+            if (accountOverride.equals(SkinManager.CAPE_NONE)) {
+                for (MinecraftCape c : ownedCapes) {
+                    if ("none".equals(c.id)) {
+                        activeCape = c;
+                        break;
+                    }
+                }
+            } else {
+                for (MinecraftCape c : ownedCapes) {
+                    if (c.textureIdentifier.equals(accountOverride)) {
+                        activeCape = c;
+                        break;
+                    }
+                }
+            }
+        } else {
+            for (MinecraftCape c : ownedCapes) {
+                if (c.state.equals("ACTIVE")) {
+                    activeCape = c;
+                    break;
+                }
+            }
+        }
+        if (activeCape != null) {
+            previewPanel.setSelectedCape(activeCape);
+        }
+    }
+
+    private void selectCapesCategory(String category) {
+        this.selectedCapesCategory = category;
+        refreshCapeGrid();
+        if ("owned".equals(category)) {
+            if (ownedCapes == null && !isFetchingCapes) {
+                fetchCapes();
+            } else if (ownedCapes != null) {
+                autoSelectActiveCape();
+            }
+        }
+    }
+
+    private String getActiveLocalCapeId() {
+        SkinId override = SkinManager.getLocalCapeOverride();
+        if (override != null) {
+            if (override.equals(SkinManager.CAPE_NONE_SKIN_ID)) {
+                return "none";
+            }
+            var capeSkin = SkinPackLoader.getLoadedSkin(override);
+            if (capeSkin != null && capeSkin.capeIdentifier != null) {
+                return capeSkin.capeIdentifier.toString();
+            }
+        }
+        SkinId equippedSkinId = SkinManager.getLocalSelectedKey();
+        if (equippedSkinId != null) {
+            var equippedSkin = SkinPackLoader.getLoadedSkin(equippedSkinId);
+            if (equippedSkin != null && equippedSkin.capeIdentifier != null) {
+                return equippedSkin.capeIdentifier.toString();
+            }
+        }
+        return null;
+    }
+
+    private void refreshCapeGrid() {
+        if (capeGrid == null) return;
+        capeGrid.clear();
+        capeGrid.setScrollAmount(0.0);
+
+        List<MinecraftCape> capesToShow = new ArrayList<>();
+        if ("owned".equals(selectedCapesCategory)) {
+            if (ownedCapes != null) {
+                capesToShow.addAll(ownedCapes);
+            }
+        } else if ("skinpack".equals(selectedCapesCategory)) {
+            Set<String> uniqueCapePaths = new HashSet<>();
+            String activeCapeId = getActiveLocalCapeId();
+            
+            boolean hasActive = false;
+            capesToShow.add(new MinecraftCape("none", (activeCapeId == null || "none".equals(activeCapeId)) ? "ACTIVE" : "INACTIVE", "", "bedrockskins.capes.none"));
+
+            for (List<LoadedSkin> skins : skinCache.values()) {
+                for (LoadedSkin skin : skins) {
+                    if (skin.cape != null) {
+                        SkinPackLoader.registerTextureFor(skin.skinId);
+                        if (skin.capeIdentifier != null) {
+                            String pathStr = skin.capeIdentifier.toString();
+                            if (uniqueCapePaths.add(pathStr)) {
+                                String state = (activeCapeId != null && activeCapeId.equals(pathStr)) ? "ACTIVE" : "INACTIVE";
+                                if (state.equals("ACTIVE")) hasActive = true;
+                                
+                                MinecraftCape cape = new MinecraftCape(
+                                    "skinpack:" + skin.skinId.toString(),
+                                    state,
+                                    "",
+                                    skin.safeSkinName,
+                                    skin.capeIdentifier
+                                );
+                                capesToShow.add(cape);
+                            }
+                        }
+                    }
+                }
+            }
+            if (hasActive) {
+                capesToShow.set(0, new MinecraftCape("none", "INACTIVE", "", "bedrockskins.capes.none"));
+            }
+        }
+        
+        int cols = Math.max(1, (rSkins.w - 18) / 65);
+        for (int i = 0; i < capesToShow.size(); i += cols) {
+            capeGrid.addCapesRow(capesToShow.subList(i, Math.min(i + cols, capesToShow.size())));
+        }
+    }
+
+    public void onCapeChanged(String capeId) {
+        if ("owned".equals(selectedCapesCategory)) {
+            if (ownedCapes != null) {
+                List<MinecraftCape> updated = new ArrayList<>();
+                for (MinecraftCape cape : ownedCapes) {
+                    String state = cape.id.equals(capeId) ? "ACTIVE" : "INACTIVE";
+                    updated.add(new MinecraftCape(cape.id, state, cape.url, cape.alias));
+                }
+                ownedCapes = updated;
+                refreshCapeGrid();
+            }
+        } else if ("skinpack".equals(selectedCapesCategory)) {
+            refreshCapeGrid();
+        }
     }
 
     // --- Inner Classes for Store List ---
@@ -553,5 +838,64 @@ public class SkinSelectionScreen extends Screen {
 
         @Override
         public Component getNarration() { return Component.literal(pack.name()); }
+    }
+
+    class CapeSidebarListWidget extends ObjectSelectionList<CapeSidebarListWidget.SidebarEntry> {
+        private final int rowSlotHeight;
+
+        public CapeSidebarListWidget(Minecraft client, int width, int height, int y, int itemHeight) {
+            super(client, width, height, y, itemHeight);
+            this.rowSlotHeight = itemHeight;
+        }
+
+        protected void extractListSeparators(GuiGraphicsExtractor graphics) {}
+
+        @Override
+        public int getRowWidth() { return getWidth() - 4; }
+
+        @Override
+        public int getRowLeft() { return getX() + 2; }
+
+        @Override
+        protected int scrollBarX() { return getX() + getWidth() - 6; }
+
+        @Override
+        protected void extractSelection(GuiGraphicsExtractor context, SidebarEntry entry, int color) {}
+
+        public void addEntryPublic(SidebarEntry entry) { super.addEntry(entry); }
+        
+        public class SidebarEntry extends ObjectSelectionList.Entry<SidebarEntry> {
+            public final String id;
+            public final Component name;
+            public final Runnable onSelect;
+            public final Supplier<Boolean> isSelectedFn;
+
+            public SidebarEntry(String id, Component name, Runnable onSelect, Supplier<Boolean> isSelectedFn) {
+                this.id = id;
+                this.name = name;
+                this.onSelect = onSelect;
+                this.isSelectedFn = isSelectedFn;
+            }
+
+            @Override
+            public void extractContent(GuiGraphicsExtractor context, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+                boolean isSelected = isSelectedFn.get();
+                int rowWidth = Math.max(10, CapeSidebarListWidget.this.getRowWidth());
+                int rowHeight = Math.max(20, rowSlotHeight - 2);
+                int rowY = getY() + (rowSlotHeight - rowHeight) / 2;
+
+                GuiUtils.renderPackCard(context, font, name.getString(), getRowLeft(), rowY, rowWidth, rowHeight, hovered, isSelected, mouseX, mouseY);
+            }
+
+            @Override
+            public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
+                onSelect.run();
+                GuiUtils.playButtonClickSound();
+                return true;
+            }
+
+            @Override
+            public Component getNarration() { return name; }
+        }
     }
 }

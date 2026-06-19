@@ -188,7 +188,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         }
     }
 
-    static void reloadResources(Minecraft client) {
+    public static void reloadResources(Minecraft client) {
         try {
             SkinPackLoader.loadPacks();
             FavoritesManager.load();
@@ -220,11 +220,8 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
 
             LoadedSkin loadedSkin = SkinPackLoader.getLoadedSkin(savedSkinId);
             if (loadedSkin != null) {
-                byte[] textureData = ExternalAssetUtil.loadTextureData(loadedSkin, client);
-                if (textureData.length > 0) {
-                    ClientSkinSync.sendSetSkinPayload(savedSkinId, loadedSkin.geometryData.toString(), textureData);
-                    LOGGER.debug("Synced saved skin {}", savedKey);
-                }
+                ClientSkinSync.syncCurrentSkin(client);
+                LOGGER.debug("Synced saved skin {}", savedKey);
             }
         } catch (Exception e) {
             LOGGER.error("Failed to apply saved skin on join", e);
@@ -270,7 +267,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
             SkinManager.resetSkin(playerUuid);
         } else {
             String hash = BedrockSkinsNetworking.computeHash(p.geometry(), p.textureData());
-            SkinPackLoader.registerRemoteSkin(id.toString(), p.geometry(), p.textureData(), hash);
+            SkinPackLoader.registerRemoteSkin(id.toString(), p.geometry(), p.textureData(), p.capeData(), hash);
             
             // Set for the main player in the payload
             SkinManager.setSkin(playerUuid, id);
@@ -279,7 +276,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
             playerAnnouncedSkins.forEach((uuid, announce) -> {
                 if (hash.equals(announce.hash)) {
                     if (announce.skinId != null) {
-                        SkinPackLoader.registerRemoteSkin(announce.skinId.toString(), p.geometry(), p.textureData(), hash);
+                        SkinPackLoader.registerRemoteSkin(announce.skinId.toString(), p.geometry(), p.textureData(), p.capeData(), hash);
                         SkinManager.setSkin(uuid, announce.skinId);
                     }
                 }

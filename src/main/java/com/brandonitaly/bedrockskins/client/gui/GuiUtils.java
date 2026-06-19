@@ -70,11 +70,18 @@ public final class GuiUtils {
     private static final Vector3f TEMP_TRANSLATE = new Vector3f();
     private static final Quaternionf TEMP_BODY_ROT = new Quaternionf();
     private static final Quaternionf TEMP_CAM_ROT = new Quaternionf();
-    private static final Identifier EQUIPPED_BORDER = Identifier.fromNamespaceAndPath("bedrockskins", "container/equipped_item_border");
+    private static final Vector3f TEMP_TRANSLATE_CAPE = new Vector3f();
+    private static final Quaternionf TEMP_BODY_ROT_CAPE = new Quaternionf();
+    private static final Quaternionf TEMP_CAM_ROT_CAPE = new Quaternionf();
+    public static final Identifier EQUIPPED_BORDER = Identifier.fromNamespaceAndPath("bedrockskins", "container/equipped_item_border");
 
     public static void renderEntityInRect(GuiGraphicsExtractor gui, PreviewPlayer preview, float yawOffset, int left, int top, int right, int bottom, int sizeCap) {
+        renderEntityInRect(gui, preview, yawOffset, left, top, right, bottom, sizeCap, 200.0F);
+    }
+
+    public static void renderEntityInRect(GuiGraphicsExtractor gui, PreviewPlayer preview, float yawOffset, int left, int top, int right, int bottom, int sizeCap, float baseYaw) {
         AvatarRenderState state = new AvatarRenderState();
-        setupAvatarRenderState(state, preview, SkinManager.getSkin(preview.getUuid()), 180.0F + yawOffset, false, 0.0F);
+        setupAvatarRenderState(state, preview, SkinManager.getSkin(preview.getUuid()), baseYaw + yawOffset, false, 0.0F);
         
         state.yRot = 0.0F;
         state.xRot = 0.0F;
@@ -82,11 +89,32 @@ public final class GuiUtils {
         int size = Math.min((bottom - top) / 3, sizeCap);
         float centerY = isUpsideDown(preview.getUuid()) ? -0.9F : 0.9F;
         TEMP_TRANSLATE.set(0.0F, centerY, 0.0F);
-        TEMP_BODY_ROT.identity().rotationZ((float) Math.PI);
+        TEMP_BODY_ROT.identity().rotationZ((float) Math.PI).rotateX(-0.1F);
         TEMP_CAM_ROT.identity(); 
 
         //~ if >=26.1 '.submitEntityRenderState' -> '.entity' {
         gui.entity(state, size, TEMP_TRANSLATE, TEMP_BODY_ROT, TEMP_CAM_ROT, left, top, right, bottom);
+        //~}
+    }
+
+    public static void renderCapeInRect(GuiGraphicsExtractor gui, PreviewPlayer preview, float hoverYaw, int left, int top, int right, int bottom) {
+        AvatarRenderState state = new AvatarRenderState();
+        float finalYaw = -35.0F + hoverYaw;
+        setupAvatarRenderState(state, preview, SkinManager.getSkin(preview.getUuid()), finalYaw, false, 0.0F);
+        state.ageInTicks = 0.0F;
+        
+        state.yRot = 0.0F;
+        state.xRot = 0.0F;
+
+        int height = bottom - top;
+        int size = (int) (height * 0.78F);
+        float centerY = isUpsideDown(preview.getUuid()) ? -0.9F : 0.9F;
+        TEMP_TRANSLATE_CAPE.set(0.0F, centerY, 0.0F);
+        TEMP_BODY_ROT_CAPE.identity().rotationZ((float) Math.PI).rotateX(-0.22F);
+        TEMP_CAM_ROT_CAPE.identity(); 
+
+        //~ if >=26.1 '.submitEntityRenderState' -> '.entity' {
+        gui.entity(state, size, TEMP_TRANSLATE_CAPE, TEMP_BODY_ROT_CAPE, TEMP_CAM_ROT_CAPE, left, top, right, bottom);
         //~}
     }
 
@@ -111,7 +139,7 @@ public final class GuiUtils {
         gui.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, y, w, h);
 
         if (player != null) {
-            renderEntityInRect(gui, player, hoverYaw, x, y, x + w, y + h, 72);
+            renderEntityInRect(gui, player, hoverYaw, x, y, x + w, y + h, 72, 180.0F);
         }
 
         if (equipped) {

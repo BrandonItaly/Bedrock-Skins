@@ -142,11 +142,11 @@ public final class SkinPackLoader {
         return id == null ? null : loadedSkins.get(id); 
     }
 
-    public static void registerRemoteSkin(String key, String geometryJson, byte[] textureData) {
-        registerRemoteSkin(key, geometryJson, textureData, null);
+    public static void registerRemoteSkin(String key, String geometryJson, byte[] textureData, byte[] capeData) {
+        registerRemoteSkin(key, geometryJson, textureData, capeData, null);
     }
 
-    public static void registerRemoteSkin(String key, String geometryJson, byte[] textureData, String hash) {
+    public static void registerRemoteSkin(String key, String geometryJson, byte[] textureData, byte[] capeData, String hash) {
         SkinId idKey = SkinId.parse(key);
         if (loadedSkins.containsKey(idKey) || !validateRemoteData(textureData, geometryJson)) return;
         
@@ -157,15 +157,29 @@ public final class SkinPackLoader {
             NativeImage img = NativeImage.read(new ByteArrayInputStream(textureData));
             DynamicTexture texture = null;
             Identifier id = null;
+            
+            NativeImage capeImg = (capeData != null && capeData.length > 0) ? NativeImage.read(new ByteArrayInputStream(capeData)) : null;
+            DynamicTexture capeTexture = null;
+            Identifier capeId = null;
+            
             boolean success = false;
             try {
                 texture = new DynamicTexture(() -> "bedrock_skin_remote", img);
                 id = createIdentifier("bedrockskins", "skins/remote/" + StringUtils.sanitize(key));
                 Minecraft.getInstance().getTextureManager().register(id, texture);
 
+                if (capeImg != null) {
+                    capeTexture = new DynamicTexture(() -> "bedrock_cape_remote", capeImg);
+                    capeId = createIdentifier("bedrockskins", "capes/remote/" + StringUtils.sanitize(key));
+                    Minecraft.getInstance().getTextureManager().register(capeId, capeTexture);
+                }
+
                 LoadedSkin ls = new LoadedSkin("Remote", "Remote", key,
-                    geometryObject, AssetSource.Remote.INSTANCE);
+                    geometryObject, AssetSource.Remote.INSTANCE,
+                    capeId != null ? AssetSource.Remote.INSTANCE : null,
+                    false);
                 ls.identifier = id;
+                ls.capeIdentifier = capeId;
                 ls.hash = (hash == null || hash.isEmpty()) ? com.brandonitaly.bedrockskins.BedrockSkinsNetworking.computeHash(geometryJson, textureData) : hash;
                 loadedSkins.put(idKey, ls);
                 success = true;
@@ -178,6 +192,14 @@ public final class SkinPackLoader {
                     }
                     if (id != null) {
                         Minecraft.getInstance().getTextureManager().release(id);
+                    }
+                    if (capeTexture != null) {
+                        capeTexture.close();
+                    } else if (capeImg != null) {
+                        capeImg.close();
+                    }
+                    if (capeId != null) {
+                        Minecraft.getInstance().getTextureManager().release(capeId);
                     }
                 }
             }
@@ -374,7 +396,6 @@ public final class SkinPackLoader {
                 DynamicTexture texture = null;
                 try {
                     skin.capeIdentifier = createIdentifier("bedrockskins", "capes/" + skin.safePackName + "/" + skin.safeSkinName);
-                    skin.hasElytra = checkElytraPixels(capeImg);
                     texture = new DynamicTexture(() -> "bedrock_cape", capeImg);
                     tm.register(skin.capeIdentifier, texture);
                 } catch (Exception e) {
@@ -388,25 +409,6 @@ public final class SkinPackLoader {
                 }
             }
         }
-    }
-
-    private static boolean checkElytraPixels(NativeImage img) {
-        if (img == null) return false;
-        int w = img.getWidth();
-        int h = img.getHeight();
-        int startX = Math.max(0, w / 2);
-        int endX = w;
-        int startY = Math.max(0, h / 4);
-        int endY = Math.min(h, (3 * h) / 4);
-
-        for (int x = startX; x < endX; x++) {
-            for (int y = startY; y < endY; y++) {
-                int pixel = img.getPixel(x, y);
-                int alpha = (pixel >> 24) & 0xFF;
-                if (alpha != 0) return true;
-            }
-        }
-        return false;
     }
 
     private static NativeImage loadNativeImage(AssetSource source) {

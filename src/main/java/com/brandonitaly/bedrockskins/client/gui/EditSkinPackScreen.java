@@ -1,22 +1,17 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
 import com.mojang.logging.LogUtils;
+import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 public class EditSkinPackScreen extends SkinDialogScreen {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -96,8 +91,7 @@ public class EditSkinPackScreen extends SkinDialogScreen {
     }
 
     private void deletePack() {
-        Path storeDir = com.brandonitaly.bedrockskins.pack.SkinPackLoader.getSkinPacksDir().toPath().resolve(packId.replace("skinpack.", ""));
-        com.brandonitaly.bedrockskins.util.ExternalAssetUtil.deleteDirectoryRecursively(storeDir.toFile());
+        ExternalAssetUtil.deletePack(packId);
         closeAndReload();
     }
 

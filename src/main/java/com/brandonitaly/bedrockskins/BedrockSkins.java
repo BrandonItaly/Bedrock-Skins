@@ -50,7 +50,7 @@ public class BedrockSkins implements ModInitializer {
         // Handle client setting their skin
         ServerPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.SetSkinPayload.ID, (payload, context) -> context.server().execute(() -> {
             ServerSkinHandler.handleSetSkin(
-                context.player(), payload.skinId(), payload.geometry(), payload.textureData(),
+                context.player(), payload.skinId(), payload.geometry(), payload.textureData(), payload.capeData(),
                 broadcast -> context.server().getPlayerList().getPlayers().forEach(p -> ServerPlayNetworking.send(p, broadcast))
             );
         }));
@@ -89,7 +89,7 @@ public class BedrockSkins {
 
         registrar.playToServer(BedrockSkinsNetworking.SetSkinPayload.ID, BedrockSkinsNetworking.SetSkinPayload.CODEC, (payload, context) -> {
             context.enqueueWork(() -> ServerSkinHandler.handleSetSkin(
-                (ServerPlayer) context.player(), payload.skinId(), payload.geometry(), payload.textureData(),
+                (ServerPlayer) context.player(), payload.skinId(), payload.geometry(), payload.textureData(), payload.capeData(),
                 PacketDistributor::sendToAllPlayers
             ));
         });
@@ -146,7 +146,7 @@ class ServerSkinHandler {
         ServerSkinManager.removeSkin(uuid);
     }
 
-    static void handleSetSkin(ServerPlayer player, SkinId skinId, String geometry, byte[] textureData, Consumer<BedrockSkinsNetworking.SkinAnnouncePayload> broadcaster) {
+    static void handleSetSkin(ServerPlayer player, SkinId skinId, String geometry, byte[] textureData, byte[] capeData, Consumer<BedrockSkinsNetworking.SkinAnnouncePayload> broadcaster) {
         final UUID uuid = player.getUUID();
         final long now = System.nanoTime();
         final Long last = lastSkinChange.get(uuid);
@@ -167,6 +167,14 @@ class ServerSkinHandler {
                 logger.warn("Player {} sent invalid texture format (not PNG).", player.getName().getString());
                 return;
             }
+            if (capeData != null && capeData.length > 256 * 1024) {
+                logger.warn("Player {} sent oversized cape texture ({} bytes).", player.getName().getString(), capeData.length);
+                return;
+            }
+            if (capeData != null && capeData.length > 0 && !isValidPngHeader(capeData)) {
+                logger.warn("Player {} sent invalid cape texture format (not PNG).", player.getName().getString());
+                return;
+            }
         }
 
         logger.info("Player {} set skin to {}", player.getName().getString(), (skinId == null ? "RESET" : skinId.toString()));
@@ -177,12 +185,12 @@ class ServerSkinHandler {
         } else {
             try {
                 // Validate by creating a temporary PlayerSkinData object
-                new PlayerSkinData(skinId, geometry, textureData);
+                new PlayerSkinData(skinId, geometry, textureData, capeData);
             } catch (IllegalArgumentException e) {
                 logger.warn("Player {} sent invalid geometry payload.", player.getName().getString());
                 return;
             }
-            hash = ServerSkinManager.setSkin(uuid, skinId, geometry, textureData);
+            hash = ServerSkinManager.setSkin(uuid, skinId, geometry, textureData, capeData);
         }
 
         lastSkinChange.put(uuid, now);
@@ -199,7 +207,7 @@ class ServerSkinHandler {
                 ownerUuid = player.getUUID();
             }
             var payload = new BedrockSkinsNetworking.SkinUpdatePayload(
-                ownerUuid, data.skinId(), data.geometry(), data.textureData()
+                ownerUuid, data.skinId(), data.geometry(), data.textureData(), data.capeData()
             );
             //? if fabric {
             ServerPlayNetworking.send(player, payload);

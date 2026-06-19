@@ -2,7 +2,9 @@ package com.brandonitaly.bedrockskins.client;
 
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
+import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import net.minecraft.client.Minecraft;
+import net.minecraft.resources.Identifier;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
@@ -17,15 +19,88 @@ public final class SkinManager {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Map<UUID, SkinId> playerSkins = new HashMap<>();
     private static final Map<UUID, SkinId> previewSkins = new HashMap<>();
+    private static SkinId localCapeOverride = null;
+    private static Identifier localAccountCapeOverride = null;
+    public static final Identifier CAPE_NONE = Identifier.fromNamespaceAndPath("bedrockskins", "none");
+    public static final SkinId CAPE_NONE_SKIN_ID = SkinId.of("none", "none");
+
+    public static final class ResolvedCape {
+        public final Identifier capeId;
+
+        public ResolvedCape(Identifier capeId) {
+            this.capeId = capeId;
+        }
+    }
+
+    public static ResolvedCape resolveCape(UUID uuid, LoadedSkin loadedSkin, boolean isLocalPlayer) {
+        Identifier customCapeId = null;
+
+        // 1. Explicit custom skin pack cape override (local player only)
+        if (isLocalPlayer) {
+            SkinId capeOverrideId = getLocalCapeOverride();
+            if (capeOverrideId != null && !capeOverrideId.equals(CAPE_NONE_SKIN_ID)) {
+                var capeSkin = SkinPackLoader.getLoadedSkin(capeOverrideId);
+                if (capeSkin != null && capeSkin.capeIdentifier != null) {
+                    customCapeId = capeSkin.capeIdentifier;
+                }
+            }
+        }
+
+        // 2. Bedrock skin's default built-in cape
+        boolean ignoreBuiltIn = isLocalPlayer && CAPE_NONE_SKIN_ID.equals(getLocalCapeOverride());
+        if (!ignoreBuiltIn && customCapeId == null && loadedSkin != null && loadedSkin.capeIdentifier != null) {
+            customCapeId = loadedSkin.capeIdentifier;
+        }
+
+        // 3. Local Mojang account cape override (local player only)
+        if (customCapeId == null && isLocalPlayer) {
+            Identifier accountCapeOverride = getLocalAccountCapeOverride();
+            if (accountCapeOverride != null) {
+                if (accountCapeOverride.equals(CAPE_NONE)) {
+                    return new ResolvedCape(CAPE_NONE);
+                } else {
+                    customCapeId = accountCapeOverride;
+                }
+            }
+        }
+
+        if (customCapeId != null) {
+            return new ResolvedCape(customCapeId);
+        }
+
+        return null;
+    }
+
+    public static SkinId getLocalCapeOverride() {
+        return localCapeOverride;
+    }
+
+    public static Identifier getLocalAccountCapeOverride() {
+        return localAccountCapeOverride;
+    }
+
+    public static void setLocalAccountCapeOverride(Identifier id) {
+        localAccountCapeOverride = id;
+    }
+
+    public static void setLocalCapeOverride(SkinId id) {
+        localCapeOverride = id;
+        saveCurrentState();
+    }
 
     public static void load() {
         UUID localUuid = getLocalPlayerUuid();
         if (localUuid == null) return;
 
         try {
-            String selected = StateManager.readState().selected();
+            LocalSkinConfig state = StateManager.readState();
+            String selected = state.selected();
             if (selected != null && !selected.isBlank()) playerSkins.put(localUuid, SkinId.parse(selected));
             else playerSkins.remove(localUuid);
+
+            String cape = state.selectedCape();
+            if (cape != null && !cape.isBlank()) localCapeOverride = SkinId.parse(cape);
+            else localCapeOverride = null;
         } catch (Exception e) { LOGGER.error("SkinManager: load failed", e); }
     }
 
@@ -62,8 +137,7 @@ public final class SkinManager {
         if (!Objects.equals(previous, id)) releaseIfUnused(previous);
         
         if (uuid.equals(getLocalPlayerUuid())) {
-            try { StateManager.saveState(FavoritesManager.getFavoriteKeys(), id.toString()); } 
-            catch (Exception e) { LOGGER.error("SkinManager: failed to save selected skin", e); }
+            saveCurrentState();
         }
     }
 
@@ -87,10 +161,24 @@ public final class SkinManager {
         SkinId previous = playerSkins.remove(uuid);
         if (previous != null) {
             if (uuid.equals(getLocalPlayerUuid())) {
-                try { StateManager.saveState(FavoritesManager.getFavoriteKeys(), null); } 
-                catch (Exception e) { LOGGER.error("SkinManager: failed to clear selected skin", e); }
+                saveCurrentState();
             }
             releaseIfUnused(previous);
+        }
+    }
+
+    private static void saveCurrentState() {
+        UUID localUuid = getLocalPlayerUuid();
+        if (localUuid == null) return;
+        try {
+            SkinId activeSkin = playerSkins.get(localUuid);
+            StateManager.saveState(
+                FavoritesManager.getFavoriteKeys(),
+                activeSkin != null ? activeSkin.toString() : null,
+                localCapeOverride != null ? localCapeOverride.toString() : null
+            );
+        } catch (Exception e) {
+            LOGGER.error("SkinManager: failed to save state", e);
         }
     }
 

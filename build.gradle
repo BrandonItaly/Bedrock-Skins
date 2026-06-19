@@ -228,18 +228,18 @@ publishMods {
     def versions = mc_version_range.split(",")
     def supportedJavaVersions = isJava25 ? [JavaVersion.VERSION_25] : [JavaVersion.VERSION_21]
 
-    curseforge {
-        projectId = curseforge_id
-        accessToken = getSecret("CURSEFORGE_API_KEY")
-        minecraftVersions.addAll(versions)
-        javaVersions.addAll(supportedJavaVersions)
-        clientRequired = true
-        serverRequired = false
-        if (isFabric) {
-            optional("modmenu")
-            requires("fabric-api")
-        }
-    }
+    // curseforge {
+    //     projectId = curseforge_id
+    //     accessToken = getSecret("CURSEFORGE_API_KEY")
+    //     minecraftVersions.addAll(versions)
+    //     javaVersions.addAll(supportedJavaVersions)
+    //     clientRequired = true
+    //     serverRequired = false
+    //     if (isFabric) {
+    //         optional("modmenu")
+    //         requires("fabric-api")
+    //     }
+    // }
 
     modrinth {
         projectId = modrinth_id

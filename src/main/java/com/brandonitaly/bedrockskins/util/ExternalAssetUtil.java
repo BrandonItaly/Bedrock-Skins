@@ -2,15 +2,22 @@ package com.brandonitaly.bedrockskins.util;
 
 import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
+import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class ExternalAssetUtil {
@@ -43,30 +50,110 @@ public class ExternalAssetUtil {
         return new byte[0];
     }
 
-    public static boolean deletePack(String packId, String storeFolderName) {
-        boolean deleted = false;
+    private static final Pattern SERIALIZE_NAME_PATTERN = Pattern.compile("\"serialize_name\"\\s*:\\s*\"([^\"]+)\"");
 
-        // Try deleting via loaded AssetSource
-        LoadedSkin firstSkin;
-        synchronized (SkinPackLoader.loadedSkins) {
-            firstSkin = SkinPackLoader.loadedSkins.values().stream()
-                    .filter(skin -> packId.equals(skin.packId))
-                    .findFirst()
-                    .orElse(null);
+    /**
+     * Deletes a skin pack from disk and unloads it from memory.
+     */
+    public static boolean deletePack(String packId) {
+        if (packId == null || packId.isBlank()) return false;
+
+        String cleanId = packId.replace("skinpack.", "").toLowerCase(Locale.ROOT);
+        File skinPacksDir = SkinPackLoader.getSkinPacksDir();
+        if (skinPacksDir == null || !skinPacksDir.exists()) return false;
+
+        String folderName = resolveFromLoadedSkins(packId, cleanId, skinPacksDir);
+
+        if (folderName == null) {
+            folderName = resolveByScanning(packId, cleanId, skinPacksDir);
         }
 
-        if (firstSkin != null) {
-            if (firstSkin.texture instanceof AssetSource.File(String path)) {
-                Path textureFile = Path.of(path);
-                Path targetToDelete = textureFile.getFileName().toString().endsWith(".png") ? textureFile.getParent() : null;
-                if (targetToDelete != null && Files.exists(targetToDelete)) {
-                    deleteDirectoryRecursively(targetToDelete.toFile());
-                    deleted = true;
+        boolean deleted = deleteTarget(skinPacksDir, folderName);
+        unloadPackSkins(packId, cleanId);
+
+        return deleted;
+    }
+
+    private static String resolveFromLoadedSkins(String packId, String cleanId, File skinPacksDir) {
+        Path packsRoot = skinPacksDir.toPath().toAbsolutePath();
+        synchronized (SkinPackLoader.loadedSkins) {
+            for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
+                if (!matchesPackId(skin.packId, packId, cleanId)) continue;
+                if (skin.texture instanceof AssetSource.File(String path)) {
+                    Path texturePath = Path.of(path).toAbsolutePath();
+                    if (texturePath.startsWith(packsRoot)) {
+                        Path relative = packsRoot.relativize(texturePath);
+                        if (relative.getNameCount() > 0) {
+                            return relative.getName(0).toString();
+                        }
+                    }
                 }
             }
         }
-        
-        return deleted;
+        return null;
+    }
+
+    private static String resolveByScanning(String packId, String cleanId, File skinPacksDir) {
+        File[] children = skinPacksDir.listFiles();
+        if (children == null) return null;
+
+        for (File child : children) {
+            String name = child.getName().toLowerCase(Locale.ROOT);
+            if (name.equals(cleanId) || name.equals(packId.toLowerCase(Locale.ROOT))) {
+                return child.getName();
+            }
+            if (child.isDirectory()) {
+                File skinsJson = new File(child, "skins.json");
+                if (skinsJson.exists()) {
+                    try {
+                        String content = Files.readString(skinsJson.toPath(), StandardCharsets.UTF_8);
+                        Matcher matcher = SERIALIZE_NAME_PATTERN.matcher(content);
+                        if (matcher.find()) {
+                            String serializeName = matcher.group(1);
+                            if (matchesPackId(serializeName, packId, cleanId)) {
+                                return child.getName();
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        return null;
+    }
+
+    private static boolean deleteTarget(File skinPacksDir, String folderName) {
+        if (folderName == null) return false;
+        File target = new File(skinPacksDir, folderName);
+        if (!target.exists()) return false;
+
+        if (target.isDirectory()) {
+            deleteDirectoryRecursively(target);
+            return true;
+        }
+        try {
+            return Files.deleteIfExists(target.toPath());
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private static void unloadPackSkins(String packId, String cleanId) {
+        synchronized (SkinPackLoader.loadedSkins) {
+            List<SkinId> toRemove = new ArrayList<>();
+            SkinPackLoader.loadedSkins.forEach((id, skin) -> {
+                if (matchesPackId(skin.packId, packId, cleanId)) {
+                    toRemove.add(id);
+                }
+            });
+            for (SkinId id : toRemove) {
+                SkinPackLoader.releaseSkinAssets(id);
+                SkinPackLoader.loadedSkins.remove(id);
+            }
+        }
+    }
+
+    private static boolean matchesPackId(String candidate, String packId, String cleanId) {
+        return packId.equals(candidate) || cleanId.equalsIgnoreCase(candidate);
     }
 
     public static void deleteDirectoryRecursively(File directory) {
