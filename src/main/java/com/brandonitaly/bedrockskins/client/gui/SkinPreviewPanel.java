@@ -385,7 +385,9 @@ public class SkinPreviewPanel {
                 int textWidth = Math.max(hasName ? font.width(nameToRender) : 0, hasDesc ? font.width(descToRender) : 0);
                 int textHeight = font.lineHeight + (hasName && hasDesc ? font.lineHeight + lineGap : 0) - 1;
 
-                int tooltipX = Math.clamp(centerX - (textWidth / 2), x + 8, x + width - textWidth - 8);
+                int minX = x + 8;
+                int maxX = Math.max(minX, x + width - textWidth - 8);
+                int tooltipX = Math.clamp(centerX - (textWidth / 2), minX, maxX);
                 int tooltipCenterX = tooltipX + (textWidth / 2);
 
                 TooltipRenderUtil.extractTooltipBackground(gui, tooltipX, textY, textWidth, textHeight, null);
