@@ -160,6 +160,9 @@ final class PckModelConverter {
                     String baseType = baseTypeForBoneName(lowerBoneName);
                     if (baseType != null) {
                         Float offsetY = offsets.get(baseType);
+                        if (offsetY == null && "HELMET".equals(baseType)) {
+                            offsetY = offsets.get("HEAD");
+                        }
 
                         if (offsetY != null && Math.abs(offsetY) > 0.0001f) {
                             applyOffsetToBoneCubesY(bone, offsetY);
@@ -195,6 +198,7 @@ final class PckModelConverter {
             cube.add("uv", createJsonArray(box.uvX(), box.uvY()));
             cube.addProperty("inflate", (double) (box.scale() + defaultOverlayInflate(box.type())));
             cube.addProperty("mirror", box.mirror());
+            cube.addProperty("armor_mask", box.armorMask());
             cubes.add(cube);
         }
 
@@ -253,13 +257,51 @@ final class PckModelConverter {
             float uvX = parseFloatToken(t[7]);
             float uvY = parseFloatToken(t[8]);
 
-            boolean mirror = t.length > 10 && ("1".equals(t[10]) || "true".equalsIgnoreCase(t[10]));
-            float scale = t.length > 11 ? parseFloatToken(t[11]) : 0.0f;
+            int armorMask = 0;
+            float scale = 0.0f;
+            boolean mirror = false;
 
-            return new PckBox(type, posX, posY, posZ, sizeX, sizeY, sizeZ, uvX, uvY, mirror, scale);
+            if (t.length == 10) {
+                mirror = "1".equals(t[9]) || "true".equalsIgnoreCase(t[9]);
+            } else if (t.length == 11) {
+                if (t[9].contains(".") || t[9].contains(",")) {
+                    scale = parseFloatToken(t[9]);
+                    mirror = "1".equals(t[10]) || "true".equalsIgnoreCase(t[10]);
+                } else {
+                    try {
+                        armorMask = Integer.parseInt(t[9]);
+                        mirror = "1".equals(t[10]) || "true".equalsIgnoreCase(t[10]);
+                    } catch (NumberFormatException e) {
+                        scale = parseFloatToken(t[9]);
+                        mirror = "1".equals(t[10]) || "true".equalsIgnoreCase(t[10]);
+                    }
+                }
+            } else if (t.length >= 12) {
+                try {
+                    armorMask = Integer.parseInt(t[9]);
+                } catch (NumberFormatException ignored) {}
+                mirror = "1".equals(t[10]) || "true".equalsIgnoreCase(t[10]);
+                scale = parseFloatToken(t[11]);
+            }
+
+            // Apply implicit armor mask flags based on custom box types
+            armorMask |= getImplicitArmorMask(type);
+
+            return new PckBox(type, posX, posY, posZ, sizeX, sizeY, sizeZ, uvX, uvY, mirror, scale, armorMask);
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private static int getImplicitArmorMask(String type) {
+        return switch (type) {
+            case "BODYARMOR", "ARMARMOR0", "ARMARMOR1" -> 2; // CHESTPLATE
+            case "LEGGING0", "LEGGING1" -> 4; // LEGGINGS
+            case "BOOT0", "BOOT1" -> 8; // BOOTS
+            case "BELT" -> 6; // CHESTPLATE | LEGGINGS
+            case "SOCK0", "SOCK1" -> 12; // LEGGINGS | BOOTS
+            default -> 0;
+        };
     }
 
     private static Map<String, Float> parsePckOffsets(PckFileParser.PckAsset asset) {
@@ -284,7 +326,8 @@ final class PckModelConverter {
 
     private static String baseTypeForBoneName(String lowerBoneName) {
         return switch (lowerBoneName) {
-            case "head", "hat" -> "HEAD";
+            case "head" -> "HEAD";
+            case "hat" -> "HELMET";
             case "body", "jacket" -> "BODY";
             case "rightarm", "rightsleeve" -> "ARM0";
             case "leftarm", "leftsleeve" -> "ARM1";
@@ -417,7 +460,8 @@ final class PckModelConverter {
         if (raw == null) return null;
         String up = raw.trim().toUpperCase(Locale.ROOT);
         return switch (up) {
-            case "HEAD", "BODY", "ARM0", "ARM1", "LEG0", "LEG1", "HEADWEAR", "JACKET", "SLEEVE0", "SLEEVE1", "PANTS0", "PANTS1" -> up;
+            case "HEAD", "BODY", "ARM0", "ARM1", "LEG0", "LEG1", "HEADWEAR", "JACKET", "SLEEVE0", "SLEEVE1", "PANTS0", "PANTS1",
+                 "BODYARMOR", "ARMARMOR0", "ARMARMOR1", "LEGGING0", "LEGGING1", "BOOT0", "BOOT1", "BELT", "SOCK0", "SOCK1" -> up;
             default -> null;
         };
     }
@@ -426,7 +470,7 @@ final class PckModelConverter {
         if (raw == null) return null;
         String up = raw.trim().toUpperCase(Locale.ROOT);
         return switch (up) {
-            case "HEAD", "BODY", "ARM0", "ARM1", "LEG0", "LEG1", "CHEST" -> up;
+            case "HEAD", "BODY", "ARM0", "ARM1", "LEG0", "LEG1", "CHEST", "HELMET" -> up;
             default -> null;
         };
     }
@@ -434,11 +478,11 @@ final class PckModelConverter {
     private static String baseTypeForBoxType(String type) {
         return switch (type) {
             case "HEADWEAR" -> "HEAD";
-            case "JACKET" -> "BODY";
-            case "SLEEVE0" -> "ARM0";
-            case "SLEEVE1" -> "ARM1";
-            case "PANTS0" -> "LEG0";
-            case "PANTS1" -> "LEG1";
+            case "JACKET", "BODYARMOR", "BELT" -> "BODY";
+            case "SLEEVE0", "ARMARMOR0" -> "ARM0";
+            case "SLEEVE1", "ARMARMOR1" -> "ARM1";
+            case "PANTS0", "LEGGING0", "BOOT0", "SOCK0" -> "LEG0";
+            case "PANTS1", "LEGGING1", "BOOT1", "SOCK1" -> "LEG1";
             default -> type;
         };
     }
@@ -446,11 +490,11 @@ final class PckModelConverter {
     private static String boneNameForBoxType(String type) {
         return switch (type) {
             case "HEAD" -> "head";
-            case "BODY" -> "body";
-            case "ARM0" -> "rightArm";
-            case "ARM1" -> "leftArm";
-            case "LEG0" -> "rightLeg";
-            case "LEG1" -> "leftLeg";
+            case "BODY", "BODYARMOR", "BELT" -> "body";
+            case "ARM0", "ARMARMOR0" -> "rightArm";
+            case "ARM1", "ARMARMOR1" -> "leftArm";
+            case "LEG0", "LEGGING0", "BOOT0", "SOCK0" -> "rightLeg";
+            case "LEG1", "LEGGING1", "BOOT1", "SOCK1" -> "leftLeg";
             case "HEADWEAR" -> "hat";
             case "JACKET" -> "jacket";
             case "SLEEVE0" -> "rightSleeve";
@@ -485,6 +529,6 @@ final class PckModelConverter {
     private record PckBox(
         String type, float posX, float posY, float posZ,
         float sizeX, float sizeY, float sizeZ,
-        float uvX, float uvY, boolean mirror, float scale
+        float uvX, float uvY, boolean mirror, float scale, int armorMask
     ) {}
 }

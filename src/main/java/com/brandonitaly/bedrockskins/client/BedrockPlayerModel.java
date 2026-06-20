@@ -31,6 +31,11 @@ public class BedrockPlayerModel extends PlayerModel {
     public final ModelPart customRightArm, customLeftArm;
     public final ModelPart customRightLeg, customLeftLeg;
 
+    private final List<ModelPart> helmetParts = new ArrayList<>();
+    private final List<ModelPart> chestplateParts = new ArrayList<>();
+    private final List<ModelPart> leggingsParts = new ArrayList<>();
+    private final List<ModelPart> bootsParts = new ArrayList<>();
+
     public BedrockPlayerModel(ModelPart root, boolean thinArms, Map<String, ModelPart> partsMap, Map<String, PartTransform> defaultTransforms, float heightMultiplier, BedrockAnimFlags animFlags) {
         super(root, thinArms);
         this.partsMap = Map.copyOf(partsMap);
@@ -45,6 +50,20 @@ public class BedrockPlayerModel extends PlayerModel {
         this.customLeftArm = resolvePart("leftArm", PartNames.LEFT_ARM);
         this.customRightLeg = resolvePart("rightLeg", PartNames.RIGHT_LEG);
         this.customLeftLeg = resolvePart("leftLeg", PartNames.LEFT_LEG);
+
+        for (Map.Entry<String, ModelPart> entry : partsMap.entrySet()) {
+            String name = entry.getKey().toLowerCase(Locale.ROOT);
+            ModelPart part = entry.getValue();
+            if (name.endsWith("helmet")) {
+                helmetParts.add(part);
+            } else if (name.equals("rightarmarmor") || name.equals("leftarmarmor") || name.endsWith("bodyarmor")) {
+                chestplateParts.add(part);
+            } else if (name.equals("rightlegarmor") || name.equals("leftlegarmor") || name.endsWith("leggings")) {
+                leggingsParts.add(part);
+            } else if (name.equals("rightbootarmor") || name.equals("leftbootarmor") || name.endsWith("boots")) {
+                bootsParts.add(part);
+            }
+        }
     }
 
     public record PartTransform(float x, float y, float z, float pitch, float yaw, float roll) {}
@@ -93,6 +112,7 @@ public class BedrockPlayerModel extends PlayerModel {
 
     public static BedrockPlayerModel create(BedrockGeometry geometry, boolean thinArms) {
         BedrockGeometry normalized = normalizeGeometry(geometry);
+        splitArmorBones(normalized);
         ensureRequiredBones(normalized);
         BuildRootResult result = buildRoot(normalized);
         
@@ -107,7 +127,9 @@ public class BedrockPlayerModel extends PlayerModel {
         float heightMultiplier = Math.max(headPivotY / 24.0f, 0.001f);
         BedrockAnimFlags flags = BedrockAnimFlags.fromGeometry(normalized);
 
-        return new BedrockPlayerModel(result.root(), thinArms, result.parts(), result.defaults(), heightMultiplier, flags);
+        BedrockPlayerModel model = new BedrockPlayerModel(result.root(), thinArms, result.parts(), result.defaults(), heightMultiplier, flags);
+
+        return model;
     }
 
     private static BedrockGeometry normalizeGeometry(BedrockGeometry geometry) {
@@ -309,6 +331,91 @@ public class BedrockPlayerModel extends PlayerModel {
     public void setBedrockPartVisible(String partName, boolean visible) {
         ModelPart part = resolvePart(partName);
         if (part != null) part.visible = visible;
+
+        // Propagate to armor sub-bones
+        String lower = partName.toLowerCase(Locale.ROOT);
+        if ("bodyarmor".equals(lower)) {
+            setChestplateVisible(visible);
+        } else if ("helmet".equals(lower)) {
+            setHelmetVisible(visible);
+        } else if ("leggings".equals(lower)) {
+            setLeggingsVisible(visible);
+        } else if ("boots".equals(lower)) {
+            setBootsVisible(visible);
+        }
+    }
+
+    private static void setPartsVisible(List<ModelPart> parts, boolean visible) {
+        for (ModelPart part : parts) part.visible = visible;
+    }
+
+    public void setHelmetVisible(boolean visible) { setPartsVisible(helmetParts, visible); }
+    public void setChestplateVisible(boolean visible) { setPartsVisible(chestplateParts, visible); }
+    public void setLeggingsVisible(boolean visible) { setPartsVisible(leggingsParts, visible); }
+    public void setBootsVisible(boolean visible) { setPartsVisible(bootsParts, visible); }
+
+    private static void splitArmorBones(BedrockGeometry geometry) {
+        if (geometry == null || geometry.getBones() == null) return;
+        List<BedrockBone> newBones = new ArrayList<>();
+        for (BedrockBone bone : geometry.getBones()) {
+            if (bone.getCubes() == null || bone.getCubes().isEmpty()) continue;
+
+            List<BedrockCube> remainingCubes = new ArrayList<>();
+            Map<String, List<BedrockCube>> armorGroups = new HashMap<>();
+
+            for (BedrockCube cube : bone.getCubes()) {
+                int mask = cube.getArmorMask();
+                if (mask == 0) {
+                    remainingCubes.add(cube);
+                } else {
+                    String subBoneName = getSubBoneName(bone.getName(), mask);
+                    armorGroups.computeIfAbsent(subBoneName, k -> new ArrayList<>()).add(cube);
+                }
+            }
+
+            bone.setCubes(remainingCubes);
+
+            for (Map.Entry<String, List<BedrockCube>> entry : armorGroups.entrySet()) {
+                String subBoneName = entry.getKey();
+                List<BedrockCube> cubes = entry.getValue();
+
+                BedrockBone subBone = new BedrockBone();
+                subBone.setName(subBoneName);
+                subBone.setParent(bone.getName());
+                subBone.setPivot(bone.getPivot() != null ? new ArrayList<>(bone.getPivot()) : List.of(0f, 0f, 0f));
+                subBone.setRotation(bone.getRotation() != null ? new ArrayList<>(bone.getRotation()) : List.of(0f, 0f, 0f));
+                subBone.setMirror(bone.getMirror());
+                subBone.setInflate(bone.getInflate());
+                subBone.setCubes(cubes);
+
+                newBones.add(subBone);
+            }
+        }
+        geometry.getBones().addAll(newBones);
+    }
+
+    private static String getSubBoneName(String parentName, int mask) {
+        if ((mask & 1) != 0) { // HELMET
+            if ("head".equalsIgnoreCase(parentName)) return "helmet";
+            return parentName + "_helmet";
+        }
+        if ((mask & 2) != 0) { // CHESTPLATE
+            if ("body".equalsIgnoreCase(parentName)) return "bodyArmor";
+            if ("rightArm".equalsIgnoreCase(parentName)) return "rightArmArmor";
+            if ("leftArm".equalsIgnoreCase(parentName)) return "leftArmArmor";
+            return parentName + "_bodyArmor";
+        }
+        if ((mask & 4) != 0) { // LEGGINGS
+            if ("rightLeg".equalsIgnoreCase(parentName)) return "rightLegArmor";
+            if ("leftLeg".equalsIgnoreCase(parentName)) return "leftLegArmor";
+            return parentName + "_leggings";
+        }
+        if ((mask & 8) != 0) { // BOOTS
+            if ("rightLeg".equalsIgnoreCase(parentName)) return "rightBootArmor";
+            if ("leftLeg".equalsIgnoreCase(parentName)) return "leftBootArmor";
+            return parentName + "_boots";
+        }
+        return parentName + "_armor_" + mask;
     }
 
     @Override
@@ -406,15 +513,7 @@ public class BedrockPlayerModel extends PlayerModel {
                 armorModel.leftArm.visible = showLArm;
                 yield showBody || showRArm || showLArm;
             }
-            case LEGS -> {
-                boolean showRLeg = !animFlags.rightLegDisabled() || animFlags.forceRightLegArmor();
-                boolean showLLeg = !animFlags.leftLegDisabled() || animFlags.forceLeftLegArmor();
-                
-                armorModel.rightLeg.visible = showRLeg;
-                armorModel.leftLeg.visible = showLLeg;
-                yield showRLeg || showLLeg;
-            }
-            case FEET -> {
+            case LEGS, FEET -> {
                 boolean showRLeg = !animFlags.rightLegDisabled() || animFlags.forceRightLegArmor();
                 boolean showLLeg = !animFlags.leftLegDisabled() || animFlags.forceLeftLegArmor();
                 
@@ -439,7 +538,8 @@ public class BedrockPlayerModel extends PlayerModel {
     }
 
     private ModelPart resolvePart(String name) {
-        return partsMap.getOrDefault(name, partsMap.get(mapBoneName(name)));
+        ModelPart part = partsMap.get(name);
+        return part != null ? part : partsMap.get(mapBoneName(name));
     }
 
     private ModelPart resolvePart(String primary, String fallback) {

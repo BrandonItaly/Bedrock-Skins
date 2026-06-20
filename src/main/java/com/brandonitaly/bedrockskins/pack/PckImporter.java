@@ -57,14 +57,17 @@ public class PckImporter {
             File textsDir = new File(outputDir, "texts");
             if (!textsDir.exists()) textsDir.mkdirs();
 
-            String currentLang = "en_us";
             Map<String, Map<String, String>> pckTranslations = PckLocalizationSupport.loadPckLocalisations(allAssets);
             String fileBaseName = StringUtils.stripExtension(pckFile.getName());
+            if (fileBaseName.equalsIgnoreCase("TexturePack") || fileBaseName.equalsIgnoreCase("skins")) {
+                File parent = pckFile.getParentFile();
+                if (parent != null) {
+                    fileBaseName = parent.getName();
+                }
+            }
             String serializeName = StringUtils.sanitize(fileBaseName);
             if (serializeName.isEmpty()) serializeName = "legacy_console";
 
-            String packDisplayToken = StringUtils.firstNonBlank(PckLocalizationSupport.findPackDisplayToken(pckTranslations, currentLang), StringUtils.firstNonBlank(getPackDisplayName(generalAssets), fileBaseName));
-            String packDisplayName = StringUtils.firstNonBlank(PckLocalizationSupport.resolvePckLocalizedToken(packDisplayToken, pckTranslations, currentLang), fileBaseName);
             String safePackTranslationKey = "skinpack." + serializeName;
 
             JsonObject manifest = new JsonObject();
@@ -78,23 +81,16 @@ public class PckImporter {
             masterGeometryFile.addProperty("format_version", "1.12.0");
             masterGeometryFile.add("minecraft:geometry", masterGeometryArray);
 
-            StringBuilder langBuilder = new StringBuilder();
-            langBuilder.append(safePackTranslationKey).append("=").append(packDisplayName).append("\n");
+            record SkinLocData(PckFileParser.PckAsset asset, String safeSkinTranslationKey, String skinDisplayToken, String skinKey) {}
+            List<SkinLocData> skinLocs = new ArrayList<>();
 
             for (PckFileParser.PckAsset asset : skins) {
                 String skinKey = StringUtils.stripExtension(fileNameOnly(normalizePckPath(asset.filename())));
                 if (skinKey.isEmpty()) continue;
 
                 String safeSkinTranslationKey = "skin." + serializeName + "." + skinKey;
-                String skinDisplayToken = StringUtils.firstNonBlank(asset.getFirstProperty("DISPLAYNAMEID", "IDS_DISPLAY_NAME", "LOC_KEY"), StringUtils.firstNonBlank(asset.getFirstProperty("DISPLAYNAME"), skinKey));
-                String skinDisplayName = StringUtils.firstNonBlank(PckLocalizationSupport.resolvePckLocalizedToken(skinDisplayToken, pckTranslations, currentLang), skinKey);
-                langBuilder.append(safeSkinTranslationKey).append("=").append(skinDisplayName).append("\n");
-
-                String skinThemeToken = PckLocalizationSupport.deriveSkinThemeToken(asset, skinDisplayToken, skinKey, pckTranslations, currentLang);
-                String resolvedTheme = PckLocalizationSupport.resolvePckLocalizedToken(skinThemeToken, pckTranslations, currentLang);
-                if (resolvedTheme != null && !resolvedTheme.isBlank() && !resolvedTheme.equalsIgnoreCase(PckLocalizationSupport.cleanLocText(skinThemeToken))) {
-                    langBuilder.append(safeSkinTranslationKey).append(".description=").append(resolvedTheme).append("\n");
-                }
+                String skinDisplayToken = StringUtils.firstNonBlank(asset.getFirstProperty("DISPLAYNAMEID", "IDS_DISPLAY_NAME", "LOC_KEY", "DISPLAYNAME"), skinKey);
+                skinLocs.add(new SkinLocData(asset, safeSkinTranslationKey, skinDisplayToken, skinKey));
 
                 // Geometry mapping
                 Long animMask = PckModelConverter.parseAnimMask(asset);
@@ -189,7 +185,35 @@ public class PckImporter {
             if (masterGeometryArray.size() > 0) {
                 Files.writeString(new File(outputDir, "geometry.json").toPath(), GSON.toJson(masterGeometryFile), StandardCharsets.UTF_8);
             }
-            Files.writeString(new File(textsDir, "en_us.lang").toPath(), langBuilder.toString(), StandardCharsets.UTF_8);
+
+            Set<String> languages = new TreeSet<>(pckTranslations.keySet());
+            languages.add("en_us");
+
+            for (String lang : languages) {
+                StringBuilder langBuilder = new StringBuilder();
+                String packDisplayToken = StringUtils.firstNonBlank(PckLocalizationSupport.findPackDisplayToken(pckTranslations, lang), StringUtils.firstNonBlank(getPackDisplayName(generalAssets), fileBaseName));
+                String packDisplayName = StringUtils.firstNonBlank(PckLocalizationSupport.resolvePckLocalizedToken(packDisplayToken, pckTranslations, lang), fileBaseName);
+                langBuilder.append(safePackTranslationKey).append("=").append(packDisplayName).append("\n");
+
+                for (SkinLocData loc : skinLocs) {
+                    String skinDisplayName = StringUtils.firstNonBlank(PckLocalizationSupport.resolvePckLocalizedToken(loc.skinDisplayToken(), pckTranslations, lang), loc.skinKey());
+                    langBuilder.append(loc.safeSkinTranslationKey()).append("=").append(skinDisplayName).append("\n");
+
+                    String skinThemeToken = PckLocalizationSupport.deriveSkinThemeToken(loc.asset(), loc.skinDisplayToken(), loc.skinKey(), pckTranslations, lang);
+                    String resolvedTheme = PckLocalizationSupport.resolvePckLocalizedToken(skinThemeToken, pckTranslations, lang);
+                    if (resolvedTheme != null && !resolvedTheme.isBlank() && !resolvedTheme.equalsIgnoreCase(PckLocalizationSupport.cleanLocText(skinThemeToken))) {
+                        langBuilder.append(loc.safeSkinTranslationKey()).append(".description=").append(resolvedTheme).append("\n");
+                    }
+                }
+
+                Files.writeString(new File(textsDir, lang + ".lang").toPath(), langBuilder.toString(), StandardCharsets.UTF_8);
+            }
+
+            JsonArray langArray = new JsonArray();
+            for (String lang : languages) {
+                langArray.add(lang);
+            }
+            Files.writeString(new File(textsDir, "languages.json").toPath(), GSON.toJson(langArray), StandardCharsets.UTF_8);
 
             return true;
         } catch (Exception e) {

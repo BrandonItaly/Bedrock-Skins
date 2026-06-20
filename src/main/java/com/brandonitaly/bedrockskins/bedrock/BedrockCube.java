@@ -10,6 +10,8 @@ public class BedrockCube {
     private Float inflate;
     private Boolean mirror;
     private List<Float> rotation;
+    @SerializedName("armor_mask")
+    private Integer armorMask = 0;
 
     public List<Float> getOrigin() { return origin; }
     public void setOrigin(List<Float> origin) { this.origin = origin; }
@@ -28,4 +30,7 @@ public class BedrockCube {
 
     public List<Float> getRotation() { return rotation; }
     public void setRotation(List<Float> rotation) { this.rotation = rotation; }
+
+    public Integer getArmorMask() { return armorMask != null ? armorMask : 0; }
+    public void setArmorMask(Integer armorMask) { this.armorMask = armorMask; }
 }

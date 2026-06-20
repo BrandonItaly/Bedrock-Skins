@@ -17,7 +17,13 @@ final class PckLocalizationSupport {
     }
 
     static String findPackDisplayToken(Map<String, Map<String, String>> pckTranslations, String currentLang) {
-        return getTranslationFromMap(pckTranslations, "ids_display_name", currentLang) != null ? "IDS_DISPLAY_NAME" : null;
+        if (getTranslationFromMap(pckTranslations, "ids_display_name", currentLang) != null) {
+            return "IDS_DISPLAY_NAME";
+        }
+        if (getTranslationFromMap(pckTranslations, "title", currentLang) != null) {
+            return "title";
+        }
+        return null;
     }
 
     static String deriveSkinThemeToken(PckFileParser.PckAsset asset, String skinDisplayToken, String skinKey, Map<String, Map<String, String>> pckTranslations, String currentLang) {
@@ -165,14 +171,12 @@ final class PckLocalizationSupport {
             }
 
             Map<String, String> map = out.computeIfAbsent(blockLang, k -> new HashMap<>((int) (pairs / 0.75f) + 1));
-            boolean corrupted = false;
 
             for (int k = 0; k < pairs && r.hasRemaining(); k++) {
                 if (r.remaining() < 1) break;
                 int valueLen = r.readU8();
 
                 if (valueLen > r.remaining()) {
-                    corrupted = true;
                     break;
                 }
 
@@ -181,7 +185,11 @@ final class PckLocalizationSupport {
                 if (!value.isBlank()) map.put(keys.get(k), value);
             }
 
-            if (corrupted && !resyncToNextLocBlock(r, blockStart)) break;
+            if (!resyncToNextLocBlock(r, blockStart)) {
+                if (i < directoryLanguages.size() - 1) {
+                    break;
+                }
+            }
         }
 
         return out;

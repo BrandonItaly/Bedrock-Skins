@@ -56,19 +56,27 @@ public abstract class HumanoidModelMixin<T extends HumanoidRenderState> {
 
     @Unique
     private void applyBedrockPartVisibility(BedrockPlayerModel bedrockModel, T state) {
-        bedrockModel.setBedrockPartVisible("bodyArmor", true);
-        bedrockModel.setBedrockPartVisible("helmet", true);
+        bedrockModel.setChestplateVisible(true);
+        bedrockModel.setHelmetVisible(true);
+        bedrockModel.setLeggingsVisible(true);
+        bedrockModel.setBootsVisible(true);
 
         boolean capeVisible = state instanceof AvatarRenderState avatarState && avatarState.showCape;
         if (capeVisible && hasActualCape(state)) {
-            bedrockModel.setBedrockPartVisible("bodyArmor", false);
+            bedrockModel.setChestplateVisible(false);
         }
 
         if (!state.chestEquipment.isEmpty()) {
-            bedrockModel.setBedrockPartVisible("bodyArmor", false);
+            bedrockModel.setChestplateVisible(false);
         }
         if (!state.headEquipment.isEmpty()) {
-            bedrockModel.setBedrockPartVisible("helmet", false);
+            bedrockModel.setHelmetVisible(false);
+        }
+        if (!state.legsEquipment.isEmpty()) {
+            bedrockModel.setLeggingsVisible(false);
+        }
+        if (!state.feetEquipment.isEmpty()) {
+            bedrockModel.setBootsVisible(false);
         }
     }
 
