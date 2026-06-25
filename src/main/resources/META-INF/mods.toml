@@ -16,6 +16,6 @@ credits="${mod_credits}"
 [[dependencies.${mod_id}]]
 modId = "minecraft"
 mandatory = true
-versionRange = "[${mc_version_range}]"
+versionRange = "[${mc_version},${mc_version_next})"
 ordering = "NONE"
 side = "BOTH"

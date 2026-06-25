@@ -18,6 +18,6 @@ config="${mod_id}.mixins.json"
 [[dependencies.${mod_id}]]
 modId = "minecraft"
 type="required"
-versionRange = "[${mc_version_range}]"
+versionRange = "[${mc_version},${mc_version_next})"
 ordering = "NONE"
 side = "BOTH"

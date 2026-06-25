@@ -140,6 +140,17 @@ if (isFabric) {
 }
 
 processResources {
+    def mcVersion = stonecutter.current.version.split("-")[0]
+    def matcher = (mcVersion =~ /^\d+\.\d+/)
+    def minecraftLine = matcher ? matcher[0] : mcVersion
+    def parts = minecraftLine.split(/\./)
+    def mcVersionNext = minecraftLine
+    if (parts.size() == 2) {
+        def minecraftMajor = parts[0]
+        def minecraftMinor = parts[1].toInteger()
+        mcVersionNext = "${minecraftMajor}.${minecraftMinor + 1}"
+    }
+
     def version_range = isFabric ? mc_version_range.split(",").join("\",\"") : mc_version_range
     def descriptorByLoader = [
             fabric  : "fabric.mod.json",
@@ -155,7 +166,7 @@ processResources {
             "mod_source": mod_source, "mod_issues": mod_issues,
             "neoforge_version": neoforge_version, "forge_version": forge_version,
             "fabric_api_version": fabric_api_version, "mc_version_range": version_range,
-            "mc_version": stonecutter.current.version, "aw": aw
+            "mc_version": isFabric ? "${mcVersion}-" : mcVersion, "mc_version_next": mcVersionNext, "aw": aw
     ]
     
     inputs.properties(expandProps)
@@ -225,7 +236,7 @@ publishMods {
     if (isFabric) modLoaders.add "quilt"
     else if (loader == "forge" && stonecutter.eval(stonecutter.current.version, "<=1.20.1")) modLoaders.add "neoforge"
     
-    def versions = mc_version_range.split(",")
+    def versions = (mc_version_range && mc_version_range != "[VERSIONED]") ? mc_version_range.split(",") : [stonecutter.current.version]
     def supportedJavaVersions = isJava25 ? [JavaVersion.VERSION_25] : [JavaVersion.VERSION_21]
 
     // curseforge {
