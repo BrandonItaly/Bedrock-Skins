@@ -59,7 +59,7 @@ public class EditSkinPackScreen extends SkinDialogScreen {
     }
 
     private void importSkin() {
-        this.minecraft.setScreen(new ImportSkinChoiceScreen((SkinSelectionScreen) parent, packId));
+        this.minecraft.gui.setScreen(new ImportSkinChoiceScreen((SkinSelectionScreen) parent, packId));
     }
 
     private void savePack() {

@@ -120,7 +120,7 @@ public class PaperDollHelper {
 
         updatePreviewSkin(minecraft);
 
-        openSkinButton = SpriteIconButton.builder(Component.empty(), b -> minecraft.setScreen(BedrockSkinsClient.getAppropriateSkinScreen(parentScreen)), true)
+        openSkinButton = SpriteIconButton.builder(Component.empty(), b -> minecraft.gui.setScreen(BedrockSkinsClient.getAppropriateSkinScreen(parentScreen)), true)
             .size(BTN_SIZE, BTN_SIZE).sprite(BedrockSkinsSprites.MY_CHARACTERS_ICON, 16, 16).build();
         openSkinButton.setTooltip(Tooltip.create(Component.translatable("bedrockskins.button.change_skin.tooltip")));
         
@@ -171,7 +171,7 @@ public class PaperDollHelper {
         return mouseX >= l && mouseX <= l + PREVIEW_W && mouseY >= getModelTop(t) - HOVER_PADDING && mouseY <= getModelFeet(t) + HOVER_PADDING;
     }
 
-    public void render(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, int width, int height, Font font, Minecraft minecraft) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, int width, int height, Font font, Minecraft minecraft) {
         if (previewPlayer == null) return;
 
         if (SkinManager.getLocalSelectedKey() == null) {

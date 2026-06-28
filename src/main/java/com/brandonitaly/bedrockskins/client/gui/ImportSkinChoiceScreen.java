@@ -112,7 +112,7 @@ public class ImportSkinChoiceScreen extends SkinDialogScreen {
                 }
             });
             if (path != null) {
-                this.minecraft.setScreen(new AddSkinScreen((SkinSelectionScreen) parent, packId, path));
+                this.minecraft.gui.setScreen(new AddSkinScreen((SkinSelectionScreen) parent, packId, path));
             }
         }
     }
@@ -221,7 +221,7 @@ public class ImportSkinChoiceScreen extends SkinDialogScreen {
                 final Path finalTempCape = tempCape;
                 final boolean finalIsSlim = isSlim;
                 minecraft.execute(() -> {
-                    this.minecraft.setScreen(new AddSkinScreen(
+                    this.minecraft.gui.setScreen(new AddSkinScreen(
                             (SkinSelectionScreen) parent,
                             packId,
                             finalTempSkin.toAbsolutePath().toString(),

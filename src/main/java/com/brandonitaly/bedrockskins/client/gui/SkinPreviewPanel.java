@@ -96,7 +96,7 @@ public class SkinPreviewPanel {
         widgetAdder.accept(resetButton);
 
         customizationButton = SpriteIconButton.builder(Component.empty(), b -> {
-            minecraft.setScreen(new SkinCustomizationScreen(parentScreen, minecraft.options));
+            minecraft.gui.setScreen(new SkinCustomizationScreen(parentScreen, minecraft.options));
         }, true).size(20, 20).sprite(BedrockSkinsSprites.CHARACTER_CREATOR_ICON, 16, 16).build();
         customizationButton.setTooltip(Tooltip.create(Component.translatable("options.skinCustomisation.title")));
         widgetAdder.accept(customizationButton);

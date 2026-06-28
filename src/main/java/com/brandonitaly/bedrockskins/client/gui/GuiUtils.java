@@ -18,7 +18,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.EntityType;
 //? if >=26.2
-// import net.minecraft.world.entity.EntityTypes;
+ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.PlayerModelPart;
@@ -41,7 +41,7 @@ public final class GuiUtils {
 
         state.id = -0x5D011;
         //~ if >=26.2 'EntityType.' -> 'EntityTypes.' {
-        state.entityType = EntityType.PLAYER;
+        state.entityType = EntityTypes.PLAYER;
         //~}
         state.lightCoords = 15728880;
         state.boundingBoxHeight = 1.8F;

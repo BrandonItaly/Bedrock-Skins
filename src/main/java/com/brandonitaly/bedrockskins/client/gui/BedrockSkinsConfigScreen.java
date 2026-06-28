@@ -34,11 +34,11 @@ public class BedrockSkinsConfigScreen extends OptionsSubScreen {
 
         footer.addChild(Button.builder(Component.translatable("dataPack.validation.reset"), (button) -> {
             BedrockSkinsConfig.resetToDefault();
-            this.minecraft.setScreen(new BedrockSkinsConfigScreen(this.lastScreen));
+            this.minecraft.gui.setScreen(new BedrockSkinsConfigScreen(this.lastScreen));
         }).build());
 
         footer.addChild(Button.builder(CommonComponents.GUI_DONE, (button) -> {
-            this.minecraft.setScreen(this.lastScreen);
+            this.minecraft.gui.setScreen(this.lastScreen);
         }).build());
     }
 }

@@ -3,8 +3,8 @@ package com.brandonitaly.bedrockskins.client;
 import com.brandonitaly.bedrockskins.BedrockSkinsNetworking;
 import com.brandonitaly.bedrockskins.client.gui.SkinSelectionScreen;
 //? if legacy4j {
-import com.brandonitaly.bedrockskins.client.gui.legacy.Legacy4JMenuIntegration;
-//?}
+/*import com.brandonitaly.bedrockskins.client.gui.legacy.Legacy4JMenuIntegration;
+*///?}
 import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
 import com.brandonitaly.bedrockskins.util.PlatformUtil;
 import com.brandonitaly.bedrockskins.pack.AssetSource;
@@ -75,14 +75,14 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
 
     public static Screen getAppropriateSkinScreen(Screen parent) {
         //? if legacy4j {
-            if (PlatformUtil.isModLoaded("legacy")) {
+            /*if (PlatformUtil.isModLoaded("legacy")) {
             try {
                 return Legacy4JMenuIntegration.createScreen(parent);
             } catch (Throwable t) {
                 LOGGER.warn("Failed to open Legacy4J skin screen; falling back to default screen", t);
             }
         }
-        //?}
+        *///?}
         return new SkinSelectionScreen(parent);
     }
 
@@ -93,14 +93,14 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         for (KeyMapping key : ALL_KEYS) KeyMappingHelper.registerKeyMapping(key);
 
         //? if legacy4j {
-            if (PlatformUtil.isModLoaded("legacy")) {
+            /*if (PlatformUtil.isModLoaded("legacy")) {
             try {
                 Legacy4JMenuIntegration.init();
             } catch (Throwable throwable) {
                 LOGGER.warn("Failed to initialize Legacy4J hosted menu integration", throwable);
             }
         }
-        //?}
+        *///?}
 
         ClientTickEvents.END_CLIENT_TICK.register(BedrockSkinsClient::handleTick);
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
@@ -161,9 +161,9 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
 
     static void handleTick(Minecraft client) {
         //? if legacy4j {
-            if (PlatformUtil.isModLoaded("legacy")) Legacy4JMenuIntegration.init();
-        //?}
-        while (openKey.consumeClick()) client.setScreen(getAppropriateSkinScreen(client.screen));
+            /*if (PlatformUtil.isModLoaded("legacy")) Legacy4JMenuIntegration.init();
+        *///?}
+        while (openKey.consumeClick()) client.gui.setScreen(getAppropriateSkinScreen(client.gui.screen()));
         if (client.player == null) return;
         
         toggleModelPart(client, toggleCapeKey, PlayerModelPart.CAPE);
@@ -201,7 +201,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
                 if (id != null) SkinManager.setSkin(playerUuid, id);
             }
 
-            if (client.screen instanceof SkinSelectionScreen selectionScreen) {
+            if (client.gui.screen() instanceof SkinSelectionScreen selectionScreen) {
                 selectionScreen.onResourcesReloaded();
             }
         } catch (Exception e) {

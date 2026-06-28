@@ -15,7 +15,7 @@ import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.tabs.GridLayoutTab;
 //? if >=26.2
-// import net.minecraft.client.gui.components.tabs.MenuTabBar;
+ import net.minecraft.client.gui.components.tabs.MenuTabBar;
 import net.minecraft.client.gui.components.tabs.TabManager;
 import net.minecraft.client.gui.components.tabs.TabNavigationBar;
 import net.minecraft.client.gui.components.Tooltip;
@@ -96,7 +96,7 @@ public class SkinSelectionScreen extends Screen {
         previewPanel.init(rPreview.x, rPreview.y, rPreview.w, rPreview.h, this, this::addRenderableWidget);
         
         //~ if >=26.2 'TabNavigationBar.' -> 'MenuTabBar.' {
-        tabNavigationBar = TabNavigationBar.builder(tabManager, width)
+        tabNavigationBar = MenuTabBar.builder(tabManager, width)
             .addTabs(new SkinsTab(), new CapesTab(), new DownloadTab()).build();//~}
         
         this.addRenderableWidget(tabNavigationBar);
@@ -120,11 +120,11 @@ public class SkinSelectionScreen extends Screen {
     public void repositionElements() {
         if (tabNavigationBar != null) {
             //? if >=26.2 {
-            /*tabNavigationBar.arrangeElements(width);*/
+            tabNavigationBar.arrangeElements(width);
             //?} else if >26.1 {
-            tabNavigationBar.updateWidth(width);
+            /*tabNavigationBar.updateWidth(width);
             tabNavigationBar.arrangeElements();
-            //?} else {
+            *///?} else {
             /*tabNavigationBar.setWidth(width);
             tabNavigationBar.arrangeElements();*/
             //?}
@@ -286,7 +286,7 @@ public class SkinSelectionScreen extends Screen {
 
         if (createPackButton == null) {
             createPackButton = SpriteIconButton.builder(Component.empty(), b -> {
-                minecraft.setScreen(new CreateSkinPackScreen(this));
+                minecraft.gui.setScreen(new CreateSkinPackScreen(this));
             }, true).size(20, 20).sprite(BedrockSkinsSprites.ADDON_ICON, 16, 16).build();
             createPackButton.setTooltip(Tooltip.create(Component.translatable("bedrockskins.button.create_skin_pack")));
             addRenderableWidget(createPackButton);
@@ -445,13 +445,13 @@ public class SkinSelectionScreen extends Screen {
 
     private void editPack(String packId) {
         if (isExternalPack(packId)) {
-            minecraft.setScreen(new EditSkinPackScreen(this, packId));
+            minecraft.gui.setScreen(new EditSkinPackScreen(this, packId));
         }
     }
 
     private void editSkin(LoadedSkin skin) {
         if (isExternalPack(skin.packId)) {
-            minecraft.setScreen(new EditSkinScreen(this, skin.packId, skin));
+            minecraft.gui.setScreen(new EditSkinScreen(this, skin.packId, skin));
         }
     }
 
@@ -575,7 +575,7 @@ public class SkinSelectionScreen extends Screen {
         triggerReloadIfNeeded(); 
         if (skinGrid != null) skinGrid.clear();
         if (previewPanel != null) previewPanel.cleanup();
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
     
     // --- Tabs ---
