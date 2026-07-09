@@ -97,7 +97,9 @@ dependencies {
     def addOptionalModrinthDep = { propName, modId ->
         def ver = project.findProperty(propName) ?: ""
         if (ver && ver != "[VERSIONED]") {
-            def depString = "maven.modrinth:${modId}:${stonecutter.current.version}-${ver}-${loader}"
+            def baseName = propName.replaceAll('_version$', '')
+            def compileMcVersion = project.findProperty("${baseName}_compile_mc") ?: stonecutter.current.version
+            def depString = "maven.modrinth:${modId}:${compileMcVersion}-${ver}-${loader}"
             if (isNeoForge) compileOnly depString
             else modCompileOnly depString
         } else {

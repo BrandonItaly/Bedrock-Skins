@@ -1,11 +1,11 @@
 package com.brandonitaly.bedrockskins.client.gui.legacy;
 
 //? if legacy4j {
-/*import net.minecraft.client.Minecraft;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import wily.legacy.client.gui.screen().HelpAndOptionsScreen;
-import wily.legacy.client.gui.screen().ScreenSection;
+import wily.legacy.client.screen.HelpAndOptionsScreen;
+import wily.legacy.client.screen.ScreenSection;
 
 public final class Legacy4JMenuIntegration {
     private static final ScreenSection<?> CHANGE_SKIN = new ScreenSection<>() {
@@ -38,4 +38,4 @@ public final class Legacy4JMenuIntegration {
         minecraft.gui.setScreen(createScreen(parent));
     }
 }
-*///? }
+//? }

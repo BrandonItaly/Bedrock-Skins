@@ -54,7 +54,8 @@ stonecutter parameters {
         string(eval(current.version, ">=26.2")) {
             replace(".setScreen(", ".gui.setScreen(")
             replace("::setScreen", ".gui::setScreen")
-            replace("client.screen", "client.gui.screen()")
+            replace("client.screen)", "client.gui.screen())")
+            replace("client.screen instanceof", "client.gui.screen() instanceof")
             replace("this.minecraft.screen", "this.minecraft.gui.screen()")
         }
     }
