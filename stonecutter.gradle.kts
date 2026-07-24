@@ -59,9 +59,9 @@ stonecutter parameters {
             replace("this.minecraft.screen", "this.minecraft.gui.screen()")
         }
 
-        string(eval(current.version, ">=26.3-fabric")) {
+        string(eval(current.version, ">=26.3-snapshot-5")) {
             replace("InputConstants.Type.KEYSYM", "InputConstants.Type.KEYBOARD")
-            replace("GLFW.GLFW_", "InputConstants.")
+            replace("GLFW.GLFW_KEY", "InputConstants.KEY")
         }
     }
 }

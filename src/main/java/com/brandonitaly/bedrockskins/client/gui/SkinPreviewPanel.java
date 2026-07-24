@@ -162,7 +162,7 @@ public class SkinPreviewPanel {
     }
 
     private void updatePreviewModel(UUID uuid, SkinId skinId) {
-        if (!this.dummyUuid.equals(uuid)) SkinManager.resetPreviewSkin(this.dummyUuid);
+        if (!this.dummyUuid.equals(uuid)) GuiSkinUtils.cleanupPreview(this.dummyUuid);
         this.dummyUuid = uuid;
         
         String name = minecraft.player != null ? minecraft.player.getName().getString() : "Preview";

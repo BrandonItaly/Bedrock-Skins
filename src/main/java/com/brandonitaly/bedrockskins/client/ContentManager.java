@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -34,7 +33,7 @@ import java.util.zip.ZipInputStream;
 public class ContentManager {
     
     private static final Logger LOGGER = LogUtils.getLogger();
-    static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+    public static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
     private static final String CATEGORIES_FILE = "store_categories.json";

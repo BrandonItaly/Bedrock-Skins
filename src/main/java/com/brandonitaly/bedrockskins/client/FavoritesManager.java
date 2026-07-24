@@ -5,15 +5,16 @@ import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public final class FavoritesManager {
     private FavoritesManager() {}
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final List<SkinId> favoriteIds = new ArrayList<>();
+    private static final Set<SkinId> favoriteIds = new LinkedHashSet<>();
 
     public static void load() {
         favoriteIds.clear();
@@ -40,24 +41,28 @@ public final class FavoritesManager {
     }
 
     public static boolean isFavorite(LoadedSkin skin) {
-        return skin != null && favoriteIds.contains(skin.skinId);
+        return skin != null && skin.skinId != null && favoriteIds.contains(skin.skinId);
     }
 
     public static void addFavorite(LoadedSkin skin) {
-        if (skin == null) return;
+        if (skin == null || skin.skinId == null) return;
         
         SkinId id = skin.skinId;
-        if (id != null && !favoriteIds.contains(id)) {
-            favoriteIds.addFirst(id); // Add to the front
+        if (!favoriteIds.contains(id)) {
+            Set<SkinId> newSet = new LinkedHashSet<>();
+            newSet.add(id);
+            newSet.addAll(favoriteIds);
+            favoriteIds.clear();
+            favoriteIds.addAll(newSet);
             save();
         }
     }
 
     public static void removeFavorite(LoadedSkin skin) {
-        if (skin == null) return;
+        if (skin == null || skin.skinId == null) return;
         
         SkinId id = skin.skinId;
-        if (id != null && favoriteIds.remove(id)) {
+        if (favoriteIds.remove(id)) {
             save();
         }
     }
@@ -65,6 +70,6 @@ public final class FavoritesManager {
     public static List<String> getFavoriteKeys() {
         return favoriteIds.stream()
             .map(SkinId::toString)
-            .toList(); // Natively returns an unmodifiable list
+            .toList();
     }
 }

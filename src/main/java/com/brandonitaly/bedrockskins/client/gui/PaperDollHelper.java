@@ -19,7 +19,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.PlainTextButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-//? if <26.3-fabric {
+//? if <26.3-snapshot-5 {
 import org.lwjgl.glfw.GLFW;
 //?}
 import java.util.UUID;
@@ -180,7 +180,7 @@ public class PaperDollHelper {
             previewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(minecraft.getGameProfile(), false).get());
         }
 
-        //? if >=26.3-fabric {
+        //? if >=26.3-snapshot-5 {
         /*boolean leftDown = (org.lwjgl.sdl.SDLMouse.SDL_GetMouseState((java.nio.FloatBuffer) null, (java.nio.FloatBuffer) null) & org.lwjgl.sdl.SDLMouse.SDL_BUTTON_LMASK) != 0;*/
         //?} else {
         long window = minecraft.getWindow().handle();

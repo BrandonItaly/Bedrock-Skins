@@ -1,5 +1,6 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
+import com.brandonitaly.bedrockskins.client.ContentManager;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -107,7 +108,7 @@ public class ImportSkinChoiceScreen extends SkinDialogScreen {
             Minecraft.getInstance().execute(() -> {
                 long handle = Minecraft.getInstance().getWindow().handle();
                 if (handle != 0L) {
-                    //? if >=26.3-fabric {
+                    //? if >=26.3-snapshot-5 {
                     /*org.lwjgl.sdl.SDLVideo.SDL_RestoreWindow(handle);
                     org.lwjgl.sdl.SDLVideo.SDL_RaiseWindow(handle);*/
                     //?} else {
@@ -136,9 +137,7 @@ public class ImportSkinChoiceScreen extends SkinDialogScreen {
             Path tempSkin = null;
             Path tempCape = null;
             try {
-                HttpClient client = HttpClient.newBuilder()
-                        .followRedirects(HttpClient.Redirect.NORMAL)
-                        .build();
+                HttpClient client = ContentManager.HTTP_CLIENT;
 
                 // 1. Resolve UUID
                 String profileUrl = "https://api.mojang.com/users/profiles/minecraft/" + username;

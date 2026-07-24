@@ -10,12 +10,10 @@ import org.slf4j.Logger;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CompletableFuture;
 
 public final class StoreIconManager {
     private static final Logger LOGGER = LogUtils.getLogger();

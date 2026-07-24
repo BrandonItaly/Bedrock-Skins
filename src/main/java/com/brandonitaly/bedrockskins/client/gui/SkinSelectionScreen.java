@@ -107,6 +107,14 @@ public class SkinSelectionScreen extends Screen {
         repositionElements();
     }
 
+    @Override
+    public void removed() {
+        if (previewPanel != null) {
+            previewPanel.cleanup();
+        }
+        super.removed();
+    }
+
     private void openToCurrentSkin() {
         SkinId selectedSkin = SkinManager.getLocalSelectedKey();
         if (selectedSkin == null) return;

@@ -200,7 +200,7 @@ public class EditSkinScreen extends SkinDialogScreen {
             Minecraft.getInstance().execute(() -> {
                 long handle = Minecraft.getInstance().getWindow().handle();
                 if (handle != 0L) {
-                    //? if >=26.3-fabric {
+                    //? if >=26.3-snapshot-5 {
                     /*org.lwjgl.sdl.SDLVideo.SDL_RestoreWindow(handle);
                     org.lwjgl.sdl.SDLVideo.SDL_RaiseWindow(handle);*/
                     //?} else {
