@@ -3,6 +3,7 @@ package com.brandonitaly.bedrockskins.client.gui;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.client.gui.PreviewPlayer.PreviewPlayerPool;
 import com.mojang.authlib.GameProfile;
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.logging.LogUtils;
 import java.util.ArrayList;
 import java.util.List;
@@ -113,7 +114,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
         }
 
         public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
-            if (click.button() == 1) {
+            if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
                 int localX = (int) (click.x() - getX());
                 if (localX < 0) return false;
                 int index = localX / (CELL_WIDTH + CELL_PADDING);

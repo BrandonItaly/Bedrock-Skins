@@ -19,7 +19,9 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.PlainTextButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+//? if <26.3-fabric {
 import org.lwjgl.glfw.GLFW;
+//?}
 import java.util.UUID;
 
 public class PaperDollHelper {
@@ -178,8 +180,12 @@ public class PaperDollHelper {
             previewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(minecraft.getGameProfile(), false).get());
         }
 
+        //? if >=26.3-fabric {
+        /*boolean leftDown = (org.lwjgl.sdl.SDLMouse.SDL_GetMouseState((java.nio.FloatBuffer) null, (java.nio.FloatBuffer) null) & org.lwjgl.sdl.SDLMouse.SDL_BUTTON_LMASK) != 0;*/
+        //?} else {
         long window = minecraft.getWindow().handle();
         boolean leftDown = window != 0L && GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        //?}
 
         boolean insidePreview = isMouseOverPreview(width, height, mouseX, mouseY);
         boolean insideButton = openSkinButton != null && openSkinButton.isHovered();

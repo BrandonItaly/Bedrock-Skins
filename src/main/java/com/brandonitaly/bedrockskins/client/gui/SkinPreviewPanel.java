@@ -13,6 +13,7 @@ import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.SpriteIconButton;
@@ -405,7 +406,7 @@ public class SkinPreviewPanel {
     }
     
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && mouseX >= previewLeft && mouseX <= previewRight && mouseY >= previewTop && mouseY <= previewBottom) {
+        if ((button == 0 || button == InputConstants.MOUSE_BUTTON_LEFT) && mouseX >= previewLeft && mouseX <= previewRight && mouseY >= previewTop && mouseY <= previewBottom) {
             isDraggingPreview = true;
             return true;
         }
@@ -413,7 +414,7 @@ public class SkinPreviewPanel {
     }
     
     public boolean mouseReleased(int button) {
-        if (button == 0 && isDraggingPreview) {
+        if ((button == 0 || button == InputConstants.MOUSE_BUTTON_LEFT) && isDraggingPreview) {
             isDraggingPreview = false;
             return true;
         }

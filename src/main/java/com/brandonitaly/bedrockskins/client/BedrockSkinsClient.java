@@ -40,7 +40,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.PlayerModelPart;
+//? if <26.3-fabric {
 import org.lwjgl.glfw.GLFW;
+//?}
 import org.slf4j.Logger;
 
 import java.util.ArrayList;

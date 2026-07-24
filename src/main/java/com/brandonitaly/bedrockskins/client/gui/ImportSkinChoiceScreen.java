@@ -107,8 +107,13 @@ public class ImportSkinChoiceScreen extends SkinDialogScreen {
             Minecraft.getInstance().execute(() -> {
                 long handle = Minecraft.getInstance().getWindow().handle();
                 if (handle != 0L) {
+                    //? if >=26.3-fabric {
+                    /*org.lwjgl.sdl.SDLVideo.SDL_RestoreWindow(handle);
+                    org.lwjgl.sdl.SDLVideo.SDL_RaiseWindow(handle);*/
+                    //?} else {
                     org.lwjgl.glfw.GLFW.glfwRestoreWindow(handle);
                     org.lwjgl.glfw.GLFW.glfwFocusWindow(handle);
+                    //?}
                 }
             });
             if (path != null) {

@@ -1,5 +1,6 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -85,7 +86,7 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
         }
 
         public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
-            if (click.button() == 1 && onEdit != null) {
+            if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT && onEdit != null) {
                 onEdit.accept(packId);
                 GuiUtils.playButtonClickSound();
                 return true;

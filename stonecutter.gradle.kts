@@ -58,5 +58,10 @@ stonecutter parameters {
             replace("client.screen instanceof", "client.gui.screen() instanceof")
             replace("this.minecraft.screen", "this.minecraft.gui.screen()")
         }
+
+        string(eval(current.version, ">=26.3-fabric")) {
+            replace("InputConstants.Type.KEYSYM", "InputConstants.Type.KEYBOARD")
+            replace("GLFW.GLFW_", "InputConstants.")
+        }
     }
 }

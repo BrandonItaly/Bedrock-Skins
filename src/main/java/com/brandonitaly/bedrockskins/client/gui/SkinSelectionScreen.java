@@ -215,20 +215,20 @@ public class SkinSelectionScreen extends Screen {
         if (isDownload) {
             openPacksButton.visible = false;
             
-            downloadButton.setX(width / 2 - 154); downloadButton.setY(btnY);
+            downloadButton.setPosition(width / 2 - 154, btnY);
             downloadButton.setWidth(btnW); downloadButton.setHeight(btnH);
             downloadButton.visible = true;
 
-            doneButton.setX(width / 2 + 4); doneButton.setY(btnY);
+            doneButton.setPosition(width / 2 + 4, btnY);
             doneButton.setWidth(btnW); doneButton.setHeight(btnH);
         } else {
-            openPacksButton.setX(width / 2 - 154); openPacksButton.setY(btnY);
+            openPacksButton.setPosition(width / 2 - 154, btnY);
             openPacksButton.setWidth(btnW); openPacksButton.setHeight(btnH);
             openPacksButton.visible = true;
 
             downloadButton.visible = false;
 
-            doneButton.setX(width / 2 + 4); doneButton.setY(btnY);
+            doneButton.setPosition(width / 2 + 4, btnY);
             doneButton.setWidth(btnW); doneButton.setHeight(btnH);
         }
     }
@@ -281,7 +281,7 @@ public class SkinSelectionScreen extends Screen {
             packList = new SkinPackListWidget(minecraft, rPacks.w - pPad * 2, plH, plY, 28);
             addRenderableWidget(packList);
         }
-        packList.setX(rPacks.x + pPad); packList.setY(plY);
+        packList.setPosition(rPacks.x + pPad, plY);
         packList.setWidth(Math.max(10, rPacks.w - pPad * 2)); packList.setHeight(Math.max(10, plH));
 
         if (createPackButton == null) {
@@ -291,8 +291,7 @@ public class SkinSelectionScreen extends Screen {
             createPackButton.setTooltip(Tooltip.create(Component.translatable("bedrockskins.button.create_skin_pack")));
             addRenderableWidget(createPackButton);
         }
-        createPackButton.setX(rPacks.x + rPacks.w - 22);
-        createPackButton.setY(rPacks.y + 2);
+        createPackButton.setPosition(rPacks.x + rPacks.w - 22, rPacks.y + 2);
 
 
         int sgY = rSkins.y + pHead + pPad, sgH = rSkins.h - pHead - (pPad * 2);
@@ -303,7 +302,7 @@ public class SkinSelectionScreen extends Screen {
                     () -> previewPanel != null ? previewPanel.getSelectedSkin() : null, font);
             addRenderableWidget(skinGrid);
         }
-        skinGrid.setX(rSkins.x + pPad); skinGrid.setY(sgY);
+        skinGrid.setPosition(rSkins.x + pPad, sgY);
         skinGrid.setWidth(Math.max(10, rSkins.w - pPad * 2)); skinGrid.setHeight(Math.max(10, sgH));
 
         // Store Widgets
@@ -334,8 +333,7 @@ public class SkinSelectionScreen extends Screen {
                 () -> selectCapesCategory("skinpack"), () -> "skinpack".equals(selectedCapesCategory)));
             addRenderableWidget(capeSidebar);
         }
-        capeSidebar.setX(rPacks.x + pPad);
-        capeSidebar.setY(cgY);
+        capeSidebar.setPosition(rPacks.x + pPad, cgY);
         capeSidebar.setWidth(Math.max(10, rPacks.w - pPad * 2));
         capeSidebar.setHeight(Math.max(10, cgH));
         capeSidebar.visible = (activeTab == 1);
@@ -350,15 +348,13 @@ public class SkinSelectionScreen extends Screen {
                     () -> previewPanel != null ? previewPanel.getSelectedCape() : null, font);
             addRenderableWidget(capeGrid);
         }
-        capeGrid.setX(rSkins.x + pPad);
-        capeGrid.setY(cgY);
+        capeGrid.setPosition(rSkins.x + pPad, cgY);
         capeGrid.setWidth(Math.max(10, rSkins.w - pPad * 2));
         capeGrid.setHeight(Math.max(10, cgH));
         capeGrid.visible = (activeTab == 1);
 
         if (downloadList != null && tabArea != null) {
-            downloadList.setX(tabArea.left());
-            downloadList.setY(tabArea.top());
+            downloadList.setPosition(tabArea.left(), tabArea.top());
             downloadList.setWidth(tabArea.width());
             downloadList.setHeight(tabArea.height() - 2);
         }
