@@ -18,7 +18,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.EntityType;
 //? if >=26.2
- import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.PlayerModelPart;
@@ -36,6 +36,7 @@ public final class GuiUtils {
 
         BedrockRenderStateStore.setUniqueId(state, preview.getUuid());
         BedrockRenderStateStore.setSkinId(state, skinId);
+        BedrockRenderStateStore.setGuiRender(state, true);
 
         state.nameTag = preview.shouldShowName() ? preview.getDisplayName() : null;
 
@@ -61,8 +62,10 @@ public final class GuiUtils {
         state.showRightPants = options.isModelPartEnabled(PlayerModelPart.RIGHT_PANTS_LEG);
         state.showCape = options.isModelPartEnabled(PlayerModelPart.CAPE);
 
+        //? if <26.3-snapshot-5 {
         state.attackArm = HumanoidArm.RIGHT;
         state.attackTime = attackTime;
+        //?}
         state.isCrouching = crouch;
         state.skin = preview.getSkin(minecraft);
     }

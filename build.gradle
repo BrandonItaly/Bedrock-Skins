@@ -199,6 +199,22 @@ processResources {
             it.exclude()
         }
     }
+
+    doLast {
+        def fabricModJson = file("${outputs.files.asPath}/fabric.mod.json")
+        if (fabricModJson.exists()) {
+            def parsed = new JsonSlurper().parse(fabricModJson)
+            if (parsed.contributors instanceof List) {
+                def cleanList = parsed.contributors.findAll { it?.toString()?.trim() }
+                if (cleanList.isEmpty()) {
+                    parsed.remove("contributors")
+                } else {
+                    parsed.contributors = cleanList
+                }
+            }
+            fabricModJson.text = JsonOutput.prettyPrint(JsonOutput.toJson(parsed))
+        }
+    }
 }
 
 tasks.register('renameJarForPublication', Zip) {

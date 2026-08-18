@@ -2,9 +2,8 @@ package com.brandonitaly.bedrockskins.mixin;
 
 import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 import com.brandonitaly.bedrockskins.client.BedrockSkinsClient;
-import com.brandonitaly.bedrockskins.client.gui.PaperDollHelper;
+import com.brandonitaly.bedrockskins.client.gui.PaperDollWidget;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
@@ -27,13 +26,13 @@ public abstract class TitleScreenMixin extends Screen {
     protected TitleScreenMixin(Component title) { super(title); }
 
     @Unique
-    private PaperDollHelper bedrockskins$helper;
+    private PaperDollWidget bedrockskins$dollWidget;
 
     @Inject(method = "init", at = @At("TAIL"))
     private void bedrockskins$initMainMenuPreview(CallbackInfo ci) {
-        if (bedrockskins$helper != null) {
-            bedrockskins$helper.removed();
-            bedrockskins$helper = null;
+        if (bedrockskins$dollWidget != null) {
+            bedrockskins$dollWidget.removed();
+            bedrockskins$dollWidget = null;
         }
 
         //? if >=26.2 {
@@ -82,29 +81,15 @@ public abstract class TitleScreenMixin extends Screen {
         /*if (!BedrockSkinsConfig.isShowPaperDollOnMainMenu()) return;
         *///?}
         
-        bedrockskins$helper = new PaperDollHelper(this, true);
-        addRenderableWidget(bedrockskins$helper.init(this.minecraft, this.width, this.height));
-    }
-
-    //~ if >=26.1 'render' -> 'extractRenderState' {
-    @Inject(method = "extractRenderState", at = @At("HEAD"))//~}
-    private void bedrockskins$updateMainMenuLayout(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-        if (bedrockskins$helper != null && BedrockSkinsConfig.isShowPaperDollOnMainMenu()) {
-            bedrockskins$helper.updateLayout(this.width, this.height);
-        }
-    }
-
-    //~ if >=26.1 'render' -> 'extractRenderState' {
-    @Inject(method = "extractRenderState", at = @At("TAIL"))//~}
-    private void bedrockskins$renderMainMenuPreview(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-        if (bedrockskins$helper != null && BedrockSkinsConfig.isShowPaperDollOnMainMenu()) {
-            bedrockskins$helper.extractRenderState(guiGraphics, mouseX, mouseY, this.width, this.height, this.font, this.minecraft);
-        }
+        int x = PaperDollWidget.getDefaultLeft(this, this.width);
+        int y = PaperDollWidget.getDefaultTop(this, this.height);
+        bedrockskins$dollWidget = new PaperDollWidget(x, y, this, true);
+        this.addRenderableWidget(bedrockskins$dollWidget);
     }
 
     @Override
     public void removed() {
         super.removed();
-        if (bedrockskins$helper != null) bedrockskins$helper.removed();
+        if (bedrockskins$dollWidget != null) bedrockskins$dollWidget.removed();
     }
 }

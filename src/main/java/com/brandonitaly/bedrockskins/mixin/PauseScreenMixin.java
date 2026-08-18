@@ -2,10 +2,9 @@ package com.brandonitaly.bedrockskins.mixin;
 
 import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 import com.brandonitaly.bedrockskins.client.BedrockSkinsClient;
-import com.brandonitaly.bedrockskins.client.gui.PaperDollHelper;
+import com.brandonitaly.bedrockskins.client.gui.PaperDollWidget;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import com.llamalad7.mixinextras.sugar.Local;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.LinearLayout;
@@ -24,19 +23,21 @@ public abstract class PauseScreenMixin extends Screen {
     protected PauseScreenMixin(Component title) { super(title); }
 
     @Unique
-    private PaperDollHelper bedrockskins$helper;
+    private PaperDollWidget bedrockskins$dollWidget;
 
     @Inject(method = "init", at = @At("TAIL"))
     private void bedrockskins$initPausePreview(CallbackInfo ci) {
-        if (bedrockskins$helper != null) {
-            bedrockskins$helper.removed();
-            bedrockskins$helper = null;
+        if (bedrockskins$dollWidget != null) {
+            bedrockskins$dollWidget.removed();
+            bedrockskins$dollWidget = null;
         }
 
         if (!((PauseScreen) (Object) this).showsPauseMenu() || !BedrockSkinsConfig.isShowPaperDollOnPauseScreen()) return;
 
-        bedrockskins$helper = new PaperDollHelper(this, false);
-        addRenderableWidget(bedrockskins$helper.init(this.minecraft, this.width, this.height));
+        int x = PaperDollWidget.getDefaultLeft(this, this.width);
+        int y = PaperDollWidget.getDefaultTop(this, this.height);
+        bedrockskins$dollWidget = new PaperDollWidget(x, y, this, false);
+        this.addRenderableWidget(bedrockskins$dollWidget);
     }
 
     //? if >=26.2 {
@@ -63,25 +64,9 @@ public abstract class PauseScreenMixin extends Screen {
     }
     //?}
 
-    //~ if >=26.1 'render' -> 'extractRenderState' {
-    @Inject(method = "extractRenderState", at = @At("HEAD"))//~}
-    private void bedrockskins$updatePauseMenuLayout(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-        if (bedrockskins$helper != null && BedrockSkinsConfig.isShowPaperDollOnPauseScreen()) {
-            bedrockskins$helper.updateLayout(this.width, this.height);
-        }
-    }
-
-    //~ if >=26.1 'render' -> 'extractRenderState' {
-    @Inject(method = "extractRenderState", at = @At("TAIL"))//~}
-    private void bedrockskins$renderPausePreview(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-        if (bedrockskins$helper != null && BedrockSkinsConfig.isShowPaperDollOnPauseScreen()) {
-            bedrockskins$helper.extractRenderState(guiGraphics, mouseX, mouseY, this.width, this.height, this.font, this.minecraft);
-        }
-    }
-
     @Override
     public void removed() {
         super.removed();
-        if (bedrockskins$helper != null) bedrockskins$helper.removed();
+        if (bedrockskins$dollWidget != null) bedrockskins$dollWidget.removed();
     }
 }

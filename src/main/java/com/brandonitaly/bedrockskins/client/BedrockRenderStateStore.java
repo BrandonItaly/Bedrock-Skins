@@ -7,8 +7,27 @@ import java.util.WeakHashMap;
 public final class BedrockRenderStateStore {
     private static final WeakHashMap<Object, SkinId> SKIN_IDS = new WeakHashMap<>();
     private static final WeakHashMap<Object, UUID> UNIQUE_IDS = new WeakHashMap<>();
+    private static final WeakHashMap<Object, Boolean> GUI_RENDER_STATES = new WeakHashMap<>();
 
     private BedrockRenderStateStore() {}
+
+    public static boolean isGuiRender(Object renderState) {
+        if (renderState == null) return false;
+        synchronized (GUI_RENDER_STATES) {
+            return Boolean.TRUE.equals(GUI_RENDER_STATES.get(renderState));
+        }
+    }
+
+    public static void setGuiRender(Object renderState, boolean isGui) {
+        if (renderState == null) return;
+        synchronized (GUI_RENDER_STATES) {
+            if (isGui) {
+                GUI_RENDER_STATES.put(renderState, true);
+            } else {
+                GUI_RENDER_STATES.remove(renderState);
+            }
+        }
+    }
 
     public static SkinId getSkinId(Object renderState) {
         if (renderState == null) return null;
