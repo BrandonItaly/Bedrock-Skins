@@ -28,7 +28,7 @@ public class EditSkinPackScreen extends SkinDialogScreen {
     @Override
     protected void init() {
         if (packNameValue.isEmpty()) {
-            this.packNameValue = GuiSkinUtils.getPackDisplayName(packId, null);
+            this.packNameValue = GuiSkinUtils.getPackDisplayName(packId);
         }
 
         int y = contentTopY();

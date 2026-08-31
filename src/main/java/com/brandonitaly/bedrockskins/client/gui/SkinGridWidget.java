@@ -1,7 +1,6 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
-import com.brandonitaly.bedrockskins.client.gui.PreviewPlayer.PreviewPlayerPool;
 import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.logging.LogUtils;
@@ -150,7 +149,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                 this.actionCell = false;
                 this.name = GuiSkinUtils.getSkinDisplayNameText(skin);
                 this.displayNameComponent = Component.literal(this.name);
-                this.player = PreviewPlayerPool.get(new GameProfile(uuid, ""));
+                this.player = new PreviewPlayer(new GameProfile(uuid, ""));
 
                 try {
                     GuiSkinUtils.applyLoadedSkinPreview(this.player, this.uuid, skin);

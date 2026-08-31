@@ -1,13 +1,16 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
 import com.brandonitaly.bedrockskins.client.BedrockSkinsClient;
+import com.brandonitaly.bedrockskins.client.BedrockSkinsConfig;
 import com.brandonitaly.bedrockskins.client.FavoritesManager;
+import com.brandonitaly.bedrockskins.client.MojangSkinManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
 import com.brandonitaly.bedrockskins.client.CapeManager;
 import com.brandonitaly.bedrockskins.client.CapeManager.MinecraftCape;
 import com.brandonitaly.bedrockskins.client.ClientSkinSync;
 import java.util.concurrent.CompletableFuture;
 import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
+import com.brandonitaly.bedrockskins.util.ExternalAssetUtil;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
@@ -44,6 +47,12 @@ public class SkinPreviewPanel {
     private FavoriteHeartButton favoriteButton;
     private Button selectButton, resetButton;
     private SpriteIconButton customizationButton;
+    private SpriteIconButton uploadSkinButton;
+    private boolean isUploadingSkin = false;
+    private String uploadStatusMessage = null;
+    private boolean uploadStatusIsError = false;
+    private long uploadStatusTime = 0L;
+
     private LoadedSkin selectedSkin;
     private MinecraftCape selectedCape;
     private SkinId currentSkinId;
@@ -101,6 +110,13 @@ public class SkinPreviewPanel {
         }, true).size(20, 20).sprite(BedrockSkinsSprites.CHARACTER_CREATOR_ICON, 16, 16).build();
         customizationButton.setTooltip(Tooltip.create(Component.translatable("options.skinCustomisation.title")));
         widgetAdder.accept(customizationButton);
+
+        uploadSkinButton = SpriteIconButton.builder(Component.empty(), b -> uploadSkinToMojang(), true)
+            .size(20, 20)
+            .sprite(BedrockSkinsSprites.UPLOAD_ICON, 16, 16)
+            .build();
+        uploadSkinButton.setTooltip(Tooltip.create(Component.translatable("bedrockskins.button.upload_skin")));
+        widgetAdder.accept(uploadSkinButton);
         
         reposition(x, y, w, h);
         initPreviewState();
@@ -132,6 +148,10 @@ public class SkinPreviewPanel {
         if (customizationButton != null) {
             customizationButton.setX(x + w - 22);
             customizationButton.setY(y + 2);
+        }
+        if (uploadSkinButton != null) {
+            uploadSkinButton.setX(x + w - 44);
+            uploadSkinButton.setY(y + 2);
         }
     }
 
@@ -166,7 +186,7 @@ public class SkinPreviewPanel {
         this.dummyUuid = uuid;
         
         String name = minecraft.player != null ? minecraft.player.getName().getString() : "Preview";
-        dummyPlayer = PreviewPlayer.PreviewPlayerPool.get(new GameProfile(uuid, name));
+        dummyPlayer = new PreviewPlayer(new GameProfile(uuid, name));
 
         if (skinId == null) {
             applyAutoSelectedSkinBehavior();
@@ -180,21 +200,21 @@ public class SkinPreviewPanel {
     }
 
     private void applySkin() {
-        if (parentScreen instanceof SkinSelectionScreen selectionScreen && selectionScreen.getActiveTab() == 1) {
+        if (parentScreen instanceof SkinSelectionScreen selectionScreen && selectionScreen.getActiveTab() == SkinSelectionScreen.TAB_CAPES) {
             applyCape();
             return;
         }
+
         if (selectedSkin == null) return;
-        if (BedrockSkinsClient.blockUnfairSkins && selectedSkin.unfair) return;
+        SkinManager.setSkin(dummyUuid, selectedSkin.skinId);
         try {
             GuiSkinUtils.applySelectedSkin(minecraft, selectedSkin);
-            if (minecraft.player == null) {
-                updatePreviewModel(dummyUuid, selectedSkin.skinId);
-                updateActionButtons();
-            }
         } catch (Exception e) {
-            LOGGER.error("Failed to apply selected skin {}", selectedSkin.skinId, e);
+            LOGGER.error("Failed to apply selected skin", e);
         }
+        currentSkinId = selectedSkin.skinId;
+        updateFavoriteButton();
+
     }
 
     private void applyCape() {
@@ -264,6 +284,65 @@ public class SkinPreviewPanel {
         });
     }
 
+    private void uploadSkinToMojang() {
+        if (!BedrockSkinsConfig.isAccountSkinUploadAllowed() || selectedSkin == null || isUploadingSkin) return;
+
+        applySkin();
+
+        String token = minecraft.getUser().getAccessToken();
+        if (token == null || token.isEmpty() || "0".equals(token) || token.length() < 10) {
+            setUploadStatus(Component.translatable("bedrockskins.status.upload_skin_offline").getString(), true);
+            return;
+        }
+
+        byte[] textureBytes = ExternalAssetUtil.loadTextureData(selectedSkin, minecraft);
+        if (textureBytes.length == 0) {
+            setUploadStatus("Failed to read skin texture data.", true);
+            return;
+        }
+
+        String variant = MojangSkinManager.isSkinSlim(selectedSkin) ? "slim" : "classic";
+
+        isUploadingSkin = true;
+        if (uploadSkinButton != null) {
+            uploadSkinButton.active = false;
+            uploadSkinButton.setTooltip(Tooltip.create(Component.translatable("bedrockskins.status.uploading_skin")));
+        }
+        setUploadStatus(Component.translatable("bedrockskins.status.uploading_skin").getString(), false);
+
+        MojangSkinManager.uploadSkin(token, textureBytes, variant).thenRun(() -> minecraft.execute(() -> {
+            isUploadingSkin = false;
+            if (uploadSkinButton != null) {
+                uploadSkinButton.active = true;
+                uploadSkinButton.setTooltip(Tooltip.create(Component.translatable("bedrockskins.button.upload_skin")));
+            }
+            setUploadStatus(Component.translatable("bedrockskins.status.upload_skin_success").getString(), false);
+
+            var profile = minecraft.getGameProfile();
+            if (profile != null) {
+                minecraft.getSkinManager().createLookup(profile, true);
+            }
+        })).exceptionally(e -> {
+            minecraft.execute(() -> {
+                isUploadingSkin = false;
+                if (uploadSkinButton != null) {
+                    uploadSkinButton.active = true;
+                    uploadSkinButton.setTooltip(Tooltip.create(Component.translatable("bedrockskins.button.upload_skin")));
+                }
+                String errorMsg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+                setUploadStatus(Component.translatable("bedrockskins.status.upload_skin_failed", errorMsg).getString(), true);
+                LOGGER.error("Failed to upload skin to Mojang", e);
+            });
+            return null;
+        });
+    }
+
+    private void setUploadStatus(String message, boolean isError) {
+        this.uploadStatusMessage = message;
+        this.uploadStatusIsError = isError;
+        this.uploadStatusTime = System.currentTimeMillis();
+    }
+
     private void resetSkin() {
         selectedSkin = null;
         currentSkinId = null;
@@ -286,11 +365,15 @@ public class SkinPreviewPanel {
             resetButton.active = selectedSkin != null || 
                 (minecraft.player != null ? SkinManager.getLocalSelectedKey() != null : currentSkinId != null);
         }
+        if (uploadSkinButton != null) {
+            uploadSkinButton.active = !isUploadingSkin && selectedSkin != null;
+            uploadSkinButton.visible = BedrockSkinsConfig.isAccountSkinUploadAllowed() && selectedSkin != null;
+        }
     }
 
     private void updateFavoriteButton() {
         updateActionButtons();
-        if (parentScreen instanceof SkinSelectionScreen selectionScreen && selectionScreen.getActiveTab() == 1) {
+        if (parentScreen instanceof SkinSelectionScreen selectionScreen && selectionScreen.getActiveTab() == SkinSelectionScreen.TAB_CAPES) {
             if (selectButton != null) {
                 selectButton.active = selectedCape != null;
             }
@@ -345,8 +428,8 @@ public class SkinPreviewPanel {
             String nameToRender = null;
             String descToRender = null;
 
-            int activeTab = (parentScreen instanceof SkinSelectionScreen selectionScreen) ? selectionScreen.getActiveTab() : 0;
-            if (activeTab == 1) {
+            int activeTab = (parentScreen instanceof SkinSelectionScreen selectionScreen) ? selectionScreen.getActiveTab() : SkinSelectionScreen.TAB_SKINS;
+            if (activeTab == SkinSelectionScreen.TAB_CAPES) {
                 if (selectedCape != null) {
                     nameToRender = Component.translatable(selectedCape.alias).getString();
                     if (selectedCape.id.equals("none")) {
@@ -376,6 +459,11 @@ public class SkinPreviewPanel {
 
             int rotateY = Math.min((int)(centerY + (scale * 0.95f)), textY - rotateH - 4);
             gui.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.ROTATE_SPRITE, centerX - (rotateW / 2), rotateY, rotateW, rotateH);
+
+            if (uploadStatusMessage != null && System.currentTimeMillis() - uploadStatusTime < 4500) {
+                int statusColor = uploadStatusIsError ? 0xFFFF5555 : 0xFF55FF55;
+                gui.centeredText(font, Component.literal(uploadStatusMessage), centerX, contentTop + 4, statusColor);
+            }
 
             boolean hasName = nameToRender != null && !nameToRender.isEmpty();
             boolean hasDesc = descToRender != null && !descToRender.isEmpty();
@@ -431,11 +519,14 @@ public class SkinPreviewPanel {
         if (resetButton != null) resetButton.visible = visible;
         if (favoriteButton != null) favoriteButton.getButton().visible = visible;
         if (customizationButton != null) customizationButton.visible = visible;
+        if (uploadSkinButton != null) {
+            uploadSkinButton.visible = visible && BedrockSkinsConfig.isAccountSkinUploadAllowed() && selectedSkin != null;
+        }
     }
 
     public void updateButtonsForTab(int tabIndex) {
         reposition(x, y, width, height);
-        if (tabIndex == 0) { // Skins
+        if (tabIndex == SkinSelectionScreen.TAB_SKINS) {
             this.rotationX = 0.0f;
             if (selectButton != null) {
                 selectButton.visible = true;
@@ -444,7 +535,10 @@ public class SkinPreviewPanel {
             if (favoriteButton != null) favoriteButton.getButton().visible = true;
             if (resetButton != null) resetButton.visible = true;
             if (customizationButton != null) customizationButton.visible = true;
-        } else if (tabIndex == 1) { // Capes
+            if (uploadSkinButton != null) {
+                uploadSkinButton.visible = BedrockSkinsConfig.isAccountSkinUploadAllowed() && selectedSkin != null;
+            }
+        } else if (tabIndex == SkinSelectionScreen.TAB_CAPES) {
             this.rotationX = 60.0f;
             if (selectButton != null) {
                 selectButton.visible = true;
@@ -453,7 +547,8 @@ public class SkinPreviewPanel {
             if (favoriteButton != null) favoriteButton.getButton().visible = false;
             if (resetButton != null) resetButton.visible = false;
             if (customizationButton != null) customizationButton.visible = true;
-        } else { // Store
+            if (uploadSkinButton != null) uploadSkinButton.visible = false;
+        } else if (tabIndex == SkinSelectionScreen.TAB_DOWNLOAD) {
             setButtonsVisible(false);
         }
         updateFavoriteButton();

@@ -8,23 +8,32 @@ public final class StateManager {
     private StateManager() {}
 
     private static final File stateFile = new File(Minecraft.getInstance().gameDirectory, "bedrock_skins_state.json");
-    private static volatile LocalSkinConfig cachedState = null;
+    private static LocalSkinConfig cachedState;
 
-    public static LocalSkinConfig readState() {
+    public static synchronized LocalSkinConfig readState() {
         if (cachedState == null) {
             cachedState = JsonCodecFileStore.read(stateFile.toPath(), LocalSkinConfig.CODEC, LocalSkinConfig.DEFAULT, "StateManager");
         }
         return cachedState;
     }
 
-    public static void saveState(List<String> favorites, String selected) {
+    public static synchronized void updateFavorites(List<String> favorites) {
         LocalSkinConfig existing = readState();
-        saveState(favorites, selected, existing.selectedCape());
+        save(existing.withFavorites(favorites));
     }
 
-    public static void saveState(List<String> favorites, String selected, String selectedCape) {
-        LocalSkinConfig state = new LocalSkinConfig(favorites, selected, selectedCape);
+    public static synchronized void updateSelectedSkin(String selected) {
+        LocalSkinConfig existing = readState();
+        save(existing.withSelectedSkin(selected));
+    }
+
+    public static synchronized void updateSelection(String selected, String selectedCape) {
+        LocalSkinConfig existing = readState();
+        save(existing.withSelection(selected, selectedCape));
+    }
+
+    private static void save(LocalSkinConfig state) {
         cachedState = state;
-        JsonCodecFileStore.writeAtomic(stateFile.toPath(), LocalSkinConfig.CODEC, state, "StateManager");
+        JsonCodecFileStore.write(stateFile.toPath(), LocalSkinConfig.CODEC, state, "StateManager");
     }
 }

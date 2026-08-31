@@ -154,6 +154,19 @@ public final class GuiUtils {
         }
     }
 
+    public static void renderGeometryCard(GuiGraphicsExtractor gui, Font font, PreviewPlayer player, Component label,
+                                          int x, int y, int width, int height, boolean selected, int mouseX, int mouseY) {
+        boolean hovered = mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+        Identifier sprite = selected ? BedrockSkinsSprites.CARD_SELECTED
+            : hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE;
+        gui.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, width, height);
+
+        if (player != null) {
+            renderEntityInRect(gui, player, 0.0F, x + 2, y - 10, x + width - 2, y + 130, 112);
+        }
+        gui.centeredText(font, label, x + width / 2, y + height - 14, 0xFFFFFFFF);
+    }
+
     public static void renderPackCard(GuiGraphicsExtractor gui, Font font, String text, int x, int y, int w, int h, boolean hovered, boolean selected, int mouseX, int mouseY) {
         var cardSprite = selected ? BedrockSkinsSprites.CARD_SELECTED : (hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE);
         gui.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, y, w, h);

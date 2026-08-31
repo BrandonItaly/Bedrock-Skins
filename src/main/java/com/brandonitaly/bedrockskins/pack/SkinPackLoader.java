@@ -13,6 +13,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
@@ -24,7 +25,7 @@ public final class SkinPackLoader {
 
     public static final Map<String, String> packTypesByPackId = new ConcurrentHashMap<>();
     public static final Map<String, Identifier> packIconsByPackId = new ConcurrentHashMap<>();
-    public static final Map<SkinId, LoadedSkin> loadedSkins = Collections.synchronizedMap(new LinkedHashMap<>());
+    private static final Map<SkinId, LoadedSkin> loadedSkins = Collections.synchronizedMap(new LinkedHashMap<>());
     public static volatile List<String> packOrder = List.of();
 
     private static final Codec<List<String>> PACK_ORDER_CODEC = Codec.list(Codec.STRING);
@@ -140,6 +141,43 @@ public final class SkinPackLoader {
 
     public static LoadedSkin getLoadedSkin(SkinId id) { 
         return id == null ? null : loadedSkins.get(id); 
+    }
+
+    public static List<LoadedSkin> loadedSkinsSnapshot() {
+        synchronized (loadedSkins) {
+            return List.copyOf(loadedSkins.values());
+        }
+    }
+
+    public static int loadedSkinCount() {
+        return loadedSkins.size();
+    }
+
+    public static boolean hasLoadedSkins() {
+        return !loadedSkins.isEmpty();
+    }
+
+    public static void registerLoadedSkin(LoadedSkin skin) {
+        if (skin != null && skin.skinId != null) loadedSkins.put(skin.skinId, skin);
+    }
+
+    public static void removeLoadedSkin(SkinId id) {
+        if (id == null) return;
+        LoadedSkin removed = loadedSkins.remove(id);
+        if (removed != null) releaseSkinAssets(id);
+    }
+
+    public static int removeLoadedSkins(Predicate<LoadedSkin> predicate) {
+        List<SkinId> removedIds = new ArrayList<>();
+        synchronized (loadedSkins) {
+            loadedSkins.entrySet().removeIf(entry -> {
+                if (!predicate.test(entry.getValue())) return false;
+                removedIds.add(entry.getKey());
+                return true;
+            });
+        }
+        removedIds.forEach(SkinPackLoader::releaseSkinAssets);
+        return removedIds.size();
     }
 
     public static void registerRemoteSkin(String key, String geometryJson, byte[] textureData, byte[] capeData) {

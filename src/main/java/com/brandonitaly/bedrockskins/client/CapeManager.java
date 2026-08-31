@@ -18,14 +18,13 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class CapeManager {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new Gson();
-    private static final Map<String, Boolean> downloadingCapes = new ConcurrentHashMap<>();
+    private static final java.util.Set<String> downloadingCapes = ConcurrentHashMap.newKeySet();
     private static final java.util.Set<Identifier> registeredCapes = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public static boolean isCapeRegistered(Identifier id) {
@@ -130,7 +129,7 @@ public final class CapeManager {
             return;
         }
 
-        if (downloadingCapes.putIfAbsent(cape.id, true) == null) {
+        if (downloadingCapes.add(cape.id)) {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(cape.url))
                     .GET()

@@ -42,6 +42,9 @@ public class SkinSelectionScreen extends Screen {
     private static final String STORE_CATEGORY_ID = "bedrock_skins";
     private static final String STORE_FOLDER = "skin_packs";
     private static final String FAVORITES_PACK_ID = "skinpack.Favorites";
+    static final int TAB_SKINS = 0;
+    static final int TAB_CAPES = 1;
+    static final int TAB_DOWNLOAD = 2;
 
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
@@ -52,7 +55,7 @@ public class SkinSelectionScreen extends Screen {
     private SkinPreviewPanel previewPanel;
     private final Screen parent; 
 
-    private int activeTab = 0; // 0=skins, 1=store
+    private int activeTab = TAB_SKINS;
     private String selectedPackId;
     private final Map<String, List<LoadedSkin>> skinCache = new HashMap<>();
 
@@ -145,7 +148,7 @@ public class SkinSelectionScreen extends Screen {
     }
     
     private void applyTabState(ScreenRectangle tabArea, int tabIndex) {
-        if (this.activeTab == 2 && tabIndex != 2) triggerReloadIfNeeded();
+        if (this.activeTab == TAB_DOWNLOAD && tabIndex != TAB_DOWNLOAD) triggerReloadIfNeeded();
         if (this.activeTab != tabIndex) {
             selectedPackId = null;
             if (previewPanel != null) {
@@ -159,7 +162,7 @@ public class SkinSelectionScreen extends Screen {
         calculateLayout(tabArea);
         initWidgets(tabArea);
         
-        boolean isSkins = activeTab == 0;
+        boolean isSkins = activeTab == TAB_SKINS;
         if (packList != null) packList.visible = isSkins;
         if (skinGrid != null) skinGrid.visible = isSkins;
         if (createPackButton != null) createPackButton.visible = isSkins;
@@ -168,11 +171,11 @@ public class SkinSelectionScreen extends Screen {
             previewPanel.updateButtonsForTab(activeTab);
         }
 
-        boolean isDownload = activeTab == 2;
+        boolean isDownload = activeTab == TAB_DOWNLOAD;
         if (downloadList != null) downloadList.visible = isDownload;
         if (downloadButton != null) downloadButton.visible = isDownload;
 
-        boolean isCapes = activeTab == 1;
+        boolean isCapes = activeTab == TAB_CAPES;
         if (capeGrid != null) capeGrid.visible = isCapes;
         if (capeSidebar != null) capeSidebar.visible = isCapes;
         if (isCapes) {
@@ -187,13 +190,13 @@ public class SkinSelectionScreen extends Screen {
 
     private void setDownloadTabActive(boolean active) {
         if (tabNavigationBar == null) return;
-        tabNavigationBar.setTabActiveState(2, active);
-        if (!active && activeTab == 2) tabNavigationBar.selectTab(0, false);
+        tabNavigationBar.setTabActiveState(TAB_DOWNLOAD, active);
+        if (!active && activeTab == TAB_DOWNLOAD) tabNavigationBar.selectTab(TAB_SKINS, false);
     }
 
     private void updateFooterButtons() {
         int btnW = 150, btnH = 20, btnY = height - 28;
-        boolean isDownload = (activeTab == 2);
+        boolean isDownload = activeTab == TAB_DOWNLOAD;
         
         if (openPacksButton == null) {
             openPacksButton = Button.builder(Component.translatable("bedrockskins.button.open_packs"), b -> openSkinPacksFolder()).build();
@@ -246,10 +249,8 @@ public class SkinSelectionScreen extends Screen {
         for (String packId : SkinPackLoader.packTypesByPackId.keySet()) {
             skinCache.put(packId, new ArrayList<>());
         }
-        synchronized (SkinPackLoader.loadedSkins) {
-            for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
-                skinCache.computeIfAbsent(skin.packId, k -> new ArrayList<>()).add(skin);
-            }
+        for (LoadedSkin skin : SkinPackLoader.loadedSkinsSnapshot()) {
+            skinCache.computeIfAbsent(skin.packId, k -> new ArrayList<>()).add(skin);
         }
         
         List<LoadedSkin> favs = FavoritesManager.getFavoriteKeys().stream()
@@ -344,7 +345,7 @@ public class SkinSelectionScreen extends Screen {
         capeSidebar.setPosition(rPacks.x + pPad, cgY);
         capeSidebar.setWidth(Math.max(10, rPacks.w - pPad * 2));
         capeSidebar.setHeight(Math.max(10, cgH));
-        capeSidebar.visible = (activeTab == 1);
+        capeSidebar.visible = activeTab == TAB_CAPES;
 
         if (capeGrid == null) {
             capeGrid = new CapeGridWidget(minecraft, rSkins.w - pPad * 2, cgH, cgY, 65,
@@ -359,7 +360,7 @@ public class SkinSelectionScreen extends Screen {
         capeGrid.setPosition(rSkins.x + pPad, cgY);
         capeGrid.setWidth(Math.max(10, rSkins.w - pPad * 2));
         capeGrid.setHeight(Math.max(10, cgH));
-        capeGrid.visible = (activeTab == 1);
+        capeGrid.visible = activeTab == TAB_CAPES;
 
         if (downloadList != null && tabArea != null) {
             downloadList.setPosition(tabArea.left(), tabArea.top());
@@ -382,8 +383,7 @@ public class SkinSelectionScreen extends Screen {
         List<LoadedSkin> skins = skinCache.get(selectedPackId);
         int count = skins == null ? 0 : skins.size();
 
-        LoadedSkin firstSkin = (skins != null && !skins.isEmpty()) ? skins.getFirst() : null;
-        return Component.literal(GuiSkinUtils.getPackDisplayName(selectedPackId, firstSkin) + " (" + count + ")");
+        return Component.literal(GuiSkinUtils.getPackDisplayName(selectedPackId) + " (" + count + ")");
     }
 
     private void refreshPackList() {
@@ -396,18 +396,15 @@ public class SkinSelectionScreen extends Screen {
         List<String> sortedPacks = packIds.stream()
                 .filter(pid -> !FAVORITES_PACK_ID.equals(pid) && !"skinpack.Remote".equals(pid))
                 .sorted(PackSortUtil.buildPackComparator(BedrockSkinsConfig.getPackSortOrder(), pid -> {
-                    List<LoadedSkin> s = skinCache.get(pid);
-                    return GuiSkinUtils.getPackDisplayName(pid, (s != null && !s.isEmpty()) ? s.getFirst() : null);
+                    return GuiSkinUtils.getPackDisplayName(pid);
                 }))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
 
         if (!FavoritesManager.getFavoriteKeys().isEmpty()) sortedPacks.addFirst(FAVORITES_PACK_ID);
 
         for (String pid : sortedPacks) {
-            List<LoadedSkin> skins = skinCache.get(pid);
-            LoadedSkin firstSkin = (skins != null && !skins.isEmpty()) ? skins.getFirst() : null;
             packList.addEntryPublic(packList.new SkinPackEntry(
-                pid, GuiSkinUtils.getPackTranslationKey(pid, firstSkin), GuiSkinUtils.getPackFallbackName(pid, firstSkin),
+                pid, pid, pid,
                 this::selectPack, this::editPack, () -> Objects.equals(selectedPackId, pid), font
             ));
         }
@@ -465,11 +462,11 @@ public class SkinSelectionScreen extends Screen {
         downloadButton.active = false;
         downloadButton.setMessage(Component.translatable("bedrockskins.status.downloading"));
 
-        ContentManager.downloadPack(pack, STORE_FOLDER, () -> minecraft.execute(() -> {
+        ContentManager.downloadPack(pack, STORE_FOLDER).thenAccept(success -> minecraft.execute(() -> {
             isDownloading = false;
-            downloadButton.setMessage(Component.translatable("bedrockskins.button.delete"));
+            downloadButton.setMessage(Component.translatable(success ? "bedrockskins.button.delete" : "bedrockskins.button.download"));
             downloadButton.active = true;
-            needsReload = true;
+            if (success) needsReload = true;
         }));
     }
 
@@ -508,10 +505,10 @@ public class SkinSelectionScreen extends Screen {
     }
 
     public void extractRenderState(GuiGraphicsExtractor gui, int mouseX, int mouseY, float delta) {
-        if (activeTab == 0) {
+        if (activeTab == TAB_SKINS) {
             GuiUtils.drawPanelChrome(gui, rPacks.x, rPacks.y, rPacks.w, rPacks.h, Component.translatable("bedrockskins.gui.packs"), font);
             GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h, getSkinsPanelTitle(), font);
-        } else if (activeTab == 1) {
+        } else if (activeTab == TAB_CAPES) {
             GuiUtils.drawPanelChrome(gui, rPacks.x, rPacks.y, rPacks.w, rPacks.h, Component.translatable("bedrockskins.gui.categories"), font);
             Component gridTitle = "owned".equals(selectedCapesCategory) 
                 ? Component.translatable("bedrockskins.capes.owned") 
@@ -544,22 +541,22 @@ public class SkinSelectionScreen extends Screen {
             }
         }
             
-        if (previewPanel != null && activeTab != 2) previewPanel.renderPreview(gui, mouseX);
+        if (previewPanel != null && activeTab != TAB_DOWNLOAD) previewPanel.renderPreview(gui, mouseX);
         super.extractRenderState(gui, mouseX, mouseY, delta);
-        if (previewPanel != null && activeTab != 2) previewPanel.renderSprites(gui);
+        if (previewPanel != null && activeTab != TAB_DOWNLOAD) previewPanel.renderSprites(gui);
         
         gui.blit(RenderPipelines.GUI_TEXTURED, Screen.FOOTER_SEPARATOR, 0, height - layout.getFooterHeight() - 2, 0.0F, 0.0F, width, 2, 32, 2);
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean handled) {
-        return (!handled && previewPanel != null && activeTab != 2 && previewPanel.mouseClicked(event.x(), event.y(), event.button())) 
+        return (!handled && previewPanel != null && activeTab != TAB_DOWNLOAD && previewPanel.mouseClicked(event.x(), event.y(), event.button()))
             || super.mouseClicked(event, handled);
     }
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        return (previewPanel != null && activeTab != 2 && previewPanel.mouseReleased(event.button()))
+        return (previewPanel != null && activeTab != TAB_DOWNLOAD && previewPanel.mouseReleased(event.button()))
             || super.mouseReleased(event);
     }
     
@@ -586,17 +583,17 @@ public class SkinSelectionScreen extends Screen {
 
     private class SkinsTab extends GridLayoutTab {
         public SkinsTab() { super(Component.translatable("bedrockskins.gui.skins")); }
-        @Override public void doLayout(ScreenRectangle tabArea) { applyTabState(tabArea, 0); }
+        @Override public void doLayout(ScreenRectangle tabArea) { applyTabState(tabArea, TAB_SKINS); }
     }
 
     private class DownloadTab extends GridLayoutTab {
         public DownloadTab() { super(Component.translatable("bedrockskins.gui.download")); }
-        @Override public void doLayout(ScreenRectangle tabArea) { applyTabState(tabArea, 2); }
+        @Override public void doLayout(ScreenRectangle tabArea) { applyTabState(tabArea, TAB_DOWNLOAD); }
     }
 
     private class CapesTab extends GridLayoutTab {
         public CapesTab() { super(Component.translatable("bedrockskins.gui.capes")); }
-        @Override public void doLayout(ScreenRectangle tabArea) { applyTabState(tabArea, 1); }
+        @Override public void doLayout(ScreenRectangle tabArea) { applyTabState(tabArea, TAB_CAPES); }
     }
 
     private void fetchCapes() {
@@ -631,13 +628,13 @@ public class SkinSelectionScreen extends Screen {
 
             for (MinecraftCape cape : capes) {
                 CapeManager.downloadAndRegisterCape(cape, () -> {
-                    if (activeTab == 1) {
+                    if (activeTab == TAB_CAPES) {
                         refreshCapeGrid();
                     }
                 });
             }
 
-            if (activeTab == 1) {
+            if (activeTab == TAB_CAPES) {
                 refreshCapeGrid();
             }
         })).exceptionally(e -> {

@@ -231,10 +231,10 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
 
     @Override
     public int version() {
-        if (SkinPackLoader.loadedSkins.isEmpty()) SkinPackLoader.loadPacks();
+        if (!SkinPackLoader.hasLoadedSkins()) SkinPackLoader.loadPacks();
         
         int bedrockHash = Objects.hash(
-                SkinPackLoader.loadedSkins.size(),
+                SkinPackLoader.loadedSkinCount(),
                 SkinPackLoader.packTypesByPackId.size(),
                 SkinPackLoader.packIconsByPackId.hashCode(),
                 SkinPackLoader.packOrder.hashCode(),
@@ -300,7 +300,7 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
                 .filter(id -> !isHiddenPackId(id))
                 .sorted(PackSortUtil.buildPackComparator(
                         BedrockSkinsConfig.getPackSortOrder(),
-                        packId -> GuiSkinUtils.getPackDisplayName(packId, skinsByPack.get(packId).getFirst())
+                        GuiSkinUtils::getPackDisplayName
                 )).toList();
 
         for (String packId : sortedPackIds) {
@@ -330,7 +330,7 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
         Identifier icon = SkinPackLoader.packIconsByPackId.getOrDefault(packId, DEFAULT_PACK_ICON);
         
         return new SkinPack(
-                packId, GuiSkinUtils.getPackDisplayName(packId, firstSkin), null,
+                packId, GuiSkinUtils.getPackDisplayName(packId), null,
                 SkinPackLoader.packTypesByPackId.get(packId), icon, entries,
                 false, sortIndex, true, 0
         );
@@ -339,12 +339,10 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
     private static Map<String, List<LoadedSkin>> buildSkinCache() {
         Map<String, List<LoadedSkin>> skinsByPack = new HashMap<>();
         
-        synchronized (SkinPackLoader.loadedSkins) {
-            SkinPackLoader.loadedSkins.values().forEach(skin -> {
-                if (skin != null && !REMOTE_PACK_ID.equals(skin.packId) && !isHiddenPackId(skin.packId)) {
-                    skinsByPack.computeIfAbsent(skin.packId, k -> new ArrayList<>()).add(skin);
-                }
-            });
+        for (LoadedSkin skin : SkinPackLoader.loadedSkinsSnapshot()) {
+            if (skin != null && !REMOTE_PACK_ID.equals(skin.packId) && !isHiddenPackId(skin.packId)) {
+                skinsByPack.computeIfAbsent(skin.packId, k -> new ArrayList<>()).add(skin);
+            }
         }
 
         List<LoadedSkin> favorites = FavoritesManager.getFavoriteKeys().stream()
@@ -367,7 +365,7 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
         return previews.computeIfAbsent(skinId, id -> {
             UUID uuid = UUID.randomUUID();
             String name = minecraft.player != null ? minecraft.player.getName().getString() : "Preview";
-            return new PreviewState(uuid, PreviewPlayer.PreviewPlayerPool.get(new GameProfile(uuid, name)));
+            return new PreviewState(uuid, new PreviewPlayer(new GameProfile(uuid, name)));
         });
     }
 

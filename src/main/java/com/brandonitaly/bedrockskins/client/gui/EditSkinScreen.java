@@ -7,7 +7,6 @@ import com.google.gson.JsonParser;
 import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
-import com.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
@@ -15,7 +14,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.client.renderer.RenderPipelines;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
@@ -390,29 +388,24 @@ public class EditSkinScreen extends SkinDialogScreen {
     }
 
     private void registerGeometryPreviews() {
-        synchronized (SkinPackLoader.loadedSkins) {
-            cleanupGeometryPreviews();
-            SkinPackLoader.loadedSkins.put(customGeometryPreview.skinId, customGeometryPreview);
-            SkinPackLoader.loadedSkins.put(customSlimGeometryPreview.skinId, customSlimGeometryPreview);
-            
-            if (hasCustomCurrentGeometry) {
-                SkinPackLoader.loadedSkins.put(currentGeometryPreview.skinId, currentGeometryPreview);
-            }
-        }
+        cleanupGeometryPreviews();
+        SkinPackLoader.registerLoadedSkin(customGeometryPreview);
+        SkinPackLoader.registerLoadedSkin(customSlimGeometryPreview);
+        if (hasCustomCurrentGeometry) SkinPackLoader.registerLoadedSkin(currentGeometryPreview);
         SkinPackLoader.registerTextureFor(customGeometryPreview.skinId);
         SkinPackLoader.registerTextureFor(customSlimGeometryPreview.skinId);
         if (hasCustomCurrentGeometry) SkinPackLoader.registerTextureFor(currentGeometryPreview.skinId);
     }
 
     private void setupGeometryPlayers() {
-        if (customGeometryPlayer == null) customGeometryPlayer = PreviewPlayer.PreviewPlayerPool.get(new GameProfile(customGeometryUuid, "Wide"));
-        if (customSlimGeometryPlayer == null) customSlimGeometryPlayer = PreviewPlayer.PreviewPlayerPool.get(new GameProfile(customSlimUuid, "Slim"));
+        if (customGeometryPlayer == null) customGeometryPlayer = new PreviewPlayer(new GameProfile(customGeometryUuid, "Wide"));
+        if (customSlimGeometryPlayer == null) customSlimGeometryPlayer = new PreviewPlayer(new GameProfile(customSlimUuid, "Slim"));
         
         GuiSkinUtils.applyLoadedSkinPreview(customGeometryPlayer, customGeometryUuid, customGeometryPreview);
         GuiSkinUtils.applyLoadedSkinPreview(customSlimGeometryPlayer, customSlimUuid, customSlimGeometryPreview);
 
         if (hasCustomCurrentGeometry) {
-            if (currentGeometryPlayer == null) currentGeometryPlayer = PreviewPlayer.PreviewPlayerPool.get(new GameProfile(currentGeometryUuid, "Current"));
+            if (currentGeometryPlayer == null) currentGeometryPlayer = new PreviewPlayer(new GameProfile(currentGeometryUuid, "Current"));
             GuiSkinUtils.applyLoadedSkinPreview(currentGeometryPlayer, currentGeometryUuid, currentGeometryPreview);
         }
     }
@@ -430,26 +423,14 @@ public class EditSkinScreen extends SkinDialogScreen {
         gui.fill(geometrySectionX, geometrySectionY + 11, geometrySectionX + contentWidth(), geometrySectionY + 12, 0x33FFFFFF);
 
         if (hasCustomCurrentGeometry) {
-            renderGeometryCard(gui, currentX, cardY, cardW, cardH, currentGeometryPlayer, Component.translatable("bedrockskins.gui.geometry.current"), selectedGeometry.equals(currentGeometryId), mouseX, mouseY);
+            GuiUtils.renderGeometryCard(gui, font, currentGeometryPlayer, Component.translatable("bedrockskins.gui.geometry.current"), currentX, cardY, cardW, cardH, selectedGeometry.equals(currentGeometryId), mouseX, mouseY);
             currentX += cardW + gap;
         }
 
-        renderGeometryCard(gui, currentX, cardY, cardW, cardH, customGeometryPlayer, Component.translatable("bedrockskins.gui.geometry.wide"), "geometry.humanoid.custom".equals(selectedGeometry), mouseX, mouseY);
+        GuiUtils.renderGeometryCard(gui, font, customGeometryPlayer, Component.translatable("bedrockskins.gui.geometry.wide"), currentX, cardY, cardW, cardH, "geometry.humanoid.custom".equals(selectedGeometry), mouseX, mouseY);
         currentX += cardW + gap;
         
-        renderGeometryCard(gui, currentX, cardY, cardW, cardH, customSlimGeometryPlayer, Component.translatable("bedrockskins.gui.geometry.slim"), "geometry.humanoid.customSlim".equals(selectedGeometry), mouseX, mouseY);
-    }
-
-    private void renderGeometryCard(net.minecraft.client.gui.GuiGraphicsExtractor gui, int x, int y, int w, int h, PreviewPlayer player, Component label, boolean selected, int mouseX, int mouseY) {
-        boolean hovered = mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h;
-        var sprite = selected ? BedrockSkinsSprites.CARD_SELECTED : hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE;
-        gui.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, w, h);
-        
-        if (player != null) {
-            GuiUtils.renderEntityInRect(gui, player, 0.0F, x + 2, y - 10, x + w - 2, y + 130, 112);
-        }
-        
-        gui.centeredText(font, label, x + (w / 2), y + h - 14, 0xFFFFFFFF);
+        GuiUtils.renderGeometryCard(gui, font, customSlimGeometryPlayer, Component.translatable("bedrockskins.gui.geometry.slim"), currentX, cardY, cardW, cardH, "geometry.humanoid.customSlim".equals(selectedGeometry), mouseX, mouseY);
     }
 
     @Override
@@ -504,33 +485,16 @@ public class EditSkinScreen extends SkinDialogScreen {
     }
 
     private void cleanupGeometryPreviews() {
-        synchronized (SkinPackLoader.loadedSkins) {
-            if (customGeometryPreview != null) { SkinPackLoader.releaseSkinAssets(customGeometryPreview.skinId); SkinPackLoader.loadedSkins.remove(customGeometryPreview.skinId); }
-            if (customSlimGeometryPreview != null) { SkinPackLoader.releaseSkinAssets(customSlimGeometryPreview.skinId); SkinPackLoader.loadedSkins.remove(customSlimGeometryPreview.skinId); }
-            if (hasCustomCurrentGeometry && currentGeometryPreview != null) { SkinPackLoader.releaseSkinAssets(currentGeometryPreview.skinId); SkinPackLoader.loadedSkins.remove(currentGeometryPreview.skinId); }
-        }
+        if (customGeometryPreview != null) SkinPackLoader.removeLoadedSkin(customGeometryPreview.skinId);
+        if (customSlimGeometryPreview != null) SkinPackLoader.removeLoadedSkin(customSlimGeometryPreview.skinId);
+        if (hasCustomCurrentGeometry && currentGeometryPreview != null) SkinPackLoader.removeLoadedSkin(currentGeometryPreview.skinId);
         GuiSkinUtils.cleanupPreview(customGeometryUuid);
         GuiSkinUtils.cleanupPreview(customSlimUuid);
         GuiSkinUtils.cleanupPreview(currentGeometryUuid);
     }
 
     private static JsonObject createGeometryData(String geometryId) {
-        JsonObject source = SkinPackLoader.vanillaGeometryJson;
-        if (source != null && source.has("minecraft:geometry")) {
-            JsonArray geometries = source.getAsJsonArray("minecraft:geometry");
-            for (JsonElement element : geometries) {
-                JsonObject geometry = element.getAsJsonObject();
-                JsonObject description = geometry.getAsJsonObject("description");
-                if (description != null && geometryId.equals(description.get("identifier").getAsString())) {
-                    JsonObject result = new JsonObject();
-                    result.addProperty("format_version", source.has("format_version") ? source.get("format_version").getAsString() : "1.12.0");
-                    JsonArray selected = new JsonArray();
-                    selected.add(geometry.deepCopy());
-                    result.add("minecraft:geometry", selected);
-                    return result;
-                }
-            }
-        }
-        return source != null ? source.deepCopy() : new JsonObject();
+        JsonObject geometry = SkinPackLoader.resolveGeometry(geometryId, null);
+        return geometry != null ? geometry : new JsonObject();
     }
 }

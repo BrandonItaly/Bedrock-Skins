@@ -247,7 +247,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
 
         playerAnnouncedSkins.put(playerUuid, new SkinIdAnnounce(skinId, hash));
 
-        // Check if we already have this skin in SkinPackLoader.loadedSkins with a matching hash
+        // Check whether this skin is already registered with a matching hash.
         LoadedSkin existing = SkinPackLoader.getLoadedSkin(skinId);
         if (existing != null && hash.equals(existing.hash)) {
             // Apply immediately
@@ -291,21 +291,11 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         SkinManager.clearOtherPlayers();
         BedrockModelManager.clearAllModels();
         
-        List<SkinId> toRemove = new ArrayList<>();
-        synchronized (SkinPackLoader.loadedSkins) {
-            SkinPackLoader.loadedSkins.forEach((id, skin) -> {
-                if (skin.texture instanceof AssetSource.Remote) toRemove.add(id);
-            });
-            
-            for (SkinId id : toRemove) {
-                SkinPackLoader.releaseSkinAssets(id); 
-                SkinPackLoader.loadedSkins.remove(id);
-            }
-        }
+        int removedCount = SkinPackLoader.removeLoadedSkins(skin -> skin.texture instanceof AssetSource.Remote);
         
         requestedHashes.clear();
         playerAnnouncedSkins.clear();
         
-        if (!toRemove.isEmpty()) LOGGER.debug("Cleared {} remote skins from memory", toRemove.size());
+        if (removedCount > 0) LOGGER.debug("Cleared {} remote skins from memory", removedCount);
     }
 }

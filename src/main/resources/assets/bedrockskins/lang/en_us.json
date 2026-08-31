@@ -52,6 +52,11 @@
   "bedrockskins.button.update_texture": "Update Texture (.png)",
   "bedrockskins.button.update_cape": "Update Cape (.png)",
   "bedrockskins.button.remove_cape": "Remove Cape",
+  "bedrockskins.button.upload_skin": "Upload custom skin",
+  "bedrockskins.status.uploading_skin": "Uploading...",
+  "bedrockskins.status.upload_skin_success": "Skin successfully uploaded.",
+  "bedrockskins.status.upload_skin_failed": "Failed to upload skin: %s",
+  "bedrockskins.status.upload_skin_offline": "Log in to a Minecraft account to upload skins.",
   "bedrockskins.status.downloading": "Downloading...",
   "bedrockskins.status.loading": "Loading...",
   "bedrockskins.packType.skin_pack": "Skin Pack",
@@ -81,5 +86,7 @@
   "bedrockskins.option.skin_animations": "Skin Animations",
   "bedrockskins.option.skin_animations.tooltip": "Choose whether skins with unique animations will use their animations or not. Disabling this will make all skins use the default player animations.",
   "bedrockskins.option.adjust_camera_height": "Scale Camera to Model",
-  "bedrockskins.option.adjust_camera_height.tooltip": "When enabled, your eye level will automatically adjust if you are using a skin that is shorter or taller than a normal Minecraft player."
+  "bedrockskins.option.adjust_camera_height.tooltip": "When enabled, your eye level will automatically adjust if you are using a skin that is shorter or taller than a normal Minecraft player.",
+  "bedrockskins.option.allow_account_skin_upload": "Allow Skin Uploads",
+  "bedrockskins.option.allow_account_skin_upload.tooltip": "Allow the selected skin to be uploaded to your signed-in Minecraft account."
 }

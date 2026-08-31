@@ -32,12 +32,7 @@ public final class FavoritesManager {
     }
 
     public static void save() {
-        try {
-            SkinId selected = SkinManager.getLocalSelectedKey();
-            StateManager.saveState(getFavoriteKeys(), selected == null ? null : selected.toString());
-        } catch (Exception e) {
-            LOGGER.error("FavoritesManager: failed to save favorites", e);
-        }
+        StateManager.updateFavorites(getFavoriteKeys());
     }
 
     public static boolean isFavorite(LoadedSkin skin) {

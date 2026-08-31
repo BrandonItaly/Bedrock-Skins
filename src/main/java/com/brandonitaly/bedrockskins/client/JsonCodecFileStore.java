@@ -36,14 +36,6 @@ public final class JsonCodecFileStore {
     }
 
     public static <T> void write(Path path, Codec<T> codec, T value, String name) {
-        try {
-            encodeAndWrite(path, codec, value, name);
-        } catch (Exception e) {
-            LOGGER.error("{}: failed to save", name, e);
-        }
-    }
-
-    public static <T> void writeAtomic(Path path, Codec<T> codec, T value, String name) {
         Path tmp = path.resolveSibling(path.getFileName() + ".tmp");
         try {
             encodeAndWrite(tmp, codec, value, name);
@@ -59,17 +51,14 @@ public final class JsonCodecFileStore {
     }
 
     private static <T> void encodeAndWrite(Path path, Codec<T> codec, T value, String name) throws Exception {
-        // 1. Ensure directories exist BEFORE creating the writer
         if (path.getParent() != null) {
             Files.createDirectories(path.getParent());
         }
         
-        // 2. Encode the data
         JsonElement element = codec.encodeStart(JsonOps.INSTANCE, value)
             .resultOrPartial(msg -> LOGGER.warn("{}: encode warning: {}", name, msg))
             .orElseGet(JsonObject::new);
             
-        // 3. Safely write to the file
         try (Writer writer = Files.newBufferedWriter(path)) {
             GSON.toJson(element, writer);
         }

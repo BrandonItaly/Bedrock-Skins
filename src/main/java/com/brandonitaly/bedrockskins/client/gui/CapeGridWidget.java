@@ -1,7 +1,6 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
 import com.brandonitaly.bedrockskins.client.CapeManager.MinecraftCape;
-import com.brandonitaly.bedrockskins.client.gui.PreviewPlayer.PreviewPlayerPool;
 import com.mojang.authlib.GameProfile;
 import java.util.ArrayList;
 import java.util.List;
@@ -114,7 +113,7 @@ public class CapeGridWidget extends ObjectSelectionList<CapeGridWidget.CapeRowEn
             public CapeCell(MinecraftCape cape) {
                 this.cape = cape;
                 this.name = cape.alias;
-                this.player = PreviewPlayerPool.get(new GameProfile(uuid, ""));
+                this.player = new PreviewPlayer(new GameProfile(uuid, ""));
                 player.clearForcedProfileSkin();
                 player.clearForcedBody();
                 if (!cape.id.equals("none")) {

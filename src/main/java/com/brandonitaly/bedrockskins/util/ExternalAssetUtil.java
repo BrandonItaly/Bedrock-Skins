@@ -2,7 +2,6 @@ package com.brandonitaly.bedrockskins.util;
 
 import com.brandonitaly.bedrockskins.pack.AssetSource;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
-import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
@@ -12,7 +11,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -76,16 +74,14 @@ public class ExternalAssetUtil {
 
     private static String resolveFromLoadedSkins(String packId, String cleanId, File skinPacksDir) {
         Path packsRoot = skinPacksDir.toPath().toAbsolutePath();
-        synchronized (SkinPackLoader.loadedSkins) {
-            for (LoadedSkin skin : SkinPackLoader.loadedSkins.values()) {
-                if (!matchesPackId(skin.packId, packId, cleanId)) continue;
-                if (skin.texture instanceof AssetSource.File(String path)) {
-                    Path texturePath = Path.of(path).toAbsolutePath();
-                    if (texturePath.startsWith(packsRoot)) {
-                        Path relative = packsRoot.relativize(texturePath);
-                        if (relative.getNameCount() > 0) {
-                            return relative.getName(0).toString();
-                        }
+        for (LoadedSkin skin : SkinPackLoader.loadedSkinsSnapshot()) {
+            if (!matchesPackId(skin.packId, packId, cleanId)) continue;
+            if (skin.texture instanceof AssetSource.File(String path)) {
+                Path texturePath = Path.of(path).toAbsolutePath();
+                if (texturePath.startsWith(packsRoot)) {
+                    Path relative = packsRoot.relativize(texturePath);
+                    if (relative.getNameCount() > 0) {
+                        return relative.getName(0).toString();
                     }
                 }
             }
@@ -138,18 +134,7 @@ public class ExternalAssetUtil {
     }
 
     private static void unloadPackSkins(String packId, String cleanId) {
-        synchronized (SkinPackLoader.loadedSkins) {
-            List<SkinId> toRemove = new ArrayList<>();
-            SkinPackLoader.loadedSkins.forEach((id, skin) -> {
-                if (matchesPackId(skin.packId, packId, cleanId)) {
-                    toRemove.add(id);
-                }
-            });
-            for (SkinId id : toRemove) {
-                SkinPackLoader.releaseSkinAssets(id);
-                SkinPackLoader.loadedSkins.remove(id);
-            }
-        }
+        SkinPackLoader.removeLoadedSkins(skin -> matchesPackId(skin.packId, packId, cleanId));
     }
 
     private static boolean matchesPackId(String candidate, String packId, String cleanId) {

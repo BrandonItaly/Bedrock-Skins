@@ -1,9 +1,7 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
 import com.brandonitaly.bedrockskins.client.ClientSkinSync;
-import com.brandonitaly.bedrockskins.client.FavoritesManager;
 import com.brandonitaly.bedrockskins.client.SkinManager;
-import com.brandonitaly.bedrockskins.client.StateManager;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
@@ -38,16 +36,8 @@ public final class GuiSkinUtils {
         return description.isEmpty() ? Optional.empty() : Optional.of(description);
     }
 
-    public static String getPackDisplayName(String packId, LoadedSkin firstSkin) {
+    public static String getPackDisplayName(String packId) {
         return translatedOrFallback(packId, packId);
-    }
-
-    public static String getPackTranslationKey(String packId, LoadedSkin firstSkin) {
-        return packId;
-    }
-
-    public static String getPackFallbackName(String packId, LoadedSkin firstSkin) {
-        return packId;
     }
 
     public static boolean isSkinCurrentlyEquipped(LoadedSkin skin) {
@@ -60,12 +50,11 @@ public final class GuiSkinUtils {
         SkinId skinId = skin.skinId != null ? skin.skinId : SkinId.of(skin.serializeName, skin.skinDisplayName);
         
         if (minecraft.player != null) {
-            SkinManager.setLocalCapeOverride(null); // Clear custom cape override on skin equip
-            SkinManager.setSkin(minecraft.player.getUUID(), skinId);
+            SkinManager.setLocalSkin(skinId);
             ClientSkinSync.syncCurrentSkin(minecraft);
             minecraft.player.refreshDimensions();
         } else {
-            StateManager.saveState(FavoritesManager.getFavoriteKeys(), skinId.toString());
+            SkinManager.setLocalSkin(skinId);
         }
     }
 
@@ -75,7 +64,7 @@ public final class GuiSkinUtils {
             ClientSkinSync.sendResetSkinPayload();
             minecraft.player.refreshDimensions();
         } else {
-            StateManager.saveState(FavoritesManager.getFavoriteKeys(), null);
+            com.brandonitaly.bedrockskins.client.StateManager.updateSelectedSkin(null);
         }
     }
 
@@ -131,12 +120,12 @@ public final class GuiSkinUtils {
             previewPlayer.setForcedBody(skin.identifier);
         }
         
-        SkinManager.ResolvedCape resolved = SkinManager.resolveCape(previewUuid, skin, !ignoreCapeOverrides);
+        Identifier resolved = SkinManager.resolveCape(skin, !ignoreCapeOverrides);
         if (resolved != null) {
-            if (resolved.capeId.equals(SkinManager.CAPE_NONE)) {
+            if (resolved.equals(SkinManager.CAPE_NONE)) {
                 previewPlayer.setForcedCape(null);
             } else {
-                previewPlayer.setForcedCape(resolved.capeId);
+                previewPlayer.setForcedCape(resolved);
             }
         } else {
             if (ignoreCapeOverrides) {
@@ -149,6 +138,5 @@ public final class GuiSkinUtils {
 
     public static void cleanupPreview(UUID previewUuid) {
         SkinManager.resetPreviewSkin(previewUuid);
-        PreviewPlayer.PreviewPlayerPool.remove(previewUuid);
     }
 }

@@ -48,8 +48,8 @@ public final class ClientSkinSync {
                 byte[] textureData = com.brandonitaly.bedrockskins.util.ExternalAssetUtil.loadTextureData(skin, minecraft);
                 
                 byte[] capeData = new byte[0];
-                SkinManager.ResolvedCape resolved = SkinManager.resolveCape(minecraft.player.getUUID(), skin, true);
-                if (resolved != null && !resolved.capeId.equals(SkinManager.CAPE_NONE)) {
+                var resolved = SkinManager.resolveCape(skin, true);
+                if (resolved != null && !resolved.equals(SkinManager.CAPE_NONE)) {
                     SkinId capeOverrideId = SkinManager.getLocalCapeOverride();
                     LoadedSkin capeSkin = null;
                     if (capeOverrideId != null && !capeOverrideId.equals(SkinManager.CAPE_NONE_SKIN_ID)) {

@@ -13,12 +13,13 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class StoreIconManager {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Map<String, Identifier> cachedIcons = new ConcurrentHashMap<>();
-    private static final Map<String, Boolean> downloading = new ConcurrentHashMap<>();
+    private static final Set<String> downloading = ConcurrentHashMap.newKeySet();
 
     public static Identifier getIcon(String packId, String imageUrl) {
         if (imageUrl == null || imageUrl.isBlank()) {
@@ -31,8 +32,7 @@ public final class StoreIconManager {
             return cachedIcons.get(packId);
         }
 
-        if (!downloading.containsKey(packId)) {
-            downloading.put(packId, true);
+        if (downloading.add(packId)) {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(imageUrl))
                     .GET()
@@ -53,10 +53,14 @@ public final class StoreIconManager {
                         Minecraft.getInstance().execute(() -> {
                             Minecraft.getInstance().getTextureManager().register(texIdx, new DynamicTexture(() -> "store_icon", img));
                             cachedIcons.put(packId, texIdx);
+                            downloading.remove(packId);
                         });
+                    } else {
+                        downloading.remove(packId);
                     }
                 })
                 .exceptionally(e -> {
+                    downloading.remove(packId);
                     LOGGER.warn("Failed to download store icon for " + packId + " from " + imageUrl + ": " + e.getMessage());
                     return null;
                 });

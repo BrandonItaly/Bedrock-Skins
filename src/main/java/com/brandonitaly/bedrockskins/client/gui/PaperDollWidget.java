@@ -27,6 +27,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import org.lwjgl.glfw.GLFW;
 //?}
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 
 import java.util.UUID;
 
@@ -56,7 +57,7 @@ public class PaperDollWidget extends AbstractWidget {
 
         Minecraft minecraft = Minecraft.getInstance();
         String name = minecraft.getGameProfile() != null ? minecraft.getGameProfile().name() : "Preview";
-        this.previewPlayer = PreviewPlayer.PreviewPlayerPool.get(new GameProfile(this.previewUuid, name));
+        this.previewPlayer = new PreviewPlayer(new GameProfile(this.previewUuid, name));
         this.previewPlayer.setShowNameTag(true);
         this.previewPlayer.setDisplayName(Component.literal(name));
         updatePreviewSkin(minecraft);
@@ -131,9 +132,9 @@ public class PaperDollWidget extends AbstractWidget {
         previewPlayer.clearForcedBody();
 
         LoadedSkin loaded = selected != null ? SkinPackLoader.getLoadedSkin(selected) : null;
-        SkinManager.ResolvedCape resolved = SkinManager.resolveCape(previewUuid, loaded, true);
+        Identifier resolved = SkinManager.resolveCape(loaded, true);
         if (resolved != null) {
-            previewPlayer.setForcedCape(resolved.capeId.equals(SkinManager.CAPE_NONE) ? null : resolved.capeId);
+            previewPlayer.setForcedCape(resolved.equals(SkinManager.CAPE_NONE) ? null : resolved);
         } else {
             previewPlayer.clearForcedCape();
         }
@@ -215,7 +216,6 @@ public class PaperDollWidget extends AbstractWidget {
     }
 
     public void removed() {
-        PreviewPlayer.PreviewPlayerPool.remove(this.previewUuid);
         SkinManager.resetPreviewSkin(this.previewUuid);
         this.previewPlayer = null;
     }

@@ -10,6 +10,7 @@ public class BedrockSkinsSprites {
     public static final Identifier CARD_HOVER = Identifier.fromNamespaceAndPath("bedrockskins", "container/card_hover");
     public static final Identifier CARD_SELECTED = Identifier.fromNamespaceAndPath("bedrockskins", "container/card_selected");
     public static final Identifier CHARACTER_CREATOR_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/character_creator");
+    public static final Identifier UPLOAD_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/upload");
     public static final Identifier ADDON_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/addon");
 
     // Vanilla textures

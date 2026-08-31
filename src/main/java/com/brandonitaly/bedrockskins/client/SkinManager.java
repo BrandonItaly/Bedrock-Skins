@@ -4,7 +4,9 @@ import com.brandonitaly.bedrockskins.pack.SkinId;
 import com.brandonitaly.bedrockskins.pack.SkinPackLoader;
 import com.brandonitaly.bedrockskins.pack.LoadedSkin;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.ClientAsset;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.PlayerSkin;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
@@ -23,21 +25,17 @@ public final class SkinManager {
     private static Identifier localAccountCapeOverride = null;
     public static final Identifier CAPE_NONE = Identifier.fromNamespaceAndPath("bedrockskins", "none");
     public static final SkinId CAPE_NONE_SKIN_ID = SkinId.of("none", "none");
+    private static final Identifier VANILLA_ELYTRA = Identifier.fromNamespaceAndPath("minecraft", "textures/entity/equipment/wings/elytra.png");
 
-    public static final class ResolvedCape {
-        public final Identifier capeId;
-
-        public ResolvedCape(Identifier capeId) {
-            this.capeId = capeId;
-        }
+    public static Identifier resolveCape(LoadedSkin loadedSkin, boolean isLocalPlayer) {
+        return resolveCape(loadedSkin, isLocalPlayer, localCapeOverride, localAccountCapeOverride);
     }
 
-    public static ResolvedCape resolveCape(UUID uuid, LoadedSkin loadedSkin, boolean isLocalPlayer) {
+    static Identifier resolveCape(LoadedSkin loadedSkin, boolean isLocalPlayer, SkinId capeOverrideId, Identifier accountCapeOverride) {
         Identifier customCapeId = null;
 
         // 1. Explicit custom skin pack cape override (local player only)
         if (isLocalPlayer) {
-            SkinId capeOverrideId = getLocalCapeOverride();
             if (capeOverrideId != null && !capeOverrideId.equals(CAPE_NONE_SKIN_ID)) {
                 var capeSkin = SkinPackLoader.getLoadedSkin(capeOverrideId);
                 if (capeSkin != null && capeSkin.capeIdentifier != null) {
@@ -47,17 +45,16 @@ public final class SkinManager {
         }
 
         // 2. Bedrock skin's default built-in cape
-        boolean ignoreBuiltIn = isLocalPlayer && CAPE_NONE_SKIN_ID.equals(getLocalCapeOverride());
+        boolean ignoreBuiltIn = isLocalPlayer && CAPE_NONE_SKIN_ID.equals(capeOverrideId);
         if (!ignoreBuiltIn && customCapeId == null && loadedSkin != null && loadedSkin.capeIdentifier != null) {
             customCapeId = loadedSkin.capeIdentifier;
         }
 
         // 3. Local Mojang account cape override (local player only)
         if (customCapeId == null && isLocalPlayer) {
-            Identifier accountCapeOverride = getLocalAccountCapeOverride();
             if (accountCapeOverride != null) {
                 if (accountCapeOverride.equals(CAPE_NONE)) {
-                    return new ResolvedCape(CAPE_NONE);
+                    return CAPE_NONE;
                 } else {
                     customCapeId = accountCapeOverride;
                 }
@@ -65,10 +62,47 @@ public final class SkinManager {
         }
 
         if (customCapeId != null) {
-            return new ResolvedCape(customCapeId);
+            return customCapeId;
         }
 
         return null;
+    }
+
+    public static PlayerSkin applySkinOverrides(UUID playerId, PlayerSkin original) {
+        if (playerId == null || original == null) return original;
+
+        SkinId skinId = getSkin(playerId);
+        LoadedSkin loadedSkin = SkinPackLoader.getLoadedSkin(skinId);
+        ClientAsset.Texture body = original.body();
+        ClientAsset.Texture cape = original.cape();
+        ClientAsset.Texture elytra = original.elytra();
+        boolean modified = false;
+
+        if (loadedSkin != null && loadedSkin.identifier != null) {
+            body = new ClientAsset.ResourceTexture(loadedSkin.identifier, loadedSkin.identifier);
+            modified = true;
+        }
+
+        UUID localPlayerId = getLocalPlayerUuid();
+        Identifier resolvedCape = resolveCape(loadedSkin, playerId.equals(localPlayerId));
+        if (resolvedCape != null) {
+            if (resolvedCape.equals(CAPE_NONE)) {
+                cape = null;
+                elytra = null;
+            } else {
+                cape = new ClientAsset.ResourceTexture(resolvedCape, resolvedCape);
+                boolean isMojangCape = resolvedCape.getNamespace().equals("bedrockskins")
+                    && resolvedCape.getPath().startsWith("capes/mojang/");
+                elytra = isMojangCape
+                    ? cape
+                    : (original.elytra() != null
+                        ? original.elytra()
+                        : new ClientAsset.ResourceTexture(VANILLA_ELYTRA, VANILLA_ELYTRA));
+            }
+            modified = true;
+        }
+
+        return modified ? new PlayerSkin(body, cape, elytra, original.model(), original.secure()) : original;
     }
 
     public static SkinId getLocalCapeOverride() {
@@ -141,6 +175,19 @@ public final class SkinManager {
         }
     }
 
+    public static void setLocalSkin(SkinId id) {
+        UUID localUuid = getLocalPlayerUuid();
+        if (localUuid == null) {
+            StateManager.updateSelection(id != null ? id.toString() : null, null);
+            return;
+        }
+
+        SkinId previous = playerSkins.put(localUuid, id);
+        localCapeOverride = null;
+        if (!Objects.equals(previous, id)) releaseIfUnused(previous);
+        saveCurrentState();
+    }
+
     public static void setPreviewSkin(UUID uuid, String packName, String skinName) {
         SkinId id = SkinId.of(packName, skinName);
         SkinId previous = previewSkins.put(uuid, id);
@@ -172,8 +219,7 @@ public final class SkinManager {
         if (localUuid == null) return;
         try {
             SkinId activeSkin = playerSkins.get(localUuid);
-            StateManager.saveState(
-                FavoritesManager.getFavoriteKeys(),
+            StateManager.updateSelection(
                 activeSkin != null ? activeSkin.toString() : null,
                 localCapeOverride != null ? localCapeOverride.toString() : null
             );

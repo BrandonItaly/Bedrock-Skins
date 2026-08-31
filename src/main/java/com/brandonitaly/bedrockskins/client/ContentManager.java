@@ -182,14 +182,13 @@ public class ContentManager {
         return true;
     }
 
-    public static void downloadPack(Pack pack, String folderName, Runnable onFinished) {
+    public static CompletableFuture<Boolean> downloadPack(Pack pack, String folderName) {
         if (isPackInstalled(pack, folderName)) {
-            Minecraft.getInstance().execute(onFinished);
-            return;
+            return CompletableFuture.completedFuture(true);
         }
 
         Path contentDir = getContentDir(folderName);
-        CompletableFuture.runAsync(() -> {
+        return CompletableFuture.supplyAsync(() -> {
             Path downloadedTempFile = null;
             try {
                 downloadedTempFile = Files.createTempFile("legacy_pack_", ".download");
@@ -207,7 +206,7 @@ public class ContentManager {
                     String fileHash = readFileCheckSum(downloadedTempFile);
                     if (!pack.checkSum().get().equals(fileHash)) {
                         LOGGER.warn("Checksum mismatch for pack {}. Expected {}, got {}", pack.id(), pack.checkSum().get(), fileHash);
-                        return; 
+                        return false;
                     }
                 }
 
@@ -229,9 +228,10 @@ public class ContentManager {
                     Files.move(downloadedTempFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
                 }
 
-                Minecraft.getInstance().execute(onFinished);
+                return true;
             } catch (Exception e) {
                 LOGGER.warn("Error when downloading content pack to {}: {}", contentDir.resolve(pack.id()), e.getMessage());
+                return false;
             } finally {
                 if (downloadedTempFile != null) {
                     try {
@@ -244,7 +244,7 @@ public class ContentManager {
         });
     }
 
-    private static void extractZip(Path zipFile, Path targetDir) throws IOException {
+    static void extractZip(Path zipFile, Path targetDir) throws IOException {
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile.toFile()))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {

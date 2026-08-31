@@ -1,9 +1,7 @@
 package com.brandonitaly.bedrockskins.client.gui;
 
 import com.mojang.authlib.GameProfile;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.core.ClientAsset;
@@ -128,16 +126,5 @@ public final class PreviewPlayer {
         }
 
         return new PlayerSkin(finalBody, finalCape, original.elytra(), finalModel, original.secure());
-    }
-
-    public static final class PreviewPlayerPool {
-        private static final Map<UUID, PreviewPlayer> pool = new ConcurrentHashMap<>();
-
-        public static PreviewPlayer get(GameProfile profile) {
-            UUID id = profile.id() != null ? profile.id() : UUID.randomUUID();
-            return pool.computeIfAbsent(id, ignored -> new PreviewPlayer(profile));
-        }
-
-        public static void remove(UUID id) { pool.remove(id); }
     }
 }
