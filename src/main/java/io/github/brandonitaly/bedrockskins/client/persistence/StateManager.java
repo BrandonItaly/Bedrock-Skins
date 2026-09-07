@@ -41,10 +41,6 @@ public final class StateManager {
         save(readState().withPersonaColors(colors));
     }
 
-    public static synchronized void updateSelectedEmote(String emote) {
-        save(readState().withSelectedEmote(emote));
-    }
-
     public static synchronized void updateEmoteSlots(List<String> slots) {
         save(readState().withEmoteSlots(slots));
     }

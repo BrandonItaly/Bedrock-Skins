@@ -731,7 +731,6 @@ public class SkinSelectionScreen extends Screen {
     private void selectEmoteSlot(int slot) {
         selectedEmoteSlot = Math.max(0, Math.min(EmoteManager.SLOT_COUNT - 1, slot));
         LoadedEmote emote = EmoteManager.slot(selectedEmoteSlot);
-        if (emote != null) EmoteManager.select(emote);
         if (previewPanel != null) previewPanel.setSelectedEmote(emote);
     }
 
@@ -747,7 +746,6 @@ public class SkinSelectionScreen extends Screen {
             EmoteManager.unequip(selectedEmoteSlot);
         } else {
             EmoteManager.equip(selectedEmoteSlot, emote);
-            EmoteManager.select(emote);
         }
     }
 

@@ -50,7 +50,6 @@ public final class EmoteManager {
     private static final Map<String, Integer> DRESSING_ROOM_INDEX = new ConcurrentHashMap<>();
     private static final Map<ModelPart, Delta> LAST_DELTAS = new IdentityHashMap<>();
     private static final String[] EQUIPPED_SLOTS = new String[SLOT_COUNT];
-    private static String selectedId;
 
     private EmoteManager() {}
 
@@ -72,7 +71,6 @@ public final class EmoteManager {
             EmoteManager::scan);
         EMOTES.values().forEach(EmoteManager::registerThumbnail);
         LocalSkinConfig state = StateManager.readState();
-        String saved = state.selectedEmote();
         java.util.Arrays.fill(EQUIPPED_SLOTS, null);
         List<String> savedSlots = state.emoteSlots();
         if (!savedSlots.isEmpty()) {
@@ -82,15 +80,13 @@ public final class EmoteManager {
             }
         } else if (!EMOTES.isEmpty()) {
             int slot = 0;
-            if (saved != null && EMOTES.containsKey(saved)) EQUIPPED_SLOTS[slot++] = saved;
             for (String id : EMOTES.keySet()) {
                 if (slot >= SLOT_COUNT) break;
-                if (!id.equals(saved)) EQUIPPED_SLOTS[slot++] = id;
+                EQUIPPED_SLOTS[slot++] = id;
             }
             persistSlots();
         }
-        selectedId = EMOTES.containsKey(saved) ? saved : firstEquippedId();
-        LOGGER.debug("Loaded {} Persona emote(s); selected={}", EMOTES.size(), selectedId);
+        LOGGER.debug("Loaded {} Persona emote(s)", EMOTES.size());
     }
 
     private static void scan(Path root) {
@@ -102,7 +98,6 @@ public final class EmoteManager {
     }
 
     public static List<LoadedEmote> all() { return List.copyOf(EMOTES.values()); }
-    public static LoadedEmote selected() { return EMOTES.get(selectedId); }
     public static Thumbnail thumbnail(LoadedEmote emote) {
         return emote == null ? null : THUMBNAILS.get(emote.id());
     }
@@ -151,7 +146,6 @@ public final class EmoteManager {
             EQUIPPED_SLOTS[previousSlot] = EQUIPPED_SLOTS[index];
         }
         EQUIPPED_SLOTS[index] = emote.id();
-        select(emote);
         persistSlots();
     }
 
@@ -160,21 +154,6 @@ public final class EmoteManager {
         String removed = EQUIPPED_SLOTS[index];
         EQUIPPED_SLOTS[index] = null;
         persistSlots();
-        if (removed.equals(selectedId)) {
-            selectedId = firstEquippedId();
-            StateManager.updateSelectedEmote(selectedId);
-        }
-    }
-
-    public static void select(LoadedEmote emote) {
-        if (emote == null || !EMOTES.containsKey(emote.id())) return;
-        selectedId = emote.id();
-        StateManager.updateSelectedEmote(selectedId);
-    }
-
-    private static String firstEquippedId() {
-        for (String id : EQUIPPED_SLOTS) if (id != null && EMOTES.containsKey(id)) return id;
-        return null;
     }
 
     private static void persistSlots() {
@@ -183,11 +162,10 @@ public final class EmoteManager {
         StateManager.updateEmoteSlots(ids);
     }
 
-    public static void playLocal() {
+    public static void playLocal(LoadedEmote emote) {
         Minecraft client = Minecraft.getInstance();
-        LoadedEmote emote = selected();
         if (client.player == null || emote == null) {
-            LOGGER.warn("Cannot play Persona emote: player={}, selected={}", client.player != null, selectedId);
+            LOGGER.warn("Cannot play Persona emote: player={}, emote={}", client.player != null, emote);
             return;
         }
         play(client.player.getUUID(), emote);

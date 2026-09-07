@@ -133,8 +133,7 @@ public final class EmoteWheelScreen extends Screen {
     private boolean choose(int slot) {
         LoadedEmote emote = emoteAt(slot);
         if (emote == null) return false;
-        EmoteManager.select(emote);
-        EmoteManager.playLocal();
+        EmoteManager.playLocal(emote);
         GuiUtils.playButtonClickSound();
         minecraft.gui.setScreen(parent);
         return true;
