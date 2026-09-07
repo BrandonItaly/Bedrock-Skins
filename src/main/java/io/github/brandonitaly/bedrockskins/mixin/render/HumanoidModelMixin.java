@@ -77,13 +77,17 @@ public abstract class HumanoidModelMixin<T extends HumanoidRenderState> implemen
                 copyPose(bedrockModel.leftLeg, this.leftLeg);
             }
         }
-        applyPersonaOcclusion(state);
+        if (state instanceof AvatarRenderState) {
+            applyPersonaOcclusion(state);
+        }
         EmoteManager.apply((HumanoidModel<?>) (Object) this, BedrockRenderStateStore.getUniqueId(state));
     }
 
     @Unique
     private void applyPersonaOcclusion(T state) {
         UUID uuid = BedrockRenderStateStore.getUniqueId(state);
+        if (!(state instanceof AvatarRenderState) || uuid == null
+            || PersonaManager.equipped(uuid).isEmpty()) return;
         PersonaManager.Occlusion hidden = PersonaManager.occlusion(uuid);
         if (hidden.isEmpty()) return;
 
