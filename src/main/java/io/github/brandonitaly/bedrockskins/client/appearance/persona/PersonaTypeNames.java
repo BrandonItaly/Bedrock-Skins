@@ -6,6 +6,7 @@ import net.minecraft.network.chat.Component;
 /** Localized display names and GUI grouping for Bedrock Persona piece types. */
 public final class PersonaTypeNames {
     public static final String ALL = "all";
+    public static final String EQUIPPED = "equipped";
     public static final String BOTTOMS = "bottoms";
 
     private PersonaTypeNames() {}
