@@ -20,13 +20,13 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "com.brandonitaly.bedrockskins.BedrockSkins"
+      "io.github.brandonitaly.bedrockskins.BedrockSkins"
     ],
     "client": [
-      "com.brandonitaly.bedrockskins.client.BedrockSkinsClient"
+      "io.github.brandonitaly.bedrockskins.client.BedrockSkinsClient"
     ],
     "modmenu": [
-      "com.brandonitaly.bedrockskins.client.ModMenuIntegration"
+      "io.github.brandonitaly.bedrockskins.client.integration.ModMenuIntegration"
     ]
   },
   "accessWidener": "${aw}",

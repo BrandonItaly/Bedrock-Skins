@@ -1,0 +1,172 @@
+package io.github.brandonitaly.bedrockskins.client.persistence;
+
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.client.OptionInstance;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.network.chat.Component;
+
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Locale;
+
+public class BedrockSkinsConfig {
+    //? if fabric
+    private static final Path CONFIG_PATH = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("bedrockskins.json");
+    //? if neoforge
+    // private static final Path CONFIG_PATH = net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get().resolve("bedrockskins.json");
+
+    private static volatile PaperDollMode paperDollMode;
+    private static volatile PackSortOrder packSortOrder;
+    private static volatile boolean skinAnimations;
+    private static volatile boolean adjustCameraHeight;
+    private static volatile boolean thirdPersonEmotes;
+    private static volatile boolean allowAccountSkinUpload;
+    private static volatile double paperDollOffsetXTitle;
+    private static volatile double paperDollOffsetYTitle;
+    private static volatile double paperDollOffsetXPause;
+    private static volatile double paperDollOffsetYPause;
+
+    public enum PaperDollMode {
+        NONE, BOTH, MAIN_MENU, PAUSE_MENU;
+
+        public String translationKey() { return "bedrockskins.option.show_paper_doll." + name().toLowerCase(Locale.ROOT); }
+
+        public static final Codec<PaperDollMode> CODEC = Codec.STRING.xmap(
+            value -> { try { return valueOf(value.toUpperCase(Locale.ROOT)); } catch (Exception e) { return BOTH; } }, Enum::name
+        );
+    }
+
+    public enum PackSortOrder {
+        A_TO_Z, Z_TO_A;
+
+        public String translationKey() { return "bedrockskins.option.sort." + name().toLowerCase(Locale.ROOT); }
+
+        public static final Codec<PackSortOrder> CODEC = Codec.STRING.xmap(
+            value -> { try { return valueOf(value.toUpperCase(Locale.ROOT)); } catch (Exception e) { return A_TO_Z; } }, Enum::name
+        );
+    }
+
+    private record ConfigData(PaperDollMode paperDollMode, PackSortOrder packSortOrder, boolean skinAnimations, boolean adjustCameraHeight, boolean thirdPersonEmotes, boolean allowAccountSkinUpload, double paperDollOffsetXTitle, double paperDollOffsetYTitle, double paperDollOffsetXPause, double paperDollOffsetYPause) {}
+
+    private static final ConfigData DEFAULTS = new ConfigData(PaperDollMode.BOTH, PackSortOrder.A_TO_Z, true, false, true, true, 0.0, 0.0, 0.0, 0.0);
+
+    private static final Codec<ConfigData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+        PaperDollMode.CODEC.optionalFieldOf("showPaperDoll", DEFAULTS.paperDollMode()).forGetter(ConfigData::paperDollMode),
+        PackSortOrder.CODEC.optionalFieldOf("packSortOrder", DEFAULTS.packSortOrder()).forGetter(ConfigData::packSortOrder),
+        Codec.BOOL.optionalFieldOf("skinAnimations", DEFAULTS.skinAnimations()).forGetter(ConfigData::skinAnimations),
+        Codec.BOOL.optionalFieldOf("adjustCameraHeight", DEFAULTS.adjustCameraHeight()).forGetter(ConfigData::adjustCameraHeight),
+        Codec.BOOL.optionalFieldOf("thirdPersonEmotes", DEFAULTS.thirdPersonEmotes()).forGetter(ConfigData::thirdPersonEmotes),
+        Codec.BOOL.optionalFieldOf("allowAccountSkinUpload", DEFAULTS.allowAccountSkinUpload()).forGetter(ConfigData::allowAccountSkinUpload),
+        Codec.DOUBLE.optionalFieldOf("paperDollOffsetXTitle", DEFAULTS.paperDollOffsetXTitle()).forGetter(ConfigData::paperDollOffsetXTitle),
+        Codec.DOUBLE.optionalFieldOf("paperDollOffsetYTitle", DEFAULTS.paperDollOffsetYTitle()).forGetter(ConfigData::paperDollOffsetYTitle),
+        Codec.DOUBLE.optionalFieldOf("paperDollOffsetXPause", DEFAULTS.paperDollOffsetXPause()).forGetter(ConfigData::paperDollOffsetXPause),
+        Codec.DOUBLE.optionalFieldOf("paperDollOffsetYPause", DEFAULTS.paperDollOffsetYPause()).forGetter(ConfigData::paperDollOffsetYPause)
+    ).apply(instance, ConfigData::new));
+
+    static { load(); }
+
+    public static final OptionInstance<PaperDollMode> SHOW_PAPER_DOLL = new OptionInstance<>(
+        "bedrockskins.option.show_paper_doll", value -> Tooltip.create(Component.translatable("bedrockskins.option.show_paper_doll.tooltip")),
+        (caption, value) -> Component.translatable(value.translationKey()), new OptionInstance.Enum<>(Arrays.asList(PaperDollMode.values()), PaperDollMode.CODEC),
+        getPaperDollMode(), BedrockSkinsConfig::setPaperDollMode
+    );
+
+    public static final OptionInstance<PackSortOrder> PACK_SORT_ORDER = new OptionInstance<>(
+        "bedrockskins.option.pack_sort_order", OptionInstance.noTooltip(),
+        (caption, value) -> Component.translatable(value.translationKey()), new OptionInstance.Enum<>(Arrays.asList(PackSortOrder.values()), PackSortOrder.CODEC),
+        getPackSortOrder(), BedrockSkinsConfig::setPackSortOrder
+    );
+
+    public static final OptionInstance<Boolean> SKIN_ANIMATIONS = OptionInstance.createBoolean(
+        "bedrockskins.option.skin_animations", value -> Tooltip.create(Component.translatable("bedrockskins.option.skin_animations.tooltip")),
+        isSkinAnimationsEnabled(), BedrockSkinsConfig::setSkinAnimations
+    );
+
+    public static final OptionInstance<Boolean> ADJUST_CAMERA_HEIGHT = OptionInstance.createBoolean(
+        "bedrockskins.option.adjust_camera_height", value -> Tooltip.create(Component.translatable("bedrockskins.option.adjust_camera_height.tooltip")),
+        isAdjustCameraHeightEnabled(), value -> {
+            setAdjustCameraHeight(value);
+            if (net.minecraft.client.Minecraft.getInstance().player != null) net.minecraft.client.Minecraft.getInstance().player.refreshDimensions();
+        }
+    );
+
+    public static final OptionInstance<Boolean> THIRD_PERSON_EMOTES = OptionInstance.createBoolean(
+        "bedrockskins.option.third_person_emotes", value -> Tooltip.create(Component.translatable("bedrockskins.option.third_person_emotes.tooltip")),
+        isThirdPersonEmotesEnabled(), BedrockSkinsConfig::setThirdPersonEmotes
+    );
+
+    public static final OptionInstance<Boolean> ALLOW_ACCOUNT_SKIN_UPLOAD = OptionInstance.createBoolean(
+        "bedrockskins.option.allow_account_skin_upload", value -> Tooltip.create(Component.translatable("bedrockskins.option.allow_account_skin_upload.tooltip")),
+        isAccountSkinUploadAllowed(), BedrockSkinsConfig::setAccountSkinUploadAllowed
+    );
+
+    public static PaperDollMode getPaperDollMode() { return paperDollMode; }
+    public static void setPaperDollMode(PaperDollMode mode) { paperDollMode = mode == null ? PaperDollMode.BOTH : mode; save(); }
+
+    public static PackSortOrder getPackSortOrder() { return packSortOrder; }
+    public static void setPackSortOrder(PackSortOrder order) { packSortOrder = order == null ? PackSortOrder.A_TO_Z : order; save(); }
+
+    public static boolean isShowPaperDollOnMainMenu() { return paperDollMode == PaperDollMode.BOTH || paperDollMode == PaperDollMode.MAIN_MENU; }
+    public static boolean isShowPaperDollOnPauseScreen() { return paperDollMode == PaperDollMode.BOTH || paperDollMode == PaperDollMode.PAUSE_MENU; }
+
+    public static boolean isSkinAnimationsEnabled() { return skinAnimations; }
+    public static void setSkinAnimations(boolean enabled) { if (skinAnimations != enabled) { skinAnimations = enabled; save(); } }
+
+    public static boolean isAdjustCameraHeightEnabled() { return adjustCameraHeight; }
+    public static void setAdjustCameraHeight(boolean enabled) { if (adjustCameraHeight != enabled) { adjustCameraHeight = enabled; save(); } }
+
+    public static boolean isThirdPersonEmotesEnabled() { return thirdPersonEmotes; }
+    public static void setThirdPersonEmotes(boolean enabled) { if (thirdPersonEmotes != enabled) { thirdPersonEmotes = enabled; save(); } }
+
+    public static boolean isAccountSkinUploadAllowed() { return allowAccountSkinUpload; }
+    public static void setAccountSkinUploadAllowed(boolean allowed) { if (allowAccountSkinUpload != allowed) { allowAccountSkinUpload = allowed; save(); } }
+
+    public static double getPaperDollOffsetXTitle() { return paperDollOffsetXTitle; }
+    public static void setPaperDollOffsetXTitle(double offset) { paperDollOffsetXTitle = offset; save(); }
+
+    public static double getPaperDollOffsetYTitle() { return paperDollOffsetYTitle; }
+    public static void setPaperDollOffsetYTitle(double offset) { paperDollOffsetYTitle = offset; save(); }
+
+    public static double getPaperDollOffsetXPause() { return paperDollOffsetXPause; }
+    public static void setPaperDollOffsetXPause(double offset) { paperDollOffsetXPause = offset; save(); }
+
+    public static double getPaperDollOffsetYPause() { return paperDollOffsetYPause; }
+    public static void setPaperDollOffsetYPause(double offset) { paperDollOffsetYPause = offset; save(); }
+
+    public static OptionInstance<?>[] asOptions() {
+        return new OptionInstance<?>[] { PACK_SORT_ORDER, SHOW_PAPER_DOLL, SKIN_ANIMATIONS, ADJUST_CAMERA_HEIGHT, THIRD_PERSON_EMOTES, ALLOW_ACCOUNT_SKIN_UPLOAD };
+    }
+
+    private static void load() {
+        ConfigData data = JsonCodecFileStore.read(CONFIG_PATH, CODEC, DEFAULTS, "BedrockSkinsConfig");
+        paperDollMode = data.paperDollMode();
+        packSortOrder = data.packSortOrder();
+        skinAnimations = data.skinAnimations();
+        adjustCameraHeight = data.adjustCameraHeight();
+        thirdPersonEmotes = data.thirdPersonEmotes();
+        allowAccountSkinUpload = data.allowAccountSkinUpload();
+        paperDollOffsetXTitle = data.paperDollOffsetXTitle();
+        paperDollOffsetYTitle = data.paperDollOffsetYTitle();
+        paperDollOffsetXPause = data.paperDollOffsetXPause();
+        paperDollOffsetYPause = data.paperDollOffsetYPause();
+    }
+
+    private static void save() {
+        JsonCodecFileStore.write(CONFIG_PATH, CODEC, new ConfigData(paperDollMode, packSortOrder, skinAnimations, adjustCameraHeight, thirdPersonEmotes, allowAccountSkinUpload, paperDollOffsetXTitle, paperDollOffsetYTitle, paperDollOffsetXPause, paperDollOffsetYPause), "BedrockSkinsConfig");
+    }
+
+    public static void resetToDefault() {
+        SHOW_PAPER_DOLL.set(DEFAULTS.paperDollMode());
+        PACK_SORT_ORDER.set(DEFAULTS.packSortOrder());
+        SKIN_ANIMATIONS.set(DEFAULTS.skinAnimations());
+        ADJUST_CAMERA_HEIGHT.set(DEFAULTS.adjustCameraHeight());
+        THIRD_PERSON_EMOTES.set(DEFAULTS.thirdPersonEmotes());
+        ALLOW_ACCOUNT_SKIN_UPLOAD.set(DEFAULTS.allowAccountSkinUpload());
+        setPaperDollOffsetXTitle(DEFAULTS.paperDollOffsetXTitle());
+        setPaperDollOffsetYTitle(DEFAULTS.paperDollOffsetYTitle());
+        setPaperDollOffsetXPause(DEFAULTS.paperDollOffsetXPause());
+        setPaperDollOffsetYPause(DEFAULTS.paperDollOffsetYPause());
+        save();
+    }
+}

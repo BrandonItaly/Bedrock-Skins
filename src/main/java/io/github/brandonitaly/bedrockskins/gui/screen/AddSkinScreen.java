@@ -1,0 +1,344 @@
+package io.github.brandonitaly.bedrockskins.gui.screen;
+
+import io.github.brandonitaly.bedrockskins.gui.preview.*;
+import io.github.brandonitaly.bedrockskins.gui.widget.*;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import io.github.brandonitaly.bedrockskins.pack.model.AssetSource;
+import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
+import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
+import com.mojang.authlib.GameProfile;
+import com.mojang.logging.LogUtils;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
+import org.slf4j.Logger;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.UUID;
+
+public class AddSkinScreen extends SkinDialogScreen {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    private final String packId;
+    private final String texturePath;
+    private boolean deleteTextureOnClose = false;
+    private boolean deleteCapeOnClose = false;
+    
+    private EditBox skinNameBox;
+    private Button selectCapeBtn;
+
+    private String selectedGeometry = "geometry.humanoid.custom";
+    private String capePath = null;
+
+    private LoadedSkin customGeometryPreview;
+    private LoadedSkin customSlimGeometryPreview;
+    private PreviewPlayer customGeometryPlayer;
+    private PreviewPlayer customSlimGeometryPlayer;
+    private final UUID customGeometryUuid = UUID.randomUUID();
+    private final UUID customSlimUuid = UUID.randomUUID();
+    private String skinNameValue = "";
+    private Component capeButtonLabel = Component.translatable("bedrockskins.button.select_cape");
+
+    private int geometrySectionX;
+    private int geometrySectionY;
+    private final int geometryCardsTopPadding = 18;
+
+    public AddSkinScreen(SkinSelectionScreen parent, String packId, String texturePath) {
+        super(parent, Component.translatable("bedrockskins.gui.import_skin"), 224, 248);
+        this.packId = packId;
+        this.texturePath = texturePath;
+    }
+
+    public AddSkinScreen(SkinSelectionScreen parent, String packId, String texturePath, String capePath, String defaultName, boolean isSlim, boolean deleteTempFiles) {
+        super(parent, Component.translatable("bedrockskins.gui.import_skin"), 224, 248);
+        this.packId = packId;
+        this.texturePath = texturePath;
+        this.capePath = capePath;
+        if (capePath != null) {
+            this.capeButtonLabel = Component.literal(Path.of(capePath).getFileName().toString());
+        }
+        if (defaultName != null) {
+            this.skinNameValue = defaultName;
+        }
+        if (isSlim) {
+            this.selectedGeometry = "geometry.humanoid.customSlim";
+        }
+        this.deleteTextureOnClose = deleteTempFiles;
+        this.deleteCapeOnClose = deleteTempFiles;
+    }
+
+    @Override
+    protected void init() {
+        int y = contentTopY();
+
+        this.skinNameBox = new EditBox(this.font, contentLeft(), y, contentWidth(), ELEMENT_HEIGHT, Component.translatable("bedrockskins.gui.add_skin.name"));
+        this.skinNameBox.setMaxLength(32);
+        this.skinNameBox.setHint(Component.translatable("bedrockskins.gui.add_skin.name.hint"));
+        if (!skinNameValue.isEmpty()) {
+            this.skinNameBox.setValue(skinNameValue);
+        }
+        this.addRenderableWidget(this.skinNameBox);
+        
+        y = nextY(y); 
+
+        ensureGeometryOptions();
+        registerGeometryPreviews();
+        setupGeometryPlayers();
+        geometrySectionX = contentLeft();
+        geometrySectionY = y;
+        
+        y = nextY(y, geometryCardsTopPadding + 120); 
+
+        this.selectCapeBtn = Button.builder(Component.translatable("bedrockskins.button.select_cape"), b -> {
+            String path = openFileDialog("Select Cape Texture", "*.png");
+            if (path != null) {
+                capePath = path;
+                capeButtonLabel = Component.literal(Path.of(path).getFileName().toString());
+                b.setMessage(capeButtonLabel);
+            }
+        }).bounds(contentLeft(), y, contentWidth(), ELEMENT_HEIGHT).build();
+        this.selectCapeBtn.setMessage(capeButtonLabel);
+        this.addRenderableWidget(this.selectCapeBtn);
+        
+        y = nextY(y); 
+
+        int buttonWidth = splitButtonWidth();
+
+        this.addRenderableWidget(Button.builder(Component.translatable("bedrockskins.button.cancel"), b -> this.onClose())
+                .bounds(contentLeft(), y, buttonWidth, ELEMENT_HEIGHT).build());
+
+        this.addRenderableWidget(Button.builder(Component.translatable("bedrockskins.button.confirm"), b -> addSkin())
+                .bounds(splitButtonRightX(), y, buttonWidth, ELEMENT_HEIGHT).build());
+    }
+
+    @Override
+    public void extractRenderState(net.minecraft.client.gui.GuiGraphicsExtractor gui, int mouseX, int mouseY, float delta) {
+        super.extractRenderState(gui, mouseX, mouseY, delta);
+        renderGeometrySelector(gui, mouseX, mouseY);
+    }
+
+    private String openFileDialog(String title, String filter) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            PointerBuffer filters = stack.mallocPointer(1);
+            filters.put(stack.UTF8(filter)).flip();
+            String path = TinyFileDialogs.tinyfd_openFileDialog(title, "", filters, filter + " files", false);
+            Minecraft.getInstance().execute(() -> {
+                long handle = Minecraft.getInstance().getWindow().handle();
+                if (handle != 0L) {
+                    //? if >=26.3-snapshot-5 {
+                    /*org.lwjgl.sdl.SDLVideo.SDL_RestoreWindow(handle);
+                    org.lwjgl.sdl.SDLVideo.SDL_RaiseWindow(handle);*/
+                    //?} else {
+                    org.lwjgl.glfw.GLFW.glfwRestoreWindow(handle);
+                    org.lwjgl.glfw.GLFW.glfwFocusWindow(handle);
+                    //?}
+                }
+            });
+            return path;
+        }
+    }
+
+    private void addSkin() {
+        String skinName = skinNameBox.getValue().trim();
+        if (skinName.isEmpty() || texturePath == null) return;
+
+        try {
+            Path storeDir = SkinPackLoader.getSkinPacksDir().toPath().resolve(packId.replace("skinpack.", ""));
+            if (!Files.exists(storeDir)) return;
+
+            String safeSkinId = skinName.replaceAll("[^a-zA-Z0-9_-]", "").toLowerCase();
+            
+            Path targetTexture = storeDir.resolve(safeSkinId + ".png");
+            Files.copy(Path.of(texturePath), targetTexture, StandardCopyOption.REPLACE_EXISTING);
+
+            String geoName = selectedGeometry;
+
+            String capeFileName = "";
+            if (capePath != null) {
+                Path targetCape = storeDir.resolve(safeSkinId + "_cape.png");
+                Files.copy(Path.of(capePath), targetCape, StandardCopyOption.REPLACE_EXISTING);
+                capeFileName = targetCape.getFileName().toString();
+            }
+
+            Path skinsJsonFile = storeDir.resolve("skins.json");
+            JsonObject rootObj = new JsonObject();
+            JsonArray skinsArray = new JsonArray();
+            
+            if (Files.exists(skinsJsonFile)) {
+                try (var reader = Files.newBufferedReader(skinsJsonFile)) {
+                    rootObj = JsonParser.parseReader(reader).getAsJsonObject();
+                    if (rootObj.has("skins")) {
+                        skinsArray = rootObj.getAsJsonArray("skins");
+                    }
+                }
+            }
+
+            JsonObject newSkin = new JsonObject();
+            newSkin.addProperty("localization_name", skinName);
+            newSkin.addProperty("geometry", geoName);
+            newSkin.addProperty("texture", targetTexture.getFileName().toString());
+            newSkin.addProperty("type", "free");
+            if (!capeFileName.isEmpty()) {
+                newSkin.addProperty("cape", capeFileName);
+            }
+            
+            skinsArray.add(newSkin);
+            rootObj.add("skins", skinsArray);
+            Files.writeString(skinsJsonFile, rootObj.toString());
+
+            Path textsDir = storeDir.resolve("texts");
+            Path langFile = textsDir.resolve("en_us.lang");
+            String newLangEntry = "\nskin.%s.%s=%s".formatted(packId.replace("skinpack.", ""), safeSkinId, skinName);
+            if (Files.exists(langFile)) {
+                Files.writeString(langFile, Files.readString(langFile) + newLangEntry);
+            }
+
+            this.onClose();
+            Minecraft.getInstance().execute(() -> {
+                if (parent instanceof SkinSelectionScreen s) {
+                    s.markNeedsReload();
+                    s.triggerReloadIfNeeded();
+                }
+            });
+
+        } catch (IOException e) {
+            LOGGER.error("Failed to add skin to pack {}", packId, e);
+        }
+    }
+
+    private void ensureGeometryOptions() {
+        if (customGeometryPreview == null) {
+            customGeometryPreview = createGeometryPreview("Wide", "geometry.humanoid.custom");
+        }
+        if (customSlimGeometryPreview == null) {
+            customSlimGeometryPreview = createGeometryPreview("Slim", "geometry.humanoid.customSlim");
+        }
+    }
+
+    private LoadedSkin createGeometryPreview(String displayName, String geometryId) {
+        AssetSource capeSource = capePath != null ? new AssetSource.File(capePath) : null;
+        return new LoadedSkin("geometry", "Geometry", displayName, createGeometryData(geometryId), new AssetSource.File(texturePath), capeSource);
+    }
+
+    private void selectGeometry(LoadedSkin skin) {
+        if (skin == null) return;
+        selectedGeometry = "Slim".equals(skin.skinDisplayName) ? "geometry.humanoid.customSlim" : "geometry.humanoid.custom";
+        GuiUtils.playButtonClickSound();
+        setupGeometryPlayers();
+    }
+
+    private void registerGeometryPreviews() {
+        cleanupGeometryPreviews();
+        SkinPackLoader.registerLoadedSkin(customGeometryPreview);
+        SkinPackLoader.registerLoadedSkin(customSlimGeometryPreview);
+        SkinPackLoader.registerTextureFor(customGeometryPreview.skinId);
+        SkinPackLoader.registerTextureFor(customSlimGeometryPreview.skinId);
+    }
+
+    private void setupGeometryPlayers() {
+        if (customGeometryPlayer == null) {
+            customGeometryPlayer = new PreviewPlayer(new GameProfile(customGeometryUuid, "Wide"));
+        }
+        if (customSlimGeometryPlayer == null) {
+            customSlimGeometryPlayer = new PreviewPlayer(new GameProfile(customSlimUuid, "Slim"));
+        }
+
+        GuiSkinUtils.applyLoadedSkinPreview(customGeometryPlayer, customGeometryUuid, customGeometryPreview);
+        GuiSkinUtils.applyLoadedSkinPreview(customSlimGeometryPlayer, customSlimUuid, customSlimGeometryPreview);
+    }
+
+    private void renderGeometrySelector(net.minecraft.client.gui.GuiGraphicsExtractor gui, int mouseX, int mouseY) {
+        int cardY = geometrySectionY + geometryCardsTopPadding;
+        int cardW = 94;
+        int cardH = 120;
+        int gap = 12; 
+        int leftX = geometrySectionX;
+        int rightX = geometrySectionX + cardW + gap;
+
+        gui.text(font, Component.translatable("bedrockskins.gui.geometry"), geometrySectionX, geometrySectionY, 0xFFDADADA, false);
+        gui.fill(geometrySectionX, geometrySectionY + 11, geometrySectionX + contentWidth(), geometrySectionY + 12, 0x33FFFFFF);
+
+        GuiUtils.renderGeometryCard(gui, font, customGeometryPlayer, Component.translatable("bedrockskins.gui.geometry.wide"), leftX, cardY, cardW, cardH, "geometry.humanoid.custom".equals(selectedGeometry), mouseX, mouseY);
+        GuiUtils.renderGeometryCard(gui, font, customSlimGeometryPlayer, Component.translatable("bedrockskins.gui.geometry.slim"), rightX, cardY, cardW, cardH, "geometry.humanoid.customSlim".equals(selectedGeometry), mouseX, mouseY);
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean handled) {
+        if (handleGeometryClick((int) event.x(), (int) event.y())) return true;
+        return super.mouseClicked(event, handled);
+    }
+
+    private boolean handleGeometryClick(int mouseX, int mouseY) {
+        int cardY = geometrySectionY + geometryCardsTopPadding;
+        int cardW = 94;
+        int cardH = 120;
+        int gap = 12;
+        int leftX = geometrySectionX;
+        int rightX = geometrySectionX + cardW + gap;
+
+        if (mouseX >= leftX && mouseX < leftX + cardW && mouseY >= cardY && mouseY < cardY + cardH) {
+            selectGeometry(customGeometryPreview);
+            return true;
+        }
+
+        if (mouseX >= rightX && mouseX < rightX + cardW && mouseY >= cardY && mouseY < cardY + cardH) {
+            selectGeometry(customSlimGeometryPreview);
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public void onClose() {
+        cleanupGeometryPreviews();
+        if (deleteTextureOnClose && texturePath != null) {
+            try { Files.deleteIfExists(Path.of(texturePath)); } catch (IOException ignored) {}
+        }
+        if (deleteCapeOnClose && capePath != null) {
+            try { Files.deleteIfExists(Path.of(capePath)); } catch (IOException ignored) {}
+        }
+        super.onClose();
+    }
+
+    @Override
+    protected void captureDialogState() {
+        if (skinNameBox != null) {
+            skinNameValue = skinNameBox.getValue();
+        }
+    }
+
+    @Override
+    protected void restoreDialogState() {
+        if (skinNameBox != null) {
+            skinNameBox.setValue(skinNameValue);
+        }
+        if (selectCapeBtn != null) {
+            selectCapeBtn.setMessage(capeButtonLabel);
+        }
+        setupGeometryPlayers();
+    }
+
+    private void cleanupGeometryPreviews() {
+        if (customGeometryPreview != null) SkinPackLoader.removeLoadedSkin(customGeometryPreview.skinId);
+        if (customSlimGeometryPreview != null) SkinPackLoader.removeLoadedSkin(customSlimGeometryPreview.skinId);
+        GuiSkinUtils.cleanupPreview(customGeometryUuid);
+        GuiSkinUtils.cleanupPreview(customSlimUuid);
+    }
+
+    private static JsonObject createGeometryData(String geometryId) {
+        JsonObject geometry = SkinPackLoader.resolveGeometry(geometryId, null);
+        return geometry != null ? geometry : new JsonObject();
+    }
+}

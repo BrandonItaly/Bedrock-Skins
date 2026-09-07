@@ -1,0 +1,95 @@
+package io.github.brandonitaly.bedrockskins.mixin.gui;
+
+import io.github.brandonitaly.bedrockskins.client.persistence.BedrockSkinsConfig;
+import io.github.brandonitaly.bedrockskins.client.BedrockSkinsClient;
+import io.github.brandonitaly.bedrockskins.gui.preview.PaperDollWidget;
+import io.github.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.SpriteIconButton;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.network.chat.Component;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+@Mixin(TitleScreen.class)
+public abstract class TitleScreenMixin extends Screen {
+
+    protected TitleScreenMixin(Component title) { super(title); }
+
+    @Unique
+    private PaperDollWidget bedrockskins$dollWidget;
+
+    @Inject(method = "init", at = @At("TAIL"))
+    private void bedrockskins$initMainMenuPreview(CallbackInfo ci) {
+        if (bedrockskins$dollWidget != null) {
+            bedrockskins$dollWidget.removed();
+            bedrockskins$dollWidget = null;
+        }
+
+        //? if >=26.2 {
+        if (!BedrockSkinsConfig.isShowPaperDollOnMainMenu()) {
+            List<AbstractWidget> iconButtons = new ArrayList<>();
+            int topPos = this.height / 4 + 48 + 24;
+            for (var listener : this.children()) {
+                if (listener instanceof AbstractWidget widget) {
+                    if (widget.getWidth() == 20 && widget.getHeight() == 20 && widget.getY() > this.height / 2) {
+                        iconButtons.add(widget);
+                        topPos = widget.getY();
+                    }
+                }
+            }
+
+            iconButtons.sort(Comparator.comparingInt(AbstractWidget::getX));
+
+            int k = iconButtons.size();
+            int numberOfButtons = k + 1;
+            int buttonWidth = 20;
+            int spacing = 4;
+            int totalWidth = numberOfButtons * buttonWidth + (numberOfButtons - 1) * spacing;
+            int startX = this.width / 2 - totalWidth / 2;
+
+            for (int i = 0; i < k; i++) {
+                iconButtons.get(i).setX(startX + i * (buttonWidth + spacing));
+            }
+
+            int btnX = startX + k * (buttonWidth + spacing);
+            
+            SpriteIconButton button = SpriteIconButton.builder(
+                Component.empty(),
+                b -> this.minecraft.gui.setScreen(BedrockSkinsClient.getAppropriateSkinScreen(this)),
+                true
+            )
+            .size(20, 20)
+            .sprite(BedrockSkinsSprites.WARDROBE_ICON, 16, 16)
+            .build();
+            button.setX(btnX);
+            button.setY(topPos);
+            button.setTooltip(Tooltip.create(Component.translatable("bedrockskins.button.wardrobe.tooltip")));
+            this.addRenderableWidget(button);
+            return;
+        }
+        //?} else {
+        /*if (!BedrockSkinsConfig.isShowPaperDollOnMainMenu()) return;
+        *///?}
+        
+        int x = PaperDollWidget.getDefaultLeft(this, this.width);
+        int y = PaperDollWidget.getDefaultTop(this, this.height);
+        bedrockskins$dollWidget = new PaperDollWidget(x, y, this, true);
+        this.addRenderableWidget(bedrockskins$dollWidget);
+    }
+
+    @Override
+    public void removed() {
+        super.removed();
+        if (bedrockskins$dollWidget != null) bedrockskins$dollWidget.removed();
+    }
+}
