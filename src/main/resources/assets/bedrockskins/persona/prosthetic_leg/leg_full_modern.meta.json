@@ -1,0 +1,127 @@
+{
+  "piece_id": "db33f5db-22ba-455b-a6ec-ee663337ea3b",
+  "piece_name": "leg_full_modern",
+  "piece_type": "persona_legs",
+  "tint_base_color": {
+    "r_color": "#949FB6",
+    "g_color": "#A09D6B"
+  },
+  "tint_color": {
+    "r_color": "#949FB6",
+    "g_color": "#A09D6B"
+  },
+  "geometry_sources": [
+    {
+      "side": "left",
+      "geometry": "geometry.full_leg_modern_left.tall_left.left_leg",
+      "zone": [
+        "left_leg",
+        "left_leg_clothing",
+        "left_leg_upper",
+        "left_leg_middle",
+        "left_leg_lower"
+      ],
+      "body_size": "tall",
+      "texture": "full_leg_geo.png",
+      "tint_map": "full_leg_geo_tintmap.tga"
+    },
+    {
+      "side": "right",
+      "geometry": "geometry.full_leg_modern_right.tall_right.right_leg",
+      "zone": [
+        "right_leg",
+        "right_leg_clothing",
+        "right_leg_upper",
+        "right_leg_middle",
+        "right_leg_lower"
+      ],
+      "body_size": "tall",
+      "texture": "full_leg_geo.png",
+      "tint_map": "full_leg_geo_tintmap.tga"
+    },
+    {
+      "side": "left",
+      "geometry": "geometry.full_leg_modern_left.medium_left.left_leg",
+      "zone": [
+        "left_leg",
+        "left_leg_clothing",
+        "left_leg_upper",
+        "left_leg_middle",
+        "left_leg_lower"
+      ],
+      "body_size": "medium",
+      "texture": "full_leg_geo.png",
+      "tint_map": "full_leg_geo_tintmap.tga"
+    },
+    {
+      "side": "right",
+      "geometry": "geometry.full_leg_modern_right.medium_right.right_leg",
+      "zone": [
+        "right_leg",
+        "right_leg_clothing",
+        "right_leg_upper",
+        "right_leg_middle",
+        "right_leg_lower"
+      ],
+      "body_size": "medium",
+      "texture": "full_leg_geo.png",
+      "tint_map": "full_leg_geo_tintmap.tga"
+    },
+    {
+      "side": "left",
+      "geometry": "geometry.full_leg_modern_small_left.small_left.left_leg",
+      "zone": [
+        "left_leg",
+        "left_leg_clothing",
+        "left_leg_upper",
+        "left_leg_middle",
+        "left_leg_lower"
+      ],
+      "body_size": "small",
+      "texture": "full_leg_geo.png",
+      "tint_map": "full_leg_geo_tintmap.tga"
+    },
+    {
+      "side": "right",
+      "geometry": "geometry.full_leg_modern_small_right.small_right.right_leg",
+      "zone": [
+        "right_leg",
+        "right_leg_clothing",
+        "right_leg_upper",
+        "right_leg_middle",
+        "right_leg_lower"
+      ],
+      "body_size": "small",
+      "texture": "full_leg_geo.png",
+      "tint_map": "full_leg_geo_tintmap.tga"
+    },
+    {
+      "side": "left",
+      "geometry": "geometry.full_leg_modern_smaller_left.smaller_left.left_leg",
+      "zone": [
+        "left_leg",
+        "left_leg_clothing",
+        "left_leg_upper",
+        "left_leg_middle",
+        "left_leg_lower"
+      ],
+      "body_size": "smaller",
+      "texture": "full_leg_geo.png",
+      "tint_map": "full_leg_geo_tintmap.tga"
+    },
+    {
+      "side": "right",
+      "geometry": "geometry.full_leg_modern_smaller_right.smaller_right.right_leg",
+      "zone": [
+        "right_leg",
+        "right_leg_clothing",
+        "right_leg_upper",
+        "right_leg_middle",
+        "right_leg_lower"
+      ],
+      "body_size": "smaller",
+      "texture": "full_leg_geo.png",
+      "tint_map": "full_leg_geo_tintmap.tga"
+    }
+  ]
+}
