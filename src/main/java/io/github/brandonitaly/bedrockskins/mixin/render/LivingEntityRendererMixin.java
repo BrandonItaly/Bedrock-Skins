@@ -116,7 +116,7 @@ public abstract class LivingEntityRendererMixin {
                     //?} else {
                     var renderType = net.minecraft.client.renderer.rendertype.RenderTypes.entityTranslucent(cosmeticTexture);
                     //?}
-                    //? if <26.3-snapshot-5 {
+                    //? if <=26.2 {
                     queue.submitModel(cosmeticModel, avatarState, matrices, renderType,
                         avatarState.lightCoords, OverlayTexture.NO_OVERLAY, avatarState.outlineColor, null);
                     //?} else {

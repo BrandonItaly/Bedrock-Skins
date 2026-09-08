@@ -474,10 +474,10 @@ public class BedrockPlayerModel extends PlayerModel {
 
         if (pose != ArmPose.EMPTY && pose != ArmPose.ITEM) return;
         
-        //? if <26.3-snapshot-5 {
+        //? if <=26.2 {
         if (pose == HumanoidModel.ArmPose.ITEM && state.attackTime <= 0.0F) {
         //?} else {
-        /*if (pose == HumanoidModel.ArmPose.ITEM) {
+        /*if (pose == HumanoidModel.ArmPose.ITEM && state.swingAnimation <= 0.0F) {
         *///?}
             arm.xRot = (arm.xRot + ITEM_POSE_ROT) * 2.0F;
             arm.yRot = 0.0F;

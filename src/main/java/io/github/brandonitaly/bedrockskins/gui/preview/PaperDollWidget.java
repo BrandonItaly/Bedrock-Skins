@@ -24,7 +24,7 @@ import net.minecraft.client.gui.screens.Screen;
 //? if >=1.21.9 {
 import net.minecraft.client.input.MouseButtonEvent;
 //?}
-//? if <26.3-snapshot-5 {
+//? if <=26.2 {
 import org.lwjgl.glfw.GLFW;
 //?}
 import net.minecraft.network.chat.Component;
@@ -145,7 +145,7 @@ public class PaperDollWidget extends AbstractWidget {
             this.previewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(minecraft.getGameProfile(), false).get());
         }
 
-        //? if >=26.3-snapshot-5 {
+        //? if >26.2 {
         /*boolean leftDown = (org.lwjgl.sdl.SDLMouse.SDL_GetMouseState((java.nio.FloatBuffer) null, (java.nio.FloatBuffer) null) & org.lwjgl.sdl.SDLMouse.SDL_BUTTON_LMASK) != 0;*/
         //?} else {
         long window = minecraft.getWindow().handle();

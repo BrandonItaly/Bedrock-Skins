@@ -152,13 +152,6 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                 this.actionCell = false;
                 this.name = GuiSkinUtils.getSkinDisplayNameText(skin);
                 this.displayNameComponent = Component.literal(this.name);
-                this.player = new PreviewPlayer(new GameProfile(uuid, ""));
-
-                try {
-                    GuiSkinUtils.applyLoadedSkinPreview(this.player, this.uuid, skin);
-                } catch (Exception e) {
-                    LOGGER.warn("Failed to apply skin preview for {}", skin != null ? skin.skinId : null, e);
-                }
             }
 
             public SkinCell(Component label, Runnable onClick) {
@@ -178,7 +171,21 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
             }
 
             public void cleanup() {
-                if (!actionCell) GuiSkinUtils.cleanupPreview(uuid);
+                if (!actionCell && player != null) {
+                    GuiSkinUtils.cleanupPreview(uuid);
+                    player = null;
+                }
+            }
+
+            private PreviewPlayer player() {
+                if (player != null || actionCell) return player;
+                player = new PreviewPlayer(new GameProfile(uuid, ""));
+                try {
+                    GuiSkinUtils.applyLoadedSkinPreview(player, uuid, skin);
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to apply skin preview for {}", skin != null ? skin.skinId : null, e);
+                }
+                return player;
             }
 
             public void extractRenderState(GuiGraphicsExtractor context, int x, int y, int w, int h, boolean hovered, int mouseX, int mouseY) {
@@ -187,10 +194,12 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                     return;
                 }
 
-                boolean isSelected = getSelectedSkin.get() != null && getSelectedSkin.get().equals(skin);
+                LoadedSkin selected = getSelectedSkin.get();
+                boolean isSelected = selected != null && selected.equals(skin);
                 boolean isEquipped = GuiSkinUtils.isSkinCurrentlyEquipped(skin);
+                PreviewPlayer preview = player();
 
-                if (player != null) {
+                if (preview != null) {
                     long now = Util.getMillis();
                     long dt = Math.max(0, now - lastHoverTime);
                     lastHoverTime = now;
@@ -202,7 +211,7 @@ public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEn
                     }
                 }
 
-                GuiUtils.renderSkinCard(context, textRenderer, displayNameComponent, x, y, w, h, hovered, isSelected, isEquipped, player, hoverYaw, mouseX, mouseY);
+                GuiUtils.renderSkinCard(context, textRenderer, displayNameComponent, x, y, w, h, hovered, isSelected, isEquipped, preview, hoverYaw, mouseX, mouseY);
             }
         }
     }

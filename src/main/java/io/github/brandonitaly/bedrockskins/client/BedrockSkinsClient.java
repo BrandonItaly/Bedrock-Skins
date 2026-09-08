@@ -19,6 +19,7 @@ import io.github.brandonitaly.bedrockskins.pack.model.AssetSource;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
 import io.github.brandonitaly.bedrockskins.pack.model.SkinId;
 import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
+import io.github.brandonitaly.bedrockskins.pack.persona.PersonaResourceLoader;
 import com.mojang.logging.LogUtils;
 import com.mojang.blaze3d.platform.InputConstants;
 //? if fabric {
@@ -50,7 +51,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.PlayerModelPart;
-//? if <26.3-snapshot-5 {
+//? if <=26.2 {
 import org.lwjgl.glfw.GLFW;
 //?}
 import org.slf4j.Logger;
@@ -242,6 +243,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     public static void reloadResources(Minecraft client) {
         try {
             SkinPackLoader.loadPacks();
+            PersonaResourceLoader.beginReload(client.getResourceManager());
             PersonaManager.reload(SkinPackLoader.vanillaGeometryJson);
             EmoteManager.reload();
             FavoritesManager.load();

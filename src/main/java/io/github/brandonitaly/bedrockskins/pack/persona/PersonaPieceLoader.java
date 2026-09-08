@@ -35,10 +35,15 @@ public final class PersonaPieceLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final int ATLAS_SIZE = 1024;
     private static final int PERSONA_SKIN_SIZE = 128;
+    private static final int SLIM_SKIN_ATLAS_U = 64;
     private static final String BASE_GEOMETRY = "geometry.humanoid.custom";
     private static final String BASE_GEOMETRY_SLIM = "geometry.humanoid.customSlim";
 
     private PersonaPieceLoader() {}
+
+    public static void clearCaches() {
+        PersonaLocalization.clearCache();
+    }
 
     public static Optional<LoadedCosmetic> load(File directory, JsonObject vanillaGeometry) {
         File[] metadataFiles = directory.listFiles((dir, name) -> name.toLowerCase(Locale.ROOT).endsWith(".meta.json"));
@@ -62,20 +67,34 @@ public final class PersonaPieceLoader {
             if (baseSlim == null) baseSlim = base;
 
             TintSpec tint = tintSpec(metadata);
+            boolean tintable = hasTintMap(metadata);
             BufferedImage atlas = new BufferedImage(ATLAS_SIZE, ATLAS_SIZE, BufferedImage.TYPE_INT_ARGB);
-            BufferedImage tintAtlas = new BufferedImage(ATLAS_SIZE, ATLAS_SIZE, BufferedImage.TYPE_INT_ARGB);
+            BufferedImage tintAtlas = tintable
+                ? new BufferedImage(ATLAS_SIZE, ATLAS_SIZE, BufferedImage.TYPE_INT_ARGB) : null;
             PersonaTextureLayout textureLayout = drawTextureLayers(directory, metadata, atlas, tintAtlas, tint.channel());
 
             PersonaAtlasPacker packer = new PersonaAtlasPacker(atlas, tintAtlas, 0, PERSONA_SKIN_SIZE + 1);
+            packer.include(PERSONA_SKIN_SIZE, PERSONA_SKIN_SIZE);
             JsonArray geometrySources = metadata.getAsJsonArray("geometry_sources");
             List<JsonObject> selectedSources = geometrySources == null
                 ? List.of() : selectGeometrySources(geometrySources, false);
             List<JsonObject> slimSources = geometrySources == null
                 ? List.of() : selectGeometrySources(geometrySources, true);
-            JsonObject geometry = mergeGeometry(directory, metadata, base.deepCopy(), packer, selectedSources, textureLayout, tint.channel());
-            JsonObject slimGeometry = mergeGeometry(directory, metadata, baseSlim.deepCopy(), packer, slimSources, textureLayout, tint.channel());
-            boolean tintable = hasTintMap(metadata);
-            byte[] png = encodeTexturePayload(atlas, tintable ? tintAtlas : null, tint.baseColor(), packer);
+            Map<String, JsonObject> geometries = loadGeometries(directory);
+            Map<String, BufferedImage> textures = new HashMap<>();
+            Map<String, BufferedImage> tintMaps = new HashMap<>();
+            JsonObject geometry = mergeGeometry(directory, metadata, base.deepCopy(), packer, geometries,
+                textures, tintMaps, selectedSources, textureLayout, tint.channel(), false);
+            JsonObject slimGeometry = mergeGeometry(directory, metadata, baseSlim.deepCopy(), packer, geometries,
+                textures, tintMaps, slimSources, textureLayout, tint.channel(), true);
+            int atlasWidth = packer.usedWidth();
+            int atlasHeight = packer.usedHeight();
+            setTextureSize(geometry, atlasWidth, atlasHeight);
+            setTextureSize(slimGeometry, atlasWidth, atlasHeight);
+            BufferedImage compactAtlas = atlas.getSubimage(0, 0, atlasWidth, atlasHeight);
+            BufferedImage compactTintAtlas = tintAtlas == null ? null
+                : tintAtlas.getSubimage(0, 0, atlasWidth, atlasHeight);
+            byte[] png = encodeTexturePayload(compactAtlas, compactTintAtlas, tint.baseColor(), packer);
             Set<String> zones = collectZones(metadata, selectedSources);
 
             String pieceId = string(metadata, "piece_id");
@@ -100,10 +119,10 @@ public final class PersonaPieceLoader {
         boolean hasFace = false;
         boolean hasTint = false;
         Graphics2D graphics = atlas.createGraphics();
-        Graphics2D tintGraphics = tintAtlas.createGraphics();
+        Graphics2D tintGraphics = tintAtlas == null ? null : tintAtlas.createGraphics();
         try {
             graphics.setComposite(AlphaComposite.SrcOver);
-            tintGraphics.setComposite(AlphaComposite.SrcOver);
+            if (tintGraphics != null) tintGraphics.setComposite(AlphaComposite.SrcOver);
             for (JsonElement element : sources) {
                 if (!element.isJsonObject()) continue;
                 JsonObject source = element.getAsJsonObject();
@@ -114,7 +133,7 @@ public final class PersonaPieceLoader {
                 boolean face = source.has("use_face_uv") && source.get("use_face_uv").getAsBoolean();
                 if (face) drawPersonaFaceLayer(graphics, layer);
                 else drawPersonaBodyLayer(graphics, layer);
-                if (tintLayer != null) {
+                if (tintLayer != null && tintGraphics != null) {
                     if (face) drawPersonaFaceLayer(tintGraphics, tintLayer);
                     else drawPersonaBodyLayer(tintGraphics, tintLayer);
                     hasTint = true;
@@ -124,7 +143,7 @@ public final class PersonaPieceLoader {
             }
         } finally {
             graphics.dispose();
-            tintGraphics.dispose();
+            if (tintGraphics != null) tintGraphics.dispose();
         }
         return new PersonaTextureLayout(hasBody, hasFace, hasTint);
     }
@@ -140,8 +159,10 @@ public final class PersonaPieceLoader {
     private static void drawPersonaBodyLayer(Graphics2D graphics, BufferedImage source) {
         if (source.getWidth() < 128 || source.getHeight() < 128) {
             graphics.drawImage(source, 0, 0, null);
+            graphics.drawImage(source, SLIM_SKIN_ATLAS_U, 0, null);
             return;
         }
+        // Medium/wide layout.
         copyPersonaBox(graphics, source, 16, 0, 16, 16, 8, 12, 4);  // body
         copyPersonaBox(graphics, source, 16, 16, 16, 32, 8, 12, 4); // jacket
         copyPersonaBox(graphics, source, 0, 0, 40, 16, 4, 12, 4);   // right arm
@@ -152,16 +173,36 @@ public final class PersonaPieceLoader {
         copyPersonaBox(graphics, source, 0, 32, 0, 32, 4, 12, 4);   // right pants
         copyPersonaBox(graphics, source, 32, 32, 16, 48, 4, 12, 4); // left leg
         copyPersonaBox(graphics, source, 48, 32, 0, 48, 4, 12, 4);  // left pants
+
+        // These source rectangles come from persona/pieces/body/medium/
+        // medium.geometry.json. Bedrock keeps the shared torso and legs in
+        // their wide-layout locations, then packs all four slim arm layers
+        // across y=48: right clothing, right arm, left arm, left clothing.
+        // Store the resulting vanilla-shaped layout on a separate atlas page.
+        int u = SLIM_SKIN_ATLAS_U;
+        copyPersonaBox(graphics, source, 16, 0, u + 16, 16, 8, 12, 4);   // body
+        copyPersonaBox(graphics, source, 16, 16, u + 16, 32, 8, 12, 4);  // jacket
+        copyPersonaBox(graphics, source, 14, 48, u + 40, 16, 3, 12, 4);  // right arm
+        copyPersonaBox(graphics, source, 0, 48, u + 40, 32, 3, 12, 4);   // right sleeve
+        copyPersonaBox(graphics, source, 28, 48, u + 32, 48, 3, 12, 4);  // left arm
+        copyPersonaBox(graphics, source, 42, 48, u + 48, 48, 3, 12, 4);  // left sleeve
+        copyPersonaBox(graphics, source, 16, 32, u, 16, 4, 12, 4);       // right leg
+        copyPersonaBox(graphics, source, 0, 32, u, 32, 4, 12, 4);        // right pants
+        copyPersonaBox(graphics, source, 32, 32, u + 16, 48, 4, 12, 4);  // left leg
+        copyPersonaBox(graphics, source, 48, 32, u, 48, 4, 12, 4);       // left pants
     }
 
     /** Maps Persona's independent 32x32 face UV space onto vanilla head UVs. */
     private static void drawPersonaFaceLayer(Graphics2D graphics, BufferedImage source) {
         if (source.getWidth() < 32 || source.getHeight() < 32) {
             graphics.drawImage(source, 0, 0, null);
+            graphics.drawImage(source, SLIM_SKIN_ATLAS_U, 0, null);
             return;
         }
         copyPersonaBox(graphics, source, 0, 0, 0, 0, 8, 8, 8);   // head
         copyPersonaBox(graphics, source, 0, 16, 32, 0, 8, 8, 8); // hat
+        copyPersonaBox(graphics, source, 0, 0, SLIM_SKIN_ATLAS_U, 0, 8, 8, 8);
+        copyPersonaBox(graphics, source, 0, 16, SLIM_SKIN_ATLAS_U + 32, 0, 8, 8, 8);
     }
 
     private static void copyPersonaBox(Graphics2D graphics, BufferedImage source,
@@ -174,8 +215,11 @@ public final class PersonaPieceLoader {
     }
 
     private static JsonObject mergeGeometry(File directory, JsonObject metadata, JsonObject base,
-                                            PersonaAtlasPacker packer, List<JsonObject> sources,
-                                            PersonaTextureLayout textureLayout, int tintChannel) throws Exception {
+                                            PersonaAtlasPacker packer, Map<String, JsonObject> geometries,
+                                            Map<String, BufferedImage> textures, Map<String, BufferedImage> tintMaps,
+                                            List<JsonObject> sources,
+                                            PersonaTextureLayout textureLayout, int tintChannel,
+                                            boolean slim) throws Exception {
         JsonObject target = base.getAsJsonArray("minecraft:geometry").get(0).getAsJsonObject();
         JsonObject description = target.getAsJsonObject("description");
         description.addProperty("identifier", "geometry.persona." + sanitize(string(metadata, "piece_name")));
@@ -183,27 +227,18 @@ public final class PersonaPieceLoader {
         description.addProperty("texture_height", ATLAS_SIZE);
 
         JsonArray targetBones = target.getAsJsonArray("bones");
-        applyPersonaTextureUvs(targetBones, textureLayout, string(metadata, "piece_type"));
+        applyPersonaTextureUvs(targetBones, textureLayout, string(metadata, "piece_type"), slim);
         Map<String, JsonObject> bonesByName = new LinkedHashMap<>();
         for (JsonElement element : targetBones) {
             JsonObject bone = element.getAsJsonObject();
             bonesByName.put(string(bone, "name"), bone);
         }
 
-        Map<String, JsonObject> geometryFiles = new HashMap<>();
-        Map<String, BufferedImage> textures = new HashMap<>();
-        Map<String, BufferedImage> tintMaps = new HashMap<>();
         int extraBoneStart = packer.extraBones.size();
         for (JsonObject source : sources) {
             String geometryName = string(source, "geometry");
             if (geometryName == null) continue;
-            File geometryFile = findGeometryFile(directory, geometryName);
-            if (geometryFile == null) continue;
-            JsonObject fileJson = geometryFiles.computeIfAbsent(geometryFile.getAbsolutePath(), ignored -> {
-                try { return readJson(geometryFile); }
-                catch (Exception e) { throw new IllegalArgumentException(e); }
-            });
-            JsonObject sourceGeometry = findGeometry(fileJson, geometryName);
+            JsonObject sourceGeometry = geometries.get(geometryName);
             if (sourceGeometry == null || !sourceGeometry.has("bones")) continue;
 
             String textureName = string(source, "texture");
@@ -278,7 +313,8 @@ public final class PersonaPieceLoader {
     }
 
     /** Retains the vanilla player scaffold parts used by this texture source. */
-    private static void applyPersonaTextureUvs(JsonArray bones, PersonaTextureLayout layout, String pieceType) {
+    private static void applyPersonaTextureUvs(JsonArray bones, PersonaTextureLayout layout, String pieceType,
+                                               boolean slim) {
         Set<String> bodyBones = Set.of("body", "jacket", "rightarm", "rightsleeve",
             "leftarm", "leftsleeve", "rightleg", "rightpants", "leftleg", "leftpants");
         for (JsonElement boneElement : bones) {
@@ -299,6 +335,12 @@ public final class PersonaPieceLoader {
             }
             for (JsonElement cubeElement : cubes) {
                 JsonObject cube = cubeElement.getAsJsonObject();
+                if (slim && cube.has("uv") && cube.get("uv").isJsonArray()) {
+                    JsonArray uv = cube.getAsJsonArray("uv");
+                    if (uv.size() >= 2) {
+                        uv.set(0, number(uv.get(0).getAsFloat() + SLIM_SKIN_ATLAS_U));
+                    }
+                }
                 float inflate = cube.has("inflate") ? cube.get("inflate").getAsFloat() : 0.0f;
                 cube.addProperty("inflate", inflate + 0.01f);
             }
@@ -448,11 +490,38 @@ public final class PersonaPieceLoader {
         return wrapper;
     }
 
-    private static File findGeometryFile(File directory, String geometryName) throws Exception {
+    private static void setTextureSize(JsonObject file, int width, int height) {
+        JsonArray geometries = file == null ? null : file.getAsJsonArray("minecraft:geometry");
+        if (geometries == null || geometries.isEmpty()) return;
+        JsonObject description = geometries.get(0).getAsJsonObject().getAsJsonObject("description");
+        if (description == null) return;
+        description.addProperty("texture_width", width);
+        description.addProperty("texture_height", height);
+    }
+
+    private static Map<String, JsonObject> loadGeometries(File directory) throws Exception {
+        Map<String, JsonObject> result = new HashMap<>();
         File[] files = directory.listFiles((dir, name) -> name.toLowerCase(Locale.ROOT).endsWith(".geometry.json"));
-        if (files == null) return null;
-        for (File file : files) if (findGeometry(readJson(file), geometryName) != null) return file;
-        return null;
+        if (files == null) return result;
+        for (File file : files) {
+            JsonObject fileJson = readJson(file);
+            JsonArray entries = fileJson.getAsJsonArray("minecraft:geometry");
+            if (entries != null) {
+                for (JsonElement element : entries) {
+                    if (!element.isJsonObject()) continue;
+                    JsonObject geometry = element.getAsJsonObject();
+                    JsonObject description = geometry.getAsJsonObject("description");
+                    String identifier = string(description, "identifier");
+                    if (identifier != null) result.putIfAbsent(identifier, geometry);
+                }
+            }
+            for (Map.Entry<String, JsonElement> entry : fileJson.entrySet()) {
+                if (entry.getValue().isJsonObject() && entry.getValue().getAsJsonObject().has("bones")) {
+                    result.putIfAbsent(entry.getKey(), entry.getValue().getAsJsonObject());
+                }
+            }
+        }
+        return result;
     }
 
     private static BufferedImage readImage(File directory, String name) throws Exception {

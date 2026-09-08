@@ -7,12 +7,21 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Resolves per-piece and shared Bedrock Persona language entries. */
 final class PersonaLocalization {
+    private static final Map<String, Map<String, String>> LANGUAGE_CACHE = new ConcurrentHashMap<>();
+
     private PersonaLocalization() {}
+
+    static void clearCache() {
+        LANGUAGE_CACHE.clear();
+    }
 
     static String displayName(File pieceDirectory, String fallback) {
         List<String> keys = new ArrayList<>();
@@ -52,16 +61,23 @@ final class PersonaLocalization {
     }
 
     private static String find(File language, List<String> keys) {
-        try {
-            for (String line : Files.readAllLines(language.toPath(), StandardCharsets.UTF_8)) {
-                if (line.isBlank() || line.startsWith("#")) continue;
-                int separator = line.indexOf('=');
-                if (separator <= 0) continue;
-                String key = line.substring(0, separator).trim();
-                if (keys.stream().noneMatch(key::equalsIgnoreCase)) continue;
-                return line.substring(separator + 1).split("\\t#", 2)[0].trim();
+        Map<String, String> entries = LANGUAGE_CACHE.computeIfAbsent(language.getAbsolutePath(), ignored -> {
+            Map<String, String> parsed = new HashMap<>();
+            try {
+                for (String line : Files.readAllLines(language.toPath(), StandardCharsets.UTF_8)) {
+                    if (line.isBlank() || line.startsWith("#")) continue;
+                    int separator = line.indexOf('=');
+                    if (separator <= 0) continue;
+                    String key = line.substring(0, separator).trim().toLowerCase(Locale.ROOT);
+                    parsed.putIfAbsent(key, line.substring(separator + 1).split("\\t#", 2)[0].trim());
+                }
+            } catch (Exception ignoredRead) {
             }
-        } catch (Exception ignored) {
+            return Map.copyOf(parsed);
+        });
+        for (String key : keys) {
+            String translated = entries.get(key.toLowerCase(Locale.ROOT));
+            if (translated != null) return translated;
         }
         return null;
     }

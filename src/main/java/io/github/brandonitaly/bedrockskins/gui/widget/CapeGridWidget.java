@@ -116,7 +116,11 @@ public class CapeGridWidget extends ObjectSelectionList<CapeGridWidget.CapeRowEn
             public CapeCell(MinecraftCape cape) {
                 this.cape = cape;
                 this.name = cape.alias;
-                this.player = new PreviewPlayer(new GameProfile(uuid, ""));
+            }
+
+            private PreviewPlayer player() {
+                if (player != null) return player;
+                player = new PreviewPlayer(new GameProfile(uuid, ""));
                 player.clearForcedProfileSkin();
                 player.clearForcedBody();
                 if (!cape.id.equals("none")) {
@@ -124,6 +128,7 @@ public class CapeGridWidget extends ObjectSelectionList<CapeGridWidget.CapeRowEn
                 } else {
                     player.setForcedCape(null);
                 }
+                return player;
             }
 
             public void activate() {
@@ -131,7 +136,10 @@ public class CapeGridWidget extends ObjectSelectionList<CapeGridWidget.CapeRowEn
             }
 
             public void cleanup() {
-                GuiSkinUtils.cleanupPreview(uuid);
+                if (player != null) {
+                    GuiSkinUtils.cleanupPreview(uuid);
+                    player = null;
+                }
             }
 
             public void extractRenderState(GuiGraphicsExtractor context, int x, int y, int w, int h, boolean hovered, int mouseX, int mouseY) {
@@ -142,9 +150,7 @@ public class CapeGridWidget extends ObjectSelectionList<CapeGridWidget.CapeRowEn
                 var cardSprite = isSelected ? BedrockSkinsSprites.CARD_SELECTED : (hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE);
                 context.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, y, w, h);
 
-                if (player != null) {
-                    GuiUtils.renderCapeInRect(context, player, 0.0F, x, y, x + w, y + h);
-                }
+                GuiUtils.renderCapeInRect(context, player(), 0.0F, x, y, x + w, y + h);
 
                 if (isEquipped) {
                     context.blitSprite(RenderPipelines.GUI_TEXTURED, GuiUtils.EQUIPPED_BORDER, x, y, w, h);

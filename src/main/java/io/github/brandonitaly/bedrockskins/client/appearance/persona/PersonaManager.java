@@ -94,6 +94,7 @@ public final class PersonaManager {
 
     public static void reload(JsonObject vanillaGeometry) {
         clearOtherPlayers();
+        PersonaPieceLoader.clearCaches();
         PersonaTextureManager.clear();
         COSMETICS.clear();
         MODELS.clear();
@@ -269,8 +270,13 @@ public final class PersonaManager {
         return cosmetic != null && ("persona_arms".equals(cosmetic.type) || "persona_legs".equals(cosmetic.type));
     }
 
+    public static boolean isColorSelectable(LoadedCosmetic cosmetic) {
+        return cosmetic != null && cosmetic.tintable
+            && ("persona_hair".equals(cosmetic.type) || "persona_facial_hair".equals(cosmetic.type));
+    }
+
     public static EquipSide localSide(LoadedCosmetic cosmetic) {
-        return cosmetic == null ? EquipSide.BOTH : LOCAL_SIDES.getOrDefault(cosmetic.id, EquipSide.BOTH);
+        return cosmetic == null ? EquipSide.BOTH : LOCAL_SIDES.getOrDefault(cosmetic.type, EquipSide.BOTH);
     }
 
     public static EquipSide side(UUID playerId, LoadedCosmetic cosmetic) {
@@ -282,13 +288,14 @@ public final class PersonaManager {
 
     public static void setLocalSide(LoadedCosmetic cosmetic, EquipSide side) {
         if (!isSideSelectable(cosmetic)) return;
-        LOCAL_SIDES.put(cosmetic.id, side == null ? EquipSide.BOTH : side);
-        boolean equipped = isLocallyEquipped(cosmetic);
+        LOCAL_SIDES.put(cosmetic.type, side == null ? EquipSide.BOTH : side);
+        boolean typeEquipped;
         synchronized (LOCAL_SELECTION) {
+            typeEquipped = LOCAL_SELECTION.containsKey(cosmetic.type);
             applyLocalSelectionToPlayer(new LinkedHashMap<>(LOCAL_SELECTION));
-            if (equipped) saveLocalSelection(LOCAL_SELECTION);
+            if (typeEquipped) saveLocalSelection(LOCAL_SELECTION);
         }
-        if (localPlayerId() != null && equipped) ClientSkinSync.syncCurrentCosmetics();
+        if (localPlayerId() != null && typeEquipped) ClientSkinSync.syncCurrentCosmetics();
     }
 
     public static void applySideVisibility(BedrockPlayerModel model, UUID playerId, LoadedCosmetic cosmetic) {
@@ -317,10 +324,8 @@ public final class PersonaManager {
     public static boolean toggleLocal(LoadedCosmetic cosmetic) {
         if (cosmetic == null) return false;
         boolean equipped;
-        String previousId;
         LinkedHashMap<String, String> selected;
         synchronized (LOCAL_SELECTION) {
-            previousId = LOCAL_SELECTION.get(cosmetic.type);
             if (Objects.equals(LOCAL_SELECTION.get(cosmetic.type), cosmetic.id)) {
                 LOCAL_SELECTION.remove(cosmetic.type);
                 equipped = false;
@@ -331,18 +336,13 @@ public final class PersonaManager {
             selected = new LinkedHashMap<>(LOCAL_SELECTION);
         }
         applyLocalSelectionToPlayer(selected);
-        if (!equipped) {
-            LOCAL_SIDES.remove(cosmetic.id);
-        } else if (previousId != null && !previousId.equals(cosmetic.id)) {
-            LOCAL_SIDES.remove(previousId);
-        }
         saveLocalSelection(selected);
         if (localPlayerId() != null) ClientSkinSync.syncCurrentCosmetics();
         return equipped;
     }
 
     public static void setTintColor(LoadedCosmetic cosmetic, int color) {
-        if (cosmetic == null || !cosmetic.tintable) return;
+        if (!isColorSelectable(cosmetic)) return;
         int selectedColor = color & 0xFFFFFF;
         LOCAL_COLORS.put(cosmetic.type, selectedColor);
         StateManager.updatePersonaColors(Map.copyOf(LOCAL_COLORS));
@@ -359,7 +359,9 @@ public final class PersonaManager {
     }
 
     public static int localTintColor(LoadedCosmetic cosmetic) {
-        return cosmetic == null ? 0xFFFFFF : LOCAL_COLORS.getOrDefault(cosmetic.type, cosmetic.defaultTintColor);
+        return cosmetic == null ? 0xFFFFFF : isColorSelectable(cosmetic)
+            ? LOCAL_COLORS.getOrDefault(cosmetic.type, cosmetic.defaultTintColor)
+            : cosmetic.defaultTintColor;
     }
 
     public static int tintColor(UUID playerId, LoadedCosmetic cosmetic) {
@@ -399,7 +401,7 @@ public final class PersonaManager {
             selected.put(cosmetic.type, cosmetic.id);
             assignment.preview = selected;
             assignment.previewColors = Map.of(cosmetic.id, localTintColor(cosmetic));
-            assignment.previewSides = Map.of(cosmetic.id, EquipSide.BOTH);
+            assignment.previewSides = Map.of(cosmetic.id, localSide(cosmetic));
         }
         removeIfEmpty(playerId, assignment);
     }
@@ -459,7 +461,11 @@ public final class PersonaManager {
     private static void loadDirectoryTree(Path root, JsonObject vanillaGeometry) {
         if (!Files.isDirectory(root)) return;
         try (Stream<Path> paths = Files.walk(root, 3)) {
-            paths.filter(Files::isDirectory).forEach(path ->
+            paths.filter(Files::isRegularFile)
+                .filter(path -> path.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith(".meta.json"))
+                .map(Path::getParent)
+                .distinct()
+                .forEach(path ->
                 PersonaPieceLoader.load(path.toFile(), vanillaGeometry).ifPresent(cosmetic -> {
                     if (COSMETICS.containsKey(cosmetic.id)) return;
                     PersonaTextureManager.register(cosmetic);
@@ -483,7 +489,7 @@ public final class PersonaManager {
             if (cosmetic != null) {
                 selected.put(cosmetic.type, cosmetic.id);
                 if (sideMarker >= 0 && isSideSelectable(cosmetic)) {
-                    LOCAL_SIDES.put(cosmetic.id, EquipSide.parse(saved.substring(sideMarker + 6)));
+                    LOCAL_SIDES.put(cosmetic.type, EquipSide.parse(saved.substring(sideMarker + 6)));
                 }
             }
         }
@@ -608,7 +614,7 @@ public final class PersonaManager {
         Map<String, Integer> colors = new LinkedHashMap<>();
         for (String id : selected.values()) {
             LoadedCosmetic cosmetic = COSMETICS.get(id);
-            if (cosmetic != null) colors.put(id, LOCAL_COLORS.getOrDefault(cosmetic.type, cosmetic.defaultTintColor));
+            if (cosmetic != null) colors.put(id, localTintColor(cosmetic));
         }
         return colors;
     }
@@ -616,7 +622,10 @@ public final class PersonaManager {
     private static Map<String, EquipSide> sidesFor(Map<String, String> selected) {
         if (selected == null || selected.isEmpty()) return Map.of();
         Map<String, EquipSide> sides = new LinkedHashMap<>();
-        for (String id : selected.values()) sides.put(id, LOCAL_SIDES.getOrDefault(id, EquipSide.BOTH));
+        for (String id : selected.values()) {
+            LoadedCosmetic cosmetic = COSMETICS.get(id);
+            if (cosmetic != null) sides.put(id, LOCAL_SIDES.getOrDefault(cosmetic.type, EquipSide.BOTH));
+        }
         return sides;
     }
 

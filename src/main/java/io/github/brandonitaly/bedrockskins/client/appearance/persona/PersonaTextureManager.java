@@ -21,15 +21,13 @@ import java.util.concurrent.ConcurrentHashMap;
 /** Owns independently tinted texture variants and animation frames for Persona pieces. */
 final class PersonaTextureManager {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final Map<String, byte[]> PAYLOADS = new ConcurrentHashMap<>();
     private static final Map<VariantKey, ManagedTexture> TEXTURES = new ConcurrentHashMap<>();
 
     private PersonaTextureManager() {}
 
     static void register(LoadedCosmetic cosmetic) {
-        if (!(cosmetic.texture instanceof AssetSource.Memory memory)) return;
-        PAYLOADS.put(cosmetic.id, memory.data());
-        cosmetic.textureIdentifier = texture(cosmetic, cosmetic.defaultTintColor);
+        if (!(cosmetic.texture instanceof AssetSource.Memory)) return;
+        cosmetic.textureIdentifier = textureId(cosmetic, cosmetic.defaultTintColor);
     }
 
     static Identifier texture(LoadedCosmetic cosmetic, int color) {
@@ -38,9 +36,8 @@ final class PersonaTextureManager {
         VariantKey key = new VariantKey(cosmetic.id, effectiveColor);
         ManagedTexture existing = TEXTURES.get(key);
         if (existing != null) return existing.id;
-        byte[] payload = PAYLOADS.get(cosmetic.id);
-        if (payload == null) return cosmetic.textureIdentifier;
-        ManagedTexture created = create(cosmetic, key, payload);
+        if (!(cosmetic.texture instanceof AssetSource.Memory memory)) return cosmetic.textureIdentifier;
+        ManagedTexture created = create(cosmetic, key, memory.data());
         if (created == null) return cosmetic.textureIdentifier;
         ManagedTexture raced = TEXTURES.putIfAbsent(key, created);
         if (raced != null) {
@@ -72,7 +69,6 @@ final class PersonaTextureManager {
     }
 
     static void remove(String cosmeticId) {
-        PAYLOADS.remove(cosmeticId);
         List<VariantKey> keys = TEXTURES.keySet().stream().filter(key -> key.cosmeticId.equals(cosmeticId)).toList();
         for (VariantKey key : keys) {
             ManagedTexture texture = TEXTURES.remove(key);
@@ -83,7 +79,6 @@ final class PersonaTextureManager {
     static void clear() {
         TEXTURES.values().forEach(ManagedTexture::closeAndRelease);
         TEXTURES.clear();
-        PAYLOADS.clear();
     }
 
     private static ManagedTexture create(LoadedCosmetic cosmetic, VariantKey key, byte[] data) {
@@ -96,8 +91,7 @@ final class PersonaTextureManager {
                 mask.close();
                 mask = null;
             }
-            Identifier id = Identifier.fromNamespaceAndPath("bedrockskins",
-                "persona/" + sanitize(cosmetic.id) + "/" + String.format("%06x", key.color));
+            Identifier id = textureId(cosmetic, key.color);
             DynamicTexture texture = new DynamicTexture(() -> "persona_cosmetic", target);
             Minecraft.getInstance().getTextureManager().register(id, texture);
 
@@ -197,6 +191,11 @@ final class PersonaTextureManager {
 
     private static String sanitize(String value) {
         return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9/._-]", "_");
+    }
+
+    private static Identifier textureId(LoadedCosmetic cosmetic, int color) {
+        return Identifier.fromNamespaceAndPath("bedrockskins",
+            "persona/" + sanitize(cosmetic.id) + "/" + String.format("%06x", color & 0xFFFFFF));
     }
 
     private record VariantKey(String cosmeticId, int color) {}

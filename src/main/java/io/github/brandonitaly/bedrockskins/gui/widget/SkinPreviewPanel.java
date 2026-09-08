@@ -133,6 +133,10 @@ public class SkinPreviewPanel {
         updateFavoriteButton();
     }
 
+    public void playCapeSelectionAnimation() {
+        if (dummyPlayer != null) EmoteManager.playDressingRoom(dummyUuid, "persona_back");
+    }
+
     public void init(int x, int y, int w, int h, Screen parentScreen, Consumer<AbstractWidget> widgetAdder) {
         this.parentScreen = parentScreen;
         selectButton = Button.builder(Component.translatable("bedrockskins.button.select"), b -> applySkin()).bounds(0, 0, 10, 20).build();
@@ -192,6 +196,16 @@ public class SkinPreviewPanel {
             uploadSkinButton.setX(x + w - 44);
             uploadSkinButton.setY(y + 2);
         }
+    }
+
+    /** Reserves the left side of the reset row for the favorite/color icon when present. */
+    public void setResetButtonLeadingIconPresent(boolean present) {
+        if (resetButton == null) return;
+        int buttonWidth = Math.min(width - 16, 140);
+        int buttonX = x + (width - buttonWidth) / 2;
+        int inset = present ? 22 : 0;
+        resetButton.setX(buttonX + inset);
+        resetButton.setWidth(buttonWidth - inset);
     }
 
     public void initPreviewState() {

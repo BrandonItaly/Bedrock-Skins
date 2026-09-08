@@ -9,6 +9,7 @@ import com.google.gson.JsonParser;
 import io.github.brandonitaly.bedrockskins.pack.model.AssetSource;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
 import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
+import io.github.brandonitaly.bedrockskins.client.integration.NativeFileDialog;
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
@@ -16,9 +17,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -101,12 +99,11 @@ public class AddSkinScreen extends SkinDialogScreen {
         y = nextY(y, geometryCardsTopPadding + 120); 
 
         this.selectCapeBtn = Button.builder(Component.translatable("bedrockskins.button.select_cape"), b -> {
-            String path = openFileDialog("Select Cape Texture", "*.png");
-            if (path != null) {
+            NativeFileDialog.open("Select Cape Texture", "*.png", "PNG files", path -> {
                 capePath = path;
                 capeButtonLabel = Component.literal(Path.of(path).getFileName().toString());
                 b.setMessage(capeButtonLabel);
-            }
+            });
         }).bounds(contentLeft(), y, contentWidth(), ELEMENT_HEIGHT).build();
         this.selectCapeBtn.setMessage(capeButtonLabel);
         this.addRenderableWidget(this.selectCapeBtn);
@@ -126,27 +123,6 @@ public class AddSkinScreen extends SkinDialogScreen {
     public void extractRenderState(net.minecraft.client.gui.GuiGraphicsExtractor gui, int mouseX, int mouseY, float delta) {
         super.extractRenderState(gui, mouseX, mouseY, delta);
         renderGeometrySelector(gui, mouseX, mouseY);
-    }
-
-    private String openFileDialog(String title, String filter) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            PointerBuffer filters = stack.mallocPointer(1);
-            filters.put(stack.UTF8(filter)).flip();
-            String path = TinyFileDialogs.tinyfd_openFileDialog(title, "", filters, filter + " files", false);
-            Minecraft.getInstance().execute(() -> {
-                long handle = Minecraft.getInstance().getWindow().handle();
-                if (handle != 0L) {
-                    //? if >=26.3-snapshot-5 {
-                    /*org.lwjgl.sdl.SDLVideo.SDL_RestoreWindow(handle);
-                    org.lwjgl.sdl.SDLVideo.SDL_RaiseWindow(handle);*/
-                    //?} else {
-                    org.lwjgl.glfw.GLFW.glfwRestoreWindow(handle);
-                    org.lwjgl.glfw.GLFW.glfwFocusWindow(handle);
-                    //?}
-                }
-            });
-            return path;
-        }
     }
 
     private void addSkin() {

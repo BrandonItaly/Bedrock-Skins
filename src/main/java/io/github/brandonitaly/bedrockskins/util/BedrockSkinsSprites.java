@@ -1,8 +1,11 @@
 package io.github.brandonitaly.bedrockskins.util;
 
 import net.minecraft.resources.Identifier;
+import net.minecraft.network.chat.FontDescription;
 
 public class BedrockSkinsSprites {
+    public static final FontDescription TAB_ICONS_FONT = new FontDescription.Resource(
+        Identifier.fromNamespaceAndPath("bedrockskins", "tab_icons"));
     public static final Identifier PANEL_SPRITE = Identifier.fromNamespaceAndPath("bedrockskins", "container/skin_panel");
     public static final Identifier WARDROBE_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/icon_hangar");
     public static final Identifier ROTATE_SPRITE = Identifier.fromNamespaceAndPath("bedrockskins", "container/rotate");

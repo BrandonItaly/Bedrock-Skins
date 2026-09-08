@@ -17,6 +17,7 @@ import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
 import io.github.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import io.github.brandonitaly.bedrockskins.util.PackSortUtil;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.tabs.GridLayoutTab;
@@ -86,13 +87,21 @@ public class SkinSelectionScreen extends Screen {
     private CapeSidebarListWidget cosmeticSidebar;
     private CapeSidebarListWidget emoteSidebar;
     private CosmeticGridWidget cosmeticGrid;
+    private EditBox cosmeticSearchBox;
     private EmoteGridWidget emoteGrid;
+    private List<LoadedSkin> displayedSkins = List.of();
+    private List<LoadedCosmetic> displayedCosmetics = List.of();
+    private List<LoadedEmote> displayedEmotes = List.of();
+    private int displayedSkinColumns = -1;
+    private int displayedCosmeticColumns = -1;
+    private int displayedEmoteColumns = -1;
     private int selectedEmoteSlot = 0;
     private String selectedCosmeticType = "all";
     private String selectedCapesCategory = "owned";
     private List<MinecraftCape> ownedCapes = null;
     private boolean isFetchingCapes = false;
     private String capeFetchError = null;
+    private int visibleCosmeticCount;
 
     public AppearanceTab getActiveTab() { return activeTab; }
     public String getSelectedCapesCategory() { return selectedCapesCategory; }
@@ -330,7 +339,6 @@ public class SkinSelectionScreen extends Screen {
             addCosmeticCategory("persona_legs");
             addCosmeticCategory("persona_top");
             addCosmeticCategory(PersonaTypeNames.BOTTOMS);
-            addCosmeticCategory("persona_hood");
             addCosmeticCategory("persona_outerwear");
             addCosmeticCategory("persona_head");
             addCosmeticCategory("persona_hand");
@@ -354,6 +362,18 @@ public class SkinSelectionScreen extends Screen {
         cosmeticGrid.setWidth(Math.max(10, rSkins.w - pPad * 2));
         cosmeticGrid.setHeight(Math.max(10, cgH));
         cosmeticGrid.visible = activeTab == AppearanceTab.COSMETICS;
+
+        if (cosmeticSearchBox == null) {
+            cosmeticSearchBox = new EditBox(font, 0, 0, 120, 20,
+                Component.translatable("bedrockskins.cosmetics.search"));
+            cosmeticSearchBox.setHint(Component.translatable("bedrockskins.cosmetics.search"));
+            cosmeticSearchBox.setMaxLength(64);
+            cosmeticSearchBox.setResponder(ignored -> refreshCosmeticGrid());
+            addRenderableWidget(cosmeticSearchBox);
+        }
+        int searchWidth = Math.min(120, Math.max(10, rSkins.w - pPad * 2));
+        cosmeticSearchBox.setPosition(rSkins.right() - pPad - searchWidth, rSkins.y + 2);
+        cosmeticSearchBox.setWidth(searchWidth);
 
         if (colorPickerButton == null) {
             colorPickerButton = SpriteIconButton.builder(Component.empty(), button -> {
@@ -393,7 +413,10 @@ public class SkinSelectionScreen extends Screen {
         if (capeGrid == null) {
             capeGrid = new CapeGridWidget(minecraft, rSkins.w - pPad * 2, cgH, cgY, 65,
                 cape -> {
-                    if (previewPanel != null) previewPanel.setSelectedCape(cape);
+                    if (previewPanel != null) {
+                        previewPanel.setSelectedCape(cape);
+                        previewPanel.playCapeSelectionAnimation();
+                    }
                 },
                 () -> previewPanel != null ? previewPanel.getSelectedCape() : null, font);
             addRenderableWidget(capeGrid);
@@ -481,11 +504,13 @@ public class SkinSelectionScreen extends Screen {
     private void selectPack(String packId) {
         this.selectedPackId = packId;
         if (skinGrid != null) {
-            skinGrid.clear();
-            skinGrid.setScrollAmount(0.0);
-            
             List<LoadedSkin> skins = skinCache.getOrDefault(packId, List.of());
             int cols = Math.max(1, (rSkins.w - 18) / 65);
+            if (displayedSkinColumns == cols && displayedSkins.equals(skins)) return;
+            displayedSkins = List.copyOf(skins);
+            displayedSkinColumns = cols;
+            skinGrid.clear();
+            skinGrid.setScrollAmount(0.0);
             for (int i = 0; i < skins.size(); i += cols) {
                 skinGrid.addSkinsRow(skins.subList(i, Math.min(i + cols, skins.size())));
             }
@@ -564,7 +589,7 @@ public class SkinSelectionScreen extends Screen {
                         ? Component.translatable("bedrockskins.cosmetics.all")
                         : PersonaTypeNames.displayName(selectedCosmeticType);
                 GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h, gridTitle, font);
-                if (PersonaManager.all().isEmpty()) gui.centeredText(font, Component.translatable("bedrockskins.cosmetics.none"),
+                if (visibleCosmeticCount == 0) gui.centeredText(font, Component.translatable("bedrockskins.cosmetics.none"),
                     rSkins.x + rSkins.w / 2, rSkins.y + rSkins.h / 2, 0xFFAAAAAA);
             }
         } else if (activeTab == AppearanceTab.CAPES) {
@@ -610,8 +635,7 @@ public class SkinSelectionScreen extends Screen {
 
     private void renderCosmeticCustomization(GuiGraphicsExtractor gui, int mouseX, int mouseY) {
         LoadedCosmetic cosmetic = previewPanel == null ? null : previewPanel.getSelectedCosmetic();
-        boolean colors = colorPickerOpen && cosmetic != null && cosmetic.tintable
-            && !PersonaManager.isSideSelectable(cosmetic);
+        boolean colors = colorPickerOpen && PersonaManager.isColorSelectable(cosmetic);
         if (!colors || rCosmeticOptions.h <= 0) return;
 
         Component heading = Component.translatable("bedrockskins.persona.color.title");
@@ -625,8 +649,12 @@ public class SkinSelectionScreen extends Screen {
                 int x = layout.startX + (i % layout.columns) * (layout.swatchSize + COLOR_GAP);
                 int swatchY = layout.startY + (i / layout.columns) * (layout.swatchSize + COLOR_GAP);
                 int color = PERSONA_COLORS[i];
-                gui.fill(x - 1, swatchY - 1, x + layout.swatchSize + 1, swatchY + layout.swatchSize + 1,
-                    color == selectedColor ? 0xFFFFFFFF : 0xFF555555);
+                boolean hovered = colorIndexAt(mouseX, mouseY, layout) == i;
+                int borderColor = color == selectedColor ? 0xFF20B52B
+                    : hovered ? 0xFFFFFFFF : 0xFF555555;
+                gui.fill(x - 1, swatchY - 1,
+                    x + layout.swatchSize + 1, swatchY + layout.swatchSize + 1,
+                    borderColor);
                 gui.fill(x, swatchY, x + layout.swatchSize, swatchY + layout.swatchSize, 0xFF000000 | color);
             }
         }
@@ -636,22 +664,17 @@ public class SkinSelectionScreen extends Screen {
         if (activeTab != AppearanceTab.COSMETICS || event.button() != 0
                 || !contains(rCosmeticOptions, event.x(), event.y())) return false;
         LoadedCosmetic cosmetic = previewPanel == null ? null : previewPanel.getSelectedCosmetic();
-        boolean colors = colorPickerOpen && cosmetic != null && cosmetic.tintable
-            && !PersonaManager.isSideSelectable(cosmetic);
+        boolean colors = colorPickerOpen && PersonaManager.isColorSelectable(cosmetic);
         if (!colors) return false;
 
         if (colors) {
             ColorGridLayout layout = colorGridLayout();
-            for (int i = 0; i < PERSONA_COLORS.length; i++) {
-                int x = layout.startX + (i % layout.columns) * (layout.swatchSize + COLOR_GAP);
-                int swatchY = layout.startY + (i / layout.columns) * (layout.swatchSize + COLOR_GAP);
-                if (event.x() >= x && event.x() < x + layout.swatchSize
-                        && event.y() >= swatchY && event.y() < swatchY + layout.swatchSize) {
-                    PersonaManager.setTintColor(cosmetic, PERSONA_COLORS[i]);
-                    refreshSelectedCosmeticPreview(cosmetic);
-                    GuiUtils.playButtonClickSound();
-                    return true;
-                }
+            int colorIndex = colorIndexAt(event.x(), event.y(), layout);
+            if (colorIndex >= 0) {
+                PersonaManager.setTintColor(cosmetic, PERSONA_COLORS[colorIndex]);
+                refreshSelectedCosmeticPreview(cosmetic);
+                GuiUtils.playButtonClickSound();
+                return true;
             }
         }
         return false;
@@ -668,10 +691,10 @@ public class SkinSelectionScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean handled) {
-        return (!handled && handleCosmeticCustomizationClick(event))
-            || (!handled && previewPanel != null && previewPanel.mouseClicked(event.x(), event.y(), event.button()))
-            || super.mouseClicked(event, handled);
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
+        return handleCosmeticCustomizationClick(event)
+            || (previewPanel != null && previewPanel.mouseClicked(event.x(), event.y(), event.button()))
+            || super.mouseClicked(event, doubled);
     }
 
     @Override
@@ -707,7 +730,7 @@ public class SkinSelectionScreen extends Screen {
         private final AppearanceTab tab;
 
         AppearanceGridTab(AppearanceTab tab) {
-            super(Component.translatable(tab.translationKey()));
+            super(tab.title());
             this.tab = tab;
         }
 
@@ -719,10 +742,13 @@ public class SkinSelectionScreen extends Screen {
 
     private void refreshEmoteGrid() {
         if (emoteGrid == null) return;
-        emoteGrid.clear();
-        emoteGrid.setScrollAmount(0.0);
         List<LoadedEmote> emotes = EmoteManager.all();
         int columns = Math.max(1, (rSkins.w - 18) / 65);
+        if (displayedEmoteColumns == columns && displayedEmotes.equals(emotes)) return;
+        displayedEmotes = List.copyOf(emotes);
+        displayedEmoteColumns = columns;
+        emoteGrid.clear();
+        emoteGrid.setScrollAmount(0.0);
         for (int i = 0; i < emotes.size(); i += columns) {
             emoteGrid.addEmotesRow(emotes.subList(i, Math.min(i + columns, emotes.size())));
         }
@@ -781,11 +807,15 @@ public class SkinSelectionScreen extends Screen {
         LoadedCosmetic cosmetic = previewPanel == null ? null : previewPanel.getSelectedCosmetic();
         boolean cosmeticsTab = activeTab == AppearanceTab.COSMETICS;
         boolean sideSelectable = cosmeticsTab && PersonaManager.isSideSelectable(cosmetic);
-        boolean colorUsable = cosmeticsTab && cosmetic != null && cosmetic.tintable && !sideSelectable;
+        boolean colorUsable = cosmeticsTab && PersonaManager.isColorSelectable(cosmetic);
         if (!colorUsable) colorPickerOpen = false;
         if (colorPickerButton != null) {
-            colorPickerButton.visible = cosmeticsTab;
+            colorPickerButton.visible = colorUsable;
             colorPickerButton.active = colorUsable;
+        }
+        if (cosmeticSearchBox != null) cosmeticSearchBox.visible = cosmeticsTab && !colorPickerOpen;
+        if (previewPanel != null) {
+            previewPanel.setResetButtonLeadingIconPresent(activeTab == AppearanceTab.SKINS || colorUsable);
         }
         if (cosmeticGrid != null) cosmeticGrid.visible = cosmeticsTab && !colorPickerOpen;
         if (previousSideButton != null) previousSideButton.visible = sideSelectable;
@@ -817,8 +847,7 @@ public class SkinSelectionScreen extends Screen {
     private void updateCosmeticCustomizationLayout() {
         if (cosmeticSidebar == null) return;
         LoadedCosmetic cosmetic = previewPanel == null ? null : previewPanel.getSelectedCosmetic();
-        boolean colors = colorPickerOpen && cosmetic != null && cosmetic.tintable
-            && !PersonaManager.isSideSelectable(cosmetic);
+        boolean colors = colorPickerOpen && PersonaManager.isColorSelectable(cosmetic);
         int pad = 4;
         rCosmeticCategories.set(rPacks.x, rPacks.y, rPacks.w, rPacks.h);
         rCosmeticOptions.set(rSkins.x, rSkins.y, rSkins.w, colors ? rSkins.h : 0);
@@ -847,18 +876,43 @@ public class SkinSelectionScreen extends Screen {
         return new ColorGridLayout(columns, swatchSize, startX, startY);
     }
 
+    private int colorIndexAt(double mouseX, double mouseY, ColorGridLayout layout) {
+        int stride = layout.swatchSize + COLOR_GAP;
+        int column = (int) ((mouseX - layout.startX) / stride);
+        int row = (int) ((mouseY - layout.startY) / stride);
+        if (mouseX < layout.startX || mouseY < layout.startY
+                || column < 0 || column >= layout.columns || row < 0) return -1;
+        int localX = (int) (mouseX - layout.startX) % stride;
+        int localY = (int) (mouseY - layout.startY) % stride;
+        if (localX < 0 || localY < 0 || localX >= layout.swatchSize || localY >= layout.swatchSize) return -1;
+        int index = row * layout.columns + column;
+        return index < PERSONA_COLORS.length ? index : -1;
+    }
+
     private record ColorGridLayout(int columns, int swatchSize, int startX, int startY) {}
 
     private void refreshCosmeticGrid() {
         if (cosmeticGrid == null) return;
-        cosmeticGrid.clear();
-        cosmeticGrid.setScrollAmount(0.0);
+        String query = cosmeticSearchBox == null ? "" : cosmeticSearchBox.getValue().strip().toLowerCase(Locale.ROOT);
+        Set<String> equippedIds = PersonaManager.localEquipped().stream()
+            .map(cosmetic -> cosmetic.id)
+            .collect(java.util.stream.Collectors.toSet());
         List<LoadedCosmetic> shown = PersonaManager.all().stream()
             .filter(cosmetic -> PersonaTypeNames.EQUIPPED.equals(selectedCosmeticType)
-                ? PersonaManager.localEquipped().stream().anyMatch(equipped -> equipped.id.equals(cosmetic.id))
+                ? equippedIds.contains(cosmetic.id)
                 : PersonaTypeNames.belongsTo(cosmetic.type, selectedCosmeticType))
+            .filter(cosmetic -> query.isEmpty()
+                || cosmetic.displayName.toLowerCase(Locale.ROOT).contains(query)
+                || cosmetic.id.toLowerCase(Locale.ROOT).contains(query)
+                || PersonaTypeNames.displayName(cosmetic.type).getString().toLowerCase(Locale.ROOT).contains(query))
             .toList();
+        visibleCosmeticCount = shown.size();
         int columns = Math.max(1, (rSkins.w - 18) / 65);
+        if (displayedCosmeticColumns == columns && displayedCosmetics.equals(shown)) return;
+        displayedCosmetics = List.copyOf(shown);
+        displayedCosmeticColumns = columns;
+        cosmeticGrid.clear();
+        cosmeticGrid.setScrollAmount(0.0);
         for (int i = 0; i < shown.size(); i += columns) {
             cosmeticGrid.addCosmeticsRow(shown.subList(i, Math.min(i + columns, shown.size())));
         }

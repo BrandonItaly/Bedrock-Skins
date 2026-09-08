@@ -151,7 +151,7 @@ public abstract class HumanoidModelMixin<T extends HumanoidRenderState> implemen
         bedrockModel.setBootsVisible(true);
 
         boolean capeVisible = state instanceof AvatarRenderState avatarState && avatarState.showCape;
-        if (capeVisible && hasActualCape(state)) {
+        if (!bedrockModel.personaCosmetic && capeVisible && hasActualCape(state)) {
             bedrockModel.setChestplateVisible(false);
         }
 

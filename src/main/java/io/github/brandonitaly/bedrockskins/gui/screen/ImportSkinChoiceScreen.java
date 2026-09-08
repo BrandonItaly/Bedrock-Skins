@@ -1,5 +1,7 @@
 package io.github.brandonitaly.bedrockskins.gui.screen;
 
+import io.github.brandonitaly.bedrockskins.client.integration.NativeFileDialog;
+
 import io.github.brandonitaly.bedrockskins.gui.preview.*;
 import io.github.brandonitaly.bedrockskins.gui.widget.*;
 
@@ -14,9 +16,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -104,26 +103,8 @@ public class ImportSkinChoiceScreen extends SkinDialogScreen {
     }
 
     private void importFromFile() {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            PointerBuffer filters = stack.mallocPointer(1);
-            filters.put(stack.UTF8("*.png")).flip();
-            String path = TinyFileDialogs.tinyfd_openFileDialog("Select Skin Texture", "", filters, "PNG files", false);
-            Minecraft.getInstance().execute(() -> {
-                long handle = Minecraft.getInstance().getWindow().handle();
-                if (handle != 0L) {
-                    //? if >=26.3-snapshot-5 {
-                    /*org.lwjgl.sdl.SDLVideo.SDL_RestoreWindow(handle);
-                    org.lwjgl.sdl.SDLVideo.SDL_RaiseWindow(handle);*/
-                    //?} else {
-                    org.lwjgl.glfw.GLFW.glfwRestoreWindow(handle);
-                    org.lwjgl.glfw.GLFW.glfwFocusWindow(handle);
-                    //?}
-                }
-            });
-            if (path != null) {
-                this.minecraft.gui.setScreen(new AddSkinScreen((SkinSelectionScreen) parent, packId, path));
-            }
-        }
+        NativeFileDialog.open("Select Skin Texture", "*.png", "PNG files", path ->
+            this.minecraft.gui.setScreen(new AddSkinScreen((SkinSelectionScreen) parent, packId, path)));
     }
 
     private void importFromUsername() {

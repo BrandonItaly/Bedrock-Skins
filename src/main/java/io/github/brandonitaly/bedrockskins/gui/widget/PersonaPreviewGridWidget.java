@@ -121,26 +121,36 @@ abstract class PersonaPreviewGridWidget<T> extends ObjectSelectionList<PersonaPr
         private final class Cell {
             private final T value;
             private final UUID uuid = UUID.randomUUID();
-            private final PreviewPlayer player = new PreviewPlayer(new GameProfile(uuid, ""));
+            private PreviewPlayer player;
 
             private Cell(T value) {
                 this.value = value;
-                GuiSkinUtils.applyCurrentEquippedSkin(Minecraft.getInstance(), player, uuid);
-                initializePreview(uuid, value);
+            }
+
+            private PreviewPlayer player() {
+                if (player == null) {
+                    player = new PreviewPlayer(new GameProfile(uuid, ""));
+                    GuiSkinUtils.applyCurrentEquippedSkin(Minecraft.getInstance(), player, uuid);
+                    initializePreview(uuid, value);
+                }
+                return player;
             }
 
             private void cleanup() {
+                if (player == null) return;
                 cleanupPreview(uuid, value);
                 GuiSkinUtils.cleanupPreview(uuid);
+                player = null;
             }
 
             private void render(GuiGraphicsExtractor graphics, int x, int y, boolean hovered,
                                 int mouseX, int mouseY) {
+                PreviewPlayer preview = player();
                 beforeRender(uuid, value);
                 T current = selected.get();
                 boolean valueSelected = current != null && id(current).equals(id(value));
                 GuiUtils.renderSkinCard(graphics, font, name(value), x, y, CELL_WIDTH, CELL_HEIGHT,
-                    hovered, valueSelected, isEquipped(value), player, 0, mouseX, mouseY);
+                    hovered, valueSelected, isEquipped(value), preview, 0, mouseX, mouseY);
             }
         }
     }

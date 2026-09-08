@@ -8,13 +8,14 @@ public final class PersonaTypeNames {
     public static final String ALL = "all";
     public static final String EQUIPPED = "equipped";
     public static final String BOTTOMS = "bottoms";
+    public static final String OUTERWEAR = "persona_outerwear";
 
     private PersonaTypeNames() {}
 
     public static String category(String pieceType) {
-        return "persona_bottom".equals(pieceType) || "persona_high_pants".equals(pieceType)
-            ? BOTTOMS
-            : pieceType;
+        if ("persona_bottom".equals(pieceType) || "persona_high_pants".equals(pieceType)) return BOTTOMS;
+        if ("persona_hood".equals(pieceType)) return OUTERWEAR;
+        return pieceType;
     }
 
     public static boolean belongsTo(String pieceType, String category) {

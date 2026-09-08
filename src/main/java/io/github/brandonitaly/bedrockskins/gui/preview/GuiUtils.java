@@ -61,11 +61,6 @@ public final class GuiUtils {
         state.showLeftPants = options.isModelPartEnabled(PlayerModelPart.LEFT_PANTS_LEG);
         state.showRightPants = options.isModelPartEnabled(PlayerModelPart.RIGHT_PANTS_LEG);
         state.showCape = options.isModelPartEnabled(PlayerModelPart.CAPE);
-
-        //? if <26.3-snapshot-5 {
-        state.attackArm = HumanoidArm.RIGHT;
-        state.attackTime = attackTime;
-        //?}
         state.isCrouching = crouch;
         state.skin = preview.getSkin(minecraft);
     }

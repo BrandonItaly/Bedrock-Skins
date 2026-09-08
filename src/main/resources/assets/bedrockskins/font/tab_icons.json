@@ -1,0 +1,32 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "bedrockskins:gui/sprites/container/classic_skins.png",
+      "ascent": 10,
+      "height": 12,
+      "chars": ["\uE000"]
+    },
+    {
+      "type": "bitmap",
+      "file": "bedrockskins:gui/sprites/container/character_creator.png",
+      "ascent": 10,
+      "height": 12,
+      "chars": ["\uE001"]
+    },
+    {
+      "type": "bitmap",
+      "file": "bedrockskins:gui/sprites/container/emotes.png",
+      "ascent": 10,
+      "height": 12,
+      "chars": ["\uE002"]
+    },
+    {
+      "type": "bitmap",
+      "file": "bedrockskins:gui/sprites/container/capes.png",
+      "ascent": 10,
+      "height": 12,
+      "chars": ["\uE003"]
+    }
+  ]
+}

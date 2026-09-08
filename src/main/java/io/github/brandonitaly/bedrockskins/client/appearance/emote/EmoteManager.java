@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 
@@ -47,7 +48,6 @@ public final class EmoteManager {
     private static final Map<String, Thumbnail> THUMBNAILS = new LinkedHashMap<>();
     private static final Map<UUID, Playback> PLAYING = new ConcurrentHashMap<>();
     private static Map<String, List<LoadedEmote>> DRESSING_ROOM = Map.of();
-    private static final Map<String, Integer> DRESSING_ROOM_INDEX = new ConcurrentHashMap<>();
     private static final Map<ModelPart, Delta> LAST_DELTAS = new IdentityHashMap<>();
     private static final String[] EQUIPPED_SLOTS = new String[SLOT_COUNT];
 
@@ -59,7 +59,6 @@ public final class EmoteManager {
         THUMBNAILS.clear();
         EMOTES.clear();
         DRESSING_ROOM = DressingRoomAnimationLoader.load();
-        DRESSING_ROOM_INDEX.clear();
         Path personaDirectory = Minecraft.getInstance().gameDirectory.toPath().resolve("persona");
         try {
             Files.createDirectories(personaDirectory);
@@ -92,8 +91,12 @@ public final class EmoteManager {
     private static void scan(Path root) {
         if (!Files.isDirectory(root)) return;
         try (Stream<Path> paths = Files.walk(root, 3)) {
-            paths.filter(Files::isDirectory).forEach(path -> PersonaEmoteLoader.load(path.toFile())
-                .ifPresent(emote -> EMOTES.putIfAbsent(emote.id(), emote)));
+            paths.filter(Files::isRegularFile)
+                .filter(path -> path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".meta.json"))
+                .map(Path::getParent)
+                .distinct()
+                .forEach(path -> PersonaEmoteLoader.load(path.toFile())
+                    .ifPresent(emote -> EMOTES.putIfAbsent(emote.id(), emote)));
         } catch (Exception ignored) {}
     }
 
@@ -151,7 +154,6 @@ public final class EmoteManager {
 
     public static void unequip(int index) {
         if (index < 0 || index >= SLOT_COUNT || EQUIPPED_SLOTS[index] == null) return;
-        String removed = EQUIPPED_SLOTS[index];
         EQUIPPED_SLOTS[index] = null;
         persistSlots();
     }
@@ -183,9 +185,7 @@ public final class EmoteManager {
         String group = dressingRoomGroup(cosmeticType);
         List<LoadedEmote> reactions = group == null ? null : DRESSING_ROOM.get(group);
         if (playerId == null || reactions == null || reactions.isEmpty()) return;
-        int index = DRESSING_ROOM_INDEX.getOrDefault(group, 0);
-        DRESSING_ROOM_INDEX.put(group, (index + 1) % reactions.size());
-        play(playerId, reactions.get(index % reactions.size()));
+        play(playerId, reactions.get(ThreadLocalRandom.current().nextInt(reactions.size())));
     }
 
     private static String dressingRoomGroup(String type) {
