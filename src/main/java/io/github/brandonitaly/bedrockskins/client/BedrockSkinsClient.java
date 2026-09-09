@@ -19,7 +19,7 @@ import io.github.brandonitaly.bedrockskins.pack.model.AssetSource;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
 import io.github.brandonitaly.bedrockskins.pack.model.SkinId;
 import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
-import io.github.brandonitaly.bedrockskins.pack.persona.PersonaResourceLoader;
+import io.github.brandonitaly.bedrockskins.pack.persona.PersonaCatalog;
 import com.mojang.logging.LogUtils;
 import com.mojang.blaze3d.platform.InputConstants;
 //? if fabric {
@@ -243,7 +243,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     public static void reloadResources(Minecraft client) {
         try {
             SkinPackLoader.loadPacks();
-            PersonaResourceLoader.beginReload(client.getResourceManager());
+            PersonaCatalog.reload(client.gameDirectory.toPath().resolve("persona"), client.getResourceManager());
             PersonaManager.reload(SkinPackLoader.vanillaGeometryJson);
             EmoteManager.reload();
             FavoritesManager.load();

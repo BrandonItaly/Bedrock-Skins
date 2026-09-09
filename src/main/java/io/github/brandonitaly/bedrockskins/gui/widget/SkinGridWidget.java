@@ -1,218 +1,138 @@
 package io.github.brandonitaly.bedrockskins.gui.widget;
 
-import io.github.brandonitaly.bedrockskins.gui.preview.*;
-import io.github.brandonitaly.bedrockskins.gui.screen.*;
-
+import io.github.brandonitaly.bedrockskins.gui.preview.GuiSkinUtils;
+import io.github.brandonitaly.bedrockskins.gui.preview.GuiUtils;
+import io.github.brandonitaly.bedrockskins.gui.preview.PreviewPlayer;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
 import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.logging.LogUtils;
-import java.util.ArrayList;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Util;
+import org.slf4j.Logger;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.ObjectSelectionList;
-import net.minecraft.network.chat.Component;
-import net.minecraft.util.Util;
-import org.slf4j.Logger;
 
-public class SkinGridWidget extends ObjectSelectionList<SkinGridWidget.SkinRowEntry> {
+public class SkinGridWidget extends CardGridWidget<SkinGridWidget.SkinCell> {
     private static final Logger LOGGER = LogUtils.getLogger();
-
-    public static final int CELL_WIDTH = 60;
-    public static final int CELL_HEIGHT = 85;
-    public static final int CELL_PADDING = 5;
-
+    private static final int CELL_WIDTH = 60;
+    private static final int CELL_HEIGHT = 85;
+    private static final int CELL_PADDING = 5;
     private final Consumer<LoadedSkin> onSelectSkin;
     private final Consumer<LoadedSkin> onEditSkin;
     private final Supplier<LoadedSkin> getSelectedSkin;
-    private final Font textRenderer;
+    private final Font font;
 
-    public SkinGridWidget(
-            Minecraft client, int width, int height, int y, int itemHeight,
-            Consumer<LoadedSkin> onSelectSkin, Consumer<LoadedSkin> onEditSkin, Supplier<LoadedSkin> getSelectedSkin, Font textRenderer
-    ) {
-        super(client, width, height, y, itemHeight);
+    public SkinGridWidget(Minecraft client, int width, int height, int y, int itemHeight,
+                          Consumer<LoadedSkin> onSelectSkin, Consumer<LoadedSkin> onEditSkin,
+                          Supplier<LoadedSkin> getSelectedSkin, Font font) {
+        super(client, width, height, y, itemHeight, CELL_WIDTH, CELL_HEIGHT, CELL_PADDING);
         this.onSelectSkin = onSelectSkin;
         this.onEditSkin = onEditSkin;
         this.getSelectedSkin = getSelectedSkin;
-        this.textRenderer = textRenderer;
+        this.font = font;
     }
 
-    protected void extractListSeparators(GuiGraphicsExtractor graphics) {}
-
-    @Override
-    public int getRowWidth() { return this.width - 10; }
-
-    @Override
-    protected int scrollBarX() { return this.getX() + this.width - 6; }
-
-    protected void extractSelection(GuiGraphicsExtractor context, SkinRowEntry entry, int color) {}
-
-    public void addEntryPublic(SkinRowEntry entry) { super.addEntry(entry); }
-
-    public void addSkinsRow(List<LoadedSkin> skins) { addEntryPublic(new SkinRowEntry(skins)); }
-
-    public void addActionRow(Component label, Runnable onClick) { addEntryPublic(new SkinRowEntry(label, onClick)); }
-
-    public void clear() {
-        for (SkinRowEntry row : this.children()) row.cleanup();
-        super.clearEntries();
+    public void addSkinsRow(List<LoadedSkin> skins) {
+        addCellsRow(skins.stream().map(SkinCell::new).toList());
     }
 
-    public class SkinRowEntry extends ObjectSelectionList.Entry<SkinRowEntry> {
-        private final List<SkinCell> cells = new ArrayList<>();
+    public void addActionRow(Component label, Runnable onClick) {
+        addCellsRow(List.of(new SkinCell(label, onClick)));
+    }
 
-        public SkinRowEntry(List<LoadedSkin> skins) {
-            for (LoadedSkin skin : skins) cells.add(new SkinCell(skin));
+    @Override
+    protected void renderCell(SkinCell cell, GuiGraphicsExtractor graphics, int x, int y,
+                              boolean hovered, int mouseX, int mouseY) {
+        if (cell.actionCell) {
+            GuiUtils.renderActionCard(graphics, font, cell.label, x, y, cellWidth(), cellHeight(),
+                hovered, mouseX, mouseY);
+            return;
+        }
+        LoadedSkin selected = getSelectedSkin.get();
+        boolean isSelected = selected != null && selected.equals(cell.skin);
+        PreviewPlayer preview = cell.player();
+        if (preview != null) {
+            long now = Util.getMillis();
+            long elapsed = Math.max(0, now - cell.lastHoverTime);
+            cell.lastHoverTime = now;
+            if (hovered) cell.hoverYaw = (cell.hoverYaw + elapsed * 0.03F) % 360.0F;
+            else cell.hoverYaw = 0.0F;
+        }
+        GuiUtils.renderSkinCard(graphics, font, cell.displayName, x, y, cellWidth(), cellHeight(),
+            hovered, isSelected, GuiSkinUtils.isSkinCurrentlyEquipped(cell.skin), preview,
+            cell.hoverYaw, mouseX, mouseY);
+    }
+
+    @Override
+    protected boolean clickCell(SkinCell cell, MouseButtonEvent click, boolean doubled) {
+        if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
+            if (cell.actionCell || cell.skin == null || onEditSkin == null) return false;
+            onEditSkin.accept(cell.skin);
+            GuiUtils.playButtonClickSound();
+            return true;
+        }
+        cell.activate(onSelectSkin);
+        GuiUtils.playButtonClickSound();
+        if (doubled && !cell.actionCell) cell.activate(onSelectSkin);
+        return true;
+    }
+
+    @Override protected void cleanupCell(SkinCell cell) { cell.cleanup(); }
+
+    protected static final class SkinCell {
+        private final LoadedSkin skin;
+        private final Runnable onClick;
+        private final Component label;
+        private final Component displayName;
+        private final UUID uuid = UUID.randomUUID();
+        private final boolean actionCell;
+        private PreviewPlayer player;
+        private float hoverYaw;
+        private long lastHoverTime = Util.getMillis();
+
+        private SkinCell(LoadedSkin skin) {
+            this.skin = skin;
+            this.onClick = null;
+            this.label = null;
+            this.actionCell = false;
+            this.displayName = Component.literal(GuiSkinUtils.getSkinDisplayNameText(skin));
         }
 
-        public SkinRowEntry(Component label, Runnable onClick) {
-            cells.add(new SkinCell(label, onClick));
+        private SkinCell(Component label, Runnable onClick) {
+            this.skin = null;
+            this.onClick = onClick;
+            this.label = label;
+            this.actionCell = true;
+            this.displayName = label != null ? label : Component.empty();
         }
 
-        public void cleanup() {
-            for (SkinCell cell : cells) cell.cleanup();
+        private void activate(Consumer<LoadedSkin> onSelectSkin) {
+            if (onClick != null) onClick.run();
+            else if (skin != null) onSelectSkin.accept(skin);
         }
 
-        private void renderCommon(GuiGraphicsExtractor gui, int x, int y, int mouseX, int mouseY) {
-            int gridLeft = SkinGridWidget.this.getX(), gridTop = SkinGridWidget.this.getY();
-            int gridRight = gridLeft + SkinGridWidget.this.width, gridBottom = gridTop + SkinGridWidget.this.height;
-            boolean mouseInGrid = mouseX >= gridLeft && mouseX < gridRight && mouseY >= gridTop && mouseY < gridBottom;
-            
-            for (int i = 0; i < cells.size(); i++) {
-                int cx = x + (i * (CELL_WIDTH + CELL_PADDING));
-                boolean isHovered = mouseInGrid && mouseX >= cx && mouseX < cx + CELL_WIDTH && mouseY >= y && mouseY < y + CELL_HEIGHT;
-                cells.get(i).extractRenderState(gui, cx, y, CELL_WIDTH, CELL_HEIGHT, isHovered, mouseX, mouseY);
+        private PreviewPlayer player() {
+            if (player != null || actionCell) return player;
+            player = new PreviewPlayer(new GameProfile(uuid, ""));
+            try {
+                GuiSkinUtils.applyLoadedSkinPreview(player, uuid, skin);
+            } catch (Exception exception) {
+                LOGGER.warn("Failed to apply skin preview for {}", skin != null ? skin.skinId : null, exception);
             }
+            return player;
         }
 
-        private boolean clickCommon(int localX, boolean doubled) {
-            if (localX < 0) return false;
-            int index = localX / (CELL_WIDTH + CELL_PADDING);
-
-            if (index < cells.size()) {
-                int cellStart = index * (CELL_WIDTH + CELL_PADDING);
-                if (localX >= cellStart && localX <= cellStart + CELL_WIDTH) {
-                    SkinCell cell = cells.get(index);
-                    cell.activate();
-                    GuiUtils.playButtonClickSound();
-                    if (doubled && !cell.isActionCell()) cell.activate();
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public void extractContent(GuiGraphicsExtractor gui, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-            renderCommon(gui, getX(), getY(), mouseX, mouseY);
-        }
-
-        public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent click, boolean doubled) {
-            if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
-                int localX = (int) (click.x() - getX());
-                if (localX < 0) return false;
-                int index = localX / (CELL_WIDTH + CELL_PADDING);
-                if (index < cells.size()) {
-                    SkinCell cell = cells.get(index);
-                    if (!cell.isActionCell() && cell.skin != null && onEditSkin != null) {
-                        onEditSkin.accept(cell.skin);
-                        GuiUtils.playButtonClickSound();
-                        return true;
-                    }
-                }
-            }
-            return clickCommon((int) (click.x() - getX()), doubled);
-        }
-
-        @Override
-        public Component getNarration() { return Component.empty(); }
-
-        public class SkinCell {
-            public final LoadedSkin skin;
-            private final Runnable onClick;
-            private final Component label;
-            private final Component displayNameComponent;
-            private PreviewPlayer player;
-            private final UUID uuid = UUID.randomUUID();
-            private final String name;
-            private final boolean actionCell;
-
-            private float hoverYaw = 0f; 
-            private long lastHoverTime = Util.getMillis();
-
-            public SkinCell(LoadedSkin skin) {
-                this.skin = skin;
-                this.onClick = null;
-                this.label = null;
-                this.actionCell = false;
-                this.name = GuiSkinUtils.getSkinDisplayNameText(skin);
-                this.displayNameComponent = Component.literal(this.name);
-            }
-
-            public SkinCell(Component label, Runnable onClick) {
-                this.skin = null;
-                this.onClick = onClick;
-                this.label = label;
-                this.actionCell = true;
-                this.name = label != null ? label.getString() : "";
-                this.displayNameComponent = label != null ? label : Component.empty();
-            }
-
-            public boolean isActionCell() { return actionCell; }
-
-            public void activate() {
-                if (onClick != null) onClick.run();
-                else if (skin != null) onSelectSkin.accept(skin);
-            }
-
-            public void cleanup() {
-                if (!actionCell && player != null) {
-                    GuiSkinUtils.cleanupPreview(uuid);
-                    player = null;
-                }
-            }
-
-            private PreviewPlayer player() {
-                if (player != null || actionCell) return player;
-                player = new PreviewPlayer(new GameProfile(uuid, ""));
-                try {
-                    GuiSkinUtils.applyLoadedSkinPreview(player, uuid, skin);
-                } catch (Exception e) {
-                    LOGGER.warn("Failed to apply skin preview for {}", skin != null ? skin.skinId : null, e);
-                }
-                return player;
-            }
-
-            public void extractRenderState(GuiGraphicsExtractor context, int x, int y, int w, int h, boolean hovered, int mouseX, int mouseY) {
-                if (actionCell) {
-                    GuiUtils.renderActionCard(context, textRenderer, label, x, y, w, h, hovered, mouseX, mouseY);
-                    return;
-                }
-
-                LoadedSkin selected = getSelectedSkin.get();
-                boolean isSelected = selected != null && selected.equals(skin);
-                boolean isEquipped = GuiSkinUtils.isSkinCurrentlyEquipped(skin);
-                PreviewPlayer preview = player();
-
-                if (preview != null) {
-                    long now = Util.getMillis();
-                    long dt = Math.max(0, now - lastHoverTime);
-                    lastHoverTime = now;
-                    if (hovered) {
-                        hoverYaw += dt * 0.03f;
-                        if (hoverYaw > 360f) hoverYaw -= 360f;
-                    } else {
-                        hoverYaw = 0f;
-                    }
-                }
-
-                GuiUtils.renderSkinCard(context, textRenderer, displayNameComponent, x, y, w, h, hovered, isSelected, isEquipped, preview, hoverYaw, mouseX, mouseY);
-            }
+        private void cleanup() {
+            if (actionCell || player == null) return;
+            GuiSkinUtils.cleanupPreview(uuid);
+            player = null;
         }
     }
 }

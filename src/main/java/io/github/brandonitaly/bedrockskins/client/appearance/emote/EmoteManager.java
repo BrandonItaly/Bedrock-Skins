@@ -6,8 +6,8 @@ import io.github.brandonitaly.bedrockskins.client.persistence.StateManager;
 import io.github.brandonitaly.bedrockskins.client.render.model.BedrockPlayerModel;
 
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedEmote;
+import io.github.brandonitaly.bedrockskins.pack.persona.PersonaCatalog;
 import io.github.brandonitaly.bedrockskins.pack.persona.PersonaEmoteLoader;
-import io.github.brandonitaly.bedrockskins.pack.persona.PersonaResourceLoader;
 import io.github.brandonitaly.bedrockskins.pack.persona.DressingRoomAnimationLoader;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -23,8 +23,6 @@ import org.joml.Matrix3f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
@@ -35,7 +33,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 
 /** Discovers, selects, and evaluates Bedrock Persona emotes. */
@@ -59,15 +56,8 @@ public final class EmoteManager {
         THUMBNAILS.clear();
         EMOTES.clear();
         DRESSING_ROOM = DressingRoomAnimationLoader.load();
-        Path personaDirectory = Minecraft.getInstance().gameDirectory.toPath().resolve("persona");
-        try {
-            Files.createDirectories(personaDirectory);
-        } catch (Exception e) {
-            LOGGER.warn("Failed to create Persona directory {}", personaDirectory, e);
-        }
-        scan(personaDirectory);
-        PersonaResourceLoader.forEachBundledRoot(Minecraft.getInstance().getResourceManager(),
-            EmoteManager::scan);
+        PersonaCatalog.pieceDirectories().forEach(path -> PersonaEmoteLoader.load(path.toFile())
+            .ifPresent(emote -> EMOTES.putIfAbsent(emote.id(), emote)));
         EMOTES.values().forEach(EmoteManager::registerThumbnail);
         LocalSkinConfig state = StateManager.readState();
         java.util.Arrays.fill(EQUIPPED_SLOTS, null);
@@ -86,18 +76,6 @@ public final class EmoteManager {
             persistSlots();
         }
         LOGGER.debug("Loaded {} Persona emote(s)", EMOTES.size());
-    }
-
-    private static void scan(Path root) {
-        if (!Files.isDirectory(root)) return;
-        try (Stream<Path> paths = Files.walk(root, 3)) {
-            paths.filter(Files::isRegularFile)
-                .filter(path -> path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".meta.json"))
-                .map(Path::getParent)
-                .distinct()
-                .forEach(path -> PersonaEmoteLoader.load(path.toFile())
-                    .ifPresent(emote -> EMOTES.putIfAbsent(emote.id(), emote)));
-        } catch (Exception ignored) {}
     }
 
     public static List<LoadedEmote> all() { return List.copyOf(EMOTES.values()); }

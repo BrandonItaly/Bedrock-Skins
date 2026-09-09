@@ -8,8 +8,8 @@ import io.github.brandonitaly.bedrockskins.network.BedrockSkinsNetworking;
 import io.github.brandonitaly.bedrockskins.bedrock.BedrockFile;
 import io.github.brandonitaly.bedrockskins.pack.model.AssetSource;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedCosmetic;
+import io.github.brandonitaly.bedrockskins.pack.persona.PersonaCatalog;
 import io.github.brandonitaly.bedrockskins.pack.persona.PersonaPieceLoader;
-import io.github.brandonitaly.bedrockskins.pack.persona.PersonaResourceLoader;
 import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -28,9 +28,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.stream.Stream;
 
 /** Loads, equips, and renders Character Creator Persona pieces independently of skins. */
 public final class PersonaManager {
@@ -62,23 +60,11 @@ public final class PersonaManager {
     }
 
     private static final class CosmeticAssignment {
-        private LinkedHashMap<String, String> equipped;
-        private LinkedHashMap<String, String> preview;
-        private Map<String, Integer> equippedColors;
-        private Map<String, Integer> previewColors;
-        private Map<String, EquipSide> equippedSides;
-        private Map<String, EquipSide> previewSides;
+        private PersonaLoadout equipped;
+        private PersonaLoadout preview;
 
-        private Map<String, String> effective() {
+        private PersonaLoadout effective() {
             return preview != null ? preview : equipped;
-        }
-
-        private Map<String, Integer> effectiveColors() {
-            return preview != null ? previewColors : equippedColors;
-        }
-
-        private Map<String, EquipSide> effectiveSides() {
-            return preview != null ? previewSides : equippedSides;
         }
     }
 
@@ -101,15 +87,7 @@ public final class PersonaManager {
         MODEL_COSMETICS.clear();
         REMOTE_COSMETIC_IDS.clear();
 
-        Path personaDirectory = Minecraft.getInstance().gameDirectory.toPath().resolve("persona");
-        try {
-            Files.createDirectories(personaDirectory);
-        } catch (Exception e) {
-            LOGGER.warn("Failed to create Persona directory {}", personaDirectory, e);
-        }
-        loadDirectoryTree(personaDirectory, vanillaGeometry);
-        PersonaResourceLoader.forEachBundledRoot(Minecraft.getInstance().getResourceManager(),
-            root -> loadDirectoryTree(root, vanillaGeometry));
+        PersonaCatalog.pieceDirectories().forEach(path -> loadDirectory(path, vanillaGeometry));
         applySavedSelection();
     }
 
@@ -123,10 +101,10 @@ public final class PersonaManager {
     public static Collection<LoadedCosmetic> equipped(UUID playerId) {
         if (playerId == null) return List.of();
         CosmeticAssignment assignment = ASSIGNMENTS.get(playerId);
-        Map<String, String> selected = assignment != null ? assignment.effective() : null;
-        if (selected == null) return List.of();
+        PersonaLoadout loadout = assignment != null ? assignment.effective() : null;
+        if (loadout == null) return List.of();
         List<LoadedCosmetic> result = new ArrayList<>();
-        for (String id : selected.values()) {
+        for (String id : loadout.pieces().values()) {
             LoadedCosmetic cosmetic = COSMETICS.get(id);
             if (cosmetic != null) result.add(cosmetic);
         }
@@ -282,8 +260,8 @@ public final class PersonaManager {
     public static EquipSide side(UUID playerId, LoadedCosmetic cosmetic) {
         if (cosmetic == null || !isSideSelectable(cosmetic)) return EquipSide.BOTH;
         CosmeticAssignment assignment = playerId == null ? null : ASSIGNMENTS.get(playerId);
-        Map<String, EquipSide> sides = assignment == null ? null : assignment.effectiveSides();
-        return sides == null ? EquipSide.BOTH : sides.getOrDefault(cosmetic.id, EquipSide.BOTH);
+        PersonaLoadout loadout = assignment == null ? null : assignment.effective();
+        return loadout == null ? EquipSide.BOTH : loadout.side(cosmetic);
     }
 
     public static void setLocalSide(LoadedCosmetic cosmetic, EquipSide side) {
@@ -350,10 +328,8 @@ public final class PersonaManager {
             applyLocalSelectionToPlayer(new LinkedHashMap<>(LOCAL_SELECTION));
         }
         for (CosmeticAssignment assignment : ASSIGNMENTS.values()) {
-            String previewId = assignment.preview == null ? null : assignment.preview.get(cosmetic.type);
-            if (previewId != null && assignment.previewColors != null) {
-                assignment.previewColors = withColor(assignment.previewColors, previewId, selectedColor);
-            }
+            String previewId = assignment.preview == null ? null : assignment.preview.pieces().get(cosmetic.type);
+            if (previewId != null) assignment.preview = assignment.preview.withColor(previewId, selectedColor);
         }
         if (localPlayerId() != null) ClientSkinSync.syncCurrentCosmetics();
     }
@@ -367,8 +343,8 @@ public final class PersonaManager {
     public static int tintColor(UUID playerId, LoadedCosmetic cosmetic) {
         if (cosmetic == null) return 0xFFFFFF;
         CosmeticAssignment assignment = playerId == null ? null : ASSIGNMENTS.get(playerId);
-        Map<String, Integer> colors = assignment == null ? null : assignment.effectiveColors();
-        return colors == null ? cosmetic.defaultTintColor : colors.getOrDefault(cosmetic.id, cosmetic.defaultTintColor);
+        PersonaLoadout loadout = assignment == null ? null : assignment.effective();
+        return loadout == null ? cosmetic.defaultTintColor : loadout.color(cosmetic);
     }
 
     public static net.minecraft.resources.Identifier texture(UUID playerId, LoadedCosmetic cosmetic) {
@@ -393,15 +369,12 @@ public final class PersonaManager {
         CosmeticAssignment assignment = assignment(playerId);
         if (cosmetic == null) {
             assignment.preview = null;
-            assignment.previewColors = null;
-            assignment.previewSides = null;
         }
         else {
             LinkedHashMap<String, String> selected = new LinkedHashMap<>();
             selected.put(cosmetic.type, cosmetic.id);
-            assignment.preview = selected;
-            assignment.previewColors = Map.of(cosmetic.id, localTintColor(cosmetic));
-            assignment.previewSides = Map.of(cosmetic.id, localSide(cosmetic));
+            assignment.preview = PersonaLoadout.of(selected, Map.of(cosmetic.id, localTintColor(cosmetic)),
+                Map.of(cosmetic.id, localSide(cosmetic)));
         }
         removeIfEmpty(playerId, assignment);
     }
@@ -414,9 +387,7 @@ public final class PersonaManager {
         }
         if (cosmetic != null) selected.put(cosmetic.type, cosmetic.id);
         CosmeticAssignment assignment = assignment(playerId);
-        assignment.preview = selected.isEmpty() ? null : selected;
-        assignment.previewColors = selected.isEmpty() ? null : colorsFor(selected);
-        assignment.previewSides = selected.isEmpty() ? null : sidesFor(selected);
+        assignment.preview = PersonaLoadout.of(selected, colorsFor(selected), sidesFor(selected));
         removeIfEmpty(playerId, assignment);
     }
 
@@ -430,8 +401,6 @@ public final class PersonaManager {
         CosmeticAssignment assignment = ASSIGNMENTS.get(playerId);
         if (assignment == null) return;
         assignment.preview = null;
-        assignment.previewColors = null;
-        assignment.previewSides = null;
         removeIfEmpty(playerId, assignment);
     }
 
@@ -458,22 +427,12 @@ public final class PersonaManager {
         PersonaTextureManager.prepare(cosmetic, tintColor(playerId, cosmetic));
     }
 
-    private static void loadDirectoryTree(Path root, JsonObject vanillaGeometry) {
-        if (!Files.isDirectory(root)) return;
-        try (Stream<Path> paths = Files.walk(root, 3)) {
-            paths.filter(Files::isRegularFile)
-                .filter(path -> path.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith(".meta.json"))
-                .map(Path::getParent)
-                .distinct()
-                .forEach(path ->
-                PersonaPieceLoader.load(path.toFile(), vanillaGeometry).ifPresent(cosmetic -> {
-                    if (COSMETICS.containsKey(cosmetic.id)) return;
-                    PersonaTextureManager.register(cosmetic);
-                    COSMETICS.put(cosmetic.id, cosmetic);
-                }));
-        } catch (Exception e) {
-            LOGGER.warn("Failed to scan Persona cosmetics in {}", root, e);
-        }
+    private static void loadDirectory(Path path, JsonObject vanillaGeometry) {
+        PersonaPieceLoader.load(path.toFile(), vanillaGeometry).ifPresent(cosmetic -> {
+            if (COSMETICS.containsKey(cosmetic.id)) return;
+            PersonaTextureManager.register(cosmetic);
+            COSMETICS.put(cosmetic.id, cosmetic);
+        });
     }
 
     public static void applySavedSelection() {
@@ -603,9 +562,7 @@ public final class PersonaManager {
     private static void setEquipped(UUID playerId, Map<String, String> selected, Map<String, Integer> colors,
                                     Map<String, EquipSide> sides) {
         CosmeticAssignment assignment = assignment(playerId);
-        assignment.equipped = selected == null || selected.isEmpty() ? null : new LinkedHashMap<>(selected);
-        assignment.equippedColors = assignment.equipped == null ? null : Map.copyOf(colors);
-        assignment.equippedSides = assignment.equipped == null ? null : Map.copyOf(sides);
+        assignment.equipped = PersonaLoadout.of(selected, colors, sides);
         removeIfEmpty(playerId, assignment);
     }
 
@@ -627,12 +584,6 @@ public final class PersonaManager {
             if (cosmetic != null) sides.put(id, LOCAL_SIDES.getOrDefault(cosmetic.type, EquipSide.BOTH));
         }
         return sides;
-    }
-
-    private static Map<String, Integer> withColor(Map<String, Integer> source, String id, int color) {
-        Map<String, Integer> result = new LinkedHashMap<>(source);
-        result.put(id, color);
-        return Map.copyOf(result);
     }
 
     private static UUID localPlayerId() {
