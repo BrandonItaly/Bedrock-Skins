@@ -9,6 +9,7 @@ import com.google.gson.JsonParser;
 import io.github.brandonitaly.bedrockskins.pack.model.AssetSource;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
 import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
+import io.github.brandonitaly.bedrockskins.pack.editor.WritableSkinPack;
 import io.github.brandonitaly.bedrockskins.client.integration.NativeFileDialog;
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
@@ -130,8 +131,7 @@ public class AddSkinScreen extends SkinDialogScreen {
         if (skinName.isEmpty() || texturePath == null) return;
 
         try {
-            Path storeDir = SkinPackLoader.getSkinPacksDir().toPath().resolve(packId.replace("skinpack.", ""));
-            if (!Files.exists(storeDir)) return;
+            Path storeDir = WritableSkinPack.ensure(packId);
 
             String safeSkinId = skinName.replaceAll("[^a-zA-Z0-9_-]", "").toLowerCase();
             

@@ -3,6 +3,7 @@ package io.github.brandonitaly.bedrockskins.gui.widget;
 import io.github.brandonitaly.bedrockskins.gui.preview.GuiSkinUtils;
 import io.github.brandonitaly.bedrockskins.gui.preview.GuiUtils;
 import io.github.brandonitaly.bedrockskins.gui.preview.PreviewPlayer;
+import io.github.brandonitaly.bedrockskins.gui.preview.MinecraftAccountSkin;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
 import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -59,6 +60,9 @@ public class SkinGridWidget extends CardGridWidget<SkinGridWidget.SkinCell> {
         boolean isSelected = selected != null && selected.equals(cell.skin);
         PreviewPlayer preview = cell.player();
         if (preview != null) {
+            if (MinecraftAccountSkin.is(cell.skin)) {
+                GuiSkinUtils.refreshAutoSelectedProfileSkin(minecraft, preview);
+            }
             long now = Util.getMillis();
             long elapsed = Math.max(0, now - cell.lastHoverTime);
             cell.lastHoverTime = now;

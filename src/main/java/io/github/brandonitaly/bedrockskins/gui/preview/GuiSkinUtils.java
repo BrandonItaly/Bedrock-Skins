@@ -45,6 +45,8 @@ public final class GuiSkinUtils {
     }
 
     public static boolean isSkinCurrentlyEquipped(LoadedSkin skin) {
+        if (MinecraftAccountSkin.is(skin)) return SkinManager.getLocalSelectedKey() == null;
+        if (ImportSkinAction.is(skin)) return false;
         return Objects.equals(SkinManager.getLocalSelectedKey(), skin != null ? skin.skinId : null);
     }
 
@@ -121,6 +123,11 @@ public final class GuiSkinUtils {
 
     public static void applyLoadedSkinPreview(PreviewPlayer previewPlayer, UUID previewUuid, LoadedSkin skin, boolean ignoreCapeOverrides) {
         if (previewPlayer == null) return;
+
+        if (MinecraftAccountSkin.is(skin)) {
+            applyAutoSelectedPreview(Minecraft.getInstance(), previewPlayer, previewUuid);
+            return;
+        }
 
         previewPlayer.clearForcedProfileSkin();
         previewPlayer.clearForcedBody();

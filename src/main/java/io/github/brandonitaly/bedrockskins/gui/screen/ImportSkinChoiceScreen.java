@@ -1,6 +1,7 @@
 package io.github.brandonitaly.bedrockskins.gui.screen;
 
 import io.github.brandonitaly.bedrockskins.client.integration.NativeFileDialog;
+import io.github.brandonitaly.bedrockskins.pack.editor.WritableSkinPack;
 
 import io.github.brandonitaly.bedrockskins.gui.preview.*;
 import io.github.brandonitaly.bedrockskins.gui.widget.*;
@@ -49,6 +50,17 @@ public class ImportSkinChoiceScreen extends SkinDialogScreen {
 
     @Override
     protected void init() {
+        try {
+            // Built-in packs are resources, so create their writable overlay before opening
+            // either import route. Custom packs already have this directory and are unchanged.
+            WritableSkinPack.ensure(packId);
+        } catch (IOException exception) {
+            loading = true;
+            statusMessage = "Unable to prepare the Imports pack.";
+            statusColor = 0xFFFF5555;
+            LOGGER.error("Failed to prepare writable skin pack {}", packId, exception);
+        }
+
         int y = contentTopY();
 
         // Button: Select File

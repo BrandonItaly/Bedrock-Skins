@@ -259,6 +259,14 @@ public class SkinSelectionScreen extends Screen {
         for (LoadedSkin skin : SkinPackLoader.loadedSkinsSnapshot()) {
             skinCache.computeIfAbsent(skin.packId, k -> new ArrayList<>()).add(skin);
         }
+
+        // Keep the account skin first and the importer action last, with user imports between them.
+        List<LoadedSkin> imports = skinCache.computeIfAbsent(
+            MinecraftAccountSkin.PACK_ID, ignored -> new ArrayList<>());
+        LoadedSkin importAction = imports.stream().filter(ImportSkinAction::is).findFirst().orElse(null);
+        imports.removeIf(skin -> MinecraftAccountSkin.is(skin) || ImportSkinAction.is(skin));
+        imports.addFirst(MinecraftAccountSkin.INSTANCE);
+        if (importAction != null) imports.add(importAction);
         
         List<LoadedSkin> favs = FavoritesManager.getFavoriteKeys().stream()
                 .map(SkinId::parse)
@@ -545,6 +553,7 @@ public class SkinSelectionScreen extends Screen {
     }
 
     private void editSkin(LoadedSkin skin) {
+        if (MinecraftAccountSkin.is(skin) || ImportSkinAction.is(skin)) return;
         if (isExternalPack(skin.packId)) {
             minecraft.gui.setScreen(new EditSkinScreen(this, skin.packId, skin));
         }
@@ -754,11 +763,10 @@ public class SkinSelectionScreen extends Screen {
     }
 
     private void positionCosmeticControls() {
-        int previewButtonWidth = Math.min(rPreview.w - 16, 140);
-        int previewButtonX = rPreview.x + (rPreview.w - previewButtonWidth) / 2;
-        int previewBottomButtonY = rPreview.y + rPreview.h - 28;
         if (colorPickerButton != null) {
-            colorPickerButton.setPosition(previewButtonX, previewBottomButtonY - 24);
+            int colorX = previewPanel != null ? previewPanel.floatingControlX() : rPreview.x;
+            int colorY = previewPanel != null ? previewPanel.floatingControlY() : rPreview.y;
+            colorPickerButton.setPosition(colorX, colorY);
         }
         int sideY = rPreview.y + 28;
         if (previousSideButton != null) previousSideButton.setPosition(rPreview.x + 8, sideY);
@@ -776,9 +784,6 @@ public class SkinSelectionScreen extends Screen {
             colorPickerButton.active = colorUsable;
         }
         if (cosmeticSearchBox != null) cosmeticSearchBox.visible = cosmeticsTab && !colorPickerOpen;
-        if (previewPanel != null) {
-            previewPanel.setResetButtonLeadingIconPresent(activeTab == AppearanceTab.SKINS || colorUsable);
-        }
         if (cosmeticGrid != null) cosmeticGrid.visible = cosmeticsTab && !colorPickerOpen;
         boolean colorsVisible = cosmeticsTab && colorPickerOpen && colorUsable;
         if (colorPalette != null) {

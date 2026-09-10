@@ -31,7 +31,6 @@ import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.SkinCustomizationScreen;
 import net.minecraft.client.Minecraft;
@@ -45,6 +44,8 @@ import org.slf4j.Logger;
 
 public class SkinPreviewPanel {
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final int INFO_PANEL_HEIGHT = 58;
+    private static final int FLOATING_CONTROL_GAP = 2;
 
     private final Minecraft minecraft;
     private final Font font;
@@ -53,7 +54,7 @@ public class SkinPreviewPanel {
     // State
     private int x, y, width, height;
     private FavoriteHeartButton favoriteButton;
-    private Button selectButton, resetButton;
+    private Button selectButton;
     private SpriteIconButton customizationButton;
     private SpriteIconButton uploadSkinButton;
     private boolean isUploadingSkin = false;
@@ -73,6 +74,7 @@ public class SkinPreviewPanel {
     private int lastMouseX = 0;
     private boolean isDraggingPreview = false;
     private int previewLeft, previewRight, previewTop, previewBottom;
+    private int infoPanelY;
 
     public SkinPreviewPanel(Minecraft minecraft, Font font, Runnable onFavoritesChanged) {
         this.minecraft = minecraft;
@@ -139,14 +141,11 @@ public class SkinPreviewPanel {
 
     public void init(int x, int y, int w, int h, Screen parentScreen, Consumer<AbstractWidget> widgetAdder) {
         this.parentScreen = parentScreen;
-        selectButton = Button.builder(Component.translatable("bedrockskins.button.select"), b -> applySkin()).bounds(0, 0, 10, 20).build();
+        selectButton = Button.builder(Component.translatable("bedrockskins.button.equip"), b -> applySkin()).bounds(0, 0, 10, 20).build();
         widgetAdder.accept(selectButton);
 
         favoriteButton = new FavoriteHeartButton(20, BedrockSkinsSprites.HEART_CONTAINER, BedrockSkinsSprites.HEART_FULL, b -> toggleFavorite());
         widgetAdder.accept(favoriteButton.getButton());
-
-        resetButton = Button.builder(Component.translatable("bedrockskins.button.reset"), b -> resetSkin()).bounds(0, 0, 10, 20).build();
-        widgetAdder.accept(resetButton);
 
         customizationButton = SpriteIconButton.builder(Component.empty(), b -> {
             minecraft.gui.setScreen(new SkinCustomizationScreen(parentScreen, minecraft.options));
@@ -168,49 +167,46 @@ public class SkinPreviewPanel {
     public void reposition(int x, int y, int w, int h) {
         this.x = x; this.y = y; this.width = w; this.height = h;
 
-        int PANEL_HEADER_HEIGHT = 24, buttonsHeight = 90;
+        infoPanelY = Math.max(y, y + h - INFO_PANEL_HEIGHT);
         previewLeft = x;
         previewRight = x + w;
-        previewTop = y + PANEL_HEADER_HEIGHT;
-        previewBottom = previewTop + Math.max(h - PANEL_HEADER_HEIGHT - buttonsHeight, 50);
+        previewTop = y + 4;
+        previewBottom = Math.max(previewTop + 20, infoPanelY - 26);
 
-        int btnW = Math.min(w - 16, 140), btnH = 20;
-        int btnX = x + (w / 2) - (btnW / 2);
-        int bottomY = y + h - 8 - btnH;
-        int middleY = bottomY - btnH - 4;
+        int btnH = 20;
+        int actionX = x + 8;
+        int actionW = Math.max(10, w - 16);
+        int actionY = infoPanelY + INFO_PANEL_HEIGHT - btnH - 8;
+        int floatingY = infoPanelY - btnH - FLOATING_CONTROL_GAP;
 
         if (selectButton != null) {
-            selectButton.setX(btnX); selectButton.setY(bottomY); selectButton.setWidth(btnW);
+            selectButton.setX(actionX); selectButton.setY(actionY); selectButton.setWidth(actionW);
         }
         if (favoriteButton != null) {
-            favoriteButton.getButton().setX(btnX); favoriteButton.getButton().setY(middleY);
-        }
-        if (resetButton != null) {
-            resetButton.setX(btnX + 22); resetButton.setY(middleY); resetButton.setWidth(btnW - 22);
+            favoriteButton.getButton().setX(x); favoriteButton.getButton().setY(floatingY);
         }
         if (customizationButton != null) {
             customizationButton.setX(x + w - 22);
-            customizationButton.setY(y + 2);
+            customizationButton.setY(floatingY);
         }
         if (uploadSkinButton != null) {
             uploadSkinButton.setX(x + w - 44);
-            uploadSkinButton.setY(y + 2);
+            uploadSkinButton.setY(floatingY);
         }
     }
 
-    /** Reserves the left side of the reset row for the favorite/color icon when present. */
-    public void setResetButtonLeadingIconPresent(boolean present) {
-        if (resetButton == null) return;
-        int buttonWidth = Math.min(width - 16, 140);
-        int buttonX = x + (width - buttonWidth) / 2;
-        int inset = present ? 22 : 0;
-        resetButton.setX(buttonX + inset);
-        resetButton.setWidth(buttonWidth - inset);
+    public int floatingControlX() {
+        return x;
+    }
+
+    public int floatingControlY() {
+        return infoPanelY - 20 - FLOATING_CONTROL_GAP;
     }
 
     public void initPreviewState() {
         if (this.selectedSkin != null) {
-            updatePreviewModel(this.dummyUuid, this.selectedSkin.skinId);
+            updatePreviewModel(this.dummyUuid,
+                MinecraftAccountSkin.is(this.selectedSkin) ? null : this.selectedSkin.skinId);
             return;
         }
 
@@ -229,9 +225,10 @@ public class SkinPreviewPanel {
 
     public void setSelectedSkin(LoadedSkin skin) {
         this.selectedSkin = skin;
-        this.currentSkinId = skin != null ? skin.skinId : null;
+        this.currentSkinId = skin != null && !MinecraftAccountSkin.is(skin) ? skin.skinId : null;
         updateFavoriteButton();
-        if (skin != null) updatePreviewModel(dummyUuid, skin.skinId);
+        if (skin != null) updatePreviewModel(dummyUuid,
+            MinecraftAccountSkin.is(skin) ? null : skin.skinId);
     }
 
     private void updatePreviewModel(UUID uuid, SkinId skinId) {
@@ -272,6 +269,20 @@ public class SkinPreviewPanel {
         }
 
         if (selectedSkin == null) return;
+        if (ImportSkinAction.is(selectedSkin)) {
+            if (parentScreen instanceof SkinSelectionScreen selectionScreen) {
+                minecraft.gui.setScreen(new ImportSkinChoiceScreen(
+                    selectionScreen, MinecraftAccountSkin.PACK_ID));
+            }
+            return;
+        }
+        if (MinecraftAccountSkin.is(selectedSkin)) {
+            currentSkinId = null;
+            GuiSkinUtils.resetSelectedSkin(minecraft);
+            updatePreviewModel(dummyUuid, null);
+            updateFavoriteButton();
+            return;
+        }
         SkinManager.setSkin(dummyUuid, selectedSkin.skinId);
         try {
             GuiSkinUtils.applySelectedSkin(minecraft, selectedSkin);
@@ -341,7 +352,7 @@ public class SkinPreviewPanel {
         future.thenRun(() -> minecraft.execute(() -> {
             if (selectButton != null) {
                 selectButton.active = true;
-                selectButton.setMessage(Component.translatable("bedrockskins.button.equip_cape"));
+                selectButton.setMessage(Component.translatable("bedrockskins.button.equip"));
             }
             if (selectedCape.id.equals("none")) {
                 SkinManager.setLocalAccountCapeOverride(SkinManager.CAPE_NONE);
@@ -357,7 +368,7 @@ public class SkinPreviewPanel {
             minecraft.execute(() -> {
                 if (selectButton != null) {
                     selectButton.active = true;
-                    selectButton.setMessage(Component.translatable("bedrockskins.button.equip_cape"));
+                    selectButton.setMessage(Component.translatable("bedrockskins.button.equip"));
                 }
                 LOGGER.error("Failed to equip cape", e);
             });
@@ -424,22 +435,9 @@ public class SkinPreviewPanel {
         this.uploadStatusTime = System.currentTimeMillis();
     }
 
-    private void resetSkin() {
-        if (parentScreen instanceof SkinSelectionScreen selectionScreen && selectionScreen.getActiveTab() == AppearanceTab.COSMETICS) {
-            PersonaManager.clearLocal();
-            PersonaManager.setPreviewFromLocal(dummyUuid);
-            updateFavoriteButton();
-            return;
-        }
-        selectedSkin = null;
-        currentSkinId = null;
-        GuiSkinUtils.resetSelectedSkin(minecraft);
-        updatePreviewModel(dummyUuid, null);
-        updateFavoriteButton();
-    }
-
     private void toggleFavorite() {
-        if (selectedSkin == null) return;
+        if (selectedSkin == null || MinecraftAccountSkin.is(selectedSkin)
+                || ImportSkinAction.is(selectedSkin)) return;
         if (FavoritesManager.isFavorite(selectedSkin)) FavoritesManager.removeFavorite(selectedSkin);
         else FavoritesManager.addFavorite(selectedSkin);
         
@@ -448,13 +446,11 @@ public class SkinPreviewPanel {
     }
 
     private void updateActionButtons() {
-        if (resetButton != null) {
-            resetButton.active = selectedSkin != null || 
-                (minecraft.player != null ? SkinManager.getLocalSelectedKey() != null : currentSkinId != null);
-        }
         if (uploadSkinButton != null) {
-            uploadSkinButton.active = !isUploadingSkin && selectedSkin != null;
-            uploadSkinButton.visible = BedrockSkinsConfig.isAccountSkinUploadAllowed() && selectedSkin != null;
+            boolean uploadable = selectedSkin != null && !MinecraftAccountSkin.is(selectedSkin)
+                && !ImportSkinAction.is(selectedSkin);
+            uploadSkinButton.active = !isUploadingSkin && uploadable;
+            uploadSkinButton.visible = BedrockSkinsConfig.isAccountSkinUploadAllowed() && uploadable;
         }
     }
 
@@ -465,9 +461,8 @@ public class SkinPreviewPanel {
                 selectButton.active = selectedCosmetic != null;
                 boolean equipped = PersonaManager.isLocallyEquipped(selectedCosmetic);
                 selectButton.setMessage(Component.translatable(equipped
-                    ? "bedrockskins.button.unequip_cosmetic" : "bedrockskins.button.equip_cosmetic"));
+                    ? "bedrockskins.button.unequip" : "bedrockskins.button.equip"));
             }
-            if (resetButton != null) resetButton.active = !PersonaManager.localEquipped().isEmpty();
             if (uploadSkinButton != null) uploadSkinButton.visible = false;
             return;
         }
@@ -480,7 +475,7 @@ public class SkinPreviewPanel {
             if (selectButton != null) {
                 selectButton.active = selectedEmote != null;
                 selectButton.setMessage(Component.translatable(selectionScreen.isSelectedEmoteEquipped(selectedEmote)
-                    ? "bedrockskins.button.unequip_emote" : "bedrockskins.button.equip_emote"));
+                    ? "bedrockskins.button.unequip" : "bedrockskins.button.equip"));
             }
             if (uploadSkinButton != null) uploadSkinButton.visible = false;
             return;
@@ -488,9 +483,10 @@ public class SkinPreviewPanel {
 
         if (favoriteButton == null) return;
 
-        boolean isFav = FavoritesManager.isFavorite(selectedSkin);
+        boolean virtualSkin = MinecraftAccountSkin.is(selectedSkin) || ImportSkinAction.is(selectedSkin);
+        boolean isFav = !virtualSkin && FavoritesManager.isFavorite(selectedSkin);
         favoriteButton.setSelected(isFav);
-        favoriteButton.setActive(currentSkinId != null);
+        favoriteButton.setActive(!virtualSkin && currentSkinId != null);
         favoriteButton.setTooltip(Component.translatable(isFav ? "bedrockskins.button.unfavorite" : "bedrockskins.button.favorite"));
 
         if (selectButton != null) {
@@ -501,13 +497,8 @@ public class SkinPreviewPanel {
     }
 
     public void renderPreview(GuiGraphicsExtractor gui, int mouseX) {
-        GuiUtils.drawPanelChrome(gui, x, y, width, height, Component.translatable("bedrockskins.gui.preview"), font);
-
-        int PANEL_HEADER_HEIGHT = 24;
-        int BUTTONS_RESERVED_HEIGHT = 60; 
-        
-        int contentTop = y + PANEL_HEADER_HEIGHT;
-        int contentBottom = y + height - BUTTONS_RESERVED_HEIGHT;
+        int contentTop = previewTop;
+        int contentBottom = previewBottom;
         int centerX = x + width / 2;
         AppearanceTab activeTab = (parentScreen instanceof SkinSelectionScreen selectionScreen)
             ? selectionScreen.getActiveTab() : AppearanceTab.SKINS;
@@ -516,7 +507,9 @@ public class SkinPreviewPanel {
         int rotateH = (int)Math.ceil(rotateW * (7.0f / 45.0f));
 
         if (dummyPlayer != null) {
-            if (currentSkinId == null && selectedSkin == null) applyAutoSelectedSkinBehavior();
+            if (currentSkinId == null && (selectedSkin == null || MinecraftAccountSkin.is(selectedSkin))) {
+                applyAutoSelectedSkinBehavior();
+            }
             if (selectedCape != null) {
                 if (selectedCape.id.equals("none")) {
                     if (parentScreen instanceof SkinSelectionScreen selectionScreen && "skinpack".equals(selectionScreen.getSelectedCapesCategory())) {
@@ -564,17 +557,13 @@ public class SkinPreviewPanel {
                 }
             }
 
-            int textGap = 4;
-            int maxTextHeight = (font.lineHeight * 2) + textGap; 
-            int textY = contentBottom - maxTextHeight;
-
-            int modelAreaHeight = Math.max(0, textY - contentTop);
-            int scale = Math.max((int)(modelAreaHeight * 0.40f), 20); 
+            int modelAreaHeight = Math.max(0, contentBottom - contentTop);
+            int scale = Math.max((int)(modelAreaHeight * 0.48f), 20);
             int centerY = contentTop + (modelAreaHeight / 2) - (rotateH / 2);
 
             renderRotatableEntity(gui, centerX, centerY, width - 16, modelAreaHeight, scale, dummyPlayer);
 
-            int rotateY = Math.min((int)(centerY + (scale * 0.95f)), textY - rotateH - 4);
+            int rotateY = Math.min((int)(centerY + (scale * 0.95f)), contentBottom - rotateH - 2);
             gui.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.ROTATE_SPRITE, centerX - (rotateW / 2), rotateY, rotateW, rotateH);
 
             if (uploadStatusMessage != null && System.currentTimeMillis() - uploadStatusTime < 4500) {
@@ -582,32 +571,39 @@ public class SkinPreviewPanel {
                 gui.centeredText(font, Component.literal(uploadStatusMessage), centerX, contentTop + 4, statusColor);
             }
 
-            boolean hasName = nameToRender != null && !nameToRender.isEmpty();
-            boolean hasDesc = descToRender != null && !descToRender.isEmpty();
-
-            if (hasName || hasDesc) {
-                int lineGap = 2;
-                
-                int textWidth = Math.max(hasName ? font.width(nameToRender) : 0, hasDesc ? font.width(descToRender) : 0);
-                int textHeight = font.lineHeight + (hasName && hasDesc ? font.lineHeight + lineGap : 0) - 1;
-
-                int minX = x + 8;
-                int maxX = Math.max(minX, x + width - textWidth - 8);
-                int tooltipX = Math.clamp(centerX - (textWidth / 2), minX, maxX);
-                int tooltipCenterX = tooltipX + (textWidth / 2);
-
-                TooltipRenderUtil.extractTooltipBackground(gui, tooltipX, textY, textWidth, textHeight, null);
-
-                int textYCursor = textY;
-                if (hasName) {
-                    gui.centeredText(font, nameToRender, tooltipCenterX, textYCursor, 0xFFFFFFFF);
-                    textYCursor += font.lineHeight + lineGap;
-                }
-                if (hasDesc) {
-                    gui.centeredText(font, descToRender, tooltipCenterX, textYCursor, 0xFFAAAAAA);
-                }
-            }
+            renderInfoPanel(gui, nameToRender, descToRender);
         }
+    }
+
+    private void renderInfoPanel(GuiGraphicsExtractor gui, String name, String description) {
+        GuiUtils.drawPanelChrome(gui, x, infoPanelY, width, INFO_PANEL_HEIGHT, Component.empty(), font);
+
+        int textY = infoPanelY + 8;
+        int availableWidth = Math.max(0, width - 16);
+        boolean hasName = name != null && !name.isEmpty();
+        boolean hasDescription = description != null && !description.isEmpty();
+        int nameWidth = hasName && hasDescription ? Math.max(0, (availableWidth - 8) / 2) : availableWidth;
+        int descriptionWidth = hasName && hasDescription ? Math.max(0, availableWidth - nameWidth - 8) : availableWidth;
+
+        if (hasName) {
+            String fittedName = fitText(name, nameWidth);
+            gui.text(font, Component.literal(fittedName), x + 8, textY, 0xFFFFFFFF, false);
+        }
+        if (hasDescription) {
+            String fittedDescription = fitText(description, descriptionWidth);
+            gui.text(font, Component.literal(fittedDescription),
+                x + width - 8 - font.width(fittedDescription), textY, 0xFFAAAAAA, false);
+        }
+    }
+
+    private String fitText(String text, int maxWidth) {
+        if (text == null || maxWidth <= 0) return "";
+        if (font.width(text) <= maxWidth) return text;
+        String ellipsis = "...";
+        int targetWidth = Math.max(0, maxWidth - font.width(ellipsis));
+        int end = text.length();
+        while (end > 0 && font.width(text.substring(0, end)) > targetWidth) end--;
+        return text.substring(0, end) + ellipsis;
     }
     
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
@@ -637,11 +633,12 @@ public class SkinPreviewPanel {
     
     public void setButtonsVisible(boolean visible) {
         if (selectButton != null) selectButton.visible = visible;
-        if (resetButton != null) resetButton.visible = visible;
         if (favoriteButton != null) favoriteButton.getButton().visible = visible;
         if (customizationButton != null) customizationButton.visible = visible;
         if (uploadSkinButton != null) {
-            uploadSkinButton.visible = visible && BedrockSkinsConfig.isAccountSkinUploadAllowed() && selectedSkin != null;
+            uploadSkinButton.visible = visible && BedrockSkinsConfig.isAccountSkinUploadAllowed()
+                && selectedSkin != null && !MinecraftAccountSkin.is(selectedSkin)
+                && !ImportSkinAction.is(selectedSkin);
         }
     }
 
@@ -651,42 +648,40 @@ public class SkinPreviewPanel {
             this.rotationX = 0.0f;
             if (selectButton != null) {
                 selectButton.visible = true;
-                selectButton.setMessage(Component.translatable("bedrockskins.button.select"));
+                selectButton.setMessage(Component.translatable("bedrockskins.button.equip"));
             }
             if (favoriteButton != null) favoriteButton.getButton().visible = true;
-            if (resetButton != null) resetButton.visible = true;
             if (customizationButton != null) customizationButton.visible = true;
             if (uploadSkinButton != null) {
-                uploadSkinButton.visible = BedrockSkinsConfig.isAccountSkinUploadAllowed() && selectedSkin != null;
+                uploadSkinButton.visible = BedrockSkinsConfig.isAccountSkinUploadAllowed()
+                    && selectedSkin != null && !MinecraftAccountSkin.is(selectedSkin)
+                    && !ImportSkinAction.is(selectedSkin);
             }
         } else if (tabIndex == AppearanceTab.COSMETICS) {
             this.rotationX = 0.0f;
             if (selectButton != null) {
                 selectButton.visible = true;
-                selectButton.setMessage(Component.translatable("bedrockskins.button.equip_cosmetic"));
+                selectButton.setMessage(Component.translatable("bedrockskins.button.equip"));
             }
             if (favoriteButton != null) favoriteButton.getButton().visible = false;
-            if (resetButton != null) resetButton.visible = true;
             if (customizationButton != null) customizationButton.visible = true;
             if (uploadSkinButton != null) uploadSkinButton.visible = false;
         } else if (tabIndex == AppearanceTab.CAPES) {
             this.rotationX = 60.0f;
             if (selectButton != null) {
                 selectButton.visible = true;
-                selectButton.setMessage(Component.translatable("bedrockskins.button.equip_cape"));
+                selectButton.setMessage(Component.translatable("bedrockskins.button.equip"));
             }
             if (favoriteButton != null) favoriteButton.getButton().visible = false;
-            if (resetButton != null) resetButton.visible = false;
             if (customizationButton != null) customizationButton.visible = true;
             if (uploadSkinButton != null) uploadSkinButton.visible = false;
         } else if (tabIndex == AppearanceTab.EMOTES) {
             this.rotationX = 0.0f;
             if (selectButton != null) {
                 selectButton.visible = true;
-                selectButton.setMessage(Component.translatable("bedrockskins.button.equip_emote"));
+                selectButton.setMessage(Component.translatable("bedrockskins.button.equip"));
             }
             if (favoriteButton != null) favoriteButton.getButton().visible = false;
-            if (resetButton != null) resetButton.visible = false;
             if (customizationButton != null) customizationButton.visible = true;
             if (uploadSkinButton != null) uploadSkinButton.visible = false;
         }
