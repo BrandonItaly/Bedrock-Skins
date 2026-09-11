@@ -1,6 +1,5 @@
 package io.github.brandonitaly.bedrockskins.gui.screen;
 
-import com.mojang.authlib.GameProfile;
 import io.github.brandonitaly.bedrockskins.client.appearance.cape.CapeManager.MinecraftCape;
 import io.github.brandonitaly.bedrockskins.client.appearance.emote.EmoteManager;
 import io.github.brandonitaly.bedrockskins.client.appearance.persona.PersonaManager;
@@ -18,7 +17,6 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
-import java.util.UUID;
 
 /** Full-window, rotatable view of the appearance currently shown in the wardrobe preview. */
 public final class FullScreenPreviewScreen extends Screen {
@@ -27,7 +25,6 @@ public final class FullScreenPreviewScreen extends Screen {
     private final LoadedCosmetic selectedCosmetic;
     private final MinecraftCape selectedCape;
     private final LoadedEmote selectedEmote;
-    private final UUID previewUuid = UUID.randomUUID();
     private PreviewPlayer previewPlayer;
     private float rotation;
     private int lastMouseX;
@@ -50,23 +47,23 @@ public final class FullScreenPreviewScreen extends Screen {
     protected void init() {
         super.init();
         String name = minecraft.player != null ? minecraft.player.getName().getString() : "Preview";
-        previewPlayer = new PreviewPlayer(new GameProfile(previewUuid, name));
+        previewPlayer = new PreviewPlayer(name);
 
         if (selectedSkin != null) {
-            GuiSkinUtils.applyLoadedSkinPreview(previewPlayer, previewUuid, selectedSkin, false);
+            GuiSkinUtils.applyLoadedSkinPreview(previewPlayer, selectedSkin, false);
         } else {
-            GuiSkinUtils.applyCurrentEquippedSkin(minecraft, previewPlayer, previewUuid);
+            GuiSkinUtils.applyCurrentEquippedSkin(minecraft, previewPlayer);
         }
-        if (selectedCosmetic != null) PersonaManager.setPreviewWithEquipped(previewUuid, selectedCosmetic);
-        else PersonaManager.setPreviewFromLocal(previewUuid);
+        if (selectedCosmetic != null) PersonaManager.setPreviewWithEquipped(previewPlayer.getUuid(), selectedCosmetic);
+        else PersonaManager.setPreviewFromLocal(previewPlayer.getUuid());
 
         if (selectedCape != null) {
             previewPlayer.setForcedCape("none".equals(selectedCape.id) ? null : selectedCape.textureIdentifier);
         }
 
-        if (selectedEmote != null) EmoteManager.play(previewUuid, selectedEmote);
-        else if (selectedCosmetic != null) EmoteManager.playDressingRoom(previewUuid, selectedCosmetic.type);
-        else if (selectedCape != null) EmoteManager.playDressingRoom(previewUuid, "persona_back");
+        if (selectedEmote != null) EmoteManager.play(previewPlayer.getUuid(), selectedEmote);
+        else if (selectedCosmetic != null) EmoteManager.playDressingRoom(previewPlayer.getUuid(), selectedCosmetic.type);
+        else if (selectedCape != null) EmoteManager.playDressingRoom(previewPlayer.getUuid(), "persona_back");
 
         int buttonWidth = Math.min(160, Math.max(80, width - 32));
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
@@ -123,9 +120,7 @@ public final class FullScreenPreviewScreen extends Screen {
     public void removed() {
         if (!cleanedUp) {
             cleanedUp = true;
-            GuiSkinUtils.cleanupPreview(previewUuid);
-            PersonaManager.clearPreview(previewUuid);
-            EmoteManager.stop(previewUuid);
+            if (previewPlayer != null) previewPlayer.close();
             previewPlayer = null;
         }
         super.removed();

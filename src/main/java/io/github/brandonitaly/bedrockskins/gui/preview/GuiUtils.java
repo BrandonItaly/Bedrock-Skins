@@ -24,7 +24,6 @@ import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.PlayerModelPart;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import java.util.UUID;
 
 public final class GuiUtils {
     public static final int PANEL_HEADER_HEIGHT = 26;
@@ -32,12 +31,13 @@ public final class GuiUtils {
     
     private GuiUtils() {}
 
-    public static void setupAvatarRenderState(AvatarRenderState state, PreviewPlayer preview, SkinId skinId, float yaw, boolean crouch, float attackTime) {
+    public static void setupAvatarRenderState(AvatarRenderState state, PreviewPlayer preview,
+                                              float yaw, boolean crouch, float attackTime) {
         Minecraft minecraft = Minecraft.getInstance();
         var options = minecraft.options;
 
         BedrockRenderStateStore.setUniqueId(state, preview.getUuid());
-        BedrockRenderStateStore.setSkinId(state, skinId);
+        BedrockRenderStateStore.setSkinId(state, SkinManager.getSkin(preview.getUuid()));
         BedrockRenderStateStore.setGuiRender(state, true);
 
         state.nameTag = preview.shouldShowName() ? preview.getDisplayName() : null;
@@ -82,7 +82,6 @@ public final class GuiUtils {
     private static final CosmeticFrame ARMS_FRAME = new CosmeticFrame(1.02F);
     private static final CosmeticFrame TORSO_FRAME = new CosmeticFrame(1.14F);
     private static final CosmeticFrame LEGS_FRAME = new CosmeticFrame(0.58F);
-    private static final CosmeticFrame FEET_FRAME = new CosmeticFrame(0.2F);
     private static final CosmeticFrame BACK_FRAME = new CosmeticFrame(1.08F);
     public static final Identifier EQUIPPED_BORDER = Identifier.fromNamespaceAndPath("bedrockskins", "container/equipped_item_border");
 
@@ -97,15 +96,11 @@ public final class GuiUtils {
     private static void renderEntityInRect(GuiGraphicsExtractor gui, PreviewPlayer preview, float yawOffset,
                                            int left, int top, int right, int bottom, int sizeCap, float baseYaw,
                                            float heightScale) {
-        AvatarRenderState state = new AvatarRenderState();
-        setupAvatarRenderState(state, preview, SkinManager.getSkin(preview.getUuid()), baseYaw + yawOffset, false, 0.0F);
-        
-        state.yRot = 0.0F;
-        state.xRot = 0.0F;
+        AvatarRenderState state = createAvatarRenderState(preview, baseYaw + yawOffset, false);
 
         int height = bottom - top;
         int size = Math.max(1, Math.min(Math.round(height * heightScale), sizeCap));
-        float centerY = isUpsideDown(preview.getUuid()) ? -0.9F : 0.9F;
+        float centerY = isUpsideDown(preview) ? -0.9F : 0.9F;
         TEMP_TRANSLATE.set(0.0F, centerY, 0.0F);
         TEMP_BODY_ROT.identity().rotationZ((float) Math.PI).rotateX(-0.1F);
         TEMP_CAM_ROT.identity(); 
@@ -122,17 +117,12 @@ public final class GuiUtils {
     }
 
     public static void renderCapeInRect(GuiGraphicsExtractor gui, PreviewPlayer preview, float hoverYaw, int left, int top, int right, int bottom) {
-        AvatarRenderState state = new AvatarRenderState();
         float finalYaw = -35.0F + hoverYaw;
-        setupAvatarRenderState(state, preview, SkinManager.getSkin(preview.getUuid()), finalYaw, false, 0.0F);
-        state.ageInTicks = 0.0F;
-        
-        state.yRot = 0.0F;
-        state.xRot = 0.0F;
+        AvatarRenderState state = createAvatarRenderState(preview, finalYaw, true);
 
         int height = bottom - top;
         int size = (int) (height * 0.78F);
-        float centerY = isUpsideDown(preview.getUuid()) ? -0.9F : 0.9F;
+        float centerY = isUpsideDown(preview) ? -0.9F : 0.9F;
         TEMP_TRANSLATE_CAPE.set(0.0F, centerY, 0.0F);
         TEMP_BODY_ROT_CAPE.identity().rotationZ((float) Math.PI).rotateX(-0.22F);
         TEMP_CAM_ROT_CAPE.identity(); 
@@ -146,16 +136,11 @@ public final class GuiUtils {
     public static void renderCosmeticInRect(GuiGraphicsExtractor gui, PreviewPlayer preview,
                                             String type, int left, int top, int right, int bottom) {
         boolean back = "persona_back".equals(type);
-        AvatarRenderState state = new AvatarRenderState();
-        setupAvatarRenderState(state, preview, SkinManager.getSkin(preview.getUuid()),
-            back ? -35.0F : 135.0F, false, 0.0F);
-        state.ageInTicks = 0.0F;
-        state.yRot = 0.0F;
-        state.xRot = 0.0F;
+        AvatarRenderState state = createAvatarRenderState(preview, back ? -35.0F : 135.0F, true);
 
         CosmeticFrame frame = cosmeticFrame(type);
         int size = Math.max(1, Math.round((bottom - top) * COSMETIC_PREVIEW_SCALE));
-        Vector3f translation = frame.translation(isUpsideDown(preview.getUuid()));
+        Vector3f translation = frame.translation(isUpsideDown(preview));
 
         //~ if >=26.1 '.submitEntityRenderState' -> '.entity' {
         gui.entity(state, size, translation, COSMETIC_BODY_ROT,
@@ -171,11 +156,19 @@ public final class GuiUtils {
             case "persona_hood" -> HOOD_FRAME;
             case "persona_arms", "persona_hand" -> ARMS_FRAME;
             case "persona_top", "persona_outerwear" -> TORSO_FRAME;
-            case "persona_bottom", "persona_high_pants", "persona_legs" -> LEGS_FRAME;
-            case "persona_feet" -> FEET_FRAME;
+            case "persona_bottom", "persona_high_pants", "persona_legs", "persona_feet" -> LEGS_FRAME;
             case "persona_back" -> BACK_FRAME;
             default -> WHOLE_BODY_FRAME;
         };
+    }
+
+    private static AvatarRenderState createAvatarRenderState(PreviewPlayer preview, float yaw, boolean freezeAnimation) {
+        AvatarRenderState state = new AvatarRenderState();
+        setupAvatarRenderState(state, preview, yaw, false, 0.0F);
+        if (freezeAnimation) state.ageInTicks = 0.0F;
+        state.yRot = 0.0F;
+        state.xRot = 0.0F;
+        return state;
     }
 
     private record CosmeticFrame(Vector3f normalTranslation, Vector3f upsideDownTranslation) {
@@ -284,8 +277,8 @@ public final class GuiUtils {
         } catch (Exception ignored) {}
     }
 
-    private static boolean isUpsideDown(UUID uuid) {
-        SkinId id = SkinManager.getSkin(uuid);
+    private static boolean isUpsideDown(PreviewPlayer preview) {
+        SkinId id = SkinManager.getSkin(preview.getUuid());
         if (id == null) return false;
         
         LoadedSkin skin = SkinPackLoader.getLoadedSkin(id);

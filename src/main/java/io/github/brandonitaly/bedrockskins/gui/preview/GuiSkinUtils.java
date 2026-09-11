@@ -15,7 +15,6 @@ import io.github.brandonitaly.bedrockskins.client.persistence.StateManager;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 public final class GuiSkinUtils {
 
@@ -74,10 +73,10 @@ public final class GuiSkinUtils {
         }
     }
 
-    public static void applyAutoSelectedPreview(Minecraft minecraft, PreviewPlayer previewPlayer, UUID previewUuid) {
+    public static void applyAutoSelectedPreview(Minecraft minecraft, PreviewPlayer previewPlayer) {
         if (previewPlayer == null) return;
         
-        SkinManager.resetPreviewSkin(previewUuid);
+        SkinManager.resetPreviewSkin(previewPlayer.getUuid());
         previewPlayer.clearForcedBody();
         previewPlayer.clearForcedModel();
         SkinId capeOverrideId = SkinManager.getLocalCapeOverride();
@@ -94,7 +93,6 @@ public final class GuiSkinUtils {
             previewPlayer.clearForcedCape();
         }
         refreshAutoSelectedProfileSkin(minecraft, previewPlayer);
-        previewPlayer.setUseLocalPlayerModel(false);
     }
 
     public static void refreshAutoSelectedProfileSkin(Minecraft minecraft, PreviewPlayer previewPlayer) {
@@ -117,21 +115,21 @@ public final class GuiSkinUtils {
         }
     }
 
-    public static void applyLoadedSkinPreview(PreviewPlayer previewPlayer, UUID previewUuid, LoadedSkin skin) {
-        applyLoadedSkinPreview(previewPlayer, previewUuid, skin, true);
+    public static void applyLoadedSkinPreview(PreviewPlayer previewPlayer, LoadedSkin skin) {
+        applyLoadedSkinPreview(previewPlayer, skin, true);
     }
 
-    public static void applyLoadedSkinPreview(PreviewPlayer previewPlayer, UUID previewUuid, LoadedSkin skin, boolean ignoreCapeOverrides) {
+    public static void applyLoadedSkinPreview(PreviewPlayer previewPlayer, LoadedSkin skin, boolean ignoreCapeOverrides) {
         if (previewPlayer == null) return;
+        var previewUuid = previewPlayer.getUuid();
 
         if (MinecraftAccountSkin.is(skin)) {
-            applyAutoSelectedPreview(Minecraft.getInstance(), previewPlayer, previewUuid);
+            applyAutoSelectedPreview(Minecraft.getInstance(), previewPlayer);
             return;
         }
 
         previewPlayer.clearForcedProfileSkin();
         previewPlayer.clearForcedBody();
-        previewPlayer.setUseLocalPlayerModel(false);
         if (skin != null) {
             boolean slim = MojangSkinManager.isSkinSlim(skin);
             previewPlayer.setForcedModel(slim ? PlayerModelType.SLIM : PlayerModelType.WIDE);
@@ -167,20 +165,16 @@ public final class GuiSkinUtils {
         }
     }
 
-    public static void applyCurrentEquippedSkin(Minecraft minecraft, PreviewPlayer previewPlayer, UUID previewUuid) {
+    public static void applyCurrentEquippedSkin(Minecraft minecraft, PreviewPlayer previewPlayer) {
         if (previewPlayer == null) return;
         SkinId currentKey = SkinManager.getLocalSelectedKey();
         if (currentKey != null) {
             LoadedSkin skin = SkinPackLoader.getLoadedSkin(currentKey);
             if (skin != null) {
-                applyLoadedSkinPreview(previewPlayer, previewUuid, skin, false);
+                applyLoadedSkinPreview(previewPlayer, skin, false);
                 return;
             }
         }
-        applyAutoSelectedPreview(minecraft, previewPlayer, previewUuid);
-    }
-
-    public static void cleanupPreview(UUID previewUuid) {
-        SkinManager.resetPreviewSkin(previewUuid);
+        applyAutoSelectedPreview(minecraft, previewPlayer);
     }
 }

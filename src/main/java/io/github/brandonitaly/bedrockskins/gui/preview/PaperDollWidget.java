@@ -9,7 +9,6 @@ import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
 import io.github.brandonitaly.bedrockskins.pack.model.SkinId;
 import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
 import io.github.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
-import com.mojang.authlib.GameProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -30,7 +29,6 @@ import org.lwjgl.glfw.GLFW;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
-import java.util.UUID;
 
 public class PaperDollWidget extends AbstractWidget {
     public static final int PREVIEW_W = 78;
@@ -43,7 +41,6 @@ public class PaperDollWidget extends AbstractWidget {
     private static final int SPACER = 8;
 
     private PreviewPlayer previewPlayer;
-    private final UUID previewUuid = UUID.randomUUID();
     private final SpriteIconButton openSkinButton;
     private final Screen parentScreen;
 
@@ -58,11 +55,10 @@ public class PaperDollWidget extends AbstractWidget {
 
         Minecraft minecraft = Minecraft.getInstance();
         String name = minecraft.getGameProfile() != null ? minecraft.getGameProfile().name() : "Preview";
-        this.previewPlayer = new PreviewPlayer(new GameProfile(this.previewUuid, name));
+        this.previewPlayer = new PreviewPlayer(name);
         this.previewPlayer.setShowNameTag(true);
-        this.previewPlayer.setDisplayName(Component.literal(name));
         updatePreviewSkin(minecraft);
-        PersonaManager.setPreviewFromLocal(this.previewUuid);
+        PersonaManager.setPreviewFromLocal(this.previewPlayer.getUuid());
 
         this.openSkinButton = SpriteIconButton.builder(
             Component.empty(),
@@ -121,7 +117,7 @@ public class PaperDollWidget extends AbstractWidget {
     }
 
     private void updatePreviewSkin(Minecraft minecraft) {
-        GuiSkinUtils.applyCurrentEquippedSkin(minecraft, previewPlayer, previewUuid);
+        GuiSkinUtils.applyCurrentEquippedSkin(minecraft, previewPlayer);
     }
 
     private boolean isMouseOverModel(int mouseX, int mouseY) {
@@ -138,7 +134,7 @@ public class PaperDollWidget extends AbstractWidget {
 
         // The paper doll uses a synthetic UUID, so keep its Persona preview bound
         // to the persisted local loadout rather than a world-only player entity.
-        PersonaManager.setPreviewFromLocal(this.previewUuid);
+        PersonaManager.setPreviewFromLocal(this.previewPlayer.getUuid());
 
         Minecraft minecraft = Minecraft.getInstance();
         if (SkinManager.getLocalSelectedKey() == null) {
@@ -203,8 +199,9 @@ public class PaperDollWidget extends AbstractWidget {
     }
 
     public void removed() {
-        SkinManager.resetPreviewSkin(this.previewUuid);
-        PersonaManager.clearPreview(this.previewUuid);
-        this.previewPlayer = null;
+        if (this.previewPlayer != null) {
+            this.previewPlayer.close();
+            this.previewPlayer = null;
+        }
     }
 }

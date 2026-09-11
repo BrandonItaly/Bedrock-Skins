@@ -22,7 +22,6 @@ import io.github.brandonitaly.bedrockskins.pack.model.LoadedEmote;
 import io.github.brandonitaly.bedrockskins.client.appearance.emote.EmoteManager;
 import io.github.brandonitaly.bedrockskins.pack.model.SkinId;
 import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
-import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -37,7 +36,6 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
@@ -72,7 +70,6 @@ public class SkinPreviewPanel {
     private SkinId currentSkinId;
     private Screen parentScreen;
     private PreviewPlayer dummyPlayer;
-    private UUID dummyUuid = UUID.randomUUID();
     private float rotationX = 0;
     private int lastMouseX = 0;
     private boolean isDraggingPreview = false;
@@ -91,14 +88,14 @@ public class SkinPreviewPanel {
     public LoadedEmote getSelectedEmote() { return selectedEmote; }
 
     public void playEmote(LoadedEmote emote) {
-        if (dummyPlayer != null && emote != null) EmoteManager.play(dummyUuid, emote);
+        if (dummyPlayer != null && emote != null) EmoteManager.play(dummyPlayer.getUuid(), emote);
     }
 
     public void setSelectedEmote(LoadedEmote emote) {
         this.selectedEmote = emote;
         if (dummyPlayer != null) {
-            if (emote == null) EmoteManager.stop(dummyUuid);
-            else EmoteManager.play(dummyUuid, emote);
+            if (emote == null) EmoteManager.stop(dummyPlayer.getUuid());
+            else EmoteManager.play(dummyPlayer.getUuid(), emote);
         }
         updateFavoriteButton();
     }
@@ -106,14 +103,14 @@ public class SkinPreviewPanel {
     public void setSelectedCosmetic(LoadedCosmetic cosmetic) {
         this.selectedCosmetic = cosmetic;
         if (dummyPlayer != null) {
-            PersonaManager.setPreviewWithEquipped(dummyUuid, cosmetic);
-            if (cosmetic != null) EmoteManager.playDressingRoom(dummyUuid, cosmetic.type);
+            PersonaManager.setPreviewWithEquipped(dummyPlayer.getUuid(), cosmetic);
+            if (cosmetic != null) EmoteManager.playDressingRoom(dummyPlayer.getUuid(), cosmetic.type);
         }
         updateFavoriteButton();
     }
 
     public void refreshSelectedCosmeticPreview() {
-        if (dummyPlayer != null) PersonaManager.setPreviewWithEquipped(dummyUuid, selectedCosmetic);
+        if (dummyPlayer != null) PersonaManager.setPreviewWithEquipped(dummyPlayer.getUuid(), selectedCosmetic);
         updateFavoriteButton();
     }
 
@@ -131,7 +128,7 @@ public class SkinPreviewPanel {
     }
 
     public void playCapeSelectionAnimation() {
-        if (dummyPlayer != null) EmoteManager.playDressingRoom(dummyUuid, "persona_back");
+        if (dummyPlayer != null) EmoteManager.playDressingRoom(dummyPlayer.getUuid(), "persona_back");
     }
 
     public void init(int x, int y, int w, int h, Screen parentScreen, Consumer<AbstractWidget> widgetAdder) {
@@ -236,21 +233,19 @@ public class SkinPreviewPanel {
 
     public void initPreviewState() {
         if (this.selectedSkin != null) {
-            updatePreviewModel(this.dummyUuid,
-                MinecraftAccountSkin.is(this.selectedSkin) ? null : this.selectedSkin.skinId);
+            updatePreviewModel(MinecraftAccountSkin.is(this.selectedSkin) ? null : this.selectedSkin.skinId);
             updateFavoriteButton();
             return;
         }
 
         SkinId currentKey = SkinManager.getLocalSelectedKey();
         if (currentKey != null) {
-            this.dummyUuid = UUID.randomUUID();
             this.currentSkinId = currentKey;
             this.selectedSkin = SkinPackLoader.getLoadedSkin(currentKey);
-            updatePreviewModel(dummyUuid, currentKey);
+            updatePreviewModel(currentKey);
         } else {
             this.currentSkinId = null;
-            updatePreviewModel(dummyUuid, null);
+            updatePreviewModel(null);
         }
         updateFavoriteButton();
     }
@@ -260,25 +255,18 @@ public class SkinPreviewPanel {
         this.skinSelectedFromGrid = skin != null;
         this.currentSkinId = skin != null && !MinecraftAccountSkin.is(skin) ? skin.skinId : null;
         updateFavoriteButton();
-        if (skin != null) updatePreviewModel(dummyUuid,
-            MinecraftAccountSkin.is(skin) ? null : skin.skinId);
+        if (skin != null) updatePreviewModel(MinecraftAccountSkin.is(skin) ? null : skin.skinId);
     }
 
-    private void updatePreviewModel(UUID uuid, SkinId skinId) {
-        if (!this.dummyUuid.equals(uuid)) {
-            GuiSkinUtils.cleanupPreview(this.dummyUuid);
-            PersonaManager.clearPreview(this.dummyUuid);
-            EmoteManager.stop(this.dummyUuid);
-        }
-        this.dummyUuid = uuid;
-        
+    private void updatePreviewModel(SkinId skinId) {
+        if (dummyPlayer != null) dummyPlayer.close();
         String name = minecraft.player != null ? minecraft.player.getName().getString() : "Preview";
-        dummyPlayer = new PreviewPlayer(new GameProfile(uuid, name));
+        dummyPlayer = new PreviewPlayer(name);
 
         if (skinId == null) {
             applyAutoSelectedSkinBehavior();
         } else {
-            GuiSkinUtils.applyLoadedSkinPreview(dummyPlayer, uuid, selectedSkin, false);
+            GuiSkinUtils.applyLoadedSkinPreview(dummyPlayer, selectedSkin, false);
         }
         restorePreviewAppearance();
     }
@@ -286,20 +274,20 @@ public class SkinPreviewPanel {
     private void restorePreviewAppearance() {
         if (dummyPlayer == null) return;
 
-        if (selectedCosmetic != null) PersonaManager.setPreviewWithEquipped(dummyUuid, selectedCosmetic);
-        else PersonaManager.setPreviewFromLocal(dummyUuid);
+        if (selectedCosmetic != null) PersonaManager.setPreviewWithEquipped(dummyPlayer.getUuid(), selectedCosmetic);
+        else PersonaManager.setPreviewFromLocal(dummyPlayer.getUuid());
         applySelectedCapePreview();
 
         if (selectedEmote != null) {
-            EmoteManager.play(dummyUuid, selectedEmote);
+            EmoteManager.play(dummyPlayer.getUuid(), selectedEmote);
         } else if (selectedCosmetic != null
                 && parentScreen instanceof SkinSelectionScreen screen
                 && screen.getActiveTab() == AppearanceTab.COSMETICS) {
-            EmoteManager.playDressingRoom(dummyUuid, selectedCosmetic.type);
+            EmoteManager.playDressingRoom(dummyPlayer.getUuid(), selectedCosmetic.type);
         } else if (selectedCape != null
                 && parentScreen instanceof SkinSelectionScreen screen
                 && screen.getActiveTab() == AppearanceTab.CAPES) {
-            EmoteManager.playDressingRoom(dummyUuid, "persona_back");
+            EmoteManager.playDressingRoom(dummyPlayer.getUuid(), "persona_back");
         }
     }
 
@@ -320,7 +308,7 @@ public class SkinPreviewPanel {
     }
 
     private void applyAutoSelectedSkinBehavior() {
-        GuiSkinUtils.applyAutoSelectedPreview(minecraft, dummyPlayer, dummyUuid);
+        GuiSkinUtils.applyAutoSelectedPreview(minecraft, dummyPlayer);
     }
 
     private void applySkin() {
@@ -347,11 +335,11 @@ public class SkinPreviewPanel {
         if (MinecraftAccountSkin.is(selectedSkin)) {
             currentSkinId = null;
             GuiSkinUtils.resetSelectedSkin(minecraft);
-            updatePreviewModel(dummyUuid, null);
+            updatePreviewModel(null);
             updateFavoriteButton();
             return;
         }
-        SkinManager.setSkin(dummyUuid, selectedSkin.skinId);
+        SkinManager.setSkin(dummyPlayer.getUuid(), selectedSkin.skinId);
         try {
             GuiSkinUtils.applySelectedSkin(minecraft, selectedSkin);
         } catch (Exception e) {
@@ -365,7 +353,7 @@ public class SkinPreviewPanel {
     private void applyCosmetic() {
         if (selectedCosmetic == null) return;
         PersonaManager.toggleLocal(selectedCosmetic);
-        PersonaManager.setPreviewFromLocal(dummyUuid);
+        PersonaManager.setPreviewFromLocal(dummyPlayer.getUuid());
         updateFavoriteButton();
     }
 
@@ -378,7 +366,7 @@ public class SkinPreviewPanel {
 
     private void replaySelectedEmote() {
         if (selectedEmote != null && dummyPlayer != null) {
-            EmoteManager.play(dummyUuid, selectedEmote);
+            EmoteManager.play(dummyPlayer.getUuid(), selectedEmote);
         }
     }
 
@@ -525,7 +513,7 @@ public class SkinPreviewPanel {
                 selectedSkin = null;
                 skinSelectedFromGrid = false;
                 currentSkinId = null;
-                updatePreviewModel(dummyUuid, null);
+                updatePreviewModel(null);
                 updateFavoriteButton();
                 if (parentScreen instanceof SkinSelectionScreen selectionScreen) {
                     selectionScreen.onResourcesReloaded();
@@ -841,11 +829,8 @@ public class SkinPreviewPanel {
     }
 
     public void cleanup() {
-        GuiSkinUtils.cleanupPreview(this.dummyUuid);
-        PersonaManager.clearPreview(this.dummyUuid);
-        EmoteManager.stop(this.dummyUuid);
+        if (this.dummyPlayer != null) this.dummyPlayer.close();
         this.dummyPlayer = null;
-        this.dummyUuid = UUID.randomUUID();
     }
     
     private static class FavoriteHeartButton {

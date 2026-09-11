@@ -5,7 +5,6 @@ import io.github.brandonitaly.bedrockskins.gui.preview.GuiSkinUtils;
 import io.github.brandonitaly.bedrockskins.gui.preview.GuiUtils;
 import io.github.brandonitaly.bedrockskins.gui.preview.PreviewPlayer;
 import io.github.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
-import com.mojang.authlib.GameProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -13,7 +12,6 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -69,16 +67,14 @@ public class CapeGridWidget extends CardGridWidget<CapeGridWidget.CapeCell> {
 
     protected static final class CapeCell {
         private final MinecraftCape cape;
-        private final UUID uuid = UUID.randomUUID();
         private final String name;
         private PreviewPlayer player;
         private CapeCell(MinecraftCape cape) { this.cape = cape; this.name = cape.alias; }
 
         private PreviewPlayer player() {
             if (player == null) {
-                player = new PreviewPlayer(new GameProfile(uuid, ""));
-                player.clearForcedProfileSkin();
-                player.clearForcedBody();
+                player = new PreviewPlayer("");
+                GuiSkinUtils.applyCurrentEquippedSkin(Minecraft.getInstance(), player);
                 player.setForcedCape("none".equals(cape.id) ? null : cape.textureIdentifier);
             }
             return player;
@@ -86,7 +82,7 @@ public class CapeGridWidget extends CardGridWidget<CapeGridWidget.CapeCell> {
 
         private void cleanup() {
             if (player == null) return;
-            GuiSkinUtils.cleanupPreview(uuid);
+            player.close();
             player = null;
         }
     }

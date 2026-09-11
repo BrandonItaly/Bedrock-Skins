@@ -13,7 +13,6 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -42,19 +41,14 @@ public final class EmoteGridWidget extends PersonaPreviewGridWidget<LoadedEmote>
     }
 
     @Override
-    protected void initializePreview(UUID uuid, LoadedEmote emote) {
-        EmoteManager.play(uuid, emote);
+    protected void initializePreview(PreviewPlayer player, LoadedEmote emote) {
+        EmoteManager.play(player.getUuid(), emote);
     }
 
     @Override
-    protected void cleanupPreview(UUID uuid, LoadedEmote emote) {
-        EmoteManager.stop(uuid);
-    }
-
-    @Override
-    protected void beforeRender(UUID uuid, LoadedEmote emote) {
-        if (!EmoteManager.isPlaying(uuid)) {
-            EmoteManager.play(uuid, emote);
+    protected void beforeRender(PreviewPlayer player, LoadedEmote emote) {
+        if (!EmoteManager.isPlaying(player.getUuid())) {
+            EmoteManager.play(player.getUuid(), emote);
         }
     }
 

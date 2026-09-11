@@ -1,6 +1,8 @@
 package io.github.brandonitaly.bedrockskins.gui.preview;
 
-import com.mojang.authlib.GameProfile;
+import io.github.brandonitaly.bedrockskins.client.appearance.emote.EmoteManager;
+import io.github.brandonitaly.bedrockskins.client.appearance.persona.PersonaManager;
+import io.github.brandonitaly.bedrockskins.client.appearance.skin.SkinManager;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.DefaultPlayerSkin;
@@ -11,29 +13,23 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerModelType;
 import net.minecraft.world.entity.player.PlayerSkin;
 
-public final class PreviewPlayer {
+public final class PreviewPlayer implements AutoCloseable {
 
-    private final GameProfile profile;
+    private final UUID uuid = UUID.randomUUID();
     private boolean showNameTag = false;
-    private Component displayName;
+    private final Component displayName;
     private ClientAsset.Texture forcedCapeTexture = null;
     private boolean hasForcedCapeOverride = false;
     private ClientAsset.Texture forcedBody = null;
     private PlayerSkin forcedProfileSkin = null;
     private PlayerModelType forcedModel = null;
-    private boolean useLocalPlayerModel = false;
 
-    public PreviewPlayer(GameProfile profile) {
-        this.profile = profile;
-        this.displayName = Component.literal(profile.name() == null ? "Preview" : profile.name());
+    public PreviewPlayer(String name) {
+        this.displayName = Component.literal(name == null ? "Preview" : name);
     }
 
     public UUID getUuid() {
-        return profile.id();
-    }
-
-    public GameProfile getProfile() {
-        return profile;
+        return uuid;
     }
 
     public boolean shouldShowName() {
@@ -46,10 +42,6 @@ public final class PreviewPlayer {
 
     public void setShowNameTag(boolean showNameTag) {
         this.showNameTag = showNameTag;
-    }
-
-    public void setDisplayName(Component displayName) {
-        this.displayName = displayName;
     }
 
     // Sets a cape to be forced on the player preview
@@ -87,10 +79,6 @@ public final class PreviewPlayer {
         this.forcedModel = null;
     }
 
-    public void setUseLocalPlayerModel(boolean useLocalPlayerModel) {
-        this.useLocalPlayerModel = useLocalPlayerModel;
-    }
-
     public PlayerSkin getSkin(Minecraft minecraft) {
         PlayerSkin original;
 
@@ -103,7 +91,7 @@ public final class PreviewPlayer {
             } else if (minecraft.player != null) {
                 original = minecraft.player.getSkin();
             } else {
-                original = DefaultPlayerSkin.get(profile.id());
+                original = DefaultPlayerSkin.get(uuid);
             }
         }
 
@@ -128,9 +116,7 @@ public final class PreviewPlayer {
 
         var finalModel = forcedModel != null
             ? forcedModel
-            : ((useLocalPlayerModel && minecraft.player != null)
-                ? minecraft.player.getSkin().model()
-                : original.model());
+            : original.model();
 
         // Only allocate a new PlayerSkin if something actually changed.
         if (finalBody == original.body() && finalCape == original.cape() && finalModel == original.model()) {
@@ -138,5 +124,12 @@ public final class PreviewPlayer {
         }
 
         return new PlayerSkin(finalBody, finalCape, original.elytra(), finalModel, original.secure());
+    }
+
+    @Override
+    public void close() {
+        SkinManager.resetPreviewSkin(getUuid());
+        PersonaManager.clearPreview(getUuid());
+        EmoteManager.stop(getUuid());
     }
 }

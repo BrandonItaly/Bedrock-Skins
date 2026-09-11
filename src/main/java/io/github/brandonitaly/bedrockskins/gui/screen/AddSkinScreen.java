@@ -11,7 +11,6 @@ import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
 import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
 import io.github.brandonitaly.bedrockskins.pack.editor.WritableSkinPack;
 import io.github.brandonitaly.bedrockskins.client.integration.NativeFileDialog;
-import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
@@ -24,7 +23,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.UUID;
 
 public class AddSkinScreen extends SkinDialogScreen {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -44,8 +42,6 @@ public class AddSkinScreen extends SkinDialogScreen {
     private LoadedSkin customSlimGeometryPreview;
     private PreviewPlayer customGeometryPlayer;
     private PreviewPlayer customSlimGeometryPlayer;
-    private final UUID customGeometryUuid = UUID.randomUUID();
-    private final UUID customSlimUuid = UUID.randomUUID();
     private String skinNameValue = "";
     private Component capeButtonLabel = Component.translatable("bedrockskins.button.select_cape");
 
@@ -225,14 +221,14 @@ public class AddSkinScreen extends SkinDialogScreen {
 
     private void setupGeometryPlayers() {
         if (customGeometryPlayer == null) {
-            customGeometryPlayer = new PreviewPlayer(new GameProfile(customGeometryUuid, "Wide"));
+            customGeometryPlayer = new PreviewPlayer("Wide");
         }
         if (customSlimGeometryPlayer == null) {
-            customSlimGeometryPlayer = new PreviewPlayer(new GameProfile(customSlimUuid, "Slim"));
+            customSlimGeometryPlayer = new PreviewPlayer("Slim");
         }
 
-        GuiSkinUtils.applyLoadedSkinPreview(customGeometryPlayer, customGeometryUuid, customGeometryPreview);
-        GuiSkinUtils.applyLoadedSkinPreview(customSlimGeometryPlayer, customSlimUuid, customSlimGeometryPreview);
+        GuiSkinUtils.applyLoadedSkinPreview(customGeometryPlayer, customGeometryPreview);
+        GuiSkinUtils.applyLoadedSkinPreview(customSlimGeometryPlayer, customSlimGeometryPreview);
     }
 
     private void renderGeometrySelector(net.minecraft.client.gui.GuiGraphicsExtractor gui, int mouseX, int mouseY) {
@@ -310,8 +306,8 @@ public class AddSkinScreen extends SkinDialogScreen {
     private void cleanupGeometryPreviews() {
         if (customGeometryPreview != null) SkinPackLoader.removeLoadedSkin(customGeometryPreview.skinId);
         if (customSlimGeometryPreview != null) SkinPackLoader.removeLoadedSkin(customSlimGeometryPreview.skinId);
-        GuiSkinUtils.cleanupPreview(customGeometryUuid);
-        GuiSkinUtils.cleanupPreview(customSlimUuid);
+        if (customGeometryPlayer != null) customGeometryPlayer.close();
+        if (customSlimGeometryPlayer != null) customSlimGeometryPlayer.close();
     }
 
     private static JsonObject createGeometryData(String geometryId) {

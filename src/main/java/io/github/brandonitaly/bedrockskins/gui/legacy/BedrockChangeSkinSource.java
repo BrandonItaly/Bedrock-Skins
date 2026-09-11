@@ -11,7 +11,6 @@ import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
 import io.github.brandonitaly.bedrockskins.pack.model.SkinId;
 import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
 import io.github.brandonitaly.bedrockskins.util.PackSortUtil;
-import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -46,7 +45,7 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
         @Override
         protected boolean removeEldestEntry(Map.Entry<String, PreviewState> eldest) {
             if (size() > MAX_PREVIEWS) {
-                GuiSkinUtils.cleanupPreview(eldest.getValue().uuid);
+                eldest.getValue().player.close();
                 return true;
             }
             return false;
@@ -196,7 +195,7 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
             AvatarRenderState renderState = new AvatarRenderState();
             float yaw = Mth.wrapDegrees(yawOffset + 180.0F);
 
-            GuiUtils.setupAvatarRenderState(renderState, state.player, skin.skinId, yaw, crouchPose, attackTime);
+            GuiUtils.setupAvatarRenderState(renderState, state.player, yaw, crouchPose, attackTime);
             
             renderState.yRot = yaw;
             renderState.xRot = 0.0F;
@@ -363,14 +362,13 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
         if (skinId == null || skinId.isBlank()) return null;
 
         return previews.computeIfAbsent(skinId, id -> {
-            UUID uuid = UUID.randomUUID();
             String name = minecraft.player != null ? minecraft.player.getName().getString() : "Preview";
-            return new PreviewState(uuid, new PreviewPlayer(new GameProfile(uuid, name)));
+            return new PreviewState(new PreviewPlayer(name));
         });
     }
 
     private static void applyPreviewSkin(PreviewState state, LoadedSkin skin, String skinId) {
-        GuiSkinUtils.applyLoadedSkinPreview(state.player, state.uuid, skin);
+        GuiSkinUtils.applyLoadedSkinPreview(state.player, skin);
         state.skinId = skinId;
     }
 
@@ -380,12 +378,10 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
     }
 
     private static final class PreviewState {
-        private final UUID uuid;
         private final PreviewPlayer player;
         private String skinId = "";
 
-        private PreviewState(UUID uuid, PreviewPlayer player) {
-            this.uuid = uuid;
+        private PreviewState(PreviewPlayer player) {
             this.player = player;
         }
     }

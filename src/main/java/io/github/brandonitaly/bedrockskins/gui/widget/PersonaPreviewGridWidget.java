@@ -3,7 +3,6 @@ package io.github.brandonitaly.bedrockskins.gui.widget;
 import io.github.brandonitaly.bedrockskins.gui.preview.GuiSkinUtils;
 import io.github.brandonitaly.bedrockskins.gui.preview.GuiUtils;
 import io.github.brandonitaly.bedrockskins.gui.preview.PreviewPlayer;
-import com.mojang.authlib.GameProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -12,7 +11,6 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import io.github.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -35,12 +33,11 @@ abstract class PersonaPreviewGridWidget<T>
 
     protected abstract String id(T value);
     protected abstract Component name(T value);
-    protected abstract void initializePreview(UUID uuid, T value);
-    protected abstract void cleanupPreview(UUID uuid, T value);
-    protected void initializePlayerAppearance(UUID uuid, T value, PreviewPlayer player) {
-        GuiSkinUtils.applyCurrentEquippedSkin(Minecraft.getInstance(), player, uuid);
+    protected abstract void initializePreview(PreviewPlayer player, T value);
+    protected void initializePlayerAppearance(T value, PreviewPlayer player) {
+        GuiSkinUtils.applyCurrentEquippedSkin(Minecraft.getInstance(), player);
     }
-    protected void beforeRender(UUID uuid, T value) {}
+    protected void beforeRender(PreviewPlayer player, T value) {}
     protected void renderOverlay(T value, GuiGraphicsExtractor graphics, int x, int y) {}
     protected boolean isEquipped(T value) { return false; }
     protected void renderPaperDoll(T value, PreviewPlayer preview, GuiGraphicsExtractor graphics,
@@ -57,7 +54,7 @@ abstract class PersonaPreviewGridWidget<T>
     protected final void renderCell(PreviewCell<T> cell, GuiGraphicsExtractor graphics, int x, int y,
                                     boolean hovered, int mouseX, int mouseY) {
         PreviewPlayer preview = cell.player(this);
-        beforeRender(cell.uuid, cell.value);
+        beforeRender(preview, cell.value);
         T current = selected.get();
         boolean valueSelected = current != null && id(current).equals(id(cell.value));
         var cardSprite = valueSelected ? BedrockSkinsSprites.CARD_SELECTED
@@ -83,22 +80,20 @@ abstract class PersonaPreviewGridWidget<T>
     @Override
     protected final void cleanupCell(PreviewCell<T> cell) {
         if (cell.player == null) return;
-        cleanupPreview(cell.uuid, cell.value);
-        GuiSkinUtils.cleanupPreview(cell.uuid);
+        cell.player.close();
         cell.player = null;
     }
 
     protected static final class PreviewCell<T> {
         private final T value;
-        private final UUID uuid = UUID.randomUUID();
         private PreviewPlayer player;
         private PreviewCell(T value) { this.value = value; }
 
         private PreviewPlayer player(PersonaPreviewGridWidget<T> grid) {
             if (player == null) {
-                player = new PreviewPlayer(new GameProfile(uuid, ""));
-                grid.initializePlayerAppearance(uuid, value, player);
-                grid.initializePreview(uuid, value);
+                player = new PreviewPlayer("");
+                grid.initializePlayerAppearance(value, player);
+                grid.initializePreview(player, value);
             }
             return player;
         }

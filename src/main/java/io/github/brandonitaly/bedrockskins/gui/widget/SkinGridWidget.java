@@ -5,7 +5,6 @@ import io.github.brandonitaly.bedrockskins.gui.preview.GuiUtils;
 import io.github.brandonitaly.bedrockskins.gui.preview.PreviewPlayer;
 import io.github.brandonitaly.bedrockskins.gui.preview.MinecraftAccountSkin;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
-import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
@@ -16,7 +15,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 import org.slf4j.Logger;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -87,7 +85,6 @@ public class SkinGridWidget extends CardGridWidget<SkinGridWidget.SkinCell> {
         private final Runnable onClick;
         private final Component label;
         private final Component displayName;
-        private final UUID uuid = UUID.randomUUID();
         private final boolean actionCell;
         private PreviewPlayer player;
         private float hoverYaw;
@@ -116,9 +113,9 @@ public class SkinGridWidget extends CardGridWidget<SkinGridWidget.SkinCell> {
 
         private PreviewPlayer player() {
             if (player != null || actionCell) return player;
-            player = new PreviewPlayer(new GameProfile(uuid, ""));
+            player = new PreviewPlayer("");
             try {
-                GuiSkinUtils.applyLoadedSkinPreview(player, uuid, skin);
+                GuiSkinUtils.applyLoadedSkinPreview(player, skin);
             } catch (Exception exception) {
                 LOGGER.warn("Failed to apply skin preview for {}", skin != null ? skin.skinId : null, exception);
             }
@@ -127,7 +124,7 @@ public class SkinGridWidget extends CardGridWidget<SkinGridWidget.SkinCell> {
 
         private void cleanup() {
             if (actionCell || player == null) return;
-            GuiSkinUtils.cleanupPreview(uuid);
+            player.close();
             player = null;
         }
     }

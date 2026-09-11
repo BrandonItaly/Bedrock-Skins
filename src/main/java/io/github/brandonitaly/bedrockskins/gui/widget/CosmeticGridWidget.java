@@ -14,7 +14,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerModelType;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -42,23 +41,16 @@ public final class CosmeticGridWidget extends PersonaPreviewGridWidget<LoadedCos
     }
 
     @Override
-    protected void initializePreview(UUID uuid, LoadedCosmetic cosmetic) {
-        PersonaManager.setPreview(uuid, cosmetic);
+    protected void initializePreview(PreviewPlayer player, LoadedCosmetic cosmetic) {
+        PersonaManager.setPreview(player.getUuid(), cosmetic);
     }
 
     @Override
-    protected void initializePlayerAppearance(UUID uuid, LoadedCosmetic cosmetic, PreviewPlayer player) {
-        GuiSkinUtils.cleanupPreview(uuid);
+    protected void initializePlayerAppearance(LoadedCosmetic cosmetic, PreviewPlayer player) {
         player.clearForcedProfileSkin();
         player.setForcedBody(PERSONA_PREVIEW_TEXTURE);
         player.setForcedModel(PlayerModelType.WIDE);
-        player.setUseLocalPlayerModel(false);
         player.setForcedCape(null);
-    }
-
-    @Override
-    protected void cleanupPreview(UUID uuid, LoadedCosmetic cosmetic) {
-        PersonaManager.clearPreview(uuid);
     }
 
     @Override
