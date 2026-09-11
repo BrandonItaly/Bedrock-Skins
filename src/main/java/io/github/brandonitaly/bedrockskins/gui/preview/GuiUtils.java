@@ -27,6 +27,7 @@ import org.joml.Vector3f;
 import java.util.UUID;
 
 public final class GuiUtils {
+    public static final int PANEL_HEADER_HEIGHT = 26;
     
     private GuiUtils() {}
 
@@ -183,6 +184,22 @@ public final class GuiUtils {
         }
     }
 
+    public static void renderPackCard(GuiGraphicsExtractor gui, Font font, Component text, int x, int y, int w, int h, boolean hovered, boolean selected, int mouseX, int mouseY) {
+        renderPackCard(gui, font, text, x, y, w, h, hovered, selected, mouseX, mouseY, 1.0F);
+    }
+
+    public static void renderPackCard(GuiGraphicsExtractor gui, Font font, Component text, int x, int y, int w, int h, boolean hovered, boolean selected, int mouseX, int mouseY, float textScale) {
+        var cardSprite = selected ? BedrockSkinsSprites.CARD_SELECTED : (hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE);
+        gui.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, y, w, h);
+        int textX = x + 8;
+        int textY = y + (h - (int) (font.lineHeight * textScale)) / 2;
+        gui.pose().pushMatrix();
+        gui.pose().translate(textX, textY);
+        gui.pose().scale(textScale, textScale);
+        gui.text(font, text, 0, 0, selected || hovered ? 0xFFFFFFFF : 0xFFD7D7D7, false);
+        gui.pose().popMatrix();
+    }
+
     public static void safeRegisterTexture(String key) { 
         try { 
             SkinId id = SkinId.parse(key); 
@@ -206,7 +223,8 @@ public final class GuiUtils {
 
     public static void drawPanelChrome(GuiGraphicsExtractor gui, int x, int y, int w, int h, Component title, Font font) {
         gui.blitSprite(RenderPipelines.GUI_TEXTURED, BedrockSkinsSprites.PANEL_SPRITE, x - 1, y - 1, w + 2, h + 2);
-        gui.centeredText(font, title, x + (w / 2), y + 8, 0xFFFFFFFF);
+        gui.text(font, title, x + 8,
+            y + Math.max(0, (PANEL_HEADER_HEIGHT - font.lineHeight) / 2), 0xFFFFFFFF, false);
     }
 
     public static void renderNameTag(GuiGraphicsExtractor gui, Font font, Component text, int centerX, int topY) {

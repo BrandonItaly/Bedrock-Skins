@@ -92,7 +92,6 @@ public class SkinSelectionScreen extends Screen {
     private int displayedSkinColumns = -1;
     private int displayedCosmeticColumns = -1;
     private int displayedEmoteColumns = -1;
-    private int selectedEmoteSlot = 0;
     private String selectedCosmeticType = "all";
     private String selectedCapesCategory = "owned";
     private List<MinecraftCape> ownedCapes = null;
@@ -102,6 +101,14 @@ public class SkinSelectionScreen extends Screen {
 
     public AppearanceTab getActiveTab() { return activeTab; }
     public String getSelectedCapesCategory() { return selectedCapesCategory; }
+
+    void restorePreviewAfterFullScreen(float rotation) {
+        if (previewPanel != null) previewPanel.restoreAfterFullScreen(rotation);
+    }
+
+    void restorePreviewAfterChildScreen() {
+        if (previewPanel != null) previewPanel.initPreviewState();
+    }
 
     public SkinSelectionScreen(Screen parent) {
         this(parent, AppearanceTab.SKINS);
@@ -220,7 +227,10 @@ public class SkinSelectionScreen extends Screen {
         if (emoteSidebar != null) emoteSidebar.visible = isEmotes;
         if (isEmotes) {
             refreshEmoteGrid();
-            selectEmoteSlot(selectedEmoteSlot);
+            if (previewPanel != null && previewPanel.getSelectedEmote() == null
+                    && !EmoteManager.all().isEmpty()) {
+                previewPanel.setSelectedEmote(EmoteManager.all().getFirst());
+            }
         }
 
         if (!isCosmetics) colorPickerOpen = false;
@@ -299,7 +309,7 @@ public class SkinSelectionScreen extends Screen {
     }
 
     private void initWidgets(ScreenRectangle tabArea) {
-        int pHead = 24, pPad = 4;
+        int pHead = GuiUtils.PANEL_HEADER_HEIGHT, pPad = 4;
 
         // Skins Widgets
         int plY = rPacks.y + pHead + pPad, plH = rPacks.h - pHead - (pPad * 2);
@@ -369,7 +379,7 @@ public class SkinSelectionScreen extends Screen {
         cosmeticGrid.visible = activeTab == AppearanceTab.COSMETICS;
 
         if (cosmeticSearchBox == null) {
-            cosmeticSearchBox = new EditBox(font, 0, 0, 120, 20,
+            cosmeticSearchBox = new EditBox(font, 0, 0, 120, 14,
                 Component.translatable("bedrockskins.cosmetics.search"));
             cosmeticSearchBox.setHint(Component.translatable("bedrockskins.cosmetics.search"));
             cosmeticSearchBox.setMaxLength(64);
@@ -377,7 +387,7 @@ public class SkinSelectionScreen extends Screen {
             addRenderableWidget(cosmeticSearchBox);
         }
         int searchWidth = Math.min(120, Math.max(10, rSkins.w - pPad * 2));
-        cosmeticSearchBox.setPosition(rSkins.right() - pPad - searchWidth, rSkins.y + 2);
+        cosmeticSearchBox.setPosition(rSkins.right() - pPad - searchWidth, rSkins.y + 1);
         cosmeticSearchBox.setWidth(searchWidth);
 
         if (colorPickerButton == null) {
@@ -442,11 +452,7 @@ public class SkinSelectionScreen extends Screen {
         // Emotes Widgets
         if (emoteSidebar == null) {
             emoteSidebar = new SidebarListWidget(minecraft, rPacks.w - pPad * 2, cgH, cgY, 28, font);
-            for (int slot = 0; slot < EmoteManager.SLOT_COUNT; slot++) {
-                int slotIndex = slot;
-                emoteSidebar.add(Component.translatable("bedrockskins.emotes.slot", slot + 1),
-                    () -> selectEmoteSlot(slotIndex), () -> selectedEmoteSlot == slotIndex);
-            }
+            emoteSidebar.add(Component.translatable("bedrockskins.emotes.all"), () -> {}, () -> true);
             addRenderableWidget(emoteSidebar);
         }
         emoteSidebar.setPosition(rPacks.x + pPad, cgY);
@@ -625,7 +631,7 @@ public class SkinSelectionScreen extends Screen {
             }
         } else if (activeTab == AppearanceTab.EMOTES) {
             GuiUtils.drawPanelChrome(gui, rPacks.x, rPacks.y, rPacks.w, rPacks.h,
-                Component.translatable("bedrockskins.emotes.slots"), font);
+                Component.translatable("bedrockskins.gui.categories"), font);
             GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h,
                 Component.translatable("bedrockskins.gui.emotes"), font);
             if (EmoteManager.all().isEmpty()) {
@@ -638,7 +644,8 @@ public class SkinSelectionScreen extends Screen {
         if (activeTab == AppearanceTab.COSMETICS
                 && PersonaManager.isSideSelectable(previewPanel == null ? null : previewPanel.getSelectedCosmetic())) {
             gui.centeredText(font, selectedLimbSideLabel(), rPreview.x + rPreview.w / 2,
-                rPreview.y + 34, 0xFFFFFFFF);
+                rPreview.y + Math.max(0, (GuiUtils.PANEL_HEADER_HEIGHT - font.lineHeight) / 2),
+                0xFFFFFFFF);
         }
         super.extractRenderState(gui, mouseX, mouseY, delta);
         if (previewPanel != null) previewPanel.renderSprites(gui);
@@ -725,25 +732,9 @@ public class SkinSelectionScreen extends Screen {
         }
     }
 
-    private void selectEmoteSlot(int slot) {
-        selectedEmoteSlot = Math.max(0, Math.min(EmoteManager.SLOT_COUNT - 1, slot));
-        LoadedEmote emote = EmoteManager.slot(selectedEmoteSlot);
-        if (previewPanel != null) previewPanel.setSelectedEmote(emote);
-    }
-
-    public boolean isSelectedEmoteEquipped(LoadedEmote emote) {
-        if (emote == null) return false;
-        LoadedEmote equipped = EmoteManager.slot(selectedEmoteSlot);
-        return equipped != null && equipped.id().equals(emote.id());
-    }
-
-    public void toggleSelectedEmote(LoadedEmote emote) {
+    public void openEmoteSlotPicker(LoadedEmote emote) {
         if (emote == null) return;
-        if (isSelectedEmoteEquipped(emote)) {
-            EmoteManager.unequip(selectedEmoteSlot);
-        } else {
-            EmoteManager.equip(selectedEmoteSlot, emote);
-        }
+        minecraft.gui.setScreen(new EmoteWheelScreen(this, emote));
     }
 
     private void addCosmeticCategory(String type) {
@@ -768,7 +759,7 @@ public class SkinSelectionScreen extends Screen {
             int colorY = previewPanel != null ? previewPanel.floatingControlY() : rPreview.y;
             colorPickerButton.setPosition(colorX, colorY);
         }
-        int sideY = rPreview.y + 28;
+        int sideY = rPreview.y + (GuiUtils.PANEL_HEADER_HEIGHT - 20) / 2;
         if (previousSideButton != null) previousSideButton.setPosition(rPreview.x + 8, sideY);
         if (nextSideButton != null) nextSideButton.setPosition(rPreview.right() - 28, sideY);
     }
@@ -790,7 +781,8 @@ public class SkinSelectionScreen extends Screen {
             colorPalette.visible = colorsVisible;
             colorPalette.active = colorsVisible;
             colorPalette.setBounds(rCosmeticOptions.x + 4, customizationContentY(),
-                rCosmeticOptions.w - 8, rCosmeticOptions.h - 32);
+                rCosmeticOptions.w - 8,
+                rCosmeticOptions.h - GuiUtils.PANEL_HEADER_HEIGHT - 8);
         }
         if (previousSideButton != null) previousSideButton.visible = sideSelectable;
         if (nextSideButton != null) nextSideButton.visible = sideSelectable;
@@ -825,14 +817,15 @@ public class SkinSelectionScreen extends Screen {
         int pad = 4;
         rCosmeticCategories.set(rPacks.x, rPacks.y, rPacks.w, rPacks.h);
         rCosmeticOptions.set(rSkins.x, rSkins.y, rSkins.w, colors ? rSkins.h : 0);
-        int listY = rCosmeticCategories.y + 28;
+        int listY = rCosmeticCategories.y + GuiUtils.PANEL_HEADER_HEIGHT + pad;
         cosmeticSidebar.setPosition(rCosmeticCategories.x + pad, listY);
         cosmeticSidebar.setWidth(Math.max(10, rCosmeticCategories.w - pad * 2));
-        cosmeticSidebar.setHeight(Math.max(10, rCosmeticCategories.h - 32));
+        cosmeticSidebar.setHeight(Math.max(10,
+            rCosmeticCategories.h - GuiUtils.PANEL_HEADER_HEIGHT - pad * 2));
     }
 
     private int customizationContentY() {
-        return rCosmeticOptions.y + 28;
+        return rCosmeticOptions.y + GuiUtils.PANEL_HEADER_HEIGHT + 4;
     }
 
     private void refreshCosmeticGrid() {

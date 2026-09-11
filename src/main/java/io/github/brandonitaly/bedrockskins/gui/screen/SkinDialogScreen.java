@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Component;
 
 public abstract class SkinDialogScreen extends Screen {
     protected static final int PADDING_SIDE = 12;
-    protected static final int CONTENT_TOP = 30;
+    protected static final int CONTENT_TOP = GuiUtils.PANEL_HEADER_HEIGHT + 6;
     protected static final int SPACING_V = 4;
     protected static final int ELEMENT_HEIGHT = 20;
     protected static final int BUTTON_GAP_H = 4;

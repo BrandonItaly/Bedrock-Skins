@@ -25,8 +25,11 @@ public enum AppearanceTab {
 
     public Component title() {
         return Component.empty()
-            .append(Component.literal(icon).withStyle(style -> style.withFont(BedrockSkinsSprites.TAB_ICONS_FONT)))
-            .append(Component.literal(" "))
-            .append(Component.translatable(translationKey));
+            .append(Component.literal(icon).withStyle(style -> style
+                .withFont(BedrockSkinsSprites.TAB_ICONS_FONT)
+                .withShadowColor(0x00000000)))
+            .append(Component.literal(" ").withStyle(style -> style.withShadowColor(0x00000000)))
+            .append(Component.translatable(translationKey)
+                .withStyle(style -> style.withShadowColor(0x00000000)));
     }
 }

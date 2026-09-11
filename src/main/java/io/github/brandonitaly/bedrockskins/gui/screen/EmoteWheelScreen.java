@@ -7,13 +7,18 @@ import io.github.brandonitaly.bedrockskins.client.appearance.emote.EmoteManager;
 import io.github.brandonitaly.bedrockskins.client.BedrockSkinsClient;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedEmote;
 import io.github.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
+
+import java.util.List;
 
 /** Bedrock-style six-slot radial selector for Persona emotes. */
 public final class EmoteWheelScreen extends Screen {
@@ -25,20 +30,35 @@ public final class EmoteWheelScreen extends Screen {
     };
 
     private final Screen parent;
+    private final LoadedEmote emoteToEquip;
     private int hoveredSlot = -1;
 
     public EmoteWheelScreen(Screen parent) {
+        this(parent, null);
+    }
+
+    /** Creates a wheel that assigns one selected emote instead of playing a slot. */
+    public EmoteWheelScreen(Screen parent, LoadedEmote emoteToEquip) {
         super(Component.translatable("bedrockskins.emote_wheel.title"));
         this.parent = parent;
+        this.emoteToEquip = emoteToEquip;
     }
 
     @Override
     protected void init() {
         super.init();
         int buttonWidth = 120;
-        addRenderableWidget(Button.builder(
-            Component.translatable("bedrockskins.button.change_emotes"),
-            button -> minecraft.gui.setScreen(new SkinSelectionScreen(parent, AppearanceTab.EMOTES)))
+        Component buttonText = emoteToEquip == null
+            ? Component.translatable("bedrockskins.button.change_emotes")
+            : CommonComponents.GUI_CANCEL;
+        addRenderableWidget(Button.builder(buttonText,
+            button -> {
+                if (emoteToEquip == null) {
+                    minecraft.gui.setScreen(new SkinSelectionScreen(parent, AppearanceTab.EMOTES));
+                } else {
+                    onClose();
+                }
+            })
             .bounds((width - buttonWidth) / 2, changeButtonY(), buttonWidth, 20)
             .build());
     }
@@ -48,12 +68,15 @@ public final class EmoteWheelScreen extends Screen {
         int wheelX = (width - WHEEL_WIDTH) / 2;
         int wheelY = wheelY();
         hoveredSlot = slotAt(mouseX, mouseY, wheelX, wheelY);
-        if (emoteAt(hoveredSlot) == null) hoveredSlot = -1;
+        if (emoteToEquip == null && emoteAt(hoveredSlot) == null) hoveredSlot = -1;
+
+        int selectedSlot = emoteToEquip == null ? -1 : EmoteManager.slotOf(emoteToEquip);
+        int highlightedSlot = hoveredSlot >= 0 ? hoveredSlot : selectedSlot;
 
         gui.centeredText(font, title, width / 2, wheelY - 17, 0xFFFFFFFF);
         gui.blitSprite(RenderPipelines.GUI_TEXTURED,
-            hoveredSlot < 0 ? BedrockSkinsSprites.EMOTE_WHEEL_BASE
-                : BedrockSkinsSprites.EMOTE_WHEEL_SELECTIONS[hoveredSlot],
+            highlightedSlot < 0 ? BedrockSkinsSprites.EMOTE_WHEEL_BASE
+                : BedrockSkinsSprites.EMOTE_WHEEL_SELECTIONS[highlightedSlot],
             wheelX, wheelY, WHEEL_WIDTH, WHEEL_HEIGHT);
 
         for (int slot = 0; slot < SLOTS; slot++) {
@@ -85,14 +108,25 @@ public final class EmoteWheelScreen extends Screen {
             }
         }
 
+        LoadedEmote centerEmote = emoteToEquip != null ? emoteToEquip : emoteAt(hoveredSlot);
+        if (centerEmote != null) {
+            renderCenterLabel(gui, centerEmote.displayName(),
+                wheelX + WHEEL_WIDTH / 2, wheelY + WHEEL_HEIGHT / 2);
+        }
+
         if (EmoteManager.all().isEmpty()) {
             gui.centeredText(font, Component.translatable("bedrockskins.emotes.none"),
                 width / 2, wheelY + WHEEL_HEIGHT + 5, 0xFFAAAAAA);
-        } else {
-            LoadedEmote hovered = emoteAt(hoveredSlot);
-            Component footer = hovered == null
-                ? Component.translatable("bedrockskins.emote_wheel.cancel")
-                : Component.literal(hovered.displayName());
+        } else if (emoteToEquip != null) {
+            Component footer;
+            if (hoveredSlot < 0) {
+                footer = Component.translatable("bedrockskins.emote_wheel.choose_slot",
+                    emoteToEquip.displayName());
+            } else if (hoveredSlot == selectedSlot) {
+                footer = Component.translatable("bedrockskins.emote_wheel.unequip_slot", hoveredSlot + 1);
+            } else {
+                footer = Component.translatable("bedrockskins.emote_wheel.equip_slot", hoveredSlot + 1);
+            }
             gui.centeredText(font, footer, width / 2, wheelY + WHEEL_HEIGHT + 5, 0xFFFFFFFF);
         }
 
@@ -100,13 +134,17 @@ public final class EmoteWheelScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean handled) {
-        if (!handled && event.button() == 0) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
+        if (isLeftButton(event.button())) {
             int slot = slotAt(event.x(), event.y(), (width - WHEEL_WIDTH) / 2,
                 wheelY());
             if (choose(slot)) return true;
         }
-        return super.mouseClicked(event, handled);
+        return super.mouseClicked(event, doubled);
+    }
+
+    private static boolean isLeftButton(int button) {
+        return button == 0 || button == InputConstants.MOUSE_BUTTON_LEFT;
     }
 
     @Override
@@ -131,11 +169,21 @@ public final class EmoteWheelScreen extends Screen {
     }
 
     private boolean choose(int slot) {
+        if (slot < 0 || slot >= SLOTS) return false;
+        if (emoteToEquip != null) {
+            int equippedSlot = EmoteManager.slotOf(emoteToEquip);
+            if (slot == equippedSlot) EmoteManager.unequip(slot);
+            else EmoteManager.equip(slot, emoteToEquip);
+            GuiUtils.playButtonClickSound();
+            onClose();
+            return true;
+        }
+
         LoadedEmote emote = emoteAt(slot);
         if (emote == null) return false;
         EmoteManager.playLocal(emote);
         GuiUtils.playButtonClickSound();
-        minecraft.gui.setScreen(parent);
+        onClose();
         return true;
     }
 
@@ -163,6 +211,17 @@ public final class EmoteWheelScreen extends Screen {
         return shortened + suffix;
     }
 
+    private void renderCenterLabel(GuiGraphicsExtractor gui, String name, int centerX, int centerY) {
+        List<FormattedCharSequence> wrapped = font.split(Component.literal(name), 48);
+        int lineCount = Math.min(3, wrapped.size());
+        int firstY = centerY - lineCount * font.lineHeight / 2;
+        for (int i = 0; i < lineCount; i++) {
+            FormattedCharSequence line = wrapped.get(i);
+            gui.text(font, line, centerX - font.width(line) / 2,
+                firstY + i * font.lineHeight, 0xFFFFFFFF, true);
+        }
+    }
+
     @Override
     public boolean isPauseScreen() {
         return false;
@@ -170,6 +229,9 @@ public final class EmoteWheelScreen extends Screen {
 
     @Override
     public void onClose() {
+        if (parent instanceof SkinSelectionScreen wardrobe) {
+            wardrobe.restorePreviewAfterChildScreen();
+        }
         minecraft.gui.setScreen(parent);
     }
 }

@@ -37,6 +37,7 @@ abstract class PersonaPreviewGridWidget<T>
     protected abstract void initializePreview(UUID uuid, T value);
     protected abstract void cleanupPreview(UUID uuid, T value);
     protected void beforeRender(UUID uuid, T value) {}
+    protected void renderOverlay(T value, GuiGraphicsExtractor graphics, int x, int y) {}
     protected boolean isEquipped(T value) { return false; }
 
     protected final void addValuesRow(List<T> values) {
@@ -52,6 +53,7 @@ abstract class PersonaPreviewGridWidget<T>
         boolean valueSelected = current != null && id(current).equals(id(cell.value));
         GuiUtils.renderSkinCard(graphics, font, name(cell.value), x, y, cellWidth(), cellHeight(),
             hovered, valueSelected, isEquipped(cell.value), preview, 0, mouseX, mouseY);
+        renderOverlay(cell.value, graphics, x, y);
     }
 
     @Override

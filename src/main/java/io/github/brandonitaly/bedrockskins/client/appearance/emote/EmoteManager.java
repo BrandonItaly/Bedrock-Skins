@@ -114,6 +114,14 @@ public final class EmoteManager {
         return index >= 0 && index < SLOT_COUNT ? EMOTES.get(EQUIPPED_SLOTS[index]) : null;
     }
 
+    public static int slotOf(LoadedEmote emote) {
+        if (emote == null) return -1;
+        for (int i = 0; i < SLOT_COUNT; i++) {
+            if (emote.id().equals(EQUIPPED_SLOTS[i])) return i;
+        }
+        return -1;
+    }
+
     public static void equip(int index, LoadedEmote emote) {
         if (index < 0 || index >= SLOT_COUNT || emote == null || !EMOTES.containsKey(emote.id())) return;
         int previousSlot = -1;
