@@ -45,8 +45,8 @@ abstract class PersonaPreviewGridWidget<T>
     protected boolean isEquipped(T value) { return false; }
     protected void renderPaperDoll(T value, PreviewPlayer preview, GuiGraphicsExtractor graphics,
                                    int x, int y, int width, int height) {
-        GuiUtils.renderEntityInRect(graphics, preview, 0.0F, x, y, x + width, y + height,
-            72, 180.0F);
+        GuiUtils.renderGridEntityInRect(graphics, preview, 0.0F,
+            x + 1, y + 1, x + width - 1, y + height - 1);
     }
 
     protected final void addValuesRow(List<T> values) {

@@ -91,13 +91,20 @@ public final class GuiUtils {
     }
 
     public static void renderEntityInRect(GuiGraphicsExtractor gui, PreviewPlayer preview, float yawOffset, int left, int top, int right, int bottom, int sizeCap, float baseYaw) {
+        renderEntityInRect(gui, preview, yawOffset, left, top, right, bottom, sizeCap, baseYaw, 1.0F / 3.0F);
+    }
+
+    private static void renderEntityInRect(GuiGraphicsExtractor gui, PreviewPlayer preview, float yawOffset,
+                                           int left, int top, int right, int bottom, int sizeCap, float baseYaw,
+                                           float heightScale) {
         AvatarRenderState state = new AvatarRenderState();
         setupAvatarRenderState(state, preview, SkinManager.getSkin(preview.getUuid()), baseYaw + yawOffset, false, 0.0F);
         
         state.yRot = 0.0F;
         state.xRot = 0.0F;
 
-        int size = Math.min((bottom - top) / 3, sizeCap);
+        int height = bottom - top;
+        int size = Math.max(1, Math.min(Math.round(height * heightScale), sizeCap));
         float centerY = isUpsideDown(preview.getUuid()) ? -0.9F : 0.9F;
         TEMP_TRANSLATE.set(0.0F, centerY, 0.0F);
         TEMP_BODY_ROT.identity().rotationZ((float) Math.PI).rotateX(-0.1F);
@@ -106,6 +113,12 @@ public final class GuiUtils {
         //~ if >=26.1 '.submitEntityRenderState' -> '.entity' {
         gui.entity(state, size, TEMP_TRANSLATE, TEMP_BODY_ROT, TEMP_CAM_ROT, left, top, right, bottom);
         //~}
+    }
+
+    public static void renderGridEntityInRect(GuiGraphicsExtractor gui, PreviewPlayer preview, float hoverYaw,
+                                              int left, int top, int right, int bottom) {
+        renderEntityInRect(gui, preview, hoverYaw, left, top, right, bottom,
+            72, 180.0F, 0.4F);
     }
 
     public static void renderCapeInRect(GuiGraphicsExtractor gui, PreviewPlayer preview, float hoverYaw, int left, int top, int right, int bottom) {
@@ -196,7 +209,7 @@ public final class GuiUtils {
         gui.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, y, w, h);
 
         if (player != null) {
-            renderEntityInRect(gui, player, hoverYaw, x, y, x + w, y + h, 72, 180.0F);
+            renderGridEntityInRect(gui, player, hoverYaw, x + 1, y + 1, x + w - 1, y + h - 1);
         }
 
         if (equipped) {

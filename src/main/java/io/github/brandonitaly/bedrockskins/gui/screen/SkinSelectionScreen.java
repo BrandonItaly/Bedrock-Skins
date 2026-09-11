@@ -54,6 +54,10 @@ public class SkinSelectionScreen extends Screen {
     private static final org.slf4j.Logger MOD_LOGGER = com.mojang.logging.LogUtils.getLogger();
     private static final String STORE_FOLDER = "skin_packs";
     private static final String FAVORITES_PACK_ID = "skinpack.Favorites";
+    private static final int COSMETIC_SEARCH_WIDTH = 108;
+    private static final int COSMETIC_SEARCH_HEIGHT = 16;
+    private static final int COSMETIC_SEARCH_HORIZONTAL_INSET = 3;
+    private static final int COSMETIC_SEARCH_VERTICAL_INSET = 4;
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
     private TabNavigationBar tabNavigationBar;
@@ -367,18 +371,23 @@ public class SkinSelectionScreen extends Screen {
         cosmeticGrid.visible = activeTab == AppearanceTab.COSMETICS;
 
         if (cosmeticSearchBox == null) {
-            cosmeticSearchBox = new EditBox(font, 0, 0, 120, 20,
+            cosmeticSearchBox = new EditBox(font, 0, 0,
+                COSMETIC_SEARCH_WIDTH - COSMETIC_SEARCH_HORIZONTAL_INSET * 2,
+                COSMETIC_SEARCH_HEIGHT - COSMETIC_SEARCH_VERTICAL_INSET * 2,
                 Component.translatable("bedrockskins.cosmetics.search"));
             cosmeticSearchBox.setHint(Component.translatable("bedrockskins.cosmetics.search"));
+            cosmeticSearchBox.setBordered(false);
             cosmeticSearchBox.setMaxLength(64);
             cosmeticSearchBox.setResponder(ignored -> refreshCosmeticGrid());
             addRenderableWidget(cosmeticSearchBox);
         }
-        int searchWidth = Math.min(120, Math.max(10, rSkins.w - pPad * 2));
-        int searchY = rSkins.y + (GuiUtils.PANEL_HEADER_HEIGHT - 20) / 2;
-        cosmeticSearchBox.setPosition(rSkins.right() - pPad - searchWidth, searchY);
-        cosmeticSearchBox.setWidth(searchWidth);
-        cosmeticSearchBox.setHeight(20);
+        int searchWidth = Math.min(COSMETIC_SEARCH_WIDTH, Math.max(10, rSkins.w - pPad * 2));
+        int searchY = rSkins.y + (GuiUtils.PANEL_HEADER_HEIGHT - COSMETIC_SEARCH_HEIGHT) / 2;
+        cosmeticSearchBox.setPosition(
+            rSkins.right() - pPad - searchWidth + COSMETIC_SEARCH_HORIZONTAL_INSET,
+            searchY + COSMETIC_SEARCH_VERTICAL_INSET);
+        cosmeticSearchBox.setWidth(Math.max(4, searchWidth - COSMETIC_SEARCH_HORIZONTAL_INSET * 2));
+        cosmeticSearchBox.setHeight(COSMETIC_SEARCH_HEIGHT - COSMETIC_SEARCH_VERTICAL_INSET * 2);
 
         if (colorPickerButton == null) {
             colorPickerButton = SpriteIconButton.builder(Component.empty(), button -> {
@@ -572,6 +581,7 @@ public class SkinSelectionScreen extends Screen {
                         ? Component.translatable("bedrockskins.cosmetics.all")
                         : PersonaTypeNames.displayName(selectedCosmeticType);
                 GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h, gridTitle, font);
+                renderCosmeticSearchChrome(gui, mouseX, mouseY);
                 if (visibleCosmeticCount == 0) gui.centeredText(font, Component.translatable("bedrockskins.cosmetics.none"),
                     rSkins.x + rSkins.w / 2, rSkins.y + rSkins.h / 2, 0xFFAAAAAA);
             }
@@ -615,6 +625,20 @@ public class SkinSelectionScreen extends Screen {
         if (previewPanel != null) previewPanel.renderSprites(gui);
         
         gui.blit(RenderPipelines.GUI_TEXTURED, Screen.FOOTER_SEPARATOR, 0, height - layout.getFooterHeight() - 2, 0.0F, 0.0F, width, 2, 32, 2);
+    }
+
+    private void renderCosmeticSearchChrome(GuiGraphicsExtractor gui, int mouseX, int mouseY) {
+        if (cosmeticSearchBox == null || !cosmeticSearchBox.visible) return;
+
+        int x = cosmeticSearchBox.getX() - COSMETIC_SEARCH_HORIZONTAL_INSET;
+        int y = cosmeticSearchBox.getY() - COSMETIC_SEARCH_VERTICAL_INSET;
+        int width = cosmeticSearchBox.getWidth() + COSMETIC_SEARCH_HORIZONTAL_INSET * 2;
+        int height = cosmeticSearchBox.getHeight() + COSMETIC_SEARCH_VERTICAL_INSET * 2;
+        boolean hovered = mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+        int borderColor = cosmeticSearchBox.isFocused() ? 0xFF6F9DB4 : hovered ? 0xFF777C82 : 0xFF4A4E52;
+
+        gui.fill(x, y, x + width, y + height, borderColor);
+        gui.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0xE6101113);
     }
 
     private void renderCosmeticCustomization(GuiGraphicsExtractor gui, int mouseX, int mouseY) {
