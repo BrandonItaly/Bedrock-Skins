@@ -70,7 +70,6 @@ public class SkinSelectionScreen extends Screen {
     private final Rect rPacks = new Rect(), rSkins = new Rect(), rPreview = new Rect();
     private final Rect rCosmeticCategories = new Rect(), rCosmeticOptions = new Rect();
     private Button openPacksButton, doneButton;
-    private SpriteIconButton createPackButton;
     private SpriteIconButton colorPickerButton;
     private ColorPaletteWidget colorPalette;
     private Button previousSideButton, nextSideButton;
@@ -199,7 +198,6 @@ public class SkinSelectionScreen extends Screen {
         boolean isSkins = activeTab == AppearanceTab.SKINS;
         if (packList != null) packList.visible = isSkins;
         if (skinGrid != null) skinGrid.visible = isSkins;
-        if (createPackButton != null) createPackButton.visible = isSkins;
         if (previewPanel != null) {
             previewPanel.reposition(rPreview.x, rPreview.y, rPreview.w, rPreview.h);
             previewPanel.updateButtonsForTab(activeTab);
@@ -320,21 +318,10 @@ public class SkinSelectionScreen extends Screen {
         packList.setPosition(rPacks.x + pPad, plY);
         packList.setWidth(Math.max(10, rPacks.w - pPad * 2)); packList.setHeight(Math.max(10, plH));
 
-        if (createPackButton == null) {
-            createPackButton = SpriteIconButton.builder(Component.empty(), b -> {
-                minecraft.gui.setScreen(new CreateSkinPackScreen(this));
-            }, true).size(20, 20).sprite(BedrockSkinsSprites.ADDON_ICON, 16, 16).build();
-            createPackButton.setTooltip(Tooltip.create(Component.translatable("bedrockskins.button.create_skin_pack")));
-            addRenderableWidget(createPackButton);
-        }
-        createPackButton.setPosition(rPacks.x + rPacks.w - 22, rPacks.y + 2);
-
-
         int sgY = rSkins.y + pHead + pPad, sgH = rSkins.h - pHead - (pPad * 2);
         if (skinGrid == null) {
             skinGrid = new SkinGridWidget(minecraft, rSkins.w - pPad * 2, sgH, sgY, 90,
                     skin -> previewPanel.setSelectedSkin(skin), 
-                    this::editSkin,
                     () -> previewPanel != null ? previewPanel.getSelectedSkin() : null, font);
             addRenderableWidget(skinGrid);
         }
@@ -511,7 +498,7 @@ public class SkinSelectionScreen extends Screen {
         for (String pid : sortedPacks) {
             packList.addEntryPublic(packList.new SkinPackEntry(
                 pid, pid, pid,
-                this::selectPack, this::editPack, () -> Objects.equals(selectedPackId, pid), font
+                this::selectPack, () -> Objects.equals(selectedPackId, pid), font
             ));
         }
 
@@ -539,30 +526,6 @@ public class SkinSelectionScreen extends Screen {
         File dir = new File(minecraft.gameDirectory, STORE_FOLDER);
         if (!dir.exists()) dir.mkdirs();
         Util.getPlatform().openFile(dir);
-    }
-
-    private boolean isExternalPack(String packId) {
-        if (packId == null || packId.equals(FAVORITES_PACK_ID)) return false;
-        
-        List<LoadedSkin> skins = skinCache.get(packId);
-        if (skins != null && !skins.isEmpty()) {
-            return !(skins.getFirst().texture instanceof io.github.brandonitaly.bedrockskins.pack.model.AssetSource.Resource);
-        }
-        
-        return true;
-    }
-
-    private void editPack(String packId) {
-        if (isExternalPack(packId)) {
-            minecraft.gui.setScreen(new EditSkinPackScreen(this, packId));
-        }
-    }
-
-    private void editSkin(LoadedSkin skin) {
-        if (MinecraftAccountSkin.is(skin) || ImportSkinAction.is(skin)) return;
-        if (isExternalPack(skin.packId)) {
-            minecraft.gui.setScreen(new EditSkinScreen(this, skin.packId, skin));
-        }
     }
 
     public void markNeedsReload() {

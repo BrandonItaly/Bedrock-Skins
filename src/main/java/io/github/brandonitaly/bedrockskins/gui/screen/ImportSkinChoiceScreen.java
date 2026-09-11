@@ -33,7 +33,6 @@ import java.util.concurrent.CompletableFuture;
 public class ImportSkinChoiceScreen extends SkinDialogScreen {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private final String packId;
     private EditBox usernameBox;
     private String usernameValue = "";
     private Button importBtn;
@@ -43,9 +42,8 @@ public class ImportSkinChoiceScreen extends SkinDialogScreen {
     private String statusMessage = "";
     private int statusColor = 0xFFA0A0A0;
 
-    public ImportSkinChoiceScreen(SkinSelectionScreen parent, String packId) {
+    public ImportSkinChoiceScreen(SkinSelectionScreen parent) {
         super(parent, Component.translatable("bedrockskins.gui.import_skin.choice_title"), 208, 116);
-        this.packId = packId;
     }
 
     @Override
@@ -53,12 +51,12 @@ public class ImportSkinChoiceScreen extends SkinDialogScreen {
         try {
             // Built-in packs are resources, so create their writable overlay before opening
             // either import route. Custom packs already have this directory and are unchanged.
-            WritableSkinPack.ensure(packId);
+            WritableSkinPack.ensure(MinecraftAccountSkin.PACK_ID);
         } catch (IOException exception) {
             loading = true;
             statusMessage = "Unable to prepare the Imports pack.";
             statusColor = 0xFFFF5555;
-            LOGGER.error("Failed to prepare writable skin pack {}", packId, exception);
+            LOGGER.error("Failed to prepare writable skin pack {}", MinecraftAccountSkin.PACK_ID, exception);
         }
 
         int y = contentTopY();
@@ -116,7 +114,7 @@ public class ImportSkinChoiceScreen extends SkinDialogScreen {
 
     private void importFromFile() {
         NativeFileDialog.open("Select Skin Texture", "*.png", "PNG files", path ->
-            this.minecraft.gui.setScreen(new AddSkinScreen((SkinSelectionScreen) parent, packId, path)));
+            this.minecraft.gui.setScreen(new AddSkinScreen((SkinSelectionScreen) parent, MinecraftAccountSkin.PACK_ID, path)));
     }
 
     private void importFromUsername() {
@@ -223,7 +221,7 @@ public class ImportSkinChoiceScreen extends SkinDialogScreen {
                 minecraft.execute(() -> {
                     this.minecraft.gui.setScreen(new AddSkinScreen(
                             (SkinSelectionScreen) parent,
-                            packId,
+                            MinecraftAccountSkin.PACK_ID,
                             finalTempSkin.toAbsolutePath().toString(),
                             finalTempCape != null ? finalTempCape.toAbsolutePath().toString() : null,
                             resolvedName,

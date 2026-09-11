@@ -157,6 +157,7 @@ public final class SkinManager {
             String selected = state.selected();
             SkinAssignment assignment = assignment(localUuid);
             assignment.selected = selected != null && !selected.isBlank() ? SkinId.parse(selected) : null;
+            clearMissingLocalSkin(localUuid, assignment);
             removeIfEmpty(localUuid, assignment);
 
             String cape = state.selectedCape();
@@ -186,12 +187,21 @@ public final class SkinManager {
         UUID localUuid = getLocalPlayerUuid();
         if (localUuid != null) {
             SkinAssignment assignment = skinAssignments.get(localUuid);
-            if (assignment != null && assignment.selected != null) return assignment.selected;
+            if (assignment != null && assignment.selected != null) {
+                clearMissingLocalSkin(localUuid, assignment);
+                if (assignment.selected != null) return assignment.selected;
+            }
         }
         
         try {
             String selected = StateManager.readState().selected();
-            return (selected == null || selected.isBlank()) ? null : SkinId.parse(selected);
+            if (selected == null || selected.isBlank()) return null;
+            SkinId id = SkinId.parse(selected);
+            if (SkinPackLoader.getLoadedSkin(id) == null) {
+                StateManager.updateSelection(null, StateManager.readState().selectedCape());
+                return null;
+            }
+            return id;
         } catch (Exception e) {
             LOGGER.error("SkinManager: failed to read local selected skin from state", e);
             return null;
@@ -276,6 +286,12 @@ public final class SkinManager {
         } catch (Exception e) {
             LOGGER.error("SkinManager: failed to save state", e);
         }
+    }
+
+    private static void clearMissingLocalSkin(UUID localUuid, SkinAssignment assignment) {
+        if (assignment.selected == null || SkinPackLoader.getLoadedSkin(assignment.selected) != null) return;
+        assignment.selected = null;
+        saveCurrentState();
     }
 
     private static UUID getLocalPlayerUuid() {

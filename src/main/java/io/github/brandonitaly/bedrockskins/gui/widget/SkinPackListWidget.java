@@ -3,7 +3,6 @@ package io.github.brandonitaly.bedrockskins.gui.widget;
 import io.github.brandonitaly.bedrockskins.gui.preview.*;
 import io.github.brandonitaly.bedrockskins.gui.screen.*;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -49,20 +48,17 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
         private final String translationKey;
         private final String fallbackName;
         private final Consumer<String> onSelect;
-        private final Consumer<String> onEdit;
         private final Supplier<Boolean> isSelectedFn;
         private final Font textRenderer;
 
         public SkinPackEntry(String packId, String translationKey, String fallbackName,
                              Consumer<String> onSelect,
-                             Consumer<String> onEdit,
                              Supplier<Boolean> isSelectedFn,
                              Font textRenderer) {
             this.packId = packId;
             this.translationKey = translationKey;
             this.fallbackName = fallbackName;
             this.onSelect = onSelect;
-            this.onEdit = onEdit;
             this.isSelectedFn = isSelectedFn;
             this.textRenderer = textRenderer;
         }
@@ -89,11 +85,6 @@ public class SkinPackListWidget extends ObjectSelectionList<SkinPackListWidget.S
         }
 
         public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
-            if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT && onEdit != null) {
-                onEdit.accept(packId);
-                GuiUtils.playButtonClickSound();
-                return true;
-            }
             return clickCommon();
         }
 

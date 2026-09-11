@@ -57,7 +57,9 @@ public class SkinPreviewPanel {
     private Button replayEmoteButton;
     private SpriteIconButton previewButton;
     private SpriteIconButton uploadSkinButton;
+    private SpriteIconButton deleteSkinButton;
     private boolean isUploadingSkin = false;
+    private boolean isDeletingSkin = false;
     private String uploadStatusMessage = null;
     private boolean uploadStatusIsError = false;
     private long uploadStatusTime = 0L;
@@ -155,6 +157,11 @@ public class SkinPreviewPanel {
             .build();
         uploadSkinButton.setTooltip(Tooltip.create(Component.translatable("bedrockskins.button.upload_skin")));
         widgetAdder.accept(uploadSkinButton);
+
+        deleteSkinButton = SpriteIconButton.builder(Component.empty(), b -> deleteSelectedSkin(), true)
+            .size(20, 20).sprite(BedrockSkinsSprites.TRASH_ICON, 16, 16).build();
+        deleteSkinButton.setTooltip(Tooltip.create(Component.translatable("bedrockskins.button.delete")));
+        widgetAdder.accept(deleteSkinButton);
         
         reposition(x, y, w, h);
         initPreviewState();
@@ -191,8 +198,12 @@ public class SkinPreviewPanel {
             previewButton.setY(floatingY);
         }
         if (uploadSkinButton != null) {
-            uploadSkinButton.setX(x + w - 44);
+            uploadSkinButton.setX(x + w - 66);
             uploadSkinButton.setY(floatingY);
+        }
+        if (deleteSkinButton != null) {
+            deleteSkinButton.setX(x + w - 44);
+            deleteSkinButton.setY(floatingY);
         }
     }
 
@@ -321,8 +332,7 @@ public class SkinPreviewPanel {
         if (selectedSkin == null) return;
         if (ImportSkinAction.is(selectedSkin)) {
             if (parentScreen instanceof SkinSelectionScreen selectionScreen) {
-                minecraft.gui.setScreen(new ImportSkinChoiceScreen(
-                    selectionScreen, MinecraftAccountSkin.PACK_ID));
+                minecraft.gui.setScreen(new ImportSkinChoiceScreen(selectionScreen));
             }
             return;
         }
@@ -484,6 +494,47 @@ public class SkinPreviewPanel {
         });
     }
 
+    private void deleteSelectedSkin() {
+        if (selectedSkin == null || MinecraftAccountSkin.is(selectedSkin)
+                || ImportSkinAction.is(selectedSkin)
+                || !MinecraftAccountSkin.PACK_ID.equals(selectedSkin.packId)
+                || isDeletingSkin) return;
+
+        LoadedSkin skinToDelete = selectedSkin;
+        SkinId deletedId = skinToDelete.skinId;
+        isDeletingSkin = true;
+        updateActionButtons();
+
+        CompletableFuture.supplyAsync(() -> ExternalAssetUtil.deleteImportedSkinFiles(skinToDelete))
+            .thenAccept(deleted -> minecraft.execute(() -> {
+                isDeletingSkin = false;
+                if (!deleted) {
+                    updateActionButtons();
+                    return;
+                }
+
+                SkinPackLoader.removeLoadedSkin(deletedId);
+                if (deletedId.equals(SkinManager.getLocalSelectedKey())) {
+                    GuiSkinUtils.resetSelectedSkin(minecraft);
+                }
+                selectedSkin = null;
+                currentSkinId = null;
+                updatePreviewModel(dummyUuid, null);
+                updateFavoriteButton();
+                if (parentScreen instanceof SkinSelectionScreen selectionScreen) {
+                    selectionScreen.onResourcesReloaded();
+                }
+            }))
+            .exceptionally(error -> {
+                minecraft.execute(() -> {
+                    isDeletingSkin = false;
+                    updateActionButtons();
+                    LOGGER.error("Failed to delete imported skin {}", deletedId, error);
+                });
+                return null;
+            });
+    }
+
     private void setUploadStatus(String message, boolean isError) {
         this.uploadStatusMessage = message;
         this.uploadStatusIsError = isError;
@@ -506,6 +557,13 @@ public class SkinPreviewPanel {
                 && !ImportSkinAction.is(selectedSkin);
             uploadSkinButton.active = !isUploadingSkin && uploadable;
             uploadSkinButton.visible = BedrockSkinsConfig.isAccountSkinUploadAllowed() && uploadable;
+        }
+        if (deleteSkinButton != null) {
+            deleteSkinButton.visible = selectedSkin != null
+                && MinecraftAccountSkin.PACK_ID.equals(selectedSkin.packId)
+                && !MinecraftAccountSkin.is(selectedSkin)
+                && !ImportSkinAction.is(selectedSkin);
+            deleteSkinButton.active = !isDeletingSkin;
         }
     }
 
@@ -548,6 +606,9 @@ public class SkinPreviewPanel {
             boolean enabled = selectedSkin != null;
             if (enabled && BedrockSkinsClient.blockUnfairSkins && selectedSkin.unfair) enabled = false;
             selectButton.active = enabled;
+            selectButton.setMessage(Component.translatable(ImportSkinAction.is(selectedSkin)
+                ? "bedrockskins.button.add_custom_skin"
+                : "bedrockskins.button.equip"));
         }
     }
 
@@ -632,8 +693,12 @@ public class SkinPreviewPanel {
         int availableWidth = Math.max(0, width - 16);
         boolean hasName = name != null && !name.isEmpty();
         boolean hasDescription = description != null && !description.isEmpty();
-        int nameWidth = hasName && hasDescription ? Math.max(0, (availableWidth - 8) / 2) : availableWidth;
-        int descriptionWidth = hasName && hasDescription ? Math.max(0, availableWidth - nameWidth - 8) : availableWidth;
+        int descriptionWidth = hasName && hasDescription
+            ? Math.min(font.width(description), Math.max(0, (availableWidth - 8) / 2))
+            : availableWidth;
+        int nameWidth = hasName && hasDescription
+            ? Math.max(0, availableWidth - descriptionWidth - 8)
+            : availableWidth;
 
         if (hasName) {
             String fittedName = fitText(name, nameWidth);
@@ -694,6 +759,9 @@ public class SkinPreviewPanel {
                 && selectedSkin != null && !MinecraftAccountSkin.is(selectedSkin)
                 && !ImportSkinAction.is(selectedSkin);
         }
+        if (deleteSkinButton != null) deleteSkinButton.visible = visible
+            && selectedSkin != null && MinecraftAccountSkin.PACK_ID.equals(selectedSkin.packId)
+            && !MinecraftAccountSkin.is(selectedSkin) && !ImportSkinAction.is(selectedSkin);
     }
 
     public void updateButtonsForTab(AppearanceTab tabIndex) {
@@ -712,6 +780,9 @@ public class SkinPreviewPanel {
                     && selectedSkin != null && !MinecraftAccountSkin.is(selectedSkin)
                     && !ImportSkinAction.is(selectedSkin);
             }
+            if (deleteSkinButton != null) deleteSkinButton.visible = selectedSkin != null
+                && MinecraftAccountSkin.PACK_ID.equals(selectedSkin.packId)
+                && !MinecraftAccountSkin.is(selectedSkin) && !ImportSkinAction.is(selectedSkin);
         } else if (tabIndex == AppearanceTab.COSMETICS) {
             this.rotationX = 0.0f;
             if (selectButton != null) {
@@ -721,6 +792,7 @@ public class SkinPreviewPanel {
             if (favoriteButton != null) favoriteButton.getButton().visible = false;
             if (previewButton != null) previewButton.visible = true;
             if (uploadSkinButton != null) uploadSkinButton.visible = false;
+            if (deleteSkinButton != null) deleteSkinButton.visible = false;
         } else if (tabIndex == AppearanceTab.CAPES) {
             this.rotationX = 60.0f;
             if (selectButton != null) {
@@ -730,6 +802,7 @@ public class SkinPreviewPanel {
             if (favoriteButton != null) favoriteButton.getButton().visible = false;
             if (previewButton != null) previewButton.visible = true;
             if (uploadSkinButton != null) uploadSkinButton.visible = false;
+            if (deleteSkinButton != null) deleteSkinButton.visible = false;
         } else if (tabIndex == AppearanceTab.EMOTES) {
             this.rotationX = 0.0f;
             if (selectButton != null) {
@@ -749,6 +822,7 @@ public class SkinPreviewPanel {
             if (favoriteButton != null) favoriteButton.getButton().visible = false;
             if (previewButton != null) previewButton.visible = true;
             if (uploadSkinButton != null) uploadSkinButton.visible = false;
+            if (deleteSkinButton != null) deleteSkinButton.visible = false;
         }
         updateFavoriteButton();
     }

@@ -13,11 +13,11 @@ public class BedrockSkinsSprites {
     public static final Identifier CARD_HOVER = Identifier.fromNamespaceAndPath("bedrockskins", "container/card_hover");
     public static final Identifier CARD_SELECTED = Identifier.fromNamespaceAndPath("bedrockskins", "container/card_selected");
     public static final Identifier UPLOAD_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/upload");
+    public static final Identifier TRASH_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/icon_trash");
     public static final Identifier COLOR_PICKER_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/color_picker");
     public static final Identifier PREVIEW_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/icon_preview");
     public static final Identifier NONE_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/icon_none");
     public static final Identifier KEYBOARD_TOOLTIP_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/keyboard_tooltip_icon");
-    public static final Identifier ADDON_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/addon");
     public static final Identifier EMOTE_WHEEL_BASE = Identifier.fromNamespaceAndPath("bedrockskins", "container/emote_wheel_base");
     public static final Identifier[] EMOTE_WHEEL_SELECTIONS = {
         Identifier.fromNamespaceAndPath("bedrockskins", "container/emote_wheel_select_0"),

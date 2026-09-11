@@ -131,7 +131,8 @@ public class AddSkinScreen extends SkinDialogScreen {
         if (skinName.isEmpty() || texturePath == null) return;
 
         try {
-            Path storeDir = WritableSkinPack.ensure(packId);
+            String importsPackId = MinecraftAccountSkin.PACK_ID;
+            Path storeDir = WritableSkinPack.ensure(importsPackId);
 
             String safeSkinId = skinName.replaceAll("[^a-zA-Z0-9_-]", "").toLowerCase();
             
@@ -175,7 +176,7 @@ public class AddSkinScreen extends SkinDialogScreen {
 
             Path textsDir = storeDir.resolve("texts");
             Path langFile = textsDir.resolve("en_us.lang");
-            String newLangEntry = "\nskin.%s.%s=%s".formatted(packId.replace("skinpack.", ""), safeSkinId, skinName);
+            String newLangEntry = "\nskin.%s.%s=%s".formatted(importsPackId.replace("skinpack.", ""), safeSkinId, skinName);
             if (Files.exists(langFile)) {
                 Files.writeString(langFile, Files.readString(langFile) + newLangEntry);
             }

@@ -26,16 +26,14 @@ public class SkinGridWidget extends CardGridWidget<SkinGridWidget.SkinCell> {
     private static final int CELL_HEIGHT = 85;
     private static final int CELL_PADDING = 5;
     private final Consumer<LoadedSkin> onSelectSkin;
-    private final Consumer<LoadedSkin> onEditSkin;
     private final Supplier<LoadedSkin> getSelectedSkin;
     private final Font font;
 
     public SkinGridWidget(Minecraft client, int width, int height, int y, int itemHeight,
-                          Consumer<LoadedSkin> onSelectSkin, Consumer<LoadedSkin> onEditSkin,
+                          Consumer<LoadedSkin> onSelectSkin,
                           Supplier<LoadedSkin> getSelectedSkin, Font font) {
         super(client, width, height, y, itemHeight, CELL_WIDTH, CELL_HEIGHT, CELL_PADDING);
         this.onSelectSkin = onSelectSkin;
-        this.onEditSkin = onEditSkin;
         this.getSelectedSkin = getSelectedSkin;
         this.font = font;
     }
@@ -76,12 +74,6 @@ public class SkinGridWidget extends CardGridWidget<SkinGridWidget.SkinCell> {
 
     @Override
     protected boolean clickCell(SkinCell cell, MouseButtonEvent click, boolean doubled) {
-        if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
-            if (cell.actionCell || cell.skin == null || onEditSkin == null) return false;
-            onEditSkin.accept(cell.skin);
-            GuiUtils.playButtonClickSound();
-            return true;
-        }
         cell.activate(onSelectSkin);
         GuiUtils.playButtonClickSound();
         if (doubled && !cell.actionCell) cell.activate(onSelectSkin);
