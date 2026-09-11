@@ -11,8 +11,8 @@ import java.util.function.Supplier;
 
 /** Shared selectable sidebar used by cosmetics, emote slots, and cape sources. */
 public class SidebarListWidget extends ObjectSelectionList<SidebarListWidget.SidebarEntry> {
-    private static final int ROW_LEFT_PADDING = 2;
-    private static final int ROW_RIGHT_PADDING = 10;
+    private static final int SCROLLBAR_WIDTH = 6;
+    private static final int SCROLLBAR_GAP = 1;
     private final int rowSlotHeight;
     private final Font font;
 
@@ -23,13 +23,15 @@ public class SidebarListWidget extends ObjectSelectionList<SidebarListWidget.Sid
     }
 
     protected void extractListSeparators(GuiGraphicsExtractor graphics) {}
+    protected void extractListBackground(GuiGraphicsExtractor graphics) {}
     @Override public int getRowWidth() {
         int padding = getItemCount() * rowSlotHeight > getHeight()
-            ? ROW_RIGHT_PADDING
-            : ROW_LEFT_PADDING * 2;
+            ? SCROLLBAR_WIDTH + SCROLLBAR_GAP
+            : 0;
         return Math.max(10, getWidth() - padding);
     }
-    @Override public int getRowLeft() { return getX() + ROW_LEFT_PADDING; }
+    @Override public int getRowLeft() { return getX(); }
+    @Override public int getRowTop(int index) { return super.getRowTop(index) - 4; }
     @Override protected int scrollBarX() { return getX() + getWidth() - 6; }
     @Override protected void extractSelection(GuiGraphicsExtractor graphics, SidebarEntry entry, int color) {}
 
@@ -56,8 +58,8 @@ public class SidebarListWidget extends ObjectSelectionList<SidebarListWidget.Sid
         public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
                                    boolean hovered, float delta) {
             int rowWidth = Math.max(10, SidebarListWidget.this.getRowWidth());
-            int rowHeight = Math.max(20, rowSlotHeight - 2);
-            int rowY = getY() + (rowSlotHeight - rowHeight) / 2;
+            int rowHeight = rowSlotHeight;
+            int rowY = getY();
             GuiUtils.renderPackCard(graphics, font, name.getString(), getRowLeft(), rowY,
                 rowWidth, rowHeight, hovered, selected.get(), mouseX, mouseY);
         }

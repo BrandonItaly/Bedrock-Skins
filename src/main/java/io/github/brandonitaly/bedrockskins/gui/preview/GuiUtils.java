@@ -248,22 +248,6 @@ public final class GuiUtils {
         }
     }
 
-    public static void renderPackCard(GuiGraphicsExtractor gui, Font font, Component text, int x, int y, int w, int h, boolean hovered, boolean selected, int mouseX, int mouseY) {
-        renderPackCard(gui, font, text, x, y, w, h, hovered, selected, mouseX, mouseY, 1.0F);
-    }
-
-    public static void renderPackCard(GuiGraphicsExtractor gui, Font font, Component text, int x, int y, int w, int h, boolean hovered, boolean selected, int mouseX, int mouseY, float textScale) {
-        var cardSprite = selected ? BedrockSkinsSprites.CARD_SELECTED : (hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE);
-        gui.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, y, w, h);
-        int textX = x + 8;
-        int textY = y + (h - (int) (font.lineHeight * textScale)) / 2;
-        gui.pose().pushMatrix();
-        gui.pose().translate(textX, textY);
-        gui.pose().scale(textScale, textScale);
-        gui.text(font, text, 0, 0, selected || hovered ? 0xFFFFFFFF : 0xFFD7D7D7, false);
-        gui.pose().popMatrix();
-    }
-
     public static void safeRegisterTexture(String key) { 
         try { 
             SkinId id = SkinId.parse(key); 

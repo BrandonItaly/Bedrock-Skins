@@ -32,6 +32,7 @@ abstract class CardGridWidget<C> extends ObjectSelectionList<CardGridWidget<C>.C
     protected abstract boolean clickCell(C cell, MouseButtonEvent click, boolean doubled);
     protected void cleanupCell(C cell) {}
     protected void extractListSeparators(GuiGraphicsExtractor graphics) {}
+    protected void extractListBackground(GuiGraphicsExtractor graphics) {}
     protected void extractSelection(GuiGraphicsExtractor graphics, CardRow entry, int color) {}
 
     @Override
@@ -39,6 +40,9 @@ abstract class CardGridWidget<C> extends ObjectSelectionList<CardGridWidget<C>.C
 
     @Override
     protected final int scrollBarX() { return getX() + width - 6; }
+
+    @Override
+    public int getRowTop(int index) { return super.getRowTop(index) - 4; }
 
     public final void clear() {
         for (CardRow row : children()) row.cleanup();

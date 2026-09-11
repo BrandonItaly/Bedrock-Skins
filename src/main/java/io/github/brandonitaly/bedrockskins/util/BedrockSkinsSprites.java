@@ -17,6 +17,8 @@ public class BedrockSkinsSprites {
     public static final Identifier COLOR_PICKER_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/color_picker");
     public static final Identifier PREVIEW_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/icon_preview");
     public static final Identifier NONE_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/icon_none");
+    public static final Identifier SEARCH_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/spyglass_flat");
+    public static final Identifier CLOSE_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/close_button_default_light");
     public static final Identifier KEYBOARD_TOOLTIP_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "container/keyboard_tooltip_icon");
     public static final Identifier EMOTE_WHEEL_BASE = Identifier.fromNamespaceAndPath("bedrockskins", "container/emote_wheel_base");
     public static final Identifier[] EMOTE_WHEEL_SELECTIONS = {
