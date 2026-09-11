@@ -32,7 +32,7 @@ public class SidebarListWidget extends ObjectSelectionList<SidebarListWidget.Sid
     }
     @Override public int getRowLeft() { return getX(); }
     @Override public int getRowTop(int index) { return super.getRowTop(index) - 4; }
-    @Override protected int scrollBarX() { return getX() + getWidth() - 6; }
+    @Override protected int scrollBarX() { return getX() + getWidth() - 5; }
     @Override protected void extractSelection(GuiGraphicsExtractor graphics, SidebarEntry entry, int color) {}
 
     public void add(Component name, Runnable onSelect, Supplier<Boolean> selected) {

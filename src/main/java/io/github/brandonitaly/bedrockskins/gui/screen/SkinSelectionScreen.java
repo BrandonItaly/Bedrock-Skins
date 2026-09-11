@@ -65,6 +65,7 @@ public class SkinSelectionScreen extends Screen {
     private static final int SEARCH_HORIZONTAL_INSET = 3;
     private static final int SEARCH_VERTICAL_INSET = 3;
     private static final int PANEL_CONTENT_INSET = 2;
+    private static final int SIDEBAR_CONTENT_INSET = PANEL_CONTENT_INSET + 1;
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
     private TabNavigationBar tabNavigationBar;
@@ -327,7 +328,7 @@ public class SkinSelectionScreen extends Screen {
             packList = new SidebarListWidget(minecraft, sidebarWidth, plH, plY, 28, font);
             addRenderableWidget(packList);
         }
-        positionPanelContent(packList, rPacks);
+        positionSidebarContent(packList, rPacks);
 
         int sgY = contentY, sgH = contentH;
         if (skinGrid == null) {
@@ -359,7 +360,7 @@ public class SkinSelectionScreen extends Screen {
             addCosmeticCategory("persona_back");
             addRenderableWidget(cosmeticSidebar);
         }
-        positionPanelContent(cosmeticSidebar, rPacks);
+        positionSidebarContent(cosmeticSidebar, rPacks);
         cosmeticSidebar.visible = activeTab == AppearanceTab.COSMETICS;
 
         if (cosmeticGrid == null) {
@@ -431,7 +432,7 @@ public class SkinSelectionScreen extends Screen {
                 () -> selectCapesCategory("skinpack"), () -> "skinpack".equals(selectedCapesCategory));
             addRenderableWidget(capeSidebar);
         }
-        positionPanelContent(capeSidebar, rPacks);
+        positionSidebarContent(capeSidebar, rPacks);
         capeSidebar.visible = activeTab == AppearanceTab.CAPES;
 
         if (capeGrid == null) {
@@ -454,7 +455,7 @@ public class SkinSelectionScreen extends Screen {
             emoteSidebar.add(Component.translatable("bedrockskins.emotes.all"), () -> {}, () -> true);
             addRenderableWidget(emoteSidebar);
         }
-        positionPanelContent(emoteSidebar, rPacks);
+        positionSidebarContent(emoteSidebar, rPacks);
         emoteSidebar.visible = activeTab == AppearanceTab.EMOTES;
 
         if (emoteGrid == null) {
@@ -487,6 +488,12 @@ public class SkinSelectionScreen extends Screen {
     private static void positionPanelContent(AbstractWidget widget, Rect panel) {
         widget.setPosition(panel.x + PANEL_CONTENT_INSET, panelContentY(panel));
         widget.setWidth(panelContentWidth(panel));
+        widget.setHeight(panelContentHeight(panel));
+    }
+
+    private static void positionSidebarContent(AbstractWidget widget, Rect panel) {
+        widget.setPosition(panel.x + SIDEBAR_CONTENT_INSET, panelContentY(panel));
+        widget.setWidth(Math.max(10, panel.w - SIDEBAR_CONTENT_INSET * 2));
         widget.setHeight(panelContentHeight(panel));
     }
     
@@ -922,7 +929,7 @@ public class SkinSelectionScreen extends Screen {
         boolean colors = colorPickerOpen && PersonaManager.isColorSelectable(cosmetic);
         rCosmeticCategories.set(rPacks.x, rPacks.y, rPacks.w, rPacks.h);
         rCosmeticOptions.set(rSkins.x, rSkins.y, rSkins.w, colors ? rSkins.h : 0);
-        positionPanelContent(cosmeticSidebar, rCosmeticCategories);
+        positionSidebarContent(cosmeticSidebar, rCosmeticCategories);
     }
 
     private int customizationContentY() {
