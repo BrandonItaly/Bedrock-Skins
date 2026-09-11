@@ -58,7 +58,7 @@ public class SkinSelectionScreen extends Screen {
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
     private TabNavigationBar tabNavigationBar;
     
-    private SkinPackListWidget packList;
+    private SidebarListWidget packList;
     private SkinGridWidget skinGrid;
     private SkinPreviewPanel previewPanel;
     private final Screen parent; 
@@ -277,10 +277,11 @@ public class SkinSelectionScreen extends Screen {
         if (importAction != null) imports.add(importAction);
         
         List<LoadedSkin> favs = FavoritesManager.getFavoriteKeys().stream()
-                .map(SkinId::parse)
-                .map(SkinPackLoader::getLoadedSkin)
-                .filter(Objects::nonNull)
-                .toList();
+            .map(SkinId::parse)
+            .map(id -> id != null && id.equals(MinecraftAccountSkin.INSTANCE.skinId)
+                ? MinecraftAccountSkin.INSTANCE : SkinPackLoader.getLoadedSkin(id))
+            .filter(Objects::nonNull)
+            .toList();
         skinCache.put(FAVORITES_PACK_ID, favs);
     }
 
@@ -312,7 +313,7 @@ public class SkinSelectionScreen extends Screen {
         // Skins Widgets
         int plY = rPacks.y + pHead + pPad, plH = rPacks.h - pHead - (pPad * 2);
         if (packList == null) {
-            packList = new SkinPackListWidget(minecraft, rPacks.w - pPad * 2, plH, plY, 28);
+            packList = new SidebarListWidget(minecraft, rPacks.w - pPad * 2, plH, plY, 28, font);
             addRenderableWidget(packList);
         }
         packList.setPosition(rPacks.x + pPad, plY);
@@ -355,7 +356,7 @@ public class SkinSelectionScreen extends Screen {
         cosmeticSidebar.visible = activeTab == AppearanceTab.COSMETICS;
 
         if (cosmeticGrid == null) {
-            cosmeticGrid = new CosmeticGridWidget(minecraft, rSkins.w - pPad * 2, cgH, cgY, 90,
+            cosmeticGrid = new CosmeticGridWidget(minecraft, rSkins.w - pPad * 2, cgH, cgY, 65,
                 this::selectCosmetic,
                 () -> previewPanel != null ? previewPanel.getSelectedCosmetic() : null, font);
             addRenderableWidget(cosmeticGrid);
@@ -366,7 +367,7 @@ public class SkinSelectionScreen extends Screen {
         cosmeticGrid.visible = activeTab == AppearanceTab.COSMETICS;
 
         if (cosmeticSearchBox == null) {
-            cosmeticSearchBox = new EditBox(font, 0, 0, 120, 14,
+            cosmeticSearchBox = new EditBox(font, 0, 0, 120, 20,
                 Component.translatable("bedrockskins.cosmetics.search"));
             cosmeticSearchBox.setHint(Component.translatable("bedrockskins.cosmetics.search"));
             cosmeticSearchBox.setMaxLength(64);
@@ -374,8 +375,10 @@ public class SkinSelectionScreen extends Screen {
             addRenderableWidget(cosmeticSearchBox);
         }
         int searchWidth = Math.min(120, Math.max(10, rSkins.w - pPad * 2));
-        cosmeticSearchBox.setPosition(rSkins.right() - pPad - searchWidth, rSkins.y + 1);
+        int searchY = rSkins.y + (GuiUtils.PANEL_HEADER_HEIGHT - 20) / 2;
+        cosmeticSearchBox.setPosition(rSkins.right() - pPad - searchWidth, searchY);
         cosmeticSearchBox.setWidth(searchWidth);
+        cosmeticSearchBox.setHeight(20);
 
         if (colorPickerButton == null) {
             colorPickerButton = SpriteIconButton.builder(Component.empty(), button -> {
@@ -496,10 +499,8 @@ public class SkinSelectionScreen extends Screen {
         if (!FavoritesManager.getFavoriteKeys().isEmpty()) sortedPacks.addFirst(FAVORITES_PACK_ID);
 
         for (String pid : sortedPacks) {
-            packList.addEntryPublic(packList.new SkinPackEntry(
-                pid, pid, pid,
-                this::selectPack, () -> Objects.equals(selectedPackId, pid), font
-            ));
+            Component name = Component.literal(GuiSkinUtils.translatedOrFallback(pid, pid));
+            packList.add(name, () -> selectPack(pid), () -> Objects.equals(selectedPackId, pid));
         }
 
         if (selectedPackId == null && !sortedPacks.isEmpty()) selectPack(sortedPacks.getFirst());

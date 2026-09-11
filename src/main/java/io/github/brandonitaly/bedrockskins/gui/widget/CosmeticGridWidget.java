@@ -7,7 +7,11 @@ import io.github.brandonitaly.bedrockskins.client.appearance.persona.PersonaMana
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedCosmetic;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
+import io.github.brandonitaly.bedrockskins.gui.preview.PreviewPlayer;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.PlayerModelType;
 
 import java.util.List;
 import java.util.UUID;
@@ -15,9 +19,12 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public final class CosmeticGridWidget extends PersonaPreviewGridWidget<LoadedCosmetic> {
+    private static final Identifier PERSONA_PREVIEW_TEXTURE = Identifier.fromNamespaceAndPath(
+        "bedrockskins", "textures/entity/persona.png");
+
     public CosmeticGridWidget(Minecraft client, int width, int height, int y, int itemHeight,
                               Consumer<LoadedCosmetic> onSelect, Supplier<LoadedCosmetic> selected, Font font) {
-        super(client, width, height, y, itemHeight, onSelect, selected, font);
+        super(client, width, height, y, itemHeight, 60, onSelect, selected, font);
     }
 
     public void addCosmeticsRow(List<LoadedCosmetic> cosmetics) {
@@ -40,6 +47,16 @@ public final class CosmeticGridWidget extends PersonaPreviewGridWidget<LoadedCos
     }
 
     @Override
+    protected void initializePlayerAppearance(UUID uuid, LoadedCosmetic cosmetic, PreviewPlayer player) {
+        GuiSkinUtils.cleanupPreview(uuid);
+        player.clearForcedProfileSkin();
+        player.setForcedBody(PERSONA_PREVIEW_TEXTURE);
+        player.setForcedModel(PlayerModelType.WIDE);
+        player.setUseLocalPlayerModel(false);
+        player.setForcedCape(null);
+    }
+
+    @Override
     protected void cleanupPreview(UUID uuid, LoadedCosmetic cosmetic) {
         PersonaManager.clearPreview(uuid);
     }
@@ -47,5 +64,13 @@ public final class CosmeticGridWidget extends PersonaPreviewGridWidget<LoadedCos
     @Override
     protected boolean isEquipped(LoadedCosmetic cosmetic) {
         return PersonaManager.isLocallyEquipped(cosmetic);
+    }
+
+    @Override
+    protected void renderPaperDoll(LoadedCosmetic cosmetic, PreviewPlayer preview,
+                                   GuiGraphicsExtractor graphics, int x, int y,
+                                   int width, int height) {
+        GuiUtils.renderCosmeticInRect(graphics, preview, cosmetic.type,
+            x + 1, y + 1, x + width - 1, y + height - 1);
     }
 }

@@ -23,7 +23,7 @@ public final class EmoteGridWidget extends PersonaPreviewGridWidget<LoadedEmote>
 
     public EmoteGridWidget(Minecraft client, int width, int height, int y, int itemHeight,
                            Consumer<LoadedEmote> onSelect, Supplier<LoadedEmote> selected, Font font) {
-        super(client, width, height, y, itemHeight, onSelect, selected, font);
+        super(client, width, height, y, itemHeight, 85, onSelect, selected, font);
         this.font = font;
     }
 

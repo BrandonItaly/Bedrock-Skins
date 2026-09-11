@@ -542,8 +542,7 @@ public class SkinPreviewPanel {
     }
 
     private void toggleFavorite() {
-        if (selectedSkin == null || MinecraftAccountSkin.is(selectedSkin)
-                || ImportSkinAction.is(selectedSkin)) return;
+        if (selectedSkin == null || ImportSkinAction.is(selectedSkin)) return;
         if (FavoritesManager.isFavorite(selectedSkin)) FavoritesManager.removeFavorite(selectedSkin);
         else FavoritesManager.addFavorite(selectedSkin);
         
@@ -596,10 +595,10 @@ public class SkinPreviewPanel {
 
         if (favoriteButton == null) return;
 
-        boolean virtualSkin = MinecraftAccountSkin.is(selectedSkin) || ImportSkinAction.is(selectedSkin);
+        boolean virtualSkin = ImportSkinAction.is(selectedSkin);
         boolean isFav = !virtualSkin && FavoritesManager.isFavorite(selectedSkin);
         favoriteButton.setSelected(isFav);
-        favoriteButton.setActive(!virtualSkin && currentSkinId != null);
+        favoriteButton.setActive(!virtualSkin && selectedSkin != null);
         favoriteButton.setTooltip(Component.translatable(isFav ? "bedrockskins.button.unfavorite" : "bedrockskins.button.favorite"));
 
         if (selectButton != null) {

@@ -47,7 +47,8 @@ public class CapeGridWidget extends CardGridWidget<CapeGridWidget.CapeCell> {
         var cardSprite = isSelected ? BedrockSkinsSprites.CARD_SELECTED
             : hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE;
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, y, cellWidth(), cellHeight());
-        GuiUtils.renderCapeInRect(graphics, cell.player(), 0.0F, x, y, x + cellWidth(), y + cellHeight());
+        GuiUtils.renderCapeInRect(graphics, cell.player(), 0.0F,
+            x + 1, y + 1, x + cellWidth() - 1, y + cellHeight() - 1);
         if (isEquipped) {
             graphics.blitSprite(RenderPipelines.GUI_TEXTURED, GuiUtils.EQUIPPED_BORDER,
                 x, y, cellWidth(), cellHeight());

@@ -10,7 +10,9 @@ import net.minecraft.network.chat.Component;
 import java.util.function.Supplier;
 
 /** Shared selectable sidebar used by cosmetics, emote slots, and cape sources. */
-public final class SidebarListWidget extends ObjectSelectionList<SidebarListWidget.SidebarEntry> {
+public class SidebarListWidget extends ObjectSelectionList<SidebarListWidget.SidebarEntry> {
+    private static final int ROW_LEFT_PADDING = 2;
+    private static final int ROW_RIGHT_PADDING = 10;
     private final int rowSlotHeight;
     private final Font font;
 
@@ -21,13 +23,22 @@ public final class SidebarListWidget extends ObjectSelectionList<SidebarListWidg
     }
 
     protected void extractListSeparators(GuiGraphicsExtractor graphics) {}
-    @Override public int getRowWidth() { return getWidth() - 4; }
-    @Override public int getRowLeft() { return getX() + 2; }
+    @Override public int getRowWidth() {
+        int padding = getItemCount() * rowSlotHeight > getHeight()
+            ? ROW_RIGHT_PADDING
+            : ROW_LEFT_PADDING * 2;
+        return Math.max(10, getWidth() - padding);
+    }
+    @Override public int getRowLeft() { return getX() + ROW_LEFT_PADDING; }
     @Override protected int scrollBarX() { return getX() + getWidth() - 6; }
     @Override protected void extractSelection(GuiGraphicsExtractor graphics, SidebarEntry entry, int color) {}
 
     public void add(Component name, Runnable onSelect, Supplier<Boolean> selected) {
         addEntry(new SidebarEntry(name, onSelect, selected));
+    }
+
+    public void clear() {
+        clearEntries();
     }
 
     public final class SidebarEntry extends ObjectSelectionList.Entry<SidebarEntry> {

@@ -3,7 +3,7 @@
     {
       "localization_name": "Import Skin",
       "geometry": "geometry.humanoid.custom",
-      "texture": "dummy.png",
+      "texture": "bedrockskins:textures/entity/dummy.png",
       "type": "free"
     }
   ],

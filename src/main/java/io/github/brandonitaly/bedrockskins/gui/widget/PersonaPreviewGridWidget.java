@@ -8,7 +8,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
+import io.github.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -18,15 +20,14 @@ import java.util.function.Supplier;
 abstract class PersonaPreviewGridWidget<T>
         extends CardGridWidget<PersonaPreviewGridWidget.PreviewCell<T>> {
     private static final int CELL_WIDTH = 60;
-    private static final int CELL_HEIGHT = 85;
     private static final int CELL_PADDING = 5;
     private final Consumer<T> onSelect;
     private final Supplier<T> selected;
     private final Font font;
 
     PersonaPreviewGridWidget(Minecraft client, int width, int height, int y, int itemHeight,
-                             Consumer<T> onSelect, Supplier<T> selected, Font font) {
-        super(client, width, height, y, itemHeight, CELL_WIDTH, CELL_HEIGHT, CELL_PADDING);
+                             int cellHeight, Consumer<T> onSelect, Supplier<T> selected, Font font) {
+        super(client, width, height, y, itemHeight, CELL_WIDTH, cellHeight, CELL_PADDING);
         this.onSelect = onSelect;
         this.selected = selected;
         this.font = font;
@@ -36,9 +37,17 @@ abstract class PersonaPreviewGridWidget<T>
     protected abstract Component name(T value);
     protected abstract void initializePreview(UUID uuid, T value);
     protected abstract void cleanupPreview(UUID uuid, T value);
+    protected void initializePlayerAppearance(UUID uuid, T value, PreviewPlayer player) {
+        GuiSkinUtils.applyCurrentEquippedSkin(Minecraft.getInstance(), player, uuid);
+    }
     protected void beforeRender(UUID uuid, T value) {}
     protected void renderOverlay(T value, GuiGraphicsExtractor graphics, int x, int y) {}
     protected boolean isEquipped(T value) { return false; }
+    protected void renderPaperDoll(T value, PreviewPlayer preview, GuiGraphicsExtractor graphics,
+                                   int x, int y, int width, int height) {
+        GuiUtils.renderEntityInRect(graphics, preview, 0.0F, x, y, x + width, y + height,
+            72, 180.0F);
+    }
 
     protected final void addValuesRow(List<T> values) {
         addCellsRow(values.stream().map(PreviewCell::new).toList());
@@ -51,8 +60,16 @@ abstract class PersonaPreviewGridWidget<T>
         beforeRender(cell.uuid, cell.value);
         T current = selected.get();
         boolean valueSelected = current != null && id(current).equals(id(cell.value));
-        GuiUtils.renderSkinCard(graphics, font, name(cell.value), x, y, cellWidth(), cellHeight(),
-            hovered, valueSelected, isEquipped(cell.value), preview, 0, mouseX, mouseY);
+        var cardSprite = valueSelected ? BedrockSkinsSprites.CARD_SELECTED
+            : hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE;
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite,
+            x, y, cellWidth(), cellHeight());
+        renderPaperDoll(cell.value, preview, graphics, x, y, cellWidth(), cellHeight());
+        if (isEquipped(cell.value)) {
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, GuiUtils.EQUIPPED_BORDER,
+                x, y, cellWidth(), cellHeight());
+        }
+        if (hovered) graphics.setTooltipForNextFrame(font, name(cell.value), mouseX, mouseY);
         renderOverlay(cell.value, graphics, x, y);
     }
 
@@ -80,7 +97,7 @@ abstract class PersonaPreviewGridWidget<T>
         private PreviewPlayer player(PersonaPreviewGridWidget<T> grid) {
             if (player == null) {
                 player = new PreviewPlayer(new GameProfile(uuid, ""));
-                GuiSkinUtils.applyCurrentEquippedSkin(Minecraft.getInstance(), player, uuid);
+                grid.initializePlayerAppearance(uuid, value, player);
                 grid.initializePreview(uuid, value);
             }
             return player;

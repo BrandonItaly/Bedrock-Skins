@@ -28,6 +28,7 @@ import java.util.UUID;
 
 public final class GuiUtils {
     public static final int PANEL_HEADER_HEIGHT = 26;
+    private static final float COSMETIC_PREVIEW_SCALE = 0.7F;
     
     private GuiUtils() {}
 
@@ -72,6 +73,17 @@ public final class GuiUtils {
     private static final Vector3f TEMP_TRANSLATE_CAPE = new Vector3f();
     private static final Quaternionf TEMP_BODY_ROT_CAPE = new Quaternionf();
     private static final Quaternionf TEMP_CAM_ROT_CAPE = new Quaternionf();
+    private static final Quaternionf COSMETIC_BODY_ROT = new Quaternionf()
+        .rotationZ((float) Math.PI).rotateX(-0.22F);
+    private static final Quaternionf COSMETIC_CAM_ROT = new Quaternionf();
+    private static final CosmeticFrame WHOLE_BODY_FRAME = new CosmeticFrame(0.9F);
+    private static final CosmeticFrame HEAD_FRAME = new CosmeticFrame(1.48F);
+    private static final CosmeticFrame HOOD_FRAME = new CosmeticFrame(1.34F);
+    private static final CosmeticFrame ARMS_FRAME = new CosmeticFrame(1.02F);
+    private static final CosmeticFrame TORSO_FRAME = new CosmeticFrame(1.14F);
+    private static final CosmeticFrame LEGS_FRAME = new CosmeticFrame(0.58F);
+    private static final CosmeticFrame FEET_FRAME = new CosmeticFrame(0.2F);
+    private static final CosmeticFrame BACK_FRAME = new CosmeticFrame(1.08F);
     public static final Identifier EQUIPPED_BORDER = Identifier.fromNamespaceAndPath("bedrockskins", "container/equipped_item_border");
 
     public static void renderEntityInRect(GuiGraphicsExtractor gui, PreviewPlayer preview, float yawOffset, int left, int top, int right, int bottom, int sizeCap) {
@@ -115,6 +127,52 @@ public final class GuiUtils {
         //~ if >=26.1 '.submitEntityRenderState' -> '.entity' {
         gui.entity(state, size, TEMP_TRANSLATE_CAPE, TEMP_BODY_ROT_CAPE, TEMP_CAM_ROT_CAPE, left, top, right, bottom);
         //~}
+    }
+
+    /** Renders a Persona preview cropped around the body region affected by its piece type. */
+    public static void renderCosmeticInRect(GuiGraphicsExtractor gui, PreviewPlayer preview,
+                                            String type, int left, int top, int right, int bottom) {
+        boolean back = "persona_back".equals(type);
+        AvatarRenderState state = new AvatarRenderState();
+        setupAvatarRenderState(state, preview, SkinManager.getSkin(preview.getUuid()),
+            back ? -35.0F : 135.0F, false, 0.0F);
+        state.ageInTicks = 0.0F;
+        state.yRot = 0.0F;
+        state.xRot = 0.0F;
+
+        CosmeticFrame frame = cosmeticFrame(type);
+        int size = Math.max(1, Math.round((bottom - top) * COSMETIC_PREVIEW_SCALE));
+        Vector3f translation = frame.translation(isUpsideDown(preview.getUuid()));
+
+        //~ if >=26.1 '.submitEntityRenderState' -> '.entity' {
+        gui.entity(state, size, translation, COSMETIC_BODY_ROT,
+            COSMETIC_CAM_ROT, left, top, right, bottom);
+        //~}
+    }
+
+    private static CosmeticFrame cosmeticFrame(String type) {
+        if (type == null) return WHOLE_BODY_FRAME;
+        return switch (type) {
+            case "persona_hair", "persona_facial_hair", "persona_head", "persona_eyes",
+                 "persona_mouth", "persona_face_accessory" -> HEAD_FRAME;
+            case "persona_hood" -> HOOD_FRAME;
+            case "persona_arms", "persona_hand" -> ARMS_FRAME;
+            case "persona_top", "persona_outerwear" -> TORSO_FRAME;
+            case "persona_bottom", "persona_high_pants", "persona_legs" -> LEGS_FRAME;
+            case "persona_feet" -> FEET_FRAME;
+            case "persona_back" -> BACK_FRAME;
+            default -> WHOLE_BODY_FRAME;
+        };
+    }
+
+    private record CosmeticFrame(Vector3f normalTranslation, Vector3f upsideDownTranslation) {
+        private CosmeticFrame(float centerY) {
+            this(new Vector3f(0.0F, centerY, 0.0F), new Vector3f(0.0F, -centerY, 0.0F));
+        }
+
+        private Vector3f translation(boolean upsideDown) {
+            return upsideDown ? upsideDownTranslation : normalTranslation;
+        }
     }
 
     public static void renderActionCard(GuiGraphicsExtractor gui, Font font, Component tooltipText, int x, int y, int w, int h, boolean hovered, int mouseX, int mouseY) {
