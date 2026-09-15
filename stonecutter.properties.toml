@@ -71,8 +71,8 @@ legacy4j_compile_mc="26.1.2"
 
 ["26.3-fabric"]
 loom.platform="fabric"
-fabric_loader_version="0.19.3"
-fabric_api_version="0.159.4+26.3"
+fabric_loader_version="0.19.5"
+fabric_api_version="0.160.5+26.3"
 mc_version_range="26.3"
 factory_api_version="2.2.8"
 factory_api_compile_mc="26.1.2"

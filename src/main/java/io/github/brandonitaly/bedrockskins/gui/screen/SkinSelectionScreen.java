@@ -558,7 +558,11 @@ public class SkinSelectionScreen extends Screen {
     private void openSkinPacksFolder() {
         File dir = new File(minecraft.gameDirectory, STORE_FOLDER);
         if (!dir.exists()) dir.mkdirs();
+        //? if >26.2 {
+        /*com.mojang.blaze3d.Blaze3D.openPath(dir.toPath());*/
+        //?} else {
         Util.getPlatform().openFile(dir);
+        //?}
     }
 
     public void markNeedsReload() {
