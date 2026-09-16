@@ -69,11 +69,21 @@ factory_api_compile_mc="26.1.2"
 legacy4j_version="1.9-pre-2"
 legacy4j_compile_mc="26.1.2"
 
+["26.2-neoforge"]
+loom.platform="neoforge"
+neoforge_version="26.2.0.88"
+mc_version_range="26.2"
+factory_api_version="2.2.8"
+factory_api_compile_mc="26.1.2"
+legacy4j_version="1.9-pre-2"
+legacy4j_compile_mc="26.1.2"
+
 ["26.3-fabric"]
 loom.platform="fabric"
 fabric_loader_version="0.19.5"
 fabric_api_version="0.160.5+26.3"
 mc_version_range="26.3"
+modmenu_version="21.0.0-beta.1"
 factory_api_version="2.2.8"
 factory_api_compile_mc="26.1.2"
 legacy4j_version="1.9-pre-2"

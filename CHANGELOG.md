@@ -1,1 +1,2 @@
-- Added support for 26.3
+- Added support for Mod Menu on 26.3.
+- Fixed the main-menu paper doll initially using the wide player model for slim account skins.

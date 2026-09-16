@@ -138,7 +138,7 @@ public class PaperDollWidget extends AbstractWidget {
 
         Minecraft minecraft = Minecraft.getInstance();
         if (SkinManager.getLocalSelectedKey() == null) {
-            this.previewPlayer.setForcedProfileSkin(minecraft.getSkinManager().createLookup(minecraft.getGameProfile(), false).get());
+            GuiSkinUtils.refreshAutoSelectedProfileSkin(minecraft, this.previewPlayer);
         }
 
         //? if >26.2 {
