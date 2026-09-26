@@ -55,7 +55,6 @@ public class SkinSelectionScreen extends Screen {
         0x546D1B, 0x70B919, 0xF8C627, 0xD87D3E, 0xA12722
     };
     private static final org.slf4j.Logger MOD_LOGGER = com.mojang.logging.LogUtils.getLogger();
-    private static final String STORE_FOLDER = "skin_packs";
     private static final String FAVORITES_PACK_ID = "skinpack.Favorites";
     private static final int SEARCH_WIDTH = 108;
     private static final int SEARCH_HEIGHT = 16;
@@ -250,9 +249,11 @@ public class SkinSelectionScreen extends Screen {
         int btnW = 150, btnH = 20, btnY = height - 28;
         
         if (openPacksButton == null) {
-            openPacksButton = Button.builder(Component.translatable("bedrockskins.button.open_packs"), b -> openSkinPacksFolder()).build();
+            openPacksButton = Button.builder(Component.translatable("bedrockskins.button.open_packs"), b -> openAppearanceFolder()).build();
             addRenderableWidget(openPacksButton);
         }
+        openPacksButton.setMessage(Component.translatable(usesPersonaFolder()
+            ? "bedrockskins.button.open_persona" : "bedrockskins.button.open_packs"));
         openPacksButton.setTooltip(Tooltip.create(Component.translatable("pack.folderInfo")));
 
         if (doneButton == null) {
@@ -557,8 +558,12 @@ public class SkinSelectionScreen extends Screen {
         }
     }
 
-    private void openSkinPacksFolder() {
-        File dir = new File(minecraft.gameDirectory, STORE_FOLDER);
+    private boolean usesPersonaFolder() {
+        return activeTab == AppearanceTab.COSMETICS || activeTab == AppearanceTab.EMOTES;
+    }
+
+    private void openAppearanceFolder() {
+        File dir = new File(minecraft.gameDirectory, usesPersonaFolder() ? "persona" : "skin_packs");
         if (!dir.exists()) dir.mkdirs();
         //? if >26.2 {
         /*com.mojang.blaze3d.Blaze3D.openPath(dir.toPath());*/
