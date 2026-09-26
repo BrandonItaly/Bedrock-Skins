@@ -86,6 +86,8 @@ repositories {
 }
 
 dependencies {
+    testImplementation "org.junit.jupiter:junit-jupiter:5.11.4"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher:1.11.4"
     if (isFabric) {
         minecraft "com.mojang:minecraft:${stonecutter.current.version}"
         if (!unobfuscated) mappings loom.officialMojangMappings()
@@ -117,6 +119,11 @@ dependencies {
 }
 
 def aw = "${mod_id}.accesswidener"
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}
+
 
 if (isFabric) {
     loom {

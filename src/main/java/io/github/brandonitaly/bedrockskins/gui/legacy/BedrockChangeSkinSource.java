@@ -339,7 +339,7 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
         Map<String, List<LoadedSkin>> skinsByPack = new HashMap<>();
         
         for (LoadedSkin skin : SkinPackLoader.loadedSkinsSnapshot()) {
-            if (skin != null && !REMOTE_PACK_ID.equals(skin.packId) && !isHiddenPackId(skin.packId)) {
+            if (skin != null && !skin.isRemote() && !REMOTE_PACK_ID.equals(skin.packId) && !isHiddenPackId(skin.packId)) {
                 skinsByPack.computeIfAbsent(skin.packId, k -> new ArrayList<>()).add(skin);
             }
         }
@@ -347,6 +347,7 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
         List<LoadedSkin> favorites = FavoritesManager.getFavoriteKeys().stream()
                 .map(BedrockChangeSkinSource::resolveBedrockSkin)
                 .filter(Objects::nonNull)
+                .filter(skin -> !skin.isRemote())
                 .toList();
 
         if (!favorites.isEmpty()) skinsByPack.put(FAVORITES_PACK_ID, favorites);

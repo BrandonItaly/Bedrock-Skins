@@ -171,6 +171,7 @@ final class BedrockGeometryBaker {
         float pivotX = listValue(bone.getPivot(), 0);
         float pivotY = listValue(bone.getPivot(), 1);
         float pivotZ = listValue(bone.getPivot(), 2);
+        boolean normalizedUvs = Boolean.TRUE.equals(mesh.getNormalizedUvs());
         ModelPart.Vertex[] vertices = new ModelPart.Vertex[polygonData.size()];
         Vector3f normal = null;
         for (int i = 0; i < polygonData.size(); i++) {
@@ -184,12 +185,14 @@ final class BedrockGeometryBaker {
             List<Float> position = mesh.getPositions().get(positionIndex);
             List<Float> uv = mesh.getUvs().get(uvIndex);
             if (position.size() < 3 || uv.size() < 2) return null;
+            float u = listValue(uv, 0) * (normalizedUvs ? textureWidth : 1);
+            float v = listValue(uv, 1) * (normalizedUvs ? textureHeight : 1);
             vertices[i] = new ModelPart.Vertex(
                 listValue(position, 0) - pivotX,
                 pivotY - listValue(position, 1),
                 listValue(position, 2) - pivotZ,
-                listValue(uv, 0) / textureWidth,
-                listValue(uv, 1) / textureHeight);
+                u / textureWidth,
+                v / textureHeight);
             if (normal == null && mesh.getNormals() != null
                 && normalIndex >= 0 && normalIndex < mesh.getNormals().size()) {
                 List<Float> value = mesh.getNormals().get(normalIndex);

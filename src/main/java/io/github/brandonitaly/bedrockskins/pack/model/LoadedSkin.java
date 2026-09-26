@@ -24,6 +24,18 @@ public class LoadedSkin {
     public Identifier capeIdentifier;
     public String hash = "";
 
+    /** Network assets exist for rendering, never as locally installed wardrobe entries. */
+    public boolean isRemote() {
+        return texture instanceof AssetSource.Remote || cape instanceof AssetSource.Remote;
+    }
+
+    /** Remote pixel data cannot be reloaded from disk after its GPU texture is released. */
+    public boolean hasAvailableContent(String expectedHash) {
+        return expectedHash != null && expectedHash.equals(hash)
+            && (!(texture instanceof AssetSource.Remote)
+                || (identifier != null && (cape == null || capeIdentifier != null)));
+    }
+
     public LoadedSkin(String serializeName, String packDisplayName, String skinDisplayName, JsonObject geometryData, AssetSource texture) {
         this(serializeName, packDisplayName, skinDisplayName, geometryData, texture, null, false);
     }
@@ -33,6 +45,12 @@ public class LoadedSkin {
     }
 
     public LoadedSkin(String serializeName, String packDisplayName, String skinDisplayName, JsonObject geometryData, AssetSource texture, AssetSource cape, boolean upsideDown) {
+        this(SkinId.of(serializeName, skinDisplayName), serializeName, packDisplayName, skinDisplayName,
+            geometryData, texture, cape, upsideDown);
+    }
+
+    public LoadedSkin(SkinId skinId, String serializeName, String packDisplayName, String skinDisplayName,
+                      JsonObject geometryData, AssetSource texture, AssetSource cape, boolean upsideDown) {
         this.serializeName = serializeName;
         this.packDisplayName = packDisplayName;
         this.skinDisplayName = skinDisplayName;
@@ -41,7 +59,7 @@ public class LoadedSkin {
         this.cape = cape;
         this.upsideDown = upsideDown;
 
-        this.skinId = SkinId.of(serializeName, skinDisplayName);
+        this.skinId = skinId;
         this.safePackName = StringUtils.sanitize("skinpack." + packDisplayName);
         this.safeSkinName = StringUtils.sanitize("skin." + packDisplayName + "." + skinDisplayName);
         this.packId = "skinpack." + serializeName;

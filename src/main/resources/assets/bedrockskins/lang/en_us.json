@@ -3,6 +3,8 @@
   "bedrockskins.gui.packs": "Skin Packs",
   "bedrockskins.gui.skins": "Skins",
   "bedrockskins.gui.preview": "Preview",
+  "bedrockskins.gui.player_preview": "%s’s skin",
+  "bedrockskins.gui.open_player_preview": "Preview Skin",
   "bedrockskins.gui.capes": "Capes",
   "bedrockskins.gui.cosmetics": "Cosmetics",
   "bedrockskins.gui.emotes": "Emotes",

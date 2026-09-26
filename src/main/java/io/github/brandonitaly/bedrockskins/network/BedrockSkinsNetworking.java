@@ -56,11 +56,13 @@ public final class BedrockSkinsNetworking {
                 buf.writeByteArray(new byte[0]);
                 return;
             }
+            if (string.getBytes(StandardCharsets.UTF_8).length > 1_048_576) throw new io.netty.handler.codec.EncoderException("Geometry JSON too large");
             try {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
                 try (GZIPOutputStream gzip = new GZIPOutputStream(baos)) {
                     gzip.write(string.getBytes(StandardCharsets.UTF_8));
                 }
+                if (baos.size() > 262_144) throw new io.netty.handler.codec.EncoderException("Compressed geometry too large");
                 buf.writeByteArray(baos.toByteArray());
             } catch (IOException e) {
                 buf.writeByteArray(new byte[0]);
@@ -69,13 +71,13 @@ public final class BedrockSkinsNetworking {
 
         @Override
         public String decode(RegistryFriendlyByteBuf buf) {
-            // Read max 50KB of compressed data
-            byte[] bytes = buf.readByteArray(50_000); 
+            // Read bounded compressed geometry
+            byte[] bytes = buf.readByteArray(262_144);
             if (bytes.length == 0) return "";
             
             try (GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(bytes))) {
-                // Cap decompressed output at 150KB
-                byte[] uncompressed = gzip.readNBytes(150_000);
+                // Cap decompressed output at 1 MiB
+                byte[] uncompressed = gzip.readNBytes(1_048_576);
                 if (gzip.read() != -1) {
                     throw new DecoderException("Geometry JSON exceeded maximum safe length!");
                 }
@@ -147,10 +149,20 @@ public final class BedrockSkinsNetworking {
     };
 
     public static String computeHash(String geometry, byte[] textureData) {
+        return computeHash(geometry, textureData, null);
+    }
+
+    public static String computeHash(String geometry, byte[] textureData, byte[] capeData) {
         try {
             java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-            if (geometry != null) digest.update(geometry.getBytes(StandardCharsets.UTF_8));
+            byte[] geometryBytes = geometry == null ? EMPTY_BYTES : geometry.getBytes(StandardCharsets.UTF_8);
+            // Include field boundaries: a PNG can contain trailing bytes, so concatenation alone is ambiguous.
+            digest.update(java.nio.ByteBuffer.allocate(12).putInt(geometryBytes.length)
+                .putInt(textureData == null ? 0 : textureData.length)
+                .putInt(capeData == null ? 0 : capeData.length).array());
+            digest.update(geometryBytes);
             if (textureData != null) digest.update(textureData);
+            if (capeData != null) digest.update(capeData);
             return HEX.formatHex(digest.digest());
         } catch (java.security.NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 not available", e);
@@ -212,8 +224,8 @@ public final class BedrockSkinsNetworking {
 
     private static void writeCosmetics(RegistryFriendlyByteBuf buf, List<CosmeticData> cosmetics) {
         List<CosmeticData> safe = cosmetics == null ? List.of() : cosmetics;
-        buf.writeVarInt(Math.min(safe.size(), 8));
-        for (int i = 0; i < Math.min(safe.size(), 8); i++) {
+        buf.writeVarInt(Math.min(safe.size(), 32));
+        for (int i = 0; i < Math.min(safe.size(), 32); i++) {
             CosmeticData cosmetic = safe.get(i);
             buf.writeUtf(cosmetic.id(), 128);
             buf.writeUtf(cosmetic.type(), 64);
@@ -231,7 +243,7 @@ public final class BedrockSkinsNetworking {
 
     private static List<CosmeticData> readCosmetics(RegistryFriendlyByteBuf buf) {
         int size = buf.readVarInt();
-        if (size < 0 || size > 8) throw new DecoderException("Invalid cosmetic count: " + size);
+        if (size < 0 || size > 32) throw new DecoderException("Invalid cosmetic count: " + size);
         List<CosmeticData> result = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             String id = buf.readUtf(128);

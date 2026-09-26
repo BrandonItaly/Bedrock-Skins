@@ -209,6 +209,16 @@ public final class EmoteManager {
             stop(playerId);
             return;
         }
+        if (animationJson == null || animationJson.isBlank()) {
+            // Native Bedrock emote packets carry only the Persona piece UUID.
+            LoadedEmote local = EMOTES.get(id);
+            if (local == null && id != null) {
+                local = EMOTES.values().stream().filter(emote -> id.equalsIgnoreCase(emote.id())).findFirst().orElse(null);
+            }
+            stop(playerId);
+            if (local != null) play(playerId, local);
+            return;
+        }
         try {
             JsonObject animation = GSON.fromJson(animationJson, JsonObject.class);
             if (animation != null && duration > 0.0f)
@@ -223,6 +233,18 @@ public final class EmoteManager {
         if (model != null) restoreAnimatedParts(model);
     }
 
+    /** Copy the base pose without transferring the source model's additive emote. */
+    public static void copyBasePose(ModelPart from, ModelPart to) {
+        if (from == null || to == null || from == to) return;
+        Delta delta = LAST_DELTAS.get(from);
+        to.x = from.x; to.y = from.y; to.z = from.z;
+        to.xRot = from.xRot; to.yRot = from.yRot; to.zRot = from.zRot;
+        if (delta != null) {
+            to.x -= delta.x; to.y -= delta.y; to.z -= delta.z;
+            to.xRot -= delta.xRot; to.yRot -= delta.yRot; to.zRot -= delta.zRot;
+        }
+    }
+
     /** Called after vanilla pose setup; removes the last entity's delta first. */
     public static void apply(HumanoidModel<?> model, UUID playerId) {
         restoreAnimatedParts(model);
@@ -235,6 +257,14 @@ public final class EmoteManager {
         }
         JsonObject bones = playback.emote.animation().getAsJsonObject("bones");
         if (bones == null) return;
+        // Start from the geometry's authored head rotation, not the camera look pose.
+        // Track this adjustment like the animation so normal head tracking returns on stop.
+        ModelPart head = part(model, "head");
+        if (head != null) {
+            var rest = head.getInitialPose();
+            apply(head, new Delta(0, 0, 0, rest.xRot() - head.xRot,
+                rest.yRot() - head.yRot, 0, 1, 1, 1));
+        }
         for (var entry : bones.entrySet()) {
             if (!entry.getValue().isJsonObject()) continue;
             JsonObject channels = entry.getValue().getAsJsonObject();

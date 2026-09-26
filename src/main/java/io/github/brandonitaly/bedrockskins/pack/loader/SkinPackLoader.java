@@ -1,12 +1,15 @@
 package io.github.brandonitaly.bedrockskins.pack.loader;
 
-import io.github.brandonitaly.bedrockskins.pack.StringUtils;
+import io.github.brandonitaly.bedrockskins.client.appearance.skin.AnimatedSkinTextures;
 import io.github.brandonitaly.bedrockskins.pack.model.AssetSource;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
 import io.github.brandonitaly.bedrockskins.pack.model.SkinEntry;
 import io.github.brandonitaly.bedrockskins.pack.model.SkinId;
 import io.github.brandonitaly.bedrockskins.pack.model.SkinPackManifest;
 import io.github.brandonitaly.bedrockskins.pack.pck.PckImporter;
+import io.github.brandonitaly.bedrockskins.pack.persona.PersonaImages;
+import io.github.brandonitaly.bedrockskins.pack.persona.PersonaTexturePayload;
+import io.github.brandonitaly.bedrockskins.pack.StringUtils;
 
 import io.github.brandonitaly.bedrockskins.util.ExternalAssetUtil;
 import com.google.gson.JsonArray;
@@ -127,6 +130,8 @@ public final class SkinPackLoader {
         
         var tm = Minecraft.getInstance().getTextureManager();
         if (skin.identifier != null) {
+            io.github.brandonitaly.bedrockskins.client.appearance.skin.HeadIconTextures.remove(skin.identifier);
+            AnimatedSkinTextures.remove(skin.identifier);
             tm.release(skin.identifier);
             skin.identifier = null;
         }
@@ -165,8 +170,8 @@ public final class SkinPackLoader {
 
     public static void removeLoadedSkin(SkinId id) {
         if (id == null) return;
-        LoadedSkin removed = loadedSkins.remove(id);
-        if (removed != null) releaseSkinAssets(id);
+        releaseSkinAssets(id);
+        loadedSkins.remove(id);
     }
 
     public static int removeLoadedSkins(Predicate<LoadedSkin> predicate) {
@@ -174,11 +179,12 @@ public final class SkinPackLoader {
         synchronized (loadedSkins) {
             loadedSkins.entrySet().removeIf(entry -> {
                 if (!predicate.test(entry.getValue())) return false;
+                releaseSkinAssets(entry.getKey());
                 removedIds.add(entry.getKey());
                 return true;
             });
         }
-        removedIds.forEach(SkinPackLoader::releaseSkinAssets);
+
         return removedIds.size();
     }
 
@@ -188,13 +194,18 @@ public final class SkinPackLoader {
 
     public static void registerRemoteSkin(String key, String geometryJson, byte[] textureData, byte[] capeData, String hash) {
         SkinId idKey = SkinId.parse(key);
-        if (loadedSkins.containsKey(idKey) || !validateRemoteData(textureData, geometryJson)) return;
+        if (!validateRemoteData(textureData, geometryJson)) return;
+        String contentHash = (hash == null || hash.isEmpty())
+            ? io.github.brandonitaly.bedrockskins.network.BedrockSkinsNetworking.computeHash(geometryJson, textureData, capeData) : hash;
+        LoadedSkin previous = loadedSkins.get(idKey);
+        if (previous != null && (!(previous.texture instanceof AssetSource.Remote) || previous.hasAvailableContent(contentHash))) return;
         
         try {
             // Parse geometry JSON first to fail fast before any native allocations
             JsonObject geometryObject = JsonParser.parseString(geometryJson).getAsJsonObject();
 
-            NativeImage img = NativeImage.read(new ByteArrayInputStream(textureData));
+            PersonaTexturePayload payload = PersonaTexturePayload.decode(textureData);
+            NativeImage img = NativeImage.read(new ByteArrayInputStream(payload.baseTexture()));
             DynamicTexture texture = null;
             Identifier id = null;
             
@@ -205,23 +216,36 @@ public final class SkinPackLoader {
             boolean success = false;
             try {
                 texture = new DynamicTexture(() -> "bedrock_skin_remote", img);
-                id = createIdentifier("bedrockskins", "skins/remote/" + StringUtils.sanitize(key));
+                id = createIdentifier("bedrockskins", "skins/remote/" + StringUtils.sanitize(key) + "/" + contentHash);
                 Minecraft.getInstance().getTextureManager().register(id, texture);
 
                 if (capeImg != null) {
                     capeTexture = new DynamicTexture(() -> "bedrock_cape_remote", capeImg);
-                    capeId = createIdentifier("bedrockskins", "capes/remote/" + StringUtils.sanitize(key));
+                    capeId = createIdentifier("bedrockskins", "capes/remote/" + StringUtils.sanitize(key) + "/" + contentHash);
                     Minecraft.getInstance().getTextureManager().register(capeId, capeTexture);
                 }
 
-                LoadedSkin ls = new LoadedSkin("Remote", "Remote", key,
+                // The object's ID must match its registry key: GUI previews and head
+                // portraits resolve geometry through LoadedSkin.skinId as well.
+                LoadedSkin ls = new LoadedSkin(idKey, "Remote", "Remote", key,
                     geometryObject, AssetSource.Remote.INSTANCE,
                     capeId != null ? AssetSource.Remote.INSTANCE : null,
                     false);
                 ls.identifier = id;
                 ls.capeIdentifier = capeId;
-                ls.hash = (hash == null || hash.isEmpty()) ? io.github.brandonitaly.bedrockskins.network.BedrockSkinsNetworking.computeHash(geometryJson, textureData) : hash;
+                ls.hash = contentHash;
+                AnimatedSkinTextures.register(id, texture, payload);
                 loadedSkins.put(idKey, ls);
+                if (previous != null) {
+                    var manager = Minecraft.getInstance().getTextureManager();
+                    if (previous.identifier != null) {
+                        io.github.brandonitaly.bedrockskins.client.appearance.skin.HeadIconTextures.remove(previous.identifier);
+                        AnimatedSkinTextures.remove(previous.identifier);
+                        manager.release(previous.identifier);
+                    }
+                    if (previous.capeIdentifier != null) manager.release(previous.capeIdentifier);
+                    io.github.brandonitaly.bedrockskins.client.render.model.BedrockModelManager.invalidate(idKey);
+                }
                 success = true;
             } finally {
                 if (!success) {
@@ -231,6 +255,7 @@ public final class SkinPackLoader {
                         img.close();
                     }
                     if (id != null) {
+                        AnimatedSkinTextures.remove(id);
                         Minecraft.getInstance().getTextureManager().release(id);
                     }
                     if (capeTexture != null) {
@@ -598,9 +623,11 @@ public final class SkinPackLoader {
     }
 
     private static boolean validateRemoteData(byte[] data, String geo) {
-        return data.length <= 512 * 1024 && data.length >= 4 
-            && data[0] == (byte)0x89 && data[1] == (byte)0x50 && data[2] == (byte)0x4E 
-            && geo.length() <= 100_000;
+        if (data == null || data.length > 1_048_576 || geo == null || geo.length() > 1_048_576) return false;
+        try {
+            PersonaImages.read(PersonaTexturePayload.decode(data).baseTexture());
+            return true;
+        } catch (java.io.IOException | RuntimeException exception) { return false; }
     }
 
     private static boolean hasUpsideDownAnimation(SkinEntry entry) {

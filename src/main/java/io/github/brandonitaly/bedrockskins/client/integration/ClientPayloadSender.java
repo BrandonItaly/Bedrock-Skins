@@ -17,9 +17,10 @@ public final class ClientPayloadSender {
         }
 
         //? if fabric {
-        ClientPlayNetworking.send(payload);
+        if (ClientPlayNetworking.canSend(payload.type())) ClientPlayNetworking.send(payload);
         //?} else if neoforge {
-        /*net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(payload);*/
+        /*if (client.getConnection().hasChannel(payload.type().id()))
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(payload);*/
         //?}
     }
 }

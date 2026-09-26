@@ -16,9 +16,14 @@ import net.minecraft.client.input.MouseButtonEvent;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import java.util.UUID;
+import java.util.function.Supplier;
+import net.minecraft.world.entity.player.PlayerSkin;
+import io.github.brandonitaly.bedrockskins.client.appearance.skin.SkinManager;
+import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
 
 
-/** Full-window, rotatable view of the appearance currently shown in the wardrobe preview. */
+/** Full-window, rotatable preview of a wardrobe selection or another player. */
 public final class FullScreenPreviewScreen extends Screen {
     private final Screen parent;
     private final LoadedSkin selectedSkin;
@@ -29,7 +34,17 @@ public final class FullScreenPreviewScreen extends Screen {
     private float rotation;
     private int lastMouseX;
     private boolean dragging;
-    private boolean cleanedUp;
+    private UUID targetId;
+    private String targetName;
+    private Supplier<PlayerSkin> targetSkin;
+
+    public FullScreenPreviewScreen(Screen parent, UUID playerId, String playerName,
+                                   Supplier<PlayerSkin> skinGetter) {
+        this(parent, null, null, null, null, 0);
+        targetId = playerId;
+        targetName = playerName;
+        targetSkin = skinGetter;
+    }
 
     public FullScreenPreviewScreen(Screen parent, LoadedSkin selectedSkin,
                                    LoadedCosmetic selectedCosmetic, MinecraftCape selectedCape,
@@ -46,9 +61,31 @@ public final class FullScreenPreviewScreen extends Screen {
     @Override
     protected void init() {
         super.init();
+        closePreview();
+        dragging = false;
         String name = minecraft.player != null ? minecraft.player.getName().getString() : "Preview";
-        previewPlayer = new PreviewPlayer(name);
+        previewPlayer = new PreviewPlayer(targetId != null ? targetName : name);
 
+        if (targetId != null) setupPlayerPreview();
+        else setupWardrobePreview();
+
+        int buttonWidth = Math.min(160, Math.max(80, width - 32));
+        addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
+            .bounds((width - buttonWidth) / 2, height - 28, buttonWidth, 20).build());
+    }
+
+    private void setupPlayerPreview() {
+        var skinId = SkinManager.getSkin(targetId);
+        var loaded = SkinPackLoader.getLoadedSkin(skinId);
+        if (loaded != null && loaded.skinId != null) {
+            SkinPackLoader.registerTextureFor(loaded.skinId);
+            SkinManager.setPreviewSkin(previewPlayer.getUuid(), loaded.skinId.pack(), loaded.skinId.name());
+        }
+        previewPlayer.setForcedProfileSkin(SkinManager.applySkinOverrides(targetId, targetSkin.get()));
+        PersonaManager.setPreviewFromPlayer(previewPlayer.getUuid(), targetId);
+    }
+
+    private void setupWardrobePreview() {
         if (selectedSkin != null) {
             GuiSkinUtils.applyLoadedSkinPreview(previewPlayer, selectedSkin, false);
         } else {
@@ -64,10 +101,6 @@ public final class FullScreenPreviewScreen extends Screen {
         if (selectedEmote != null) EmoteManager.play(previewPlayer.getUuid(), selectedEmote);
         else if (selectedCosmetic != null) EmoteManager.playDressingRoom(previewPlayer.getUuid(), selectedCosmetic.type);
         else if (selectedCape != null) EmoteManager.playDressingRoom(previewPlayer.getUuid(), "persona_back");
-
-        int buttonWidth = Math.min(160, Math.max(80, width - 32));
-        addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
-            .bounds((width - buttonWidth) / 2, height - 28, buttonWidth, 20).build());
     }
 
     @Override
@@ -75,7 +108,9 @@ public final class FullScreenPreviewScreen extends Screen {
         if (dragging) rotation -= (mouseX - lastMouseX) * 0.5F;
         lastMouseX = mouseX;
 
-        gui.centeredText(font, title, width / 2, 10, 0xFFFFFFFF);
+        gui.centeredText(font, targetId != null
+            ? Component.translatable("bedrockskins.gui.player_preview", targetName) : title,
+            width / 2, 10, 0xFFFFFFFF);
         if (previewPlayer != null) {
             int horizontalMargin = Math.max(8, width / 12);
             GuiUtils.renderEntityInRect(gui, previewPlayer, rotation * 3.0F,
@@ -118,11 +153,14 @@ public final class FullScreenPreviewScreen extends Screen {
 
     @Override
     public void removed() {
-        if (!cleanedUp) {
-            cleanedUp = true;
-            if (previewPlayer != null) previewPlayer.close();
-            previewPlayer = null;
-        }
+        closePreview();
         super.removed();
     }
+
+    private void closePreview() {
+        if (previewPlayer == null) return;
+        previewPlayer.close();
+        previewPlayer = null;
+    }
+
 }

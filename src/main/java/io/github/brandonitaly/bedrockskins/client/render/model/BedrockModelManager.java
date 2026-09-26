@@ -87,8 +87,13 @@ public final class BedrockModelManager {
     }
 
     public static void clearAllModels() {
+        io.github.brandonitaly.bedrockskins.client.appearance.skin.HeadIconTextures.clear();
         bedrockModels.clear();
         vanillaWideModel = null;
         vanillaSlimModel = null;
+    }
+
+    public static void invalidate(SkinId id) {
+        bedrockModels.remove(id);
     }
 }

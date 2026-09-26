@@ -1,2 +1,6 @@
-- Added support for Mod Menu on 26.3.
-- Fixed the main-menu paper doll initially using the wide player model for slim account skins.
+- Added a full-screen skin preview from player head icons in the Social Interactions screen.
+- Head icons and player-head glyphs now render the main head and hat geometry instead of cropping the skin texture, including custom and Persona models.
+- Added additional built-in Persona emotes.
+- Emotes are no longer canceled by jumping.
+- During an emote, the player's head now ignores camera rotation.
+- Fixed armor, capes, and other attachments being double-animated or misaligned when a custom skin is emoting.

@@ -12,9 +12,9 @@ import java.util.List;
 public record PersonaTexturePayload(byte[] baseTexture, byte[] tintMask, int tintBaseColor,
                                     List<AnimationRegion> animations) {
     private static final int MAGIC = 0x42535041; // BSPA
-    private static final int VERSION = 2;
+    private static final int VERSION = 3;
     private static final int MAX_REGIONS = 32;
-    private static final int MAX_IMAGE_BYTES = 524_288;
+    private static final int MAX_IMAGE_BYTES = 1_048_576;
 
     public PersonaTexturePayload {
         baseTexture = baseTexture == null ? new byte[0] : baseTexture;
@@ -34,6 +34,7 @@ public record PersonaTexturePayload(byte[] baseTexture, byte[] tintMask, int tin
     public static byte[] encode(byte[] baseTexture, byte[] tintMask, int tintBaseColor,
                                 List<AnimationRegion> animations) throws IOException {
         List<AnimationRegion> safeAnimations = animations == null ? List.of() : animations;
+        if (safeAnimations.size() > MAX_REGIONS) throw new IOException("Too many Persona animation regions");
         if (safeAnimations.isEmpty() && (tintMask == null || tintMask.length == 0)) return baseTexture;
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (DataOutputStream output = new DataOutputStream(bytes)) {
@@ -51,6 +52,7 @@ public record PersonaTexturePayload(byte[] baseTexture, byte[] tintMask, int tin
                 output.writeInt(region.frameCount());
                 writeBytes(output, region.textureStrip());
                 writeBytes(output, region.tintMaskStrip());
+                output.writeInt(region.expression());
             }
         }
         return bytes.toByteArray();
@@ -61,7 +63,7 @@ public record PersonaTexturePayload(byte[] baseTexture, byte[] tintMask, int tin
         try (DataInputStream input = new DataInputStream(new ByteArrayInputStream(data))) {
             if (input.readInt() != MAGIC) return new PersonaTexturePayload(data, List.of());
             int version = input.readUnsignedByte();
-            if (version != 1 && version != VERSION) throw new IOException("Unsupported Persona texture animation version " + version);
+            if (version < 1 || version > VERSION) throw new IOException("Unsupported Persona texture animation version " + version);
             byte[] base = readBytes(input);
             byte[] tintMask = version >= 2 ? readBytes(input) : new byte[0];
             int tintBaseColor = version >= 2 ? input.readInt() : 0xFFFFFF;
@@ -79,7 +81,9 @@ public record PersonaTexturePayload(byte[] baseTexture, byte[] tintMask, int tin
                 }
                 byte[] strip = readBytes(input);
                 byte[] stripMask = version >= 2 ? readBytes(input) : new byte[0];
-                regions.add(new AnimationRegion(x, y, width, height, frames, strip, stripMask));
+                int expression = version >= 3 ? input.readInt() : 0;
+                if (expression < 0 || expression > 1) throw new IOException("Invalid animation expression");
+                regions.add(new AnimationRegion(x, y, width, height, frames, strip, stripMask, expression));
             }
             return new PersonaTexturePayload(base, tintMask, tintBaseColor, regions);
         }
@@ -87,6 +91,7 @@ public record PersonaTexturePayload(byte[] baseTexture, byte[] tintMask, int tin
 
     private static void writeBytes(DataOutputStream output, byte[] value) throws IOException {
         byte[] safe = value == null ? new byte[0] : value;
+        if (safe.length > MAX_IMAGE_BYTES) throw new IOException("Persona texture data too large");
         output.writeInt(safe.length);
         output.write(safe);
     }
@@ -100,7 +105,16 @@ public record PersonaTexturePayload(byte[] baseTexture, byte[] tintMask, int tin
     }
 
     public record AnimationRegion(int atlasX, int atlasY, int width, int frameHeight,
-                                  int frameCount, byte[] textureStrip, byte[] tintMaskStrip) {
+                                  int frameCount, byte[] textureStrip, byte[] tintMaskStrip, int expression) {
+        public AnimationRegion(int atlasX, int atlasY, int width, int frameHeight, int frameCount, byte[] textureStrip, byte[] tintMaskStrip) {
+            this(atlasX, atlasY, width, frameHeight, frameCount, textureStrip, tintMaskStrip, 0);
+        }
+        public int frame(long tick) {
+            if (expression == 0) return (int) Math.floorMod(tick, frameCount);
+            // Keep the neutral frame between blinks; Bedrock chooses its blink timing locally.
+            int phase = (int) Math.floorMod(tick, frameCount + 26);
+            return phase < 26 ? 0 : phase - 26;
+        }
         public AnimationRegion(int atlasX, int atlasY, int width, int frameHeight,
                                int frameCount, byte[] textureStrip) {
             this(atlasX, atlasY, width, frameHeight, frameCount, textureStrip, new byte[0]);

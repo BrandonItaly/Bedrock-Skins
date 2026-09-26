@@ -24,7 +24,7 @@ public final class ServerSkinManager {
             return null;
         }
 
-        String hash = BedrockSkinsNetworking.computeHash(geometry, textureData);
+        String hash = BedrockSkinsNetworking.computeHash(geometry, textureData, capeData);
         
         // Deduplicate: store skin data in registry if not already present
         skinRegistry.computeIfAbsent(hash, h -> new PlayerSkinData(skinId, geometry, textureData, capeData));
@@ -64,5 +64,10 @@ public final class ServerSkinManager {
                 .map(ActiveSkin::hash)
                 .collect(Collectors.toSet());
         skinRegistry.keySet().retainAll(activeHashes);
+    }
+
+    public static void clear() {
+        playerActiveSkins.clear();
+        skinRegistry.clear();
     }
 }

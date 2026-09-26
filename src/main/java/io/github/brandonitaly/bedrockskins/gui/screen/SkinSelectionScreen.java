@@ -274,6 +274,7 @@ public class SkinSelectionScreen extends Screen {
             skinCache.put(packId, new ArrayList<>());
         }
         for (LoadedSkin skin : SkinPackLoader.loadedSkinsSnapshot()) {
+            if (skin.isRemote()) continue;
             skinCache.computeIfAbsent(skin.packId, k -> new ArrayList<>()).add(skin);
         }
 
@@ -290,6 +291,7 @@ public class SkinSelectionScreen extends Screen {
             .map(id -> id != null && id.equals(MinecraftAccountSkin.INSTANCE.skinId)
                 ? MinecraftAccountSkin.INSTANCE : SkinPackLoader.getLoadedSkin(id))
             .filter(Objects::nonNull)
+            .filter(skin -> !skin.isRemote())
             .toList();
         skinCache.put(FAVORITES_PACK_ID, favs);
     }
@@ -1098,7 +1100,7 @@ public class SkinSelectionScreen extends Screen {
 
             for (List<LoadedSkin> skins : skinCache.values()) {
                 for (LoadedSkin skin : skins) {
-                    if (skin.cape != null) {
+                    if (skin.cape != null && !skin.isRemote()) {
                         SkinPackLoader.registerTextureFor(skin.skinId);
                         if (skin.capeIdentifier != null) {
                             String pathStr = skin.capeIdentifier.toString();

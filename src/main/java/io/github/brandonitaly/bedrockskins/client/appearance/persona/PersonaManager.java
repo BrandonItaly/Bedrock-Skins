@@ -80,7 +80,7 @@ public final class PersonaManager {
 
     public static void reload(JsonObject vanillaGeometry) {
         clearOtherPlayers();
-        PersonaPieceLoader.clearCaches();
+        PersonaPieceLoader.beginReload(vanillaGeometry);
         PersonaTextureManager.clear();
         COSMETICS.clear();
         MODELS.clear();
@@ -394,6 +394,14 @@ public final class PersonaManager {
     /** Makes a GUI preview render the current local loadout, including on the title screen. */
     public static void setPreviewFromLocal(UUID playerId) {
         setPreviewWithEquipped(playerId, null);
+    }
+
+    /** Copies another player's loadout into an independently owned GUI preview. */
+    public static void setPreviewFromPlayer(UUID previewId, UUID playerId) {
+        CosmeticAssignment source = ASSIGNMENTS.get(playerId);
+        CosmeticAssignment preview = assignment(previewId);
+        preview.preview = source == null ? null : source.effective();
+        removeIfEmpty(previewId, preview);
     }
 
     public static void clearPreview(UUID playerId) {

@@ -10,4 +10,7 @@ import java.util.List;
 public interface ModelPartAccessor {
     @Accessor("cubes")
     List<ModelPart.Cube> bedrockSkins$getCubes();
+
+    @Accessor("children")
+    java.util.Map<String, ModelPart> bedrockSkins$getChildren();
 }

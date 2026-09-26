@@ -3,12 +3,16 @@ package io.github.brandonitaly.bedrockskins;
 import io.github.brandonitaly.bedrockskins.network.BedrockSkinsNetworking;
 import io.github.brandonitaly.bedrockskins.server.PlayerSkinData;
 import io.github.brandonitaly.bedrockskins.server.ServerSkinManager;
+import io.github.brandonitaly.bedrockskins.server.ServerAppearanceNetworking;
+import io.github.brandonitaly.bedrockskins.api.ServerAppearanceEvents;
 import io.github.brandonitaly.bedrockskins.pack.persona.PersonaTexturePayload;
 //? if fabric {
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 //?} else if neoforge {
 /*import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -36,6 +40,8 @@ public class BedrockSkins implements ModInitializer {
     @Override
     public void onInitialize() {
         ServerSkinHandler.logger.info("Initializing Bedrock Skins Mod");
+        ServerTickEvents.END_SERVER_TICK.register(ServerAppearanceEvents::tick);
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> ServerSkinHandler.onServerStop());
 
         // Register Payloads
         PayloadTypeRegistry.clientboundPlay().register(BedrockSkinsNetworking.SkinUpdatePayload.ID, BedrockSkinsNetworking.SkinUpdatePayload.CODEC);
@@ -49,8 +55,8 @@ public class BedrockSkins implements ModInitializer {
 
         // Handle player joining - send them all existing skin announcements
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            ServerSkinHandler.onPlayerJoin(payload -> ServerPlayNetworking.send(handler.player, payload));
-            ServerSkinHandler.onPlayerJoinCosmetics(payload -> ServerPlayNetworking.send(handler.player, payload));
+            ServerSkinHandler.onPlayerJoin(payload -> ServerAppearanceNetworking.send(handler.player, payload));
+            ServerSkinHandler.onPlayerJoinCosmetics(payload -> ServerAppearanceNetworking.send(handler.player, payload));
         });
 
         // Handle player disconnecting - clean up memory
@@ -62,18 +68,17 @@ public class BedrockSkins implements ModInitializer {
         ServerPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.SetSkinPayload.ID, (payload, context) -> context.server().execute(() -> {
             ServerSkinHandler.handleSetSkin(
                 context.player(), payload.skinId(), payload.geometry(), payload.textureData(), payload.capeData(),
-                broadcast -> context.server().getPlayerList().getPlayers().forEach(p -> ServerPlayNetworking.send(p, broadcast))
+                broadcast -> ServerAppearanceNetworking.broadcast(context.server(), broadcast)
             );
         }));
 
         ServerPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.SetCosmeticsPayload.ID, (payload, context) -> context.server().execute(() ->
             ServerSkinHandler.handleSetCosmetics(context.player(), payload.cosmetics(),
-                update -> context.server().getPlayerList().getPlayers().forEach(p -> ServerPlayNetworking.send(p, update)))
+                update -> ServerAppearanceNetworking.broadcast(context.server(), update))
         ));
         ServerPlayNetworking.registerGlobalReceiver(BedrockSkinsNetworking.PlayEmotePayload.ID, (payload, context) -> context.server().execute(() -> {
-            if (payload.isStop() || ServerSkinHandler.validEmote(payload)) context.server().getPlayerList().getPlayers().forEach(player -> ServerPlayNetworking.send(player,
-                new BedrockSkinsNetworking.EmoteUpdatePayload(context.player().getUUID(), payload.id(), payload.name(),
-                    payload.animationName(), payload.animation(), payload.duration())));
+            ServerSkinHandler.handleEmote(context.player(), payload,
+                update -> ServerAppearanceNetworking.broadcast(context.server(), update));
         }));
 
         // Handle client requesting a specific skin by hash
@@ -98,7 +103,7 @@ public class BedrockSkins {
     }
 
     private void registerPayloads(final RegisterPayloadHandlersEvent event) {
-        final var registrar = event.registrar("bedrockskins");
+        final var registrar = event.registrar("bedrockskins").optional();
         
         registrar.playToClient(BedrockSkinsNetworking.SkinUpdatePayload.ID, BedrockSkinsNetworking.SkinUpdatePayload.CODEC, (payload, context) -> {
             context.enqueueWork(() -> io.github.brandonitaly.bedrockskins.client.BedrockSkinsClient.handleSkinUpdatePacket(payload));
@@ -117,19 +122,19 @@ public class BedrockSkins {
         registrar.playToServer(BedrockSkinsNetworking.SetSkinPayload.ID, BedrockSkinsNetworking.SetSkinPayload.CODEC, (payload, context) -> {
             context.enqueueWork(() -> ServerSkinHandler.handleSetSkin(
                 (ServerPlayer) context.player(), payload.skinId(), payload.geometry(), payload.textureData(), payload.capeData(),
-                PacketDistributor::sendToAllPlayers
+                update -> ServerAppearanceNetworking.broadcast(context.player().level().getServer(), update)
             ));
         });
 
         registrar.playToServer(BedrockSkinsNetworking.SetCosmeticsPayload.ID, BedrockSkinsNetworking.SetCosmeticsPayload.CODEC, (payload, context) -> {
             context.enqueueWork(() -> ServerSkinHandler.handleSetCosmetics(
-                (ServerPlayer) context.player(), payload.cosmetics(), PacketDistributor::sendToAllPlayers
+                (ServerPlayer) context.player(), payload.cosmetics(),
+                update -> ServerAppearanceNetworking.broadcast(context.player().level().getServer(), update)
             ));
         });
         registrar.playToServer(BedrockSkinsNetworking.PlayEmotePayload.ID, BedrockSkinsNetworking.PlayEmotePayload.CODEC, (payload, context) -> {
-            if (payload.isStop() || ServerSkinHandler.validEmote(payload)) context.enqueueWork(() -> PacketDistributor.sendToAllPlayers(
-                new BedrockSkinsNetworking.EmoteUpdatePayload(context.player().getUUID(), payload.id(), payload.name(),
-                    payload.animationName(), payload.animation(), payload.duration())));
+            context.enqueueWork(() -> ServerSkinHandler.handleEmote((ServerPlayer) context.player(), payload,
+                update -> ServerAppearanceNetworking.broadcast(context.player().level().getServer(), update)));
         });
 
         registrar.playToServer(BedrockSkinsNetworking.RequestSkinDataPayload.ID, BedrockSkinsNetworking.RequestSkinDataPayload.CODEC, (payload, context) -> {
@@ -142,8 +147,8 @@ public class BedrockSkins {
     @SubscribeEvent
     public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-            ServerSkinHandler.onPlayerJoin(payload -> PacketDistributor.sendToPlayer(serverPlayer, payload));
-            ServerSkinHandler.onPlayerJoinCosmetics(payload -> PacketDistributor.sendToPlayer(serverPlayer, payload));
+            ServerSkinHandler.onPlayerJoin(payload -> ServerAppearanceNetworking.send(serverPlayer, payload));
+            ServerSkinHandler.onPlayerJoinCosmetics(payload -> ServerAppearanceNetworking.send(serverPlayer, payload));
         }
     }
 
@@ -152,6 +157,16 @@ public class BedrockSkins {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             ServerSkinHandler.onPlayerDisconnect(serverPlayer.getUUID());
         }
+    }
+
+    @SubscribeEvent
+    public void onServerTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
+        ServerAppearanceEvents.tick(event.getServer());
+    }
+
+    @SubscribeEvent
+    public void onServerStop(net.neoforged.neoforge.event.server.ServerStoppedEvent event) {
+        ServerSkinHandler.onServerStop();
     }
 }*/
 //?}
@@ -197,9 +212,25 @@ class ServerSkinHandler {
     }
 
     static void onPlayerDisconnect(UUID uuid) {
+        ServerAppearanceEvents.disconnect(uuid);
         lastSkinChange.remove(uuid);
         ServerSkinManager.removeSkin(uuid);
         playerCosmetics.remove(uuid);
+    }
+
+    static void onServerStop() {
+        ServerAppearanceEvents.stop();
+        ServerSkinManager.clear();
+        lastSkinChange.clear();
+        playerCosmetics.clear();
+    }
+
+    static void handleEmote(ServerPlayer player, BedrockSkinsNetworking.PlayEmotePayload payload,
+                            Consumer<BedrockSkinsNetworking.EmoteUpdatePayload> broadcaster) {
+        if (!payload.isStop() && !validEmote(payload)) return;
+        broadcaster.accept(new BedrockSkinsNetworking.EmoteUpdatePayload(player.getUUID(), payload.id(), payload.name(),
+            payload.animationName(), payload.animation(), payload.duration()));
+        ServerAppearanceEvents.emote(player, payload);
     }
 
     static boolean validEmote(BedrockSkinsNetworking.PlayEmotePayload payload) {
@@ -214,7 +245,7 @@ class ServerSkinHandler {
 
     static void handleSetCosmetics(ServerPlayer player, java.util.List<BedrockSkinsNetworking.CosmeticData> cosmetics,
                                    Consumer<BedrockSkinsNetworking.CosmeticsUpdatePayload> broadcaster) {
-        if (cosmetics == null || cosmetics.size() > 8) return;
+        if (cosmetics == null || cosmetics.size() > 32) return;
         for (var cosmetic : cosmetics) {
             if (cosmetic.id().isBlank() || cosmetic.type().isBlank() || cosmetic.geometry().length() > 150_000
                     || cosmetic.zones().size() > 32 || cosmetic.zones().stream().anyMatch(zone -> zone.length() > 64)
@@ -227,6 +258,7 @@ class ServerSkinHandler {
         if (safe.isEmpty()) playerCosmetics.remove(player.getUUID());
         else playerCosmetics.put(player.getUUID(), safe);
         broadcaster.accept(new BedrockSkinsNetworking.CosmeticsUpdatePayload(player.getUUID(), safe));
+        ServerAppearanceEvents.cosmeticsChanged(player.getUUID(), safe);
     }
 
     static void handleSetSkin(ServerPlayer player, SkinId skinId, String geometry, byte[] textureData, byte[] capeData, Consumer<BedrockSkinsNetworking.SkinAnnouncePayload> broadcaster) {
@@ -280,6 +312,7 @@ class ServerSkinHandler {
 
         // Broadcast to all players
         broadcaster.accept(new BedrockSkinsNetworking.SkinAnnouncePayload(uuid, skinId, hash));
+        ServerAppearanceEvents.skinChanged(uuid);
     }
 
     static void handleRequestSkinData(ServerPlayer player, String hash) {
@@ -292,11 +325,7 @@ class ServerSkinHandler {
             var payload = new BedrockSkinsNetworking.SkinUpdatePayload(
                 ownerUuid, data.skinId(), data.geometry(), data.textureData(), data.capeData()
             );
-            //? if fabric {
-            ServerPlayNetworking.send(player, payload);
-            //?} else if neoforge {
-            /*PacketDistributor.sendToPlayer(player, payload);*/
-            //?}
+            ServerAppearanceNetworking.send(player, payload);
         } else {
             logger.warn("Player {} requested unknown skin hash: {}", player.getName().getString(), hash);
         }

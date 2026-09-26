@@ -10,7 +10,6 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 
-import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -132,61 +131,13 @@ final class PersonaTextureManager {
                              int baseColor, int selectedColor) {
         int width = Math.min(source.getWidth(), target.getWidth());
         int height = Math.min(source.getHeight(), target.getHeight());
-        int baseR = (baseColor >> 16) & 0xFF;
-        int baseG = (baseColor >> 8) & 0xFF;
-        int baseB = baseColor & 0xFF;
-        int selectedR = (selectedColor >> 16) & 0xFF;
-        int selectedG = (selectedColor >> 8) & 0xFF;
-        int selectedB = selectedColor & 0xFF;
-        float[] baseHsb = Color.RGBtoHSB(baseR, baseG, baseB, null);
-        float[] selectedHsb = Color.RGBtoHSB(selectedR, selectedG, selectedB, null);
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                int pixel = source.getPixel(x, y);
-                int amount = mask == null ? 0 : (mask.getPixel(x, y) >> 16) & 0xFF;
-                if (amount != 0) {
-                    int red = (pixel >> 16) & 0xFF;
-                    int green = (pixel >> 8) & 0xFF;
-                    int blue = pixel & 0xFF;
-                    int recolored = recolor(red, green, blue, baseHsb, selectedHsb);
-                    red = blend(red, (recolored >> 16) & 0xFF, amount);
-                    green = blend(green, (recolored >> 8) & 0xFF, amount);
-                    blue = blend(blue, recolored & 0xFF, amount);
-                    pixel = (pixel & 0xFF000000) | (red << 16) | (green << 8) | blue;
-                }
-                target.setPixel(x, y, pixel);
-            }
+        float[] baseHsb = io.github.brandonitaly.bedrockskins.pack.persona.PersonaColors.hsv(baseColor);
+        float[] selectedHsb = io.github.brandonitaly.bedrockskins.pack.persona.PersonaColors.hsv(selectedColor);
+        for (int y = 0; y < height; y++) for (int x = 0; x < width; x++) {
+            int pixel = source.getPixel(x, y);
+            int amount = mask == null ? 0 : (mask.getPixel(x, y) >> 16) & 0xFF;
+            target.setPixel(x, y, io.github.brandonitaly.bedrockskins.pack.persona.PersonaColors.tint(pixel, amount, baseHsb, selectedHsb));
         }
-    }
-
-    /**
-     * Transfers the selected color from the authored base color in HSV space.
-     * Persona textures are not neutral masks: their tinted pixels contain
-     * shading and small color variations around tint_base_color. Applying an
-     * independent RGB ratio to those pixels changes the requested hue (and is
-     * especially unstable when a base channel is zero). HSV transfer preserves
-     * those authored variations while moving the pixel to the selected hue.
-     */
-    private static int recolor(int red, int green, int blue, float[] baseHsb, float[] selectedHsb) {
-        float[] pixelHsb = Color.RGBtoHSB(red, green, blue, null);
-        float hue = wrapHue(pixelHsb[0] + selectedHsb[0] - baseHsb[0]);
-        float saturation = transferComponent(pixelHsb[1], baseHsb[1], selectedHsb[1]);
-        float brightness = transferComponent(pixelHsb[2], baseHsb[2], selectedHsb[2]);
-        return Color.HSBtoRGB(hue, saturation, brightness) & 0xFFFFFF;
-    }
-
-    private static float transferComponent(float value, float base, float selected) {
-        if (base <= 1.0e-6F) return selected;
-        return Math.min(1.0F, value * selected / base);
-    }
-
-    private static float wrapHue(float hue) {
-        hue %= 1.0F;
-        return hue < 0.0F ? hue + 1.0F : hue;
-    }
-
-    private static int blend(int from, int to, int amount) {
-        return (from * (255 - amount) + to * amount + 127) / 255;
     }
 
     private static String sanitize(String value) {

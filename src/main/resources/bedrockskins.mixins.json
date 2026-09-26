@@ -13,9 +13,13 @@
     "render.ModelPartCubeMixin",
     "render.ModelPartAccessor",
     "gui.PauseScreenMixin",
+    "gui.SocialPlayerEntryMixin",
     "render.PlayerEntityRendererMixin",
     "skin.PlayerListEntryMixin",
     "skin.PlayerSkinRenderCacheMixin",
+    "skin.PlayerFaceExtractorMixin",
+    "skin.PlayerHeadGlyphMixin",
+    "skin.VoiceChatHeadMixin",
     "gui.TitleScreenMixin",
     "skin.TranslationStorageMixin",
     "render.AvatarRendererCancelMixin"

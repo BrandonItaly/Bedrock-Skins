@@ -36,11 +36,19 @@ public final class PersonaPieceLoader {
     private static final int SLIM_SKIN_ATLAS_U = 64;
     private static final String BASE_GEOMETRY = "geometry.humanoid.custom";
     private static final String BASE_GEOMETRY_SLIM = "geometry.humanoid.customSlim";
+    private static final Map<File, LoadedCosmetic> PIECE_CACHE = new HashMap<>();
+    private static long cachedRevision = -1;
+    private static JsonObject cachedGeometry;
 
     private PersonaPieceLoader() {}
 
-    public static void clearCaches() {
+    public static void beginReload(JsonObject vanillaGeometry) {
         PersonaLocalization.clearCache();
+        if (cachedRevision != PersonaCatalog.revision() || !java.util.Objects.equals(cachedGeometry, vanillaGeometry)) {
+            PIECE_CACHE.clear();
+            cachedRevision = PersonaCatalog.revision();
+            cachedGeometry = vanillaGeometry == null ? null : vanillaGeometry.deepCopy();
+        }
     }
 
     public static Optional<LoadedCosmetic> load(File directory, JsonObject vanillaGeometry) {
@@ -58,6 +66,12 @@ public final class PersonaPieceLoader {
             String pieceName = string(metadata, "piece_name");
             if (pieceName == null || pieceName.isBlank()) pieceName = directory.getName();
             String displayName = PersonaLocalization.displayName(directory, pieceName);
+
+            LoadedCosmetic cached = PIECE_CACHE.get(directory);
+            if (cached != null) {
+                return Optional.of(new LoadedCosmetic(cached.id, displayName, cached.type, cached.zones,
+                    cached.geometryData, cached.slimGeometryData, cached.texture, cached.tintable, cached.defaultTintColor));
+            }
 
             JsonObject base = resolveBaseGeometry(vanillaGeometry, BASE_GEOMETRY);
             if (base == null) throw new IllegalArgumentException("Vanilla player geometry is unavailable");
@@ -97,8 +111,10 @@ public final class PersonaPieceLoader {
 
             String pieceId = string(metadata, "piece_id");
             if (pieceId == null || pieceId.isBlank()) pieceId = pieceName;
-            return Optional.of(new LoadedCosmetic(pieceId, displayName, pieceType, zones,
-                geometry, slimGeometry, new AssetSource.Memory(png), tintable, tint.defaultColor()));
+            LoadedCosmetic result = new LoadedCosmetic(pieceId, displayName, pieceType, zones,
+                geometry, slimGeometry, new AssetSource.Memory(png), tintable, tint.defaultColor());
+            PIECE_CACHE.put(directory, result);
+            return Optional.of(result);
         } catch (Exception e) {
             LOGGER.warn("Failed to load Persona cosmetic from {}", directory.getName(), e);
             return Optional.empty();

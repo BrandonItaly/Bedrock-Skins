@@ -6,27 +6,29 @@ import org.slf4j.Logger;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.Comparator;
-import java.util.function.Consumer;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.security.MessageDigest;
 
 /** Exposes bundled Persona packs as directories for the existing Bedrock file loaders. */
 public final class PersonaResourceLoader {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String RESOURCE_PREFIX = "persona/";
     private static Path extractedRoot;
+    private static final Map<Path, byte[]> fingerprints = new HashMap<>();
 
     private PersonaResourceLoader() {}
 
     /** Extracts the active resource view once for both cosmetic and emote loading. */
-    public static synchronized void beginReload(ResourceManager manager) {
-        deleteTree(extractedRoot);
-        extractedRoot = null;
-        Path extracted = null;
+    public static synchronized boolean beginReload(ResourceManager manager) {
         try {
-            extracted = Files.createTempDirectory("bedrockskins-bundled-persona-");
-            final Path targetRoot = extracted;
-            final boolean[] copied = {false};
+            if (extractedRoot == null) extractedRoot = Files.createTempDirectory("bedrockskins-bundled-persona-");
+            final Path targetRoot = extractedRoot;
+            Set<Path> present = new HashSet<>();
+            boolean[] complete = {true};
 
             manager.listResources("persona", id ->
                 "bedrockskins".equals(id.getNamespace())).forEach((id, resource) -> {
@@ -34,34 +36,35 @@ public final class PersonaResourceLoader {
                 if (!path.startsWith(RESOURCE_PREFIX)) return;
                 Path target = safeTarget(targetRoot, path.substring(RESOURCE_PREFIX.length()));
                 if (target == null) return;
+                present.add(target);
                 try {
-                    Files.createDirectories(target.getParent());
                     try (var input = resource.open()) {
-                        Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
+                        byte[] data = input.readAllBytes();
+                        byte[] digest = MessageDigest.getInstance("SHA-256").digest(data);
+                        if (!Arrays.equals(digest, fingerprints.get(target)) || !Files.isRegularFile(target)) {
+                            Files.createDirectories(target.getParent());
+                            Files.write(target, data);
+                            fingerprints.put(target, digest);
+                        }
                     }
-                    copied[0] = true;
                 } catch (Exception exception) {
+                    complete[0] = false;
+                    fingerprints.remove(target);
+                    try { Files.deleteIfExists(target); } catch (Exception ignored) {}
                     LOGGER.warn("Failed to extract bundled Persona resource {}", id, exception);
                 }
             });
-            if (copied[0]) {
-                extractedRoot = targetRoot;
-                extracted = null;
+            for (Path stale : Set.copyOf(fingerprints.keySet())) {
+                if (!present.contains(stale)) {
+                    Files.deleteIfExists(stale);
+                    fingerprints.remove(stale);
+                }
             }
+            return complete[0];
         } catch (Exception exception) {
             LOGGER.warn("Failed to discover bundled Persona resources", exception);
-        } finally {
-            deleteTree(extracted);
+            return false;
         }
-    }
-
-    public static void forEachBundledRoot(ResourceManager manager, Consumer<Path> consumer) {
-        Path root;
-        synchronized (PersonaResourceLoader.class) {
-            if (extractedRoot == null) beginReload(manager);
-            root = extractedRoot;
-        }
-        if (root != null) consumer.accept(root);
     }
 
     private static Path safeTarget(Path root, String relative) {
@@ -69,16 +72,9 @@ public final class PersonaResourceLoader {
         return target.startsWith(root) ? target : null;
     }
 
-    private static void deleteTree(Path root) {
-        if (root == null || !Files.exists(root)) return;
-        try (var paths = Files.walk(root)) {
-            paths.sorted(Comparator.reverseOrder()).forEach(path -> {
-                try {
-                    Files.deleteIfExists(path);
-                } catch (Exception ignored) {
-                }
-            });
-        } catch (Exception ignored) {
-        }
+    static synchronized Map<Path, String> contentSnapshot() {
+        Map<Path, String> snapshot = new HashMap<>();
+        fingerprints.forEach((path, digest) -> snapshot.put(path, java.util.HexFormat.of().formatHex(digest)));
+        return snapshot;
     }
 }

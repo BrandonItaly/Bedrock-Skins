@@ -196,6 +196,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         //?}
         while (openKey.consumeClick()) client.gui.setScreen(getAppropriateSkinScreen(client.gui.screen()));
         EmoteManager.tick();
+        io.github.brandonitaly.bedrockskins.client.appearance.skin.AnimatedSkinTextures.tick();
         if (client.player == null) {
             restoreEmoteCamera(client);
             return;
@@ -305,7 +306,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
 
         // Check whether this skin is already registered with a matching hash.
         LoadedSkin existing = SkinPackLoader.getLoadedSkin(skinId);
-        if (existing != null && hash.equals(existing.hash)) {
+        if (existing != null && existing.hasAvailableContent(hash)) {
             // Apply immediately
             SkinManager.setSkin(playerUuid, skinId);
         } else {
@@ -323,7 +324,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         if (id == null) {
             SkinManager.resetSkin(playerUuid);
         } else {
-            String hash = BedrockSkinsNetworking.computeHash(p.geometry(), p.textureData());
+            String hash = BedrockSkinsNetworking.computeHash(p.geometry(), p.textureData(), p.capeData());
             SkinPackLoader.registerRemoteSkin(id.toString(), p.geometry(), p.textureData(), p.capeData(), hash);
             
             // Set for the main player in the payload
@@ -358,7 +359,6 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
             || client.options.keyDown.isDown()
             || client.options.keyLeft.isDown()
             || client.options.keyRight.isDown()
-            || client.options.keyJump.isDown()
             || client.options.keyShift.isDown()
             || client.options.keySprint.isDown();
     }

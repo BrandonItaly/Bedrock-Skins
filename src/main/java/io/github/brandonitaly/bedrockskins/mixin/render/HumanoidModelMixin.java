@@ -68,13 +68,13 @@ public abstract class HumanoidModelMixin<T extends HumanoidRenderState> implemen
         if (skinId != null) {
             BedrockPlayerModel bedrockModel = BedrockModelManager.getModel(skinId);
             if (bedrockModel != null) {
-                copyPose(bedrockModel.head, this.head);
-                copyPose(bedrockModel.hat, this.hat);
-                copyPose(bedrockModel.body, this.body);
-                copyPose(bedrockModel.rightArm, this.rightArm);
-                copyPose(bedrockModel.leftArm, this.leftArm);
-                copyPose(bedrockModel.rightLeg, this.rightLeg);
-                copyPose(bedrockModel.leftLeg, this.leftLeg);
+                EmoteManager.copyBasePose(bedrockModel.head, this.head);
+                EmoteManager.copyBasePose(bedrockModel.hat, this.hat);
+                EmoteManager.copyBasePose(bedrockModel.body, this.body);
+                EmoteManager.copyBasePose(bedrockModel.rightArm, this.rightArm);
+                EmoteManager.copyBasePose(bedrockModel.leftArm, this.leftArm);
+                EmoteManager.copyBasePose(bedrockModel.rightLeg, this.rightLeg);
+                EmoteManager.copyBasePose(bedrockModel.leftLeg, this.leftLeg);
             }
         }
         if (state instanceof AvatarRenderState) {
@@ -184,16 +184,5 @@ public abstract class HumanoidModelMixin<T extends HumanoidRenderState> implemen
         } catch (Throwable ignored) {
             return false;
         }
-    }
-
-    @Unique
-    private static void copyPose(ModelPart from, ModelPart to) {
-        if (from == null || to == null) return;
-        to.x = from.x;
-        to.y = from.y;
-        to.z = from.z;
-        to.xRot = from.xRot;
-        to.yRot = from.yRot;
-        to.zRot = from.zRot;
     }
 }
