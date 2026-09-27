@@ -50,9 +50,23 @@ public abstract class HumanoidModelMixin<T extends HumanoidRenderState> implemen
         bedrockSkins$restorePersonaVisibility();
     }
 
+    @Inject(method = "setupAnim", at = @At(value = "FIELD",
+        target = "Lnet/minecraft/client/renderer/entity/state/HumanoidRenderState;isPassenger:Z", ordinal = 0))
+    private void bedrockSkins$skinBasePose(T state, CallbackInfo ci) {
+        if ((Object) this instanceof BedrockPlayerModel model) model.applySkinBasePose(state);
+    }
+
     @Inject(method = "setupAnim", at = @At("RETURN"))
     private void bedrockSkins$syncToBedrockModel(T state, CallbackInfo ci) {
         if ((Object) this instanceof BedrockPlayerModel bedrockPlayerModel) {
+            if (bedrockPlayerModel.animFlags.legacy()
+                && io.github.brandonitaly.bedrockskins.client.persistence.BedrockSkinsConfig.isSkinAnimationsEnabled()) {
+                io.github.brandonitaly.bedrockskins.client.render.model.LegacyActionPose.apply(bedrockPlayerModel, state);
+            }
+            if (bedrockPlayerModel.animFlags.invertedCrouch()
+                && io.github.brandonitaly.bedrockskins.client.persistence.BedrockSkinsConfig.isSkinAnimationsEnabled()) {
+                io.github.brandonitaly.bedrockskins.client.render.model.InvertedCrouchPose.apply(bedrockPlayerModel, state);
+            }
             applyBedrockPartVisibility(bedrockPlayerModel, state);
             if (bedrockPlayerModel.personaCosmetic) {
                 PersonaManager.applySideVisibility(bedrockPlayerModel,

@@ -332,9 +332,10 @@ public class SkinPreviewPanel {
             }
             return;
         }
-        if (MinecraftAccountSkin.is(selectedSkin)) {
+        if (MinecraftAccountSkin.is(selectedSkin) || GuiSkinUtils.isSkinCurrentlyEquipped(selectedSkin)) {
             currentSkinId = null;
             GuiSkinUtils.resetSelectedSkin(minecraft);
+            selectedSkin = MinecraftAccountSkin.INSTANCE;
             updatePreviewModel(null);
             updateFavoriteButton();
             return;
@@ -603,11 +604,13 @@ public class SkinPreviewPanel {
 
         if (selectButton != null) {
             boolean enabled = selectedSkin != null;
-            if (enabled && BedrockSkinsClient.blockUnfairSkins && selectedSkin.unfair) enabled = false;
+            boolean unequip = selectedSkin != null && !MinecraftAccountSkin.is(selectedSkin)
+                && !ImportSkinAction.is(selectedSkin) && GuiSkinUtils.isSkinCurrentlyEquipped(selectedSkin);
+            if (enabled && !unequip && BedrockSkinsClient.blockUnfairSkins && selectedSkin.unfair) enabled = false;
             selectButton.active = enabled;
             selectButton.setMessage(Component.translatable(ImportSkinAction.is(selectedSkin)
                 ? "bedrockskins.button.add_custom_skin"
-                : "bedrockskins.button.equip"));
+                : unequip ? "bedrockskins.button.unequip" : "bedrockskins.button.equip"));
         }
     }
 

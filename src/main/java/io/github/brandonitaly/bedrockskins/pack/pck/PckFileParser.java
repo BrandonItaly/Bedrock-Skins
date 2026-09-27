@@ -11,11 +11,17 @@ import java.util.Map;
  * Parser for Minecraft Legacy Console .pck containers.
  */
 public final class PckFileParser {
-    private static final String XML_VERSION_KEY = "XMLVERSION";
+    private static final int MAX_PROPERTY_COUNT = 1_000_000;
+    private static final int MAX_ASSET_COUNT = 2_000_000;
+    private static final int MAX_STRING_LENGTH = 1_000_000;
 
     private PckFileParser() {}
 
     public static PckArchive parse(byte[] bytes) throws IOException {
+        if (bytes == null || bytes.length < Integer.BYTES) {
+            throw new IOException("PCK is missing its type header");
+        }
+
         ByteBuffer buf = ByteBuffer.wrap(bytes);
 
         buf.order(ByteOrder.BIG_ENDIAN);
@@ -30,24 +36,22 @@ public final class PckFileParser {
         buf.position(4);
 
         String[] propertyLookup = readPropertyLookup(buf);
-        
-        int xmlVersion = 0;
-        for (String prop : propertyLookup) {
-            if (XML_VERSION_KEY.equals(prop)) {
-                xmlVersion = readInt(buf, "xml version");
+        for (String property : propertyLookup) {
+            if ("XMLVERSION".equals(property)) {
+                readInt(buf, "xml version");
                 break;
             }
         }
-
+        
         List<AssetEntry> entries = readAssetEntries(buf);
         List<PckAsset> assets = readAssetContents(entries, propertyLookup, buf);
 
-        return new PckArchive(pckType, xmlVersion, assets);
+        return new PckArchive(pckType, assets);
     }
 
     private static String[] readPropertyLookup(ByteBuffer buf) throws IOException {
         int count = readInt(buf, "property count");
-        if (count < 0 || count > 1_000_000) {
+        if (count < 0 || count > MAX_PROPERTY_COUNT) {
             throw new IOException("Invalid property count: " + count);
         }
 
@@ -55,14 +59,18 @@ public final class PckFileParser {
         for (int i = 0; i < count; i++) {
             int index = readInt(buf, "property index");
             if (index < 0 || index >= count) throw new IOException("Invalid property index: " + index);
+            if (lookup[index] != null) throw new IOException("Duplicate property index: " + index);
             lookup[index] = readString(buf);
+        }
+        for (int i = 0; i < lookup.length; i++) {
+            if (lookup[i] == null) throw new IOException("Missing property index: " + i);
         }
         return lookup;
     }
 
     private static List<AssetEntry> readAssetEntries(ByteBuffer buf) throws IOException {
         int count = readInt(buf, "asset count");
-        if (count < 0 || count > 2_000_000) {
+        if (count < 0 || count > MAX_ASSET_COUNT) {
             throw new IOException("Invalid asset count: " + count);
         }
 
@@ -83,7 +91,7 @@ public final class PckFileParser {
 
         for (AssetEntry entry : entries) {
             int propCount = readInt(buf, "asset property count");
-            if (propCount < 0 || propCount > 1_000_000) {
+            if (propCount < 0 || propCount > MAX_PROPERTY_COUNT) {
                 throw new IOException("Invalid asset property count: " + propCount);
             }
 
@@ -106,8 +114,9 @@ public final class PckFileParser {
 
     private static String readString(ByteBuffer buf) throws IOException {
         int len = readInt(buf, "string length");
-        if (len < 0 || len > 1_000_000) throw new IOException("Invalid string length: " + len);
-        if (buf.remaining() < len * 2 + 4) throw new IOException("Unexpected EOF while reading string data");
+        if (len < 0 || len > MAX_STRING_LENGTH) throw new IOException("Invalid string length: " + len);
+        long encodedLength = (long) len * Character.BYTES + Integer.BYTES;
+        if (encodedLength > buf.remaining()) throw new IOException("Unexpected EOF while reading string data");
 
         char[] chars = new char[len];
         for (int i = 0; i < len; i++) {
@@ -136,7 +145,7 @@ public final class PckFileParser {
 
     private record AssetEntry(String filename, int type, int size) {}
 
-    public record PckArchive(int type, int xmlVersion, List<PckAsset> assets) {}
+    public record PckArchive(int type, List<PckAsset> assets) {}
 
     public record PckAsset(String filename, int type, List<Map.Entry<String, String>> properties, byte[] data) {
         public String getFirstProperty(String... keys) {

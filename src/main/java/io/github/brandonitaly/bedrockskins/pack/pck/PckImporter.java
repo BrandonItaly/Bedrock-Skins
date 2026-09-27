@@ -160,7 +160,9 @@ public class PckImporter {
                             skinSaved = true;
                         }
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception exception) {
+                    LOGGER.warn("Failed to parse embedded PCK {}", asset.filename(), exception);
+                }
                 
                 // If we didn't convert and save the image, save the raw bytes now
                 if (!skinSaved) Files.write(skinFilePath, skinData);

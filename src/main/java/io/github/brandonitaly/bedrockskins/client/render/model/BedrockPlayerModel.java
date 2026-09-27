@@ -20,9 +20,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import java.util.*;
 
 public class BedrockPlayerModel extends PlayerModel {
-    private static final float NINETY_DEGREES = 1.5707964f;
-    private static final float ITEM_POSE_ROT = 0.31415927f;
-    private static final float WALK_SWING_CONST = 0.6662f;
 
     public final Map<String, ModelPart> partsMap;
     public final Map<String, PartTransform> defaultTransforms;
@@ -86,6 +83,11 @@ public class BedrockPlayerModel extends PlayerModel {
             return new BedrockAnimFlags(g);
         }
 
+        public boolean legacy() { return geometry.isLegacyAnimation(); }
+        public boolean invertedCrouch() { return isTrue(geometry.getAnimationInvertedCrouch()); }
+        public boolean armsDown() { return isTrue(geometry.getAnimationArmsDown()); }
+        public boolean statueArms() { return isTrue(geometry.getAnimationStatueOfLibertyArms()); }
+        public boolean overridesArms() { return armsDown() || armsOutFront() || singleArm() || statueArms(); }
         public boolean armsOutFront() { return isTrue(geometry.getAnimationArmsOutFront()); }
         public boolean singleArm() { return isTrue(geometry.getAnimationSingleArmAnimation()); }
         public boolean stationaryLegs() { return isTrue(geometry.getAnimationStationaryLegs()); }
@@ -441,74 +443,25 @@ public class BedrockPlayerModel extends PlayerModel {
         return parentName + "_armor_" + mask;
     }
 
-    @Override
-    public void setupAnim(AvatarRenderState state) {
-        super.setupAnim(state);
-        if (!BedrockSkinsConfig.isSkinAnimationsEnabled() || state.isPassenger) return;
-
-        // --- Arms Additive Animation ---
-        if (animFlags.armsOutFront() && !state.isVisuallySwimming) {
-            applyArmsOutFrontToArm(customRightArm, true, state);
-            applyArmsOutFrontToArm(customLeftArm, false, state);
-            if (customRightArm != null) customRightArm.xRot -= NINETY_DEGREES;
-            if (customLeftArm != null) customLeftArm.xRot -= NINETY_DEGREES;
-            
-        } else if (animFlags.singleArm() && !state.isVisuallySwimming) {
-            if (customLeftArm != null && customRightArm != null) {
-                customLeftArm.xRot += computeArmWalkSwing(state, true) - computeArmWalkSwing(state, false);
-            }
-        }
-        
-        // --- Legs Additive Animation ---
-        if (animFlags.stationaryLegs()) {
-            if (customRightLeg != null) customRightLeg.xRot -= computeLegWalkSwing(state, true);
-            if (customLeftLeg != null) customLeftLeg.xRot -= computeLegWalkSwing(state, false);
-        } else if (animFlags.singleLeg()) {
-            if (customRightLeg != null && customLeftLeg != null) customLeftLeg.xRot = customRightLeg.xRot;
-        }
-    }
-
-    private void applyArmsOutFrontToArm(ModelPart arm, boolean rightArm, AvatarRenderState state) {
-        if (arm == null) return;
-        HumanoidModel.ArmPose pose = rightArm ? state.rightArmPose : state.leftArmPose;
-
-        if (pose != ArmPose.EMPTY && pose != ArmPose.ITEM) return;
-        
-        //? if <=26.2 {
-        if (pose == HumanoidModel.ArmPose.ITEM && state.attackTime <= 0.0F) {
-        //?} else {
-        /*if (pose == HumanoidModel.ArmPose.ITEM && state.swingAnimation <= 0.0F) {
-        *///?}
-            arm.xRot = (arm.xRot + ITEM_POSE_ROT) * 2.0F;
-            arm.yRot = 0.0F;
-            arm.zRot = 0.0F;
-        }
-        arm.xRot -= computeArmWalkSwing(state, rightArm);
-    }
-
-    private float computeArmWalkSwing(AvatarRenderState state, boolean rightArm) {
-        float speedValue = state.speedValue != 0f ? state.speedValue : 1f;
-        float phase = rightArm ? Mth.PI : 0f;
-        return Mth.cos(state.walkAnimationPos * WALK_SWING_CONST + phase) * (state.walkAnimationSpeed / speedValue);
-    }
-
-    private float computeLegWalkSwing(AvatarRenderState state, boolean rightLeg) {
-        float phase = rightLeg ? 0f : Mth.PI;
-        return Mth.cos(state.walkAnimationPos * WALK_SWING_CONST + phase) * 1.4F * state.walkAnimationSpeed;
+    /** Invoked during vanilla setup, after walking but before riding, items and attacks. */
+    public void applySkinBasePose(net.minecraft.client.renderer.entity.state.HumanoidRenderState state) {
+        if (!BedrockSkinsConfig.isSkinAnimationsEnabled()) return;
+        SkinAnimationPose.apply(this, animFlags, state);
     }
 
     public void copyFromVanilla(PlayerModel vanillaModel) {
+        if ((animFlags.legacy() || animFlags.invertedCrouch()) && BedrockSkinsConfig.isSkinAnimationsEnabled()) return;
         copyRotation(customHead, vanillaModel.head);
         copyRotation(customBody, vanillaModel.body);
         copyRotation(customHat, vanillaModel.hat);
 
         boolean animsEnabled = BedrockSkinsConfig.isSkinAnimationsEnabled();
 
-        if (!animFlags.armsOutFront() || !animsEnabled) {
+        if (!animFlags.overridesArms() || !animsEnabled) {
             copyRotation(customRightArm, vanillaModel.rightArm);
             copyRotation(customLeftArm, vanillaModel.leftArm);
         }
-        if (!animFlags.stationaryLegs() || !animsEnabled) {
+        if (!(animFlags.stationaryLegs() || animFlags.singleLeg()) || !animsEnabled) {
             copyRotation(customRightLeg, vanillaModel.rightLeg);
             copyRotation(customLeftLeg, vanillaModel.leftLeg);
         }

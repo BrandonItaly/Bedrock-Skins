@@ -19,6 +19,7 @@ final class PckModelConverter {
     private static final int PCK_ANIM_FLAG_STATIC_LEGS = 2;
     private static final int PCK_ANIM_FLAG_SYNCED_LEGS = 5;
     private static final int PCK_ANIM_FLAG_SYNCED_ARMS = 6;
+    private static final int PCK_ANIM_FLAG_STATUE_ARMS = 7;
     private static final int PCK_ANIM_FLAG_ALL_ARMOR_DISABLED = 8;
     private static final int PCK_ANIM_FLAG_HEAD_DISABLED = 10;
     private static final int PCK_ANIM_FLAG_RIGHT_ARM_DISABLED = 11;
@@ -27,6 +28,7 @@ final class PckModelConverter {
     private static final int PCK_ANIM_FLAG_RIGHT_LEG_DISABLED = 14;
     private static final int PCK_ANIM_FLAG_LEFT_LEG_DISABLED = 15;
     private static final int PCK_ANIM_FLAG_HEAD_OVERLAY_DISABLED = 16;
+    private static final int PCK_ANIM_FLAG_INVERTED_CROUCH = 17;
     private static final int PCK_ANIM_FLAG_SLIM = 19;
     private static final int PCK_ANIM_FLAG_LEFT_ARM_OVERLAY_DISABLED = 20;
     private static final int PCK_ANIM_FLAG_RIGHT_ARM_OVERLAY_DISABLED = 21;
@@ -98,11 +100,11 @@ final class PckModelConverter {
         List<PckBox> boxes = asset != null ? parsePckBoxes(asset) : List.of();
         Map<String, Float> offsets = asset != null ? parsePckOffsets(asset) : Map.of();
 
-        if (boxes.isEmpty() && offsets.isEmpty() && animMask == null) return baseWrappedGeometry;
 
         JsonObject geometry = baseWrappedGeometry.deepCopy();
         JsonObject node = firstGeometryNode(geometry);
         if (node == null) return baseWrappedGeometry;
+        node.addProperty("bedrockskins_legacy_animation", true);
 
         if (animMask != null) applyAnimationFlagsToGeometryFields(node, animMask);
 
@@ -114,7 +116,6 @@ final class PckModelConverter {
 
         // Delete Vanilla Cubes & Apply Pivot Offsets
         if (animMask != null || !offsets.isEmpty()) {
-            boolean disableAllArmor = animMask != null && isAnimFlagSet(animMask, PCK_ANIM_FLAG_ALL_ARMOR_DISABLED);
 
             for (JsonElement el : bones) {
                 if (!el.isJsonObject()) continue;
@@ -133,12 +134,12 @@ final class PckModelConverter {
                         case "leftarm" -> isAnimFlagSet(animMask, PCK_ANIM_FLAG_LEFT_ARM_DISABLED);
                         case "rightleg" -> isAnimFlagSet(animMask, PCK_ANIM_FLAG_RIGHT_LEG_DISABLED);
                         case "leftleg" -> isAnimFlagSet(animMask, PCK_ANIM_FLAG_LEFT_LEG_DISABLED);
-                        case "hat" -> disableAllArmor || isAnimFlagSet(animMask, PCK_ANIM_FLAG_HEAD_OVERLAY_DISABLED);
-                        case "jacket" -> disableAllArmor || isAnimFlagSet(animMask, PCK_ANIM_FLAG_BODY_OVERLAY_DISABLED);
-                        case "rightsleeve" -> disableAllArmor || isAnimFlagSet(animMask, PCK_ANIM_FLAG_RIGHT_ARM_OVERLAY_DISABLED);
-                        case "leftsleeve" -> disableAllArmor || isAnimFlagSet(animMask, PCK_ANIM_FLAG_LEFT_ARM_OVERLAY_DISABLED);
-                        case "rightpants" -> disableAllArmor || isAnimFlagSet(animMask, PCK_ANIM_FLAG_RIGHT_LEG_OVERLAY_DISABLED);
-                        case "leftpants" -> disableAllArmor || isAnimFlagSet(animMask, PCK_ANIM_FLAG_LEFT_LEG_OVERLAY_DISABLED);
+                        case "hat" -> isAnimFlagSet(animMask, PCK_ANIM_FLAG_HEAD_OVERLAY_DISABLED);
+                        case "jacket" -> isAnimFlagSet(animMask, PCK_ANIM_FLAG_BODY_OVERLAY_DISABLED);
+                        case "rightsleeve" -> isAnimFlagSet(animMask, PCK_ANIM_FLAG_RIGHT_ARM_OVERLAY_DISABLED);
+                        case "leftsleeve" -> isAnimFlagSet(animMask, PCK_ANIM_FLAG_LEFT_ARM_OVERLAY_DISABLED);
+                        case "rightpants" -> isAnimFlagSet(animMask, PCK_ANIM_FLAG_RIGHT_LEG_OVERLAY_DISABLED);
+                        case "leftpants" -> isAnimFlagSet(animMask, PCK_ANIM_FLAG_LEFT_LEG_OVERLAY_DISABLED);
                         default -> false;
                     };
 
@@ -181,11 +182,28 @@ final class PckModelConverter {
         // Add PCK Cubes
         for (PckBox box : boxes) {
             String baseType = baseTypeForBoxType(box.type());
-            float offsetY = offsets.getOrDefault(baseType, 0.0f);
+            float offsetY = box.type().equals("HEADWEAR")
+                ? offsets.getOrDefault("HELMET", offsets.getOrDefault("HEAD", 0.0f))
+                : offsets.getOrDefault(baseType, 0.0f);
             float[] origin = toBedrockOrigin(box);
             origin[1] -= offsetY;
 
-            JsonObject bone = findOrCreateBone(bones, boneNameForBoxType(box.type()));
+            String boneName = boneNameForBoxType(box.type());
+            boolean existed = false;
+            for (JsonElement entry : bones) {
+                if (entry.isJsonObject() && entry.getAsJsonObject().has("name")
+                    && boneName.equalsIgnoreCase(entry.getAsJsonObject().get("name").getAsString())) {
+                    existed = true;
+                    break;
+                }
+            }
+            JsonObject bone = findOrCreateBone(bones, boneName);
+            if (!existed) {
+                float pivotOffset = offsetY;
+                if (baseType.equals("BODY") && Math.abs(pivotOffset) <= 0.0001f)
+                    pivotOffset = offsets.getOrDefault("CHEST", 0.0f);
+                applyPivotOffsetY(bone, boneName.toLowerCase(Locale.ROOT), pivotOffset);
+            }
             JsonArray cubes = bone.getAsJsonArray("cubes");
             if (cubes == null) {
                 cubes = new JsonArray();
@@ -206,10 +224,12 @@ final class PckModelConverter {
     }
 
     private static void applyAnimationFlagsToGeometryFields(JsonObject geometry, Long animMask) {
+        geometry.addProperty("animationArmsDown", isAnimFlagSet(animMask, PCK_ANIM_FLAG_STATIC_ARMS));
+        geometry.addProperty("animationStatueOfLibertyArms", isAnimFlagSet(animMask, PCK_ANIM_FLAG_STATUE_ARMS));
         geometry.addProperty("animationArmsOutFront", isAnimFlagSet(animMask, PCK_ANIM_FLAG_ZOMBIE_ARMS));
         geometry.addProperty("animationStationaryLegs", isAnimFlagSet(animMask, PCK_ANIM_FLAG_STATIC_LEGS));
         geometry.addProperty("animationSingleLegAnimation", isAnimFlagSet(animMask, PCK_ANIM_FLAG_SYNCED_LEGS));
-        geometry.addProperty("animationSingleArmAnimation", isAnimFlagSet(animMask, PCK_ANIM_FLAG_SYNCED_ARMS) || isAnimFlagSet(animMask, PCK_ANIM_FLAG_STATIC_ARMS));
+        geometry.addProperty("animationSingleArmAnimation", isAnimFlagSet(animMask, PCK_ANIM_FLAG_SYNCED_ARMS));
         geometry.addProperty("animationDontShowArmor", isAnimFlagSet(animMask, PCK_ANIM_FLAG_ALL_ARMOR_DISABLED));
         geometry.addProperty("animationHeadDisabled", isAnimFlagSet(animMask, PCK_ANIM_FLAG_HEAD_DISABLED));
         geometry.addProperty("animationBodyDisabled", isAnimFlagSet(animMask, PCK_ANIM_FLAG_BODY_DISABLED));
@@ -217,6 +237,7 @@ final class PckModelConverter {
         geometry.addProperty("animationLeftArmDisabled", isAnimFlagSet(animMask, PCK_ANIM_FLAG_LEFT_ARM_DISABLED));
         geometry.addProperty("animationRightLegDisabled", isAnimFlagSet(animMask, PCK_ANIM_FLAG_RIGHT_LEG_DISABLED));
         geometry.addProperty("animationLeftLegDisabled", isAnimFlagSet(animMask, PCK_ANIM_FLAG_LEFT_LEG_DISABLED));
+        geometry.addProperty("animationInvertedCrouch", isAnimFlagSet(animMask, PCK_ANIM_FLAG_INVERTED_CROUCH));
         geometry.addProperty("animationForceHeadArmor", isAnimFlagSet(animMask, PCK_ANIM_FLAG_FORCE_HEAD_ARMOR));
         geometry.addProperty("animationForceBodyArmor", isAnimFlagSet(animMask, PCK_ANIM_FLAG_FORCE_BODY_ARMOR));
         geometry.addProperty("animationForceRightArmArmor", isAnimFlagSet(animMask, PCK_ANIM_FLAG_FORCE_RIGHT_ARM_ARMOR));

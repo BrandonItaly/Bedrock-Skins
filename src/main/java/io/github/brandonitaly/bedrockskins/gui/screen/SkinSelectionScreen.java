@@ -292,7 +292,7 @@ public class SkinSelectionScreen extends Screen {
             .map(id -> id != null && id.equals(MinecraftAccountSkin.INSTANCE.skinId)
                 ? MinecraftAccountSkin.INSTANCE : SkinPackLoader.getLoadedSkin(id))
             .filter(Objects::nonNull)
-            .filter(skin -> !skin.isRemote())
+            .filter(skin -> MinecraftAccountSkin.is(skin) || !skin.isRemote())
             .toList();
         skinCache.put(FAVORITES_PACK_ID, favs);
     }

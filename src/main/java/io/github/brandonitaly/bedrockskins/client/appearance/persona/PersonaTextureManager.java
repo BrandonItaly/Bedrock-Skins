@@ -3,6 +3,8 @@ package io.github.brandonitaly.bedrockskins.client.appearance.persona;
 import io.github.brandonitaly.bedrockskins.pack.model.AssetSource;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedCosmetic;
 import io.github.brandonitaly.bedrockskins.pack.persona.PersonaTexturePayload;
+import io.github.brandonitaly.bedrockskins.pack.persona.PersonaAnimationClock;
+import io.github.brandonitaly.bedrockskins.pack.persona.BlinkAnimation;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
@@ -52,13 +54,15 @@ final class PersonaTextureManager {
         ManagedTexture animation = TEXTURES.get(new VariantKey(cosmetic.id,
             cosmetic.tintable ? color & 0xFFFFFF : cosmetic.defaultTintColor));
         if (animation == null || animation.regions.isEmpty()) return;
-        long animationTick = System.nanoTime() / 115_000_000L;
+        long now = System.nanoTime();
+        long animationTick = now / 50_000_000L;
         if (animation.lastTick == animationTick) return;
         animation.lastTick = animationTick;
         NativeImage target = animation.texture.getPixels();
         if (target == null) return;
         for (AnimatedRegion region : animation.regions) {
-            int frame = (int) (animationTick % region.frameCount);
+            int frame = region.expression == 1 ? animation.blink.frame(now, region.frameCount)
+                : (int) Math.floorMod(PersonaAnimationClock.frame(now), region.frameCount);
             int sourceY = frame * region.frameHeight;
             if (sourceY + region.frameHeight > region.tinted.getHeight()) continue;
             region.tinted.copyRect(target, 0, sourceY,
@@ -109,7 +113,7 @@ final class PersonaTextureManager {
                     throw new IllegalArgumentException("Persona animation region exceeds its texture bounds");
                 }
                 regions.add(new AnimatedRegion(region.atlasX(), region.atlasY(), region.width(),
-                    region.frameHeight(), region.frameCount(), source, stripMask, tinted));
+                    region.frameHeight(), region.frameCount(), region.expression(), source, stripMask, tinted));
             }
 
             ManagedTexture result = new ManagedTexture(id, texture, base, mask,
@@ -151,7 +155,7 @@ final class PersonaTextureManager {
 
     private record VariantKey(String cosmeticId, int color) {}
 
-    private record AnimatedRegion(int x, int y, int width, int frameHeight, int frameCount,
+    private record AnimatedRegion(int x, int y, int width, int frameHeight, int frameCount, int expression,
                                   NativeImage source, NativeImage mask, NativeImage tinted) implements AutoCloseable {
         private void applyTint(int baseColor, int selectedColor) {
             tint(source, mask, tinted, baseColor, selectedColor);
@@ -172,6 +176,7 @@ final class PersonaTextureManager {
         private final int baseColor;
         private final List<AnimatedRegion> regions;
         private long lastTick = Long.MIN_VALUE;
+        private final BlinkAnimation blink = new BlinkAnimation();
 
         private ManagedTexture(Identifier id, DynamicTexture texture, NativeImage base, NativeImage mask,
                                int baseColor, List<AnimatedRegion> regions) {
