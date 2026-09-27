@@ -8,12 +8,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ClientLanguage.class)
-public class TranslationStorageMixin {
+public class ClientLanguageMixin {
     @Inject(method = "getOrDefault", at = @At("HEAD"), cancellable = true)
-    private void onGet(String key, String fallback, CallbackInfoReturnable<String> cir) {
+    private void bedrockSkins$overrideTranslation(String key, String fallback,
+                                                    CallbackInfoReturnable<String> cir) {
         String custom = SkinPackLoader.getTranslation(key);
-        if (custom != null) {
-            cir.setReturnValue(custom);
-        }
+        if (custom != null) cir.setReturnValue(custom);
     }
 }

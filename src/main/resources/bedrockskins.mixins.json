@@ -21,7 +21,7 @@
     "skin.PlayerHeadGlyphMixin",
     "skin.VoiceChatHeadMixin",
     "gui.TitleScreenMixin",
-    "skin.TranslationStorageMixin",
+    "skin.ClientLanguageMixin",
     "render.AvatarRendererCancelMixin"
   ],
   "mixins": [],
