@@ -26,6 +26,8 @@ public class BedrockPlayerModel extends PlayerModel {
     public final float heightMultiplier;
     public final BedrockAnimFlags animFlags;
     public final boolean personaCosmetic;
+    public LegArmorFit rightLegArmorFit = LegArmorFit.STANDARD;
+    public LegArmorFit leftLegArmorFit = LegArmorFit.STANDARD;
 
     // Pre-resolved parts for zero-allocation rendering
     public final ModelPart customHead, customHat, customBody;
@@ -142,6 +144,11 @@ public class BedrockPlayerModel extends PlayerModel {
 
         BedrockPlayerModel model = new BedrockPlayerModel(result.root(), thinArms, result.parts(), result.defaults(),
             heightMultiplier, flags, personaCosmetic);
+        for (BedrockBone bone : normalized.getBones()) {
+            String name = mapBoneName(bone.getName());
+            if (PartNames.RIGHT_LEG.equals(name)) model.rightLegArmorFit = LegArmorFit.from(bone);
+            if (PartNames.LEFT_LEG.equals(name)) model.leftLegArmorFit = LegArmorFit.from(bone);
+        }
 
         return model;
     }

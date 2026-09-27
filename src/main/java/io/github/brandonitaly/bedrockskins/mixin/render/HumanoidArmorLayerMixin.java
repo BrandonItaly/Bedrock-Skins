@@ -20,11 +20,19 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(HumanoidArmorLayer.class)
 public abstract class HumanoidArmorLayerMixin<S extends HumanoidRenderState, M extends HumanoidModel<S>, A extends HumanoidModel<S>> {
 
     @Shadow private A getArmorModel(S state, EquipmentSlot slot) { return null; }
+
+    @Inject(method = "getArmorModel", at = @At("RETURN"))
+    private void bedrockSkins$markArmorModel(S state, EquipmentSlot slot, CallbackInfoReturnable<A> cir) {
+        if (cir.getReturnValue() instanceof io.github.brandonitaly.bedrockskins.client.render.model.ArmorPoseModel model) {
+            model.bedrockSkins$markArmorModel();
+        }
+    }
 
     @Inject(method = "submit", at = @At("HEAD"), cancellable = true)
     private void bedrockSkins$hideArmor(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, float yRot, float xRot, CallbackInfo ci) {

@@ -23,7 +23,13 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(HumanoidModel.class)
-public abstract class HumanoidModelMixin<T extends HumanoidRenderState> implements PersonaVisibilityModel {
+public abstract class HumanoidModelMixin<T extends HumanoidRenderState> implements PersonaVisibilityModel,
+        io.github.brandonitaly.bedrockskins.client.render.model.ArmorPoseModel {
+
+    @Unique private boolean bedrockSkins$armorModel;
+
+    @Override
+    public void bedrockSkins$markArmorModel() { bedrockSkins$armorModel = true; }
 
     @Shadow public ModelPart head;
     @Shadow public ModelPart hat;
@@ -69,6 +75,17 @@ public abstract class HumanoidModelMixin<T extends HumanoidRenderState> implemen
             }
             applyBedrockPartVisibility(bedrockPlayerModel, state);
             if (bedrockPlayerModel.personaCosmetic) {
+                if (state instanceof AvatarRenderState avatarState) {
+                    BedrockPlayerModel base = AppearanceResolver.baseModel(avatarState);
+                    if (base != null && base != bedrockPlayerModel) {
+                        var standard = BedrockModelManager.getVanillaPlayerModel(
+                            AppearanceResolver.isSlim(avatarState, AppearanceResolver.skinId(avatarState)));
+                        if (standard != null) {
+                            io.github.brandonitaly.bedrockskins.client.render.model.PersonaAttachmentPose.apply(
+                                bedrockPlayerModel, base, standard);
+                        }
+                    }
+                }
                 PersonaManager.applySideVisibility(bedrockPlayerModel,
                     BedrockRenderStateStore.getUniqueId(state));
             } else {
@@ -89,6 +106,10 @@ public abstract class HumanoidModelMixin<T extends HumanoidRenderState> implemen
                 EmoteManager.copyBasePose(bedrockModel.leftArm, this.leftArm);
                 EmoteManager.copyBasePose(bedrockModel.rightLeg, this.rightLeg);
                 EmoteManager.copyBasePose(bedrockModel.leftLeg, this.leftLeg);
+                if (bedrockSkins$armorModel) {
+                    bedrockModel.rightLegArmorFit.apply(this.rightLeg);
+                    bedrockModel.leftLegArmorFit.apply(this.leftLeg);
+                }
             }
         }
         if (state instanceof AvatarRenderState) {
