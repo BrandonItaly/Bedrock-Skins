@@ -20,18 +20,22 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+import net.minecraft.client.model.Model;
+import io.github.brandonitaly.bedrockskins.client.render.model.FittedArmorModel;
 
 @Mixin(HumanoidArmorLayer.class)
 public abstract class HumanoidArmorLayerMixin<S extends HumanoidRenderState, M extends HumanoidModel<S>, A extends HumanoidModel<S>> {
 
     @Shadow private A getArmorModel(S state, EquipmentSlot slot) { return null; }
 
-    @Inject(method = "getArmorModel", at = @At("RETURN"))
-    private void bedrockSkins$markArmorModel(S state, EquipmentSlot slot, CallbackInfoReturnable<A> cir) {
-        if (cir.getReturnValue() instanceof io.github.brandonitaly.bedrockskins.client.render.model.ArmorPoseModel model) {
-            model.bedrockSkins$markArmorModel();
-        }
+    @Unique private final java.util.Map<Model<?>, Model<?>> bedrockSkins$fittedModels = new java.util.IdentityHashMap<>();
+
+    @ModifyArg(method = "renderArmorPiece", at = @At(value = "INVOKE",
+        target = "Lnet/minecraft/client/renderer/entity/layers/EquipmentLayerRenderer;renderLayers(Lnet/minecraft/client/resources/model/EquipmentClientInfo$LayerType;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/client/model/Model;Ljava/lang/Object;Lnet/minecraft/world/item/ItemStack;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;II)V"), index = 2)
+    private Model<?> bedrockSkins$fitArmor(Model<?> model) {
+        if (!(model instanceof HumanoidModel<?> humanoid)) return model;
+        return bedrockSkins$fittedModels.computeIfAbsent(model, ignored -> new FittedArmorModel<>(humanoid));
     }
 
     @Inject(method = "submit", at = @At("HEAD"), cancellable = true)

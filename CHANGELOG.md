@@ -4,6 +4,9 @@
 - Emotes are no longer canceled by jumping.
 - During an emote, the player's head now ignores camera rotation.
 - Fixed armor, capes, and other attachments being double-animated or misaligned when a custom skin is emoting.
+- Armor now adjusts vertically to custom skin geometry for helmets, chestplates, leggings, and boots, improving alignment on shorter skins.
+- Persona cosmetics now follow custom skin attachment positions, preventing them from floating above shorter models.
+- Fixed the account skin being missing from favorites and added an Unequip button to return to the account skin.
 - Animated persona cosmetics now have the same timing as Bedrock Edition.
 - Improved accuracy of unique skin animations and added inverted crouch animation.
 - Replaced the "Open Skin Packs Folder" button with an "Open Persona Folder" button when in the cosmetics or emotes tab.

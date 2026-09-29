@@ -26,8 +26,12 @@ public class BedrockPlayerModel extends PlayerModel {
     public final float heightMultiplier;
     public final BedrockAnimFlags animFlags;
     public final boolean personaCosmetic;
-    public LegArmorFit rightLegArmorFit = LegArmorFit.STANDARD;
-    public LegArmorFit leftLegArmorFit = LegArmorFit.STANDARD;
+    public ArmorPartFit headArmorFit = ArmorPartFit.STANDARD;
+    public ArmorPartFit bodyArmorFit = ArmorPartFit.STANDARD;
+    public ArmorPartFit rightArmArmorFit = ArmorPartFit.STANDARD;
+    public ArmorPartFit leftArmArmorFit = ArmorPartFit.STANDARD;
+    public ArmorPartFit rightLegArmorFit = ArmorPartFit.STANDARD;
+    public ArmorPartFit leftLegArmorFit = ArmorPartFit.STANDARD;
 
     // Pre-resolved parts for zero-allocation rendering
     public final ModelPart customHead, customHat, customBody;
@@ -146,8 +150,12 @@ public class BedrockPlayerModel extends PlayerModel {
             heightMultiplier, flags, personaCosmetic);
         for (BedrockBone bone : normalized.getBones()) {
             String name = mapBoneName(bone.getName());
-            if (PartNames.RIGHT_LEG.equals(name)) model.rightLegArmorFit = LegArmorFit.from(bone);
-            if (PartNames.LEFT_LEG.equals(name)) model.leftLegArmorFit = LegArmorFit.from(bone);
+            if (PartNames.HEAD.equals(name)) model.headArmorFit = ArmorPartFit.from(bone, -8, 8);
+            if (PartNames.BODY.equals(name)) model.bodyArmorFit = ArmorPartFit.from(bone, 0, 12);
+            if (PartNames.RIGHT_ARM.equals(name)) model.rightArmArmorFit = ArmorPartFit.from(bone, -2, 12);
+            if (PartNames.LEFT_ARM.equals(name)) model.leftArmArmorFit = ArmorPartFit.from(bone, -2, 12);
+            if (PartNames.RIGHT_LEG.equals(name)) model.rightLegArmorFit = ArmorPartFit.from(bone, 0, 12);
+            if (PartNames.LEFT_LEG.equals(name)) model.leftLegArmorFit = ArmorPartFit.from(bone, 0, 12);
         }
 
         return model;

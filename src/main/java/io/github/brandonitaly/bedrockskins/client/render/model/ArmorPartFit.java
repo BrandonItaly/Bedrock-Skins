@@ -5,11 +5,11 @@ import net.minecraft.client.model.geom.ModelPart;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-/** Maps the standard 0..12 leg interval onto a skin's uninflated leg geometry. */
-public record LegArmorFit(float offset, float scale) {
-    public static final LegArmorFit STANDARD = new LegArmorFit(0, 1);
+/** Maps the standard vertical interval onto a skin's uninflated leg geometry. */
+public record ArmorPartFit(float offset, float scale) {
+    public static final ArmorPartFit STANDARD = new ArmorPartFit(0, 1);
 
-    public static LegArmorFit from(BedrockBone bone) {
+    public static ArmorPartFit from(BedrockBone bone, float referenceTop, float referenceHeight) {
         if (bone.getPivot() == null || bone.getPivot().size() < 3 || bone.getCubes() == null) return STANDARD;
         float bottom = Float.POSITIVE_INFINITY, top = Float.NEGATIVE_INFINITY;
         for (var cube : bone.getCubes()) {
@@ -23,12 +23,13 @@ public record LegArmorFit(float offset, float scale) {
         }
         float height = top - bottom;
         if (!Float.isFinite(height) || height <= 0) return STANDARD;
-        return new LegArmorFit(bone.getPivot().get(1) - top, height / 12f);
+        float scale = height / referenceHeight;
+        return new ArmorPartFit(bone.getPivot().get(1) - top - referenceTop * scale, scale);
     }
 
     public void apply(ModelPart leg) {
         if (offset != 0) {
-            Vector3f translation = new Vector3f(0, offset, 0).rotate(
+            Vector3f translation = new Vector3f(0, offset * leg.yScale, 0).rotate(
                 new Quaternionf().rotationZYX(leg.zRot, leg.yRot, leg.xRot));
             leg.x += translation.x; leg.y += translation.y; leg.z += translation.z;
         }
