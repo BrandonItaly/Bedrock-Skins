@@ -38,6 +38,7 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
     private static final String REMOTE_PACK_ID = "skinpack.Remote";
     private static final String STANDARD_PACK_ID = "skinpack.Standard";
     private static final String LEGACY_PACK_ID = "skinpack.LegacySkinPack";
+    private static final String IMPORTS_PACK_ID = "skinpack.Imports";
     private static final int MAX_PREVIEWS = 96;
     private static final Identifier DEFAULT_PACK_ICON = Identifier.fromNamespaceAndPath("bedrockskins", "skin_packs/vanilla/pack_icon.png");
 
@@ -356,7 +357,9 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
     }
 
     private static boolean isHiddenPackId(String packId) {
-        return STANDARD_PACK_ID.equals(packId) || LEGACY_PACK_ID.equals(packId);
+        return STANDARD_PACK_ID.equals(packId)
+                || LEGACY_PACK_ID.equals(packId)
+                || IMPORTS_PACK_ID.equals(packId);
     }
 
     private PreviewState previewFor(String skinId, Minecraft minecraft) {

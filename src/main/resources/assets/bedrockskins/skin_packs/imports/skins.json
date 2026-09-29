@@ -1,12 +1,1 @@
-﻿{
-  "skins": [
-    {
-      "localization_name": "Import Skin",
-      "geometry": "geometry.humanoid.custom",
-      "texture": "bedrockskins:textures/entity/dummy.png",
-      "type": "free"
-    }
-  ],
-  "serialize_name": "Imports",
-  "localization_name": "Imports"
-}
+{"skins":[{"localization_name":"Import Skin","geometry":"geometry.humanoid.custom","texture":"bedrockskins:textures/entity/dummy.png","type":"free"}],"serialize_name":"Imports","localization_name":"Imports"}

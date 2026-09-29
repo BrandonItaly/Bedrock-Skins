@@ -1,8 +1,8 @@
 package io.github.brandonitaly.bedrockskins.mixin.gui;
 
 import io.github.brandonitaly.bedrockskins.client.persistence.BedrockSkinsConfig;
-import io.github.brandonitaly.bedrockskins.client.BedrockSkinsClient;
 import io.github.brandonitaly.bedrockskins.gui.preview.PaperDollWidget;
+import io.github.brandonitaly.bedrockskins.gui.screen.SkinSelectionScreen;
 import io.github.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.client.gui.components.SpriteIconButton;
@@ -53,7 +53,7 @@ public abstract class PauseScreenMixin extends Screen {
 
         SpriteIconButton button = SpriteIconButton.builder(
             Component.empty(),
-            b -> this.minecraft.gui.setScreen(BedrockSkinsClient.getAppropriateSkinScreen(this)),
+            b -> this.minecraft.gui.setScreen(new SkinSelectionScreen(this)),
             true
         )
         .size(20, 20)

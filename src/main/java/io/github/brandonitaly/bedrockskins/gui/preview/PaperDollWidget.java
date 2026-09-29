@@ -5,6 +5,7 @@ import io.github.brandonitaly.bedrockskins.client.render.model.BedrockPlayerMode
 import io.github.brandonitaly.bedrockskins.client.BedrockSkinsClient;
 import io.github.brandonitaly.bedrockskins.client.appearance.persona.PersonaManager;
 import io.github.brandonitaly.bedrockskins.client.appearance.skin.SkinManager;
+import io.github.brandonitaly.bedrockskins.gui.screen.SkinSelectionScreen;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
 import io.github.brandonitaly.bedrockskins.pack.model.SkinId;
 import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
@@ -62,7 +63,7 @@ public class PaperDollWidget extends AbstractWidget {
 
         this.openSkinButton = SpriteIconButton.builder(
             Component.empty(),
-            b -> minecraft.gui.setScreen(BedrockSkinsClient.getAppropriateSkinScreen(parentScreen)),
+            b -> minecraft.gui.setScreen(new SkinSelectionScreen(parentScreen)),
             true
         )
         .size(BTN_SIZE, BTN_SIZE)

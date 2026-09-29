@@ -506,15 +506,6 @@ public class SkinSelectionScreen extends Screen {
         if (FAVORITES_PACK_ID.equals(selectedPackId)) selectPack(FAVORITES_PACK_ID);
     }
 
-
-    private Component getSkinsPanelTitle() {
-        if (selectedPackId == null) return Component.translatable("bedrockskins.gui.skins");
-        List<LoadedSkin> skins = skinCache.get(selectedPackId);
-        int count = skins == null ? 0 : skins.size();
-
-        return Component.literal(GuiSkinUtils.getPackDisplayName(selectedPackId) + " (" + count + ")");
-    }
-
     private void refreshPackList() {
         if (packList == null) return;
         packList.clear();
@@ -602,7 +593,7 @@ public class SkinSelectionScreen extends Screen {
     public void extractRenderState(GuiGraphicsExtractor gui, int mouseX, int mouseY, float delta) {
         if (activeTab == AppearanceTab.SKINS) {
             GuiUtils.drawPanelChrome(gui, rPacks.x, rPacks.y, rPacks.w, rPacks.h, Component.translatable("bedrockskins.gui.packs"), font);
-            GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h, getSkinsPanelTitle(), font);
+            GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h, Component.literal(GuiSkinUtils.getPackDisplayName(selectedPackId)), font);
         } else if (activeTab == AppearanceTab.COSMETICS) {
             GuiUtils.drawPanelChrome(gui, rCosmeticCategories.x, rCosmeticCategories.y,
                 rCosmeticCategories.w, rCosmeticCategories.h, Component.translatable("bedrockskins.gui.categories"), font);

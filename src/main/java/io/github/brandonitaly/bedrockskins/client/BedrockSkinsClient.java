@@ -90,19 +90,6 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         };
     }
 
-    public static Screen getAppropriateSkinScreen(Screen parent) {
-        //? if legacy4j {
-        if (PlatformUtil.isModLoaded("legacy")) {
-            try {
-                return Legacy4JMenuIntegration.createScreen(parent);
-            } catch (Throwable t) {
-                LOGGER.warn("Failed to open Legacy4J skin screen; falling back to default screen", t);
-            }
-        }
-        //?}
-        return new SkinSelectionScreen(parent);
-    }
-
 //? if fabric {
     @Override
     public void onInitializeClient() {
@@ -194,7 +181,7 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
         //? if legacy4j {
         if (PlatformUtil.isModLoaded("legacy")) Legacy4JMenuIntegration.init();
         //?}
-        while (openKey.consumeClick()) client.gui.setScreen(getAppropriateSkinScreen(client.gui.screen()));
+        while (openKey.consumeClick()) client.gui.setScreen(new SkinSelectionScreen(client.gui.screen()));
         EmoteManager.tick();
         io.github.brandonitaly.bedrockskins.client.appearance.skin.AnimatedSkinTextures.tick();
         if (client.player == null) {
