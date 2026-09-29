@@ -38,6 +38,8 @@ public final class BedrockSessionSkin {
     public static PlayerSkin getSessionPlayerSkin() {
         Minecraft mc = Minecraft.getInstance();
         if (mc == null) return null;
+        PlayerSkin refreshed = io.github.brandonitaly.bedrockskins.client.appearance.skin.AccountProfileRefresh.current(mc.getUser().getProfileId());
+        if (refreshed != null) return refreshed;
         GameProfile profile = getSessionProfile(mc);
         requestSessionSkin(mc, profile);
 

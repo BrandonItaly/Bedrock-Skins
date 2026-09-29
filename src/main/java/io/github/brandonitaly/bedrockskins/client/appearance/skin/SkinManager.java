@@ -92,6 +92,9 @@ public final class SkinManager {
     public static PlayerSkin applySkinOverrides(UUID playerId, PlayerSkin original) {
         if (playerId == null || original == null) return original;
 
+        PlayerSkin refreshed = AccountProfileRefresh.current(playerId);
+        if (refreshed != null) original = refreshed;
+
         SkinId skinId = getSkin(playerId);
         LoadedSkin loadedSkin = SkinPackLoader.getLoadedSkin(skinId);
         ClientAsset.Texture body = original.body();

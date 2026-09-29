@@ -7,6 +7,7 @@ import io.github.brandonitaly.bedrockskins.client.BedrockSkinsClient;
 import io.github.brandonitaly.bedrockskins.client.persistence.BedrockSkinsConfig;
 import io.github.brandonitaly.bedrockskins.client.appearance.skin.FavoritesManager;
 import io.github.brandonitaly.bedrockskins.client.appearance.skin.MojangSkinManager;
+import io.github.brandonitaly.bedrockskins.client.appearance.skin.AccountProfileRefresh;
 import io.github.brandonitaly.bedrockskins.client.appearance.skin.SkinManager;
 import io.github.brandonitaly.bedrockskins.client.appearance.cape.CapeManager;
 import io.github.brandonitaly.bedrockskins.client.appearance.cape.CapeManager.MinecraftCape;
@@ -391,9 +392,6 @@ public class SkinPreviewPanel {
             return;
         }
 
-        // Disable skin pack cape so the account cape is used
-        SkinManager.setLocalCapeOverride(SkinManager.CAPE_NONE_SKIN_ID);
-
         String token = minecraft.getUser().getAccessToken();
         if (token == null || token.isEmpty() || "0".equals(token) || token.length() < 10) {
             return;
@@ -404,26 +402,29 @@ public class SkinPreviewPanel {
             selectButton.setMessage(Component.literal("Equipping..."));
         }
 
+        MinecraftCape capeToEquip = selectedCape;
         CompletableFuture<Void> future;
-        if (selectedCape.id.equals("none")) {
+        if (capeToEquip.id.equals("none")) {
             future = CapeManager.unequipCape(token);
         } else {
-            future = CapeManager.equipCape(token, selectedCape.id);
+            future = CapeManager.equipCape(token, capeToEquip.id);
         }
 
-        future.thenRun(() -> minecraft.execute(() -> {
+        future.thenComposeAsync(ignored -> AccountProfileRefresh.refresh(token), minecraft)
+            .thenRun(() -> minecraft.execute(() -> {
+            SkinManager.setLocalCapeOverride(SkinManager.CAPE_NONE_SKIN_ID);
             if (selectButton != null) {
                 selectButton.active = true;
                 selectButton.setMessage(Component.translatable("bedrockskins.button.equip"));
             }
-            if (selectedCape.id.equals("none")) {
+            if (capeToEquip.id.equals("none")) {
                 SkinManager.setLocalAccountCapeOverride(SkinManager.CAPE_NONE);
             } else {
-                SkinManager.setLocalAccountCapeOverride(selectedCape.textureIdentifier);
+                SkinManager.setLocalAccountCapeOverride(capeToEquip.textureIdentifier);
             }
             BedrockSessionSkin.clearCache();
             if (parentScreen instanceof SkinSelectionScreen selectionScreen) {
-                selectionScreen.onCapeChanged(selectedCape.id);
+                selectionScreen.onCapeChanged(capeToEquip.id);
             }
             ClientSkinSync.syncCurrentSkin(minecraft);
         })).exceptionally(e -> {
@@ -440,8 +441,6 @@ public class SkinPreviewPanel {
 
     private void uploadSkinToMojang() {
         if (!BedrockSkinsConfig.isAccountSkinUploadAllowed() || selectedSkin == null || isUploadingSkin) return;
-
-        applySkin();
 
         String token = minecraft.getUser().getAccessToken();
         if (token == null || token.isEmpty() || "0".equals(token) || token.length() < 10) {
@@ -464,7 +463,8 @@ public class SkinPreviewPanel {
         }
         setUploadStatus(Component.translatable("bedrockskins.status.uploading_skin").getString(), false);
 
-        MojangSkinManager.uploadSkin(token, textureBytes, variant).thenRun(() -> minecraft.execute(() -> {
+        MojangSkinManager.uploadSkin(token, textureBytes, variant)
+            .thenComposeAsync(ignored -> AccountProfileRefresh.refresh(token), minecraft).thenRun(() -> minecraft.execute(() -> {
             isUploadingSkin = false;
             if (uploadSkinButton != null) {
                 uploadSkinButton.active = true;
@@ -472,10 +472,11 @@ public class SkinPreviewPanel {
             }
             setUploadStatus(Component.translatable("bedrockskins.status.upload_skin_success").getString(), false);
 
-            var profile = minecraft.getGameProfile();
-            if (profile != null) {
-                minecraft.getSkinManager().createLookup(profile, true);
-            }
+            GuiSkinUtils.resetSelectedSkin(minecraft);
+            selectedSkin = MinecraftAccountSkin.INSTANCE;
+            currentSkinId = null;
+            updatePreviewModel(null);
+            updateActionButtons();
         })).exceptionally(e -> {
             minecraft.execute(() -> {
                 isUploadingSkin = false;

@@ -1,5 +1,6 @@
 - Added a full-screen skin preview from player head icons in the Social Interactions screen.
 - Head icons and player-head glyphs now render the main head and hat geometry instead of cropping the skin texture, including custom and Persona models.
+- Uploading a skin or changing an account cape now refreshes the local account appearance without rejoining.
 - Added additional built-in Persona emotes.
 - Emotes are no longer canceled by jumping.
 - During an emote, the player's head now ignores camera rotation.
