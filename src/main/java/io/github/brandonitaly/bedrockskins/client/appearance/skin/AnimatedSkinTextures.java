@@ -9,6 +9,7 @@ import net.minecraft.resources.Identifier;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,12 @@ import java.util.Map;
 /** Remote skin strips share the lifetime of their registered skin texture. Client thread only. */
 public final class AnimatedSkinTextures {
     private record Region(PersonaTexturePayload.AnimationRegion layout, BufferedImage strip) {}
-    private record Animation(DynamicTexture texture, List<Region> regions, BlinkAnimation blink) {}
+    private record Animation(DynamicTexture texture, List<Region> regions, BlinkAnimation blink, int[] frames) {
+        private Animation(DynamicTexture texture, List<Region> regions) {
+            this(texture, List.copyOf(regions), new BlinkAnimation(), new int[regions.size()]);
+            Arrays.fill(frames, -1);
+        }
+    }
     private static final Map<Identifier, Animation> ANIMATIONS = new HashMap<>();
     private static long lastFrame = Long.MIN_VALUE;
     private AnimatedSkinTextures() {}
@@ -36,7 +42,7 @@ public final class AnimatedSkinTextures {
             regions.add(new Region(layout, strip));
         }
         if (!regions.isEmpty()) {
-            Animation animation = new Animation(texture, List.copyOf(regions), new BlinkAnimation());
+            Animation animation = new Animation(texture, regions);
             apply(animation, System.nanoTime());
             ANIMATIONS.put(id, animation);
         }
@@ -57,10 +63,21 @@ public final class AnimatedSkinTextures {
     private static void apply(Animation animation, long now) {
         var pixels = animation.texture.getPixels();
         if (pixels == null) return;
-        for (Region region : animation.regions) {
+        boolean changed = false;
+        long linearFrame = PersonaAnimationClock.frame(now);
+        for (int i = 0; i < animation.regions.size(); i++) {
+            var layout = animation.regions.get(i).layout;
+            int frame = layout.expression() == 1 ? animation.blink.frame(now, layout.frameCount())
+                : layout.frame(linearFrame);
+            changed |= animation.frames[i] != frame;
+            animation.frames[i] = frame;
+        }
+        if (!changed) return;
+        // Preserve region order, including overlapping regions, whenever the atlas changes.
+        for (int i = 0; i < animation.regions.size(); i++) {
+            Region region = animation.regions.get(i);
             var layout = region.layout;
-            int sourceY = (layout.expression() == 1 ? animation.blink.frame(now, layout.frameCount())
-                : layout.frame(PersonaAnimationClock.frame(now))) * layout.frameHeight();
+            int sourceY = animation.frames[i] * layout.frameHeight();
             for (int y = 0; y < layout.frameHeight(); y++) for (int x = 0; x < layout.width(); x++) {
                 pixels.setPixel(layout.atlasX() + x, layout.atlasY() + y, region.strip.getRGB(x, sourceY + y));
             }

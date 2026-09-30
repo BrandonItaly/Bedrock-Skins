@@ -131,6 +131,8 @@ if (isFabric) {
     }
     if (!unobfuscated) remapJar {}
 } else if (isNeoForge) {
+    sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
+    sourceSets.test.runtimeClasspath += sourceSets.main.compileClasspath
     neoForge {
         version = neoforge_version
         def at = file('src/main/resources/META-INF/accesstransformer.cfg')
@@ -200,13 +202,6 @@ processResources {
         it.exclude()
     }
     
-    if (isNeoForge && stonecutter.eval(stonecutter.current.version, "<=1.20.4")) {
-        filesMatching("META-INF/neoforge.mods.toml") {
-            it.copyTo(new File(outputs.files.asPath, "META-INF/mods.toml"))
-            it.exclude()
-        }
-    }
-
     doLast {
         def fabricModJson = file("${outputs.files.asPath}/fabric.mod.json")
         if (fabricModJson.exists()) {
@@ -259,7 +254,6 @@ publishMods {
     
     modLoaders.add(loader)
     if (isFabric) modLoaders.add "quilt"
-    else if (loader == "forge" && stonecutter.eval(stonecutter.current.version, "<=1.20.1")) modLoaders.add "neoforge"
     
     def versions = (mc_version_range && mc_version_range != "[VERSIONED]") ? mc_version_range.split(",") : [stonecutter.current.version]
     def supportedJavaVersions = isJava25 ? [JavaVersion.VERSION_25] : [JavaVersion.VERSION_21]

@@ -21,7 +21,7 @@ public final class FittedArmorModel<S extends HumanoidRenderState> extends Model
         if (skinId == null) return;
         var skin = BedrockModelManager.getModel(skinId);
         if (skin == null) return;
-        skin.headArmorFit.apply(armor.head);
+        skin.headArmorFit.applyPosition(armor.head);
         skin.bodyArmorFit.apply(armor.body);
         skin.rightArmArmorFit.apply(armor.rightArm);
         skin.leftArmArmorFit.apply(armor.leftArm);

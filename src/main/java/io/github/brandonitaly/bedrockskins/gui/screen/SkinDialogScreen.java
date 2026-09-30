@@ -73,21 +73,12 @@ public abstract class SkinDialogScreen extends Screen {
 
     protected void restoreDialogState() {}
 
-    //? if <1.21.11 {
-    /*@Override
-    public void resize(net.minecraft.client.Minecraft minecraft, int width, int height) {
-        captureDialogState();
-        super.resize(minecraft, width, height);
-        restoreDialogState();
-    }*/
-    //?} else {
     @Override
     public void resize(int width, int height) {
         captureDialogState();
         super.resize(width, height);
         restoreDialogState();
     }
-    //?}
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor gui, int mouseX, int mouseY, float delta) {

@@ -5,7 +5,7 @@ import net.minecraft.client.model.geom.ModelPart;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-/** Maps the standard vertical interval onto a skin's uninflated leg geometry. */
+/** Maps the standard vertical interval onto a skin's uninflated part geometry. */
 public record ArmorPartFit(float offset, float scale) {
     public static final ArmorPartFit STANDARD = new ArmorPartFit(0, 1);
 
@@ -27,12 +27,17 @@ public record ArmorPartFit(float offset, float scale) {
         return new ArmorPartFit(bone.getPivot().get(1) - top - referenceTop * scale, scale);
     }
 
-    public void apply(ModelPart leg) {
+    public void apply(ModelPart part) {
+        applyPosition(part);
+        part.yScale *= scale;
+    }
+
+    /** Keep the armor's size while retaining the attachment offset and animated rotation. */
+    public void applyPosition(ModelPart part) {
         if (offset != 0) {
-            Vector3f translation = new Vector3f(0, offset * leg.yScale, 0).rotate(
-                new Quaternionf().rotationZYX(leg.zRot, leg.yRot, leg.xRot));
-            leg.x += translation.x; leg.y += translation.y; leg.z += translation.z;
+            Vector3f translation = new Vector3f(0, offset * part.yScale, 0).rotate(
+                new Quaternionf().rotationZYX(part.zRot, part.yRot, part.xRot));
+            part.x += translation.x; part.y += translation.y; part.z += translation.z;
         }
-        leg.yScale *= scale;
     }
 }

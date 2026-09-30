@@ -24,7 +24,7 @@ public final class HeadIconTextures {
         Key key = new Key(source, hat);
         Identifier previous = CACHE.get(key);
         if (previous != null) return previous;
-        var skin = SkinPackLoader.loadedSkinsSnapshot().stream().filter(s -> source.equals(s.identifier)).findFirst().orElse(null);
+        var skin = SkinPackLoader.getLoadedSkinByTexture(source);
         if (skin == null) return source;
         var manager = Minecraft.getInstance().getTextureManager();
         if (!(manager.getTexture(source) instanceof DynamicTexture texture) || texture.getPixels() == null) return source;

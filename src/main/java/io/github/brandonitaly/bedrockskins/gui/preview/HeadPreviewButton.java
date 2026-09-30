@@ -11,12 +11,12 @@ public final class HeadPreviewButton extends Button {
     }
 
     @Override
-    protected void extractContents(GuiGraphicsExtractor gui, int mouseX, int mouseY, float delta) {
+    protected void extractContents(GuiGraphicsExtractor headGraphics, int mouseX, int mouseY, float delta) {
         if (!isHoveredOrFocused()) return;
         int x = getX(), y = getY();
-        gui.fill(x, y, x + 24, y + 1, 0xFFFFFFFF);
-        gui.fill(x, y + 23, x + 24, y + 24, 0xFFFFFFFF);
-        gui.fill(x, y, x + 1, y + 24, 0xFFFFFFFF);
-        gui.fill(x + 23, y, x + 24, y + 24, 0xFFFFFFFF);
+        headGraphics.fill(x, y, x + 24, y + 1, 0xFFFFFFFF);
+        headGraphics.fill(x, y + 23, x + 24, y + 24, 0xFFFFFFFF);
+        headGraphics.fill(x, y, x + 1, y + 24, 0xFFFFFFFF);
+        headGraphics.fill(x + 23, y, x + 24, y + 24, 0xFFFFFFFF);
     }
 }

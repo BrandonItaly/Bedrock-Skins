@@ -156,6 +156,16 @@ public final class SkinPackLoader {
         }
     }
 
+    public static LoadedSkin getLoadedSkinByTexture(Identifier texture) {
+        if (texture == null) return null;
+        synchronized (loadedSkins) {
+            for (LoadedSkin skin : loadedSkins.values()) {
+                if (texture.equals(skin.identifier)) return skin;
+            }
+        }
+        return null;
+    }
+
     public static int loadedSkinCount() {
         return loadedSkins.size();
     }

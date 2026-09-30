@@ -4,7 +4,7 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "render.CapeFeatureRendererMixin",
-    "render.ElytraModelMixin",
+    "render.WingsLayerMixin",
     "render.EntityMixin",
     "render.GameRendererMixin",
     "render.HumanoidArmorLayerMixin",

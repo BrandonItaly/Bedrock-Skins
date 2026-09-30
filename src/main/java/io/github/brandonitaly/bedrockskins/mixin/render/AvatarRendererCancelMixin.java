@@ -8,11 +8,7 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
-//? if <1.21.11 {
-/*import net.minecraft.client.renderer.RenderType;*/
-//?} else {
 import net.minecraft.client.renderer.rendertype.RenderType;
-//?}
 //? if <=26.2 {
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 //?} else {

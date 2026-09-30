@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -60,10 +61,20 @@ final class PersonaTextureManager {
         animation.lastTick = animationTick;
         NativeImage target = animation.texture.getPixels();
         if (target == null) return;
-        for (AnimatedRegion region : animation.regions) {
+        boolean changed = false;
+        long linearFrame = PersonaAnimationClock.frame(now);
+        for (int i = 0; i < animation.regions.size(); i++) {
+            AnimatedRegion region = animation.regions.get(i);
             int frame = region.expression == 1 ? animation.blink.frame(now, region.frameCount)
-                : (int) Math.floorMod(PersonaAnimationClock.frame(now), region.frameCount);
-            int sourceY = frame * region.frameHeight;
+                : (int) Math.floorMod(linearFrame, region.frameCount);
+            changed |= animation.frames[i] != frame;
+            animation.frames[i] = frame;
+        }
+        if (!changed) return;
+        // Reapply every region in order so overlapping strips retain the same result.
+        for (int i = 0; i < animation.regions.size(); i++) {
+            AnimatedRegion region = animation.regions.get(i);
+            int sourceY = animation.frames[i] * region.frameHeight;
             if (sourceY + region.frameHeight > region.tinted.getHeight()) continue;
             region.tinted.copyRect(target, 0, sourceY,
                 region.x, region.y, region.width, region.frameHeight, false, false);
@@ -88,7 +99,7 @@ final class PersonaTextureManager {
         try {
             PersonaTexturePayload payload = PersonaTexturePayload.decode(data);
             NativeImage base = read(payload.baseTexture());
-            NativeImage target = read(payload.baseTexture());
+            NativeImage target = new NativeImage(base.getWidth(), base.getHeight(), false);
             NativeImage mask = payload.tintMask().length == 0 ? null : read(payload.tintMask());
             if (mask != null && (mask.getWidth() != base.getWidth() || mask.getHeight() != base.getHeight())) {
                 mask.close();
@@ -101,7 +112,7 @@ final class PersonaTextureManager {
             List<AnimatedRegion> regions = new ArrayList<>();
             for (PersonaTexturePayload.AnimationRegion region : payload.animations()) {
                 NativeImage source = read(region.textureStrip());
-                NativeImage tinted = read(region.textureStrip());
+                NativeImage tinted = new NativeImage(source.getWidth(), source.getHeight(), false);
                 NativeImage stripMask = region.tintMaskStrip().length == 0 ? null : read(region.tintMaskStrip());
                 if (region.atlasX() + region.width() > target.getWidth()
                         || region.atlasY() + region.frameHeight() > target.getHeight()
@@ -175,6 +186,7 @@ final class PersonaTextureManager {
         private final NativeImage mask;
         private final int baseColor;
         private final List<AnimatedRegion> regions;
+        private final int[] frames;
         private long lastTick = Long.MIN_VALUE;
         private final BlinkAnimation blink = new BlinkAnimation();
 
@@ -186,6 +198,8 @@ final class PersonaTextureManager {
             this.mask = mask;
             this.baseColor = baseColor;
             this.regions = List.copyOf(regions);
+            this.frames = new int[regions.size()];
+            Arrays.fill(this.frames, -1);
         }
 
         private void applyTint(int selectedColor) {
@@ -193,6 +207,7 @@ final class PersonaTextureManager {
             if (target == null) return;
             tint(base, mask, target, baseColor, selectedColor);
             for (AnimatedRegion region : regions) region.applyTint(baseColor, selectedColor);
+            Arrays.fill(frames, -1);
             texture.upload();
         }
 

@@ -14,7 +14,7 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.renderer./*? if <1.21.11 {*//*RenderType*//*?} else {*/rendertype.RenderTypes/*?}*/;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -36,11 +36,7 @@ public abstract class PlayerEntityRendererMixin {
         var bedrockSkin = SkinPackLoader.getLoadedSkin(skinId);
         var texture = (bedrockSkin != null && bedrockSkin.identifier != null) ? bedrockSkin.identifier : skinTexture;
 
-        //? if <1.21.11 {
-        /*var layer = RenderType.entityTranslucent(texture);*/
-        //?} else {
         var layer = RenderTypes.entityTranslucent(texture);
-        //?}
 
         final PartPose armPose = vanillaArm.storePose();
 
@@ -126,11 +122,7 @@ public abstract class PlayerEntityRendererMixin {
             PersonaManager.prepareTexture(playerId, cosmetic);
             ModelPart cosmeticArm = isRightArm ? cosmeticModel.customRightArm : cosmeticModel.customLeftArm;
             if (cosmeticArm == null) continue;
-            //? if <1.21.11 {
-            /*var cosmeticLayer = RenderType.entityTranslucent(cosmeticTexture);*/
-            //?} else {
             var cosmeticLayer = RenderTypes.entityTranslucent(cosmeticTexture);
-            //?}
             PartPose pose = arm.storePose();
             queue.submitCustomGeometry(matrices, cosmeticLayer, (entry, consumer) -> {
                 PoseStack stack = RenderPoseUtils.copyOf(entry);

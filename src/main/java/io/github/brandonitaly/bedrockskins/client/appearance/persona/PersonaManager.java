@@ -112,7 +112,15 @@ public final class PersonaManager {
     }
 
     public static boolean isEquipped(UUID playerId, LoadedCosmetic cosmetic) {
-        return cosmetic != null && equipped(playerId).stream().anyMatch(value -> value.id.equals(cosmetic.id));
+        if (playerId == null || cosmetic == null) return false;
+        CosmeticAssignment assignment = ASSIGNMENTS.get(playerId);
+        PersonaLoadout loadout = assignment != null ? assignment.effective() : null;
+        if (loadout == null) return false;
+        for (String id : loadout.pieces().values()) {
+            LoadedCosmetic equipped = COSMETICS.get(id);
+            if (equipped != null && equipped.id.equals(cosmetic.id)) return true;
+        }
+        return false;
     }
 
     public record Occlusion(

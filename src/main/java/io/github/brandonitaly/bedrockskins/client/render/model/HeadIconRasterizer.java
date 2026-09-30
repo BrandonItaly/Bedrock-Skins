@@ -9,6 +9,7 @@ public final class HeadIconRasterizer {
     public record Triangle(Vertex a, Vertex b, Vertex c) {}
     public record Crop(float minX, float minY, float maxX, float maxY) {}
     private record Fragment(float depth, int color) {}
+    private static final Comparator<Fragment> DEPTH_ORDER = Comparator.comparingDouble(Fragment::depth).reversed();
     private HeadIconRasterizer() {}
 
     public static int[] render(List<Triangle> triangles, int size, int width, int height, IntBinaryOperator texture) {
@@ -19,12 +20,15 @@ public final class HeadIconRasterizer {
         int[] pixels = new int[size * size];
         if (triangles.isEmpty()) return pixels;
         float minX = Float.POSITIVE_INFINITY, minY = minX, maxX = -minX, maxY = -minX;
-        for (var triangle : triangles) for (var v : List.of(triangle.a, triangle.b, triangle.c)) {
-            minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x);
-            minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
-        }
         if (crop != null) {
             minX = crop.minX; minY = crop.minY; maxX = crop.maxX; maxY = crop.maxY;
+        } else {
+            for (var triangle : triangles) {
+                minX = Math.min(minX, Math.min(triangle.a.x, Math.min(triangle.b.x, triangle.c.x)));
+                maxX = Math.max(maxX, Math.max(triangle.a.x, Math.max(triangle.b.x, triangle.c.x)));
+                minY = Math.min(minY, Math.min(triangle.a.y, Math.min(triangle.b.y, triangle.c.y)));
+                maxY = Math.max(maxY, Math.max(triangle.a.y, Math.max(triangle.b.y, triangle.c.y)));
+            }
         }
         float span = Math.max(maxX - minX, maxY - minY);
         if (!Float.isFinite(span) || span <= 0) return pixels;
@@ -50,12 +54,18 @@ public final class HeadIconRasterizer {
                 if (fragments[index] == null) fragments[index] = new ArrayList<>();
                 float depth = a.z * wa + b.z * wb + c.z * wc;
                 // Shared triangle edges must not blend the same translucent surface twice.
-                if (fragments[index].stream().noneMatch(f -> Math.abs(f.depth - depth) < .00001f && f.color == color))
-                    fragments[index].add(new Fragment(depth, color));
+                boolean duplicate = false;
+                for (Fragment fragment : fragments[index]) {
+                    if (Math.abs(fragment.depth - depth) < .00001f && fragment.color == color) {
+                        duplicate = true;
+                        break;
+                    }
+                }
+                if (!duplicate) fragments[index].add(new Fragment(depth, color));
             }
         }
         for (int i = 0; i < pixels.length; i++) if (fragments[i] != null) {
-            fragments[i].sort(Comparator.comparingDouble(Fragment::depth).reversed());
+            fragments[i].sort(DEPTH_ORDER);
             for (var fragment : fragments[i]) pixels[i] = over(fragment.color, pixels[i]);
         }
         return pixels;
@@ -68,7 +78,7 @@ public final class HeadIconRasterizer {
         float a = (front >>> 24) / 255f, b = (back >>> 24) / 255f * (1-a), total = a+b;
         if (total == 0) return 0;
         int result = Math.round(total*255) << 24;
-        for (int shift : new int[]{16,8,0}) result |= Math.round((((front >>> shift)&255)*a + ((back >>> shift)&255)*b)/total) << shift;
+        for (int shift = 16; shift >= 0; shift -= 8) result |= Math.round((((front >>> shift)&255)*a + ((back >>> shift)&255)*b)/total) << shift;
         return result;
     }
 }

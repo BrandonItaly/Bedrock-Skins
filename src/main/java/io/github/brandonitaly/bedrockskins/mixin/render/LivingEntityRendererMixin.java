@@ -111,11 +111,7 @@ public abstract class LivingEntityRendererMixin {
                     var cosmeticTexture = PersonaManager.texture(uuid, cosmetic);
                     if (cosmeticModel == null || cosmeticTexture == null) continue;
                     PersonaManager.prepareTexture(uuid, cosmetic);
-                    //? if <1.21.11 {
-                    /*var renderType = net.minecraft.client.renderer.RenderType.entityTranslucent(cosmeticTexture);*/
-                    //?} else {
                     var renderType = net.minecraft.client.renderer.rendertype.RenderTypes.entityTranslucent(cosmeticTexture);
-                    //?}
                     //? if <=26.2 {
                     queue.submitModel(cosmeticModel, avatarState, matrices, renderType,
                         avatarState.lightCoords, OverlayTexture.NO_OVERLAY, avatarState.outlineColor, null);

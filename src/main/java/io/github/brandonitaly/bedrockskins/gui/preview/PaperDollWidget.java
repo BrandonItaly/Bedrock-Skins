@@ -21,9 +21,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
-//? if >=1.21.9 {
 import net.minecraft.client.input.MouseButtonEvent;
-//?}
 //? if <=26.2 {
 import org.lwjgl.glfw.GLFW;
 //?}
@@ -178,21 +176,11 @@ public class PaperDollWidget extends AbstractWidget {
         this.openSkinButton.extractRenderState(guiGraphics, mouseX, mouseY, delta); //~}
     }
 
-    //? if >=1.21.9 {
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         if (!this.visible || !this.active) return false;
         return this.openSkinButton.mouseClicked(click, doubled) || this.isMouseOver(click.x(), click.y());
     }
-    //?} else {
-    /*
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (!this.visible || !this.active) return false;
-        return this.openSkinButton.mouseClicked(mouseX, mouseY, button) || this.isMouseOver(mouseX, mouseY);
-    }
-    */
-    //?}
 
     @Override
     protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
