@@ -63,7 +63,7 @@ public class SkinSelectionScreen extends Screen {
     private static final int SEARCH_HORIZONTAL_INSET = 3;
     private static final int SEARCH_VERTICAL_INSET = 3;
     private static final int PANEL_CONTENT_INSET = 2;
-    private static final int SIDEBAR_CONTENT_INSET = PANEL_CONTENT_INSET + 1;
+    private static final int SIDEBAR_CONTENT_INSET = GuiUtils.PANEL_CONTENT_PADDING;
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
     private TabNavigationBar tabNavigationBar;
@@ -169,7 +169,7 @@ public class SkinSelectionScreen extends Screen {
         if (tabNavigationBar != null) {
             //? if >=26.2 {
             tabNavigationBar.arrangeElements(width);
-            //?} else if >26.1 {
+            //?} else if >=26.1 {
             /*tabNavigationBar.updateWidth(width);
             tabNavigationBar.arrangeElements();
             *///?} else {

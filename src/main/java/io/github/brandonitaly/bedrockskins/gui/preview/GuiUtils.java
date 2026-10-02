@@ -27,6 +27,7 @@ import org.joml.Vector3f;
 
 public final class GuiUtils {
     public static final int PANEL_HEADER_HEIGHT = 26;
+    public static final int PANEL_CONTENT_PADDING = 3;
     private static final float COSMETIC_PREVIEW_SCALE = 0.7F;
     
     private GuiUtils() {}

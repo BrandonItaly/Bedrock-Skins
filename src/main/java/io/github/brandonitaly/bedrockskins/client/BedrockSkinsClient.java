@@ -31,14 +31,14 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 //?} else if neoforge {
 /*import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
+import net.neoforged.neoforge.client.resources.VanillaClientListeners;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;*/
@@ -50,6 +50,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.player.PlayerModelPart;
 //? if <=26.2 {
 import org.lwjgl.glfw.GLFW;
@@ -144,8 +145,10 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
     }
 
     @SubscribeEvent
-    public static void onClientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> reloadResources(Minecraft.getInstance()));
+    public static void registerReloadListeners(AddClientReloadListenersEvent event) {
+        Identifier id = Identifier.fromNamespaceAndPath("bedrockskins", "reloader");
+        event.addListener(id, (ResourceManagerReloadListener) manager -> reloadResources(Minecraft.getInstance()));
+        event.addDependency(VanillaClientListeners.LAST, id);
     }
 
     public static void handleSkinUpdatePacket(BedrockSkinsNetworking.SkinUpdatePayload payload) {

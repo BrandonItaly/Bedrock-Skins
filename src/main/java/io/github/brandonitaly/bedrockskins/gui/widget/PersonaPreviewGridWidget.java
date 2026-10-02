@@ -18,14 +18,13 @@ import java.util.function.Supplier;
 abstract class PersonaPreviewGridWidget<T>
         extends CardGridWidget<PersonaPreviewGridWidget.PreviewCell<T>> {
     private static final int CELL_WIDTH = 60;
-    private static final int CELL_PADDING = 5;
     private final Consumer<T> onSelect;
     private final Supplier<T> selected;
     private final Font font;
 
     PersonaPreviewGridWidget(Minecraft client, int width, int height, int y, int itemHeight,
                              int cellHeight, Consumer<T> onSelect, Supplier<T> selected, Font font) {
-        super(client, width, height, y, itemHeight, CELL_WIDTH, cellHeight, CELL_PADDING);
+        super(client, width, height, y, itemHeight, CELL_WIDTH, cellHeight);
         this.onSelect = onSelect;
         this.selected = selected;
         this.font = font;

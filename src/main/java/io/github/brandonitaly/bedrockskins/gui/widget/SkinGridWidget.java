@@ -21,7 +21,6 @@ public class SkinGridWidget extends CardGridWidget<SkinGridWidget.SkinCell> {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final int CELL_WIDTH = 60;
     private static final int CELL_HEIGHT = 85;
-    private static final int CELL_PADDING = 5;
     private final Consumer<LoadedSkin> onSelectSkin;
     private final Supplier<LoadedSkin> getSelectedSkin;
     private final Font font;
@@ -29,7 +28,7 @@ public class SkinGridWidget extends CardGridWidget<SkinGridWidget.SkinCell> {
     public SkinGridWidget(Minecraft client, int width, int height, int y, int itemHeight,
                           Consumer<LoadedSkin> onSelectSkin,
                           Supplier<LoadedSkin> getSelectedSkin, Font font) {
-        super(client, width, height, y, itemHeight, CELL_WIDTH, CELL_HEIGHT, CELL_PADDING);
+        super(client, width, height, y, itemHeight, CELL_WIDTH, CELL_HEIGHT);
         this.onSelectSkin = onSelectSkin;
         this.getSelectedSkin = getSelectedSkin;
         this.font = font;

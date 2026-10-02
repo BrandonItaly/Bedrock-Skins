@@ -1,5 +1,6 @@
 package io.github.brandonitaly.bedrockskins.gui.widget;
 
+import io.github.brandonitaly.bedrockskins.gui.preview.GuiUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ObjectSelectionList;
@@ -13,7 +14,7 @@ import java.util.function.Consumer;
 abstract class CardGridWidget<C> extends PanelListWidget<CardGridWidget<C>.CardRow> {
     private final int cellWidth;
     private final int cellHeight;
-    private final int cellPadding;
+    private static final int CELL_PADDING = GuiUtils.PANEL_CONTENT_PADDING;
     private List<?> displayedValues = List.of();
     private int displayedColumns = -1;
     private int displayedCellWidth = -1;
@@ -22,17 +23,16 @@ abstract class CardGridWidget<C> extends PanelListWidget<CardGridWidget<C>.CardR
     private CardGridLayout layout;
 
     protected CardGridWidget(Minecraft client, int width, int height, int y, int itemHeight,
-                             int cellWidth, int cellHeight, int cellPadding) {
+                             int cellWidth, int cellHeight) {
         super(client, width, height, y, itemHeight);
         this.cellWidth = cellWidth;
         this.cellHeight = cellHeight;
-        this.cellPadding = cellPadding;
     }
 
     private CardGridLayout layout() {
         int available = Math.max(1, getRowWidth());
         if (layoutWidth != available) {
-            layout = CardGridLayout.fit(available, cellWidth, cellHeight, cellPadding);
+            layout = CardGridLayout.fit(available, cellWidth, cellHeight, CELL_PADDING);
             layoutWidth = available;
         }
         return layout;
@@ -41,7 +41,7 @@ abstract class CardGridWidget<C> extends PanelListWidget<CardGridWidget<C>.CardR
     protected final int cellWidth() { return layout().cardWidth(); }
     protected final int cellHeight() { return layout().cardHeight(); }
 
-    protected final void addCellsRow(List<C> cells) { addEntry(new CardRow(cells), cellHeight() + cellPadding); }
+    protected final void addCellsRow(List<C> cells) { addEntry(new CardRow(cells), cellHeight() + CELL_PADDING); }
 
     protected abstract void renderCell(C cell, GuiGraphicsExtractor graphics, int x, int y,
                                        boolean hovered, int mouseX, int mouseY);
@@ -65,7 +65,7 @@ abstract class CardGridWidget<C> extends PanelListWidget<CardGridWidget<C>.CardR
         boolean sameContents = displayedValues.equals(values);
         if (displayedColumns == columns && displayedCellWidth == cellWidth() && sameContents) return;
         double scroll = sameContents && displayedCellHeight > 0
-            ? scrollAmount() * (cellHeight() + cellPadding) / (displayedCellHeight + cellPadding) : 0;
+            ? scrollAmount() * (cellHeight() + CELL_PADDING) / (displayedCellHeight + CELL_PADDING) : 0;
         clear();
         for (int i = 0; i < values.size(); i += columns) {
             addRow.accept(values.subList(i, Math.min(i + columns, values.size())));
@@ -90,7 +90,7 @@ abstract class CardGridWidget<C> extends PanelListWidget<CardGridWidget<C>.CardR
                 && mouseY >= CardGridWidget.this.getY()
                 && mouseY < CardGridWidget.this.getY() + CardGridWidget.this.height;
             for (int i = 0; i < cells.size(); i++) {
-                int x = getX() + layout().columnX(i, cellPadding);
+                int x = getX() + layout().columnX(i, CELL_PADDING);
                 boolean cellHovered = mouseInGrid && mouseX >= x && mouseX < x + cellWidth()
                     && mouseY >= getY() && mouseY < getY() + cellHeight();
                 renderCell(cells.get(i), graphics, x, getY(), cellHovered, mouseX, mouseY);
@@ -101,7 +101,7 @@ abstract class CardGridWidget<C> extends PanelListWidget<CardGridWidget<C>.CardR
             int localX = (int) click.x() - getX();
             if (localX < 0 || click.y() < getY() || click.y() >= getY() + cellHeight()) return false;
             for (int i = 0; i < cells.size(); i++) {
-                int x = layout().columnX(i, cellPadding);
+                int x = layout().columnX(i, CELL_PADDING);
                 if (localX >= x && localX < x + cellWidth()) return clickCell(cells.get(i), click, doubled);
             }
             return false;

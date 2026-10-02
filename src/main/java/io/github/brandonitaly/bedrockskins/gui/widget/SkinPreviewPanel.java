@@ -300,7 +300,7 @@ public class SkinPreviewPanel {
             rotationX = 0.0F;
         } else {
             dummyPlayer.setForcedCape(selectedCape.textureIdentifier);
-            rotationX = 60.0F;
+            rotationX = -220.0F / 3.0F;
         }
     }
 
@@ -773,7 +773,7 @@ public class SkinPreviewPanel {
             if (uploadSkinButton != null) uploadSkinButton.visible = false;
             if (deleteSkinButton != null) deleteSkinButton.visible = false;
         } else if (tabIndex == AppearanceTab.CAPES) {
-            this.rotationX = 60.0f;
+            this.rotationX = -220.0F / 3.0F;
             if (selectButton != null) {
                 selectButton.visible = true;
                 selectButton.setMessage(Component.translatable("bedrockskins.button.equip"));

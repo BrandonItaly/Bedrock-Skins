@@ -18,7 +18,6 @@ import java.util.function.Supplier;
 public class CapeGridWidget extends CardGridWidget<CapeGridWidget.CapeCell> {
     private static final int CELL_WIDTH = 60;
     private static final int CELL_HEIGHT = 60;
-    private static final int CELL_PADDING = 5;
     private final Consumer<MinecraftCape> onSelectCape;
     private final Supplier<MinecraftCape> getSelectedCape;
     private final Font font;
@@ -26,7 +25,7 @@ public class CapeGridWidget extends CardGridWidget<CapeGridWidget.CapeCell> {
     public CapeGridWidget(Minecraft client, int width, int height, int y, int itemHeight,
                           Consumer<MinecraftCape> onSelectCape,
                           Supplier<MinecraftCape> getSelectedCape, Font font) {
-        super(client, width, height, y, itemHeight, CELL_WIDTH, CELL_HEIGHT, CELL_PADDING);
+        super(client, width, height, y, itemHeight, CELL_WIDTH, CELL_HEIGHT);
         this.onSelectCape = onSelectCape;
         this.getSelectedCape = getSelectedCape;
         this.font = font;
