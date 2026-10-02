@@ -181,22 +181,6 @@ public final class GuiUtils {
         }
     }
 
-    public static void renderActionCard(GuiGraphicsExtractor gui, Font font, Component tooltipText, int x, int y, int w, int h, boolean hovered, int mouseX, int mouseY) {
-        var cardSprite = hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE;
-        gui.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, y, w, h);
-
-        int plusCenterX = x + (w / 2);
-        int plusCenterY = y + (h / 2) - 2;
-        int arm = 13;
-        int thickness = 4;
-        gui.fill(plusCenterX - arm, plusCenterY - (thickness / 2), plusCenterX + arm, plusCenterY + (thickness / 2) + 1, 0xFFFFFFFF);
-        gui.fill(plusCenterX - (thickness / 2), plusCenterY - arm, plusCenterX + (thickness / 2) + 1, plusCenterY + arm, 0xFFFFFFFF);
-
-        if (hovered && tooltipText != null) {
-            gui.setTooltipForNextFrame(font, tooltipText, mouseX, mouseY);
-        }
-    }
-
     public static void renderSkinCard(GuiGraphicsExtractor gui, Font font, Component tooltipText, int x, int y, int w, int h, boolean hovered, boolean selected, boolean equipped, PreviewPlayer player, float hoverYaw, int mouseX, int mouseY) {
         var cardSprite = selected ? BedrockSkinsSprites.CARD_SELECTED : (hovered ? BedrockSkinsSprites.CARD_HOVER : BedrockSkinsSprites.CARD_IDLE);
         gui.blitSprite(RenderPipelines.GUI_TEXTURED, cardSprite, x, y, w, h);
@@ -246,13 +230,6 @@ public final class GuiUtils {
         if (hovered && truncated) {
             gui.setTooltipForNextFrame(font, Component.literal(text), mouseX, mouseY);
         }
-    }
-
-    public static void safeRegisterTexture(String key) { 
-        try { 
-            SkinId id = SkinId.parse(key); 
-            if (id != null) SkinPackLoader.registerTextureFor(id); 
-        } catch (Exception ignored) {} 
     }
 
     public static void playButtonClickSound() {

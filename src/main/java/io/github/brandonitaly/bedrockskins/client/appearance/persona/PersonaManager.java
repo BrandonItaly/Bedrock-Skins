@@ -1,16 +1,17 @@
 package io.github.brandonitaly.bedrockskins.client.appearance.persona;
 
+import io.github.brandonitaly.bedrockskins.bedrock.BedrockFile;
 import io.github.brandonitaly.bedrockskins.client.appearance.skin.ClientSkinSync;
 import io.github.brandonitaly.bedrockskins.client.persistence.StateManager;
 import io.github.brandonitaly.bedrockskins.client.render.model.BedrockPlayerModel;
-
 import io.github.brandonitaly.bedrockskins.network.BedrockSkinsNetworking;
-import io.github.brandonitaly.bedrockskins.bedrock.BedrockFile;
+import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
 import io.github.brandonitaly.bedrockskins.pack.model.AssetSource;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedCosmetic;
 import io.github.brandonitaly.bedrockskins.pack.persona.PersonaCatalog;
 import io.github.brandonitaly.bedrockskins.pack.persona.PersonaPieceLoader;
-import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
+import io.github.brandonitaly.bedrockskins.pack.StringUtils;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -35,8 +36,7 @@ public final class PersonaManager {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new Gson();
     private static final Map<String, LoadedCosmetic> COSMETICS = new LinkedHashMap<>();
-    private static final Map<String, BedrockPlayerModel> MODELS = new ConcurrentHashMap<>();
-    private static final Map<BedrockPlayerModel, LoadedCosmetic> MODEL_COSMETICS = new ConcurrentHashMap<>();
+    private static final PersonaModelCache MODELS = new PersonaModelCache();
     private static final Map<UUID, CosmeticAssignment> ASSIGNMENTS = new ConcurrentHashMap<>();
     private static final Map<UUID, List<String>> REMOTE_KEYS = new ConcurrentHashMap<>();
     private static final Set<String> REMOTE_COSMETIC_IDS = ConcurrentHashMap.newKeySet();
@@ -84,7 +84,6 @@ public final class PersonaManager {
         PersonaTextureManager.clear();
         COSMETICS.clear();
         MODELS.clear();
-        MODEL_COSMETICS.clear();
         REMOTE_COSMETIC_IDS.clear();
 
         PersonaCatalog.pieceDirectories().forEach(path -> loadDirectory(path, vanillaGeometry));
@@ -298,7 +297,7 @@ public final class PersonaManager {
 
     /** Applies the side selection belonging to a deferred cosmetic model submission. */
     public static void applySideVisibility(BedrockPlayerModel model, UUID playerId) {
-        applySideVisibility(model, playerId, MODEL_COSMETICS.get(model));
+        applySideVisibility(model, playerId, MODELS.cosmetic(model));
     }
 
     public static boolean rendersArm(UUID playerId, LoadedCosmetic cosmetic, boolean rightArm) {
@@ -359,19 +358,6 @@ public final class PersonaManager {
         return PersonaTextureManager.texture(cosmetic, tintColor(playerId, cosmetic));
     }
 
-    public static void clearLocal() {
-        LOCAL_COLORS.clear();
-        LOCAL_SIDES.clear();
-        synchronized (LOCAL_SELECTION) {
-            LOCAL_SELECTION.clear();
-        }
-        UUID playerId = localPlayerId();
-        if (playerId != null) setEquipped(playerId, null);
-        StateManager.updateCosmetics(List.of());
-        StateManager.updatePersonaColors(Map.of());
-        if (playerId != null) ClientSkinSync.syncCurrentCosmetics();
-    }
-
     public static void setPreview(UUID playerId, LoadedCosmetic cosmetic) {
         if (playerId == null) return;
         CosmeticAssignment assignment = assignment(playerId);
@@ -422,15 +408,12 @@ public final class PersonaManager {
 
     public static BedrockPlayerModel model(LoadedCosmetic cosmetic, boolean slim) {
         if (cosmetic == null) return null;
-        String key = cosmetic.id + (slim ? "#slim" : "#wide");
-        return MODELS.computeIfAbsent(key, ignored -> {
+        return MODELS.getOrCreate(cosmetic, slim, () -> {
             try {
                 JsonObject geoData = slim ? cosmetic.slimGeometryData : cosmetic.geometryData;
                 BedrockFile file = GSON.fromJson(geoData, BedrockFile.class);
                 if (file.getGeometries() == null || file.getGeometries().isEmpty()) return null;
-                BedrockPlayerModel model = BedrockPlayerModel.create(file.getGeometries().getFirst(), slim, true);
-                MODEL_COSMETICS.put(model, cosmetic);
-                return model;
+                return BedrockPlayerModel.create(file.getGeometries().getFirst(), slim, true);
             } catch (Exception e) {
                 LOGGER.warn("Failed to build Persona cosmetic model {} (slim={})", cosmetic.displayName, slim, e);
                 return null;
@@ -487,7 +470,7 @@ public final class PersonaManager {
         Map<String, EquipSide> sides = new LinkedHashMap<>();
         for (BedrockSkinsNetworking.CosmeticData value : data) {
             try {
-                String key = "remote/" + playerId + "/" + sanitize(value.id());
+                String key = "remote/" + playerId + "/" + StringUtils.sanitize(value.id());
                 JsonObject geometry = JsonParser.parseString(value.geometry()).getAsJsonObject();
                 JsonObject slimGeometry = (value.slimGeometry() != null && !value.slimGeometry().isEmpty())
                     ? JsonParser.parseString(value.slimGeometry()).getAsJsonObject()
@@ -542,11 +525,9 @@ public final class PersonaManager {
         List<String> keys = REMOTE_KEYS.remove(playerId);
         if (keys != null) {
             for (String key : keys) {
-                LoadedCosmetic cosmetic = COSMETICS.remove(key);
+                COSMETICS.remove(key);
                 REMOTE_COSMETIC_IDS.remove(key);
                 MODELS.remove(key);
-                MODELS.remove(key + "#wide");
-                MODELS.remove(key + "#slim");
                 PersonaTextureManager.remove(key);
             }
         }
@@ -605,10 +586,6 @@ public final class PersonaManager {
     private static UUID localPlayerId() {
         var player = Minecraft.getInstance().player;
         return player == null ? null : player.getUUID();
-    }
-
-    private static String sanitize(String value) {
-        return value.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9/._-]", "_");
     }
 
 }

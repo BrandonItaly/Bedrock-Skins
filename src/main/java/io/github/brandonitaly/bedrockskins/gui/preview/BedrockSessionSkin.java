@@ -19,13 +19,6 @@ public final class BedrockSessionSkin {
 
     private BedrockSessionSkin() {}
 
-    public static void prewarm() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null) return;
-        GameProfile profile = getSessionProfile(mc);
-        requestSessionSkin(mc, profile);
-    }
-
     public static void clearCache() {
         cachedSessionProfileKey = null;
         cachedSessionProfile = null;

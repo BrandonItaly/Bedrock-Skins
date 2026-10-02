@@ -41,11 +41,8 @@ public final class CapeManager {
         public final Identifier textureIdentifier;
 
         public MinecraftCape(String id, String state, String url, String alias) {
-            this.id = id;
-            this.state = state;
-            this.url = url;
-            this.alias = alias;
-            this.textureIdentifier = Identifier.fromNamespaceAndPath("bedrockskins", "capes/mojang/" + id.toLowerCase().replace("-", "_").replace(" ", "_"));
+            this(id, state, url, alias, Identifier.fromNamespaceAndPath("bedrockskins",
+                "capes/mojang/" + id.toLowerCase().replace("-", "_").replace(" ", "_")));
         }
 
         public MinecraftCape(String id, String state, String url, String alias, Identifier textureIdentifier) {

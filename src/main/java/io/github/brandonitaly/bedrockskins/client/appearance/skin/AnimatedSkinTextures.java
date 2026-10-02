@@ -49,7 +49,6 @@ public final class AnimatedSkinTextures {
     }
 
     public static void remove(Identifier id) { ANIMATIONS.remove(id); }
-    public static boolean isAnimated(Identifier id) { return ANIMATIONS.containsKey(id); }
     public static void clear() { ANIMATIONS.clear(); }
 
     public static void tick() {

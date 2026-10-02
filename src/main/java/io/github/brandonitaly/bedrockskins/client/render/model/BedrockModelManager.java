@@ -26,13 +26,9 @@ public final class BedrockModelManager {
         var skin = SkinPackLoader.getLoadedSkin(skinId);
         if (skin == null) return null;
 
-        if (bedrockModels.containsKey(skinId)) {
-            var cached = bedrockModels.get(skinId);
-            ensureTextureRegistered(skinId, skin);
-            return cached;
-        }
-
         ensureTextureRegistered(skinId, skin);
+        var cached = bedrockModels.get(skinId);
+        if (cached != null) return cached;
 
         try {
             BedrockFile bedrockFile = gson.fromJson(skin.geometryData, BedrockFile.class);

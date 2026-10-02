@@ -19,6 +19,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
 import java.util.List;
+//? if <=26.2
+import org.lwjgl.glfw.GLFW;
 
 /** Bedrock-style six-slot radial selector for Persona emotes. */
 public final class EmoteWheelScreen extends Screen {
@@ -155,7 +157,7 @@ public final class EmoteWheelScreen extends Screen {
             onClose();
             return true;
         }
-        int slot = event.key() - 49;
+        int slot = event.key() - InputConstants.KEY_1;
         if (slot >= 0 && slot < SLOTS && choose(slot)) return true;
         return super.keyPressed(event);
     }

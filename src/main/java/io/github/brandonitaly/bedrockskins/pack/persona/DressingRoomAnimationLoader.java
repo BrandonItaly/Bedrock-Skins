@@ -1,7 +1,6 @@
 package io.github.brandonitaly.bedrockskins.pack.persona;
 
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedEmote;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -48,8 +47,7 @@ public final class DressingRoomAnimationLoader {
             if (animations == null || animations.isEmpty()) return null;
             String name = animations.keySet().iterator().next();
             JsonObject animation = animations.getAsJsonObject(name);
-            float duration = animation.has("animation_length")
-                ? animation.get("animation_length").getAsFloat() : maxTime(animation);
+            float duration = PersonaEmoteLoader.animationDuration(animation);
             if (duration <= 0.0F) return null;
             return new LoadedEmote("dressing_room/" + file, group, name, animation.deepCopy(), duration);
         } catch (Exception ignored) {
@@ -57,18 +55,4 @@ public final class DressingRoomAnimationLoader {
         }
     }
 
-    private static float maxTime(JsonElement value) {
-        float max = 0.0F;
-        if (value == null) return max;
-        if (value.isJsonObject()) {
-            for (var entry : value.getAsJsonObject().entrySet()) {
-                try { max = Math.max(max, Float.parseFloat(entry.getKey())); }
-                catch (NumberFormatException ignored) {}
-                max = Math.max(max, maxTime(entry.getValue()));
-            }
-        } else if (value.isJsonArray()) {
-            for (JsonElement child : value.getAsJsonArray()) max = Math.max(max, maxTime(child));
-        }
-        return max;
-    }
 }

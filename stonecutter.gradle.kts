@@ -42,6 +42,7 @@ stonecutter parameters {
             replace("armor::renderType", "armor.renderType()")
             replace("renderContent", "extractContent")
             replace("renderSelection", "extractSelection")
+            replace("renderScrollbar", "extractScrollbar")
             replace("renderWidget", "extractWidgetRenderState")
             replace(".renderTooltipBackground", ".extractTooltipBackground")
             replace(".renderMenuBackground", ".extractMenuBackground")

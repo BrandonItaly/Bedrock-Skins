@@ -22,10 +22,6 @@ public class BedrockSkinsConfig {
     private static volatile boolean adjustCameraHeight;
     private static volatile boolean thirdPersonEmotes;
     private static volatile boolean allowAccountSkinUpload;
-    private static volatile double paperDollOffsetXTitle;
-    private static volatile double paperDollOffsetYTitle;
-    private static volatile double paperDollOffsetXPause;
-    private static volatile double paperDollOffsetYPause;
 
     public enum PaperDollMode {
         NONE, BOTH, MAIN_MENU, PAUSE_MENU;
@@ -47,9 +43,9 @@ public class BedrockSkinsConfig {
         );
     }
 
-    private record ConfigData(PaperDollMode paperDollMode, PackSortOrder packSortOrder, boolean skinAnimations, boolean adjustCameraHeight, boolean thirdPersonEmotes, boolean allowAccountSkinUpload, double paperDollOffsetXTitle, double paperDollOffsetYTitle, double paperDollOffsetXPause, double paperDollOffsetYPause) {}
+    private record ConfigData(PaperDollMode paperDollMode, PackSortOrder packSortOrder, boolean skinAnimations, boolean adjustCameraHeight, boolean thirdPersonEmotes, boolean allowAccountSkinUpload) {}
 
-    private static final ConfigData DEFAULTS = new ConfigData(PaperDollMode.BOTH, PackSortOrder.A_TO_Z, true, false, true, true, 0.0, 0.0, 0.0, 0.0);
+    private static final ConfigData DEFAULTS = new ConfigData(PaperDollMode.BOTH, PackSortOrder.A_TO_Z, true, false, true, true);
 
     private static final Codec<ConfigData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         PaperDollMode.CODEC.optionalFieldOf("showPaperDoll", DEFAULTS.paperDollMode()).forGetter(ConfigData::paperDollMode),
@@ -57,11 +53,7 @@ public class BedrockSkinsConfig {
         Codec.BOOL.optionalFieldOf("skinAnimations", DEFAULTS.skinAnimations()).forGetter(ConfigData::skinAnimations),
         Codec.BOOL.optionalFieldOf("adjustCameraHeight", DEFAULTS.adjustCameraHeight()).forGetter(ConfigData::adjustCameraHeight),
         Codec.BOOL.optionalFieldOf("thirdPersonEmotes", DEFAULTS.thirdPersonEmotes()).forGetter(ConfigData::thirdPersonEmotes),
-        Codec.BOOL.optionalFieldOf("allowAccountSkinUpload", DEFAULTS.allowAccountSkinUpload()).forGetter(ConfigData::allowAccountSkinUpload),
-        Codec.DOUBLE.optionalFieldOf("paperDollOffsetXTitle", DEFAULTS.paperDollOffsetXTitle()).forGetter(ConfigData::paperDollOffsetXTitle),
-        Codec.DOUBLE.optionalFieldOf("paperDollOffsetYTitle", DEFAULTS.paperDollOffsetYTitle()).forGetter(ConfigData::paperDollOffsetYTitle),
-        Codec.DOUBLE.optionalFieldOf("paperDollOffsetXPause", DEFAULTS.paperDollOffsetXPause()).forGetter(ConfigData::paperDollOffsetXPause),
-        Codec.DOUBLE.optionalFieldOf("paperDollOffsetYPause", DEFAULTS.paperDollOffsetYPause()).forGetter(ConfigData::paperDollOffsetYPause)
+        Codec.BOOL.optionalFieldOf("allowAccountSkinUpload", DEFAULTS.allowAccountSkinUpload()).forGetter(ConfigData::allowAccountSkinUpload)
     ).apply(instance, ConfigData::new));
 
     static { load(); }
@@ -122,18 +114,6 @@ public class BedrockSkinsConfig {
     public static boolean isAccountSkinUploadAllowed() { return allowAccountSkinUpload; }
     public static void setAccountSkinUploadAllowed(boolean allowed) { if (allowAccountSkinUpload != allowed) { allowAccountSkinUpload = allowed; save(); } }
 
-    public static double getPaperDollOffsetXTitle() { return paperDollOffsetXTitle; }
-    public static void setPaperDollOffsetXTitle(double offset) { paperDollOffsetXTitle = offset; save(); }
-
-    public static double getPaperDollOffsetYTitle() { return paperDollOffsetYTitle; }
-    public static void setPaperDollOffsetYTitle(double offset) { paperDollOffsetYTitle = offset; save(); }
-
-    public static double getPaperDollOffsetXPause() { return paperDollOffsetXPause; }
-    public static void setPaperDollOffsetXPause(double offset) { paperDollOffsetXPause = offset; save(); }
-
-    public static double getPaperDollOffsetYPause() { return paperDollOffsetYPause; }
-    public static void setPaperDollOffsetYPause(double offset) { paperDollOffsetYPause = offset; save(); }
-
     public static OptionInstance<?>[] asOptions() {
         return new OptionInstance<?>[] { PACK_SORT_ORDER, SHOW_PAPER_DOLL, SKIN_ANIMATIONS, ADJUST_CAMERA_HEIGHT, THIRD_PERSON_EMOTES, ALLOW_ACCOUNT_SKIN_UPLOAD };
     }
@@ -146,14 +126,10 @@ public class BedrockSkinsConfig {
         adjustCameraHeight = data.adjustCameraHeight();
         thirdPersonEmotes = data.thirdPersonEmotes();
         allowAccountSkinUpload = data.allowAccountSkinUpload();
-        paperDollOffsetXTitle = data.paperDollOffsetXTitle();
-        paperDollOffsetYTitle = data.paperDollOffsetYTitle();
-        paperDollOffsetXPause = data.paperDollOffsetXPause();
-        paperDollOffsetYPause = data.paperDollOffsetYPause();
     }
 
     private static void save() {
-        JsonCodecFileStore.write(CONFIG_PATH, CODEC, new ConfigData(paperDollMode, packSortOrder, skinAnimations, adjustCameraHeight, thirdPersonEmotes, allowAccountSkinUpload, paperDollOffsetXTitle, paperDollOffsetYTitle, paperDollOffsetXPause, paperDollOffsetYPause), "BedrockSkinsConfig");
+        JsonCodecFileStore.write(CONFIG_PATH, CODEC, new ConfigData(paperDollMode, packSortOrder, skinAnimations, adjustCameraHeight, thirdPersonEmotes, allowAccountSkinUpload), "BedrockSkinsConfig");
     }
 
     public static void resetToDefault() {
@@ -163,10 +139,6 @@ public class BedrockSkinsConfig {
         ADJUST_CAMERA_HEIGHT.set(DEFAULTS.adjustCameraHeight());
         THIRD_PERSON_EMOTES.set(DEFAULTS.thirdPersonEmotes());
         ALLOW_ACCOUNT_SKIN_UPLOAD.set(DEFAULTS.allowAccountSkinUpload());
-        setPaperDollOffsetXTitle(DEFAULTS.paperDollOffsetXTitle());
-        setPaperDollOffsetYTitle(DEFAULTS.paperDollOffsetYTitle());
-        setPaperDollOffsetXPause(DEFAULTS.paperDollOffsetXPause());
-        setPaperDollOffsetYPause(DEFAULTS.paperDollOffsetYPause());
         save();
     }
 }

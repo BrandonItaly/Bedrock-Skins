@@ -1,15 +1,14 @@
 package io.github.brandonitaly.bedrockskins.gui.screen;
 
 import io.github.brandonitaly.bedrockskins.gui.preview.*;
-import io.github.brandonitaly.bedrockskins.gui.widget.*;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.github.brandonitaly.bedrockskins.pack.model.AssetSource;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
 import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
 import io.github.brandonitaly.bedrockskins.pack.editor.WritableSkinPack;
+import io.github.brandonitaly.bedrockskins.pack.editor.SkinManifestEditor;
+import io.github.brandonitaly.bedrockskins.pack.editor.LangFileEditor;
 import io.github.brandonitaly.bedrockskins.client.integration.NativeFileDialog;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
@@ -56,9 +55,7 @@ public class AddSkinScreen extends SkinDialogScreen {
     }
 
     public AddSkinScreen(SkinSelectionScreen parent, String packId, String texturePath, String capePath, String defaultName, boolean isSlim, boolean deleteTempFiles) {
-        super(parent, Component.translatable("bedrockskins.gui.import_skin"), 224, 248);
-        this.packId = packId;
-        this.texturePath = texturePath;
+        this(parent, packId, texturePath);
         this.capePath = capePath;
         if (capePath != null) {
             this.capeButtonLabel = Component.literal(Path.of(capePath).getFileName().toString());
@@ -135,8 +132,6 @@ public class AddSkinScreen extends SkinDialogScreen {
             Path targetTexture = storeDir.resolve(safeSkinId + ".png");
             Files.copy(Path.of(texturePath), targetTexture, StandardCopyOption.REPLACE_EXISTING);
 
-            String geoName = selectedGeometry;
-
             String capeFileName = "";
             if (capePath != null) {
                 Path targetCape = storeDir.resolve(safeSkinId + "_cape.png");
@@ -144,38 +139,18 @@ public class AddSkinScreen extends SkinDialogScreen {
                 capeFileName = targetCape.getFileName().toString();
             }
 
-            Path skinsJsonFile = storeDir.resolve("skins.json");
-            JsonObject rootObj = new JsonObject();
-            JsonArray skinsArray = new JsonArray();
-            
-            if (Files.exists(skinsJsonFile)) {
-                try (var reader = Files.newBufferedReader(skinsJsonFile)) {
-                    rootObj = JsonParser.parseReader(reader).getAsJsonObject();
-                    if (rootObj.has("skins")) {
-                        skinsArray = rootObj.getAsJsonArray("skins");
-                    }
-                }
-            }
-
             JsonObject newSkin = new JsonObject();
             newSkin.addProperty("localization_name", skinName);
-            newSkin.addProperty("geometry", geoName);
+            newSkin.addProperty("geometry", selectedGeometry);
             newSkin.addProperty("texture", targetTexture.getFileName().toString());
             newSkin.addProperty("type", "free");
             if (!capeFileName.isEmpty()) {
                 newSkin.addProperty("cape", capeFileName);
             }
             
-            skinsArray.add(newSkin);
-            rootObj.add("skins", skinsArray);
-            Files.writeString(skinsJsonFile, rootObj.toString());
-
-            Path textsDir = storeDir.resolve("texts");
-            Path langFile = textsDir.resolve("en_us.lang");
-            String newLangEntry = "\nskin.%s.%s=%s".formatted(importsPackId.replace("skinpack.", ""), safeSkinId, skinName);
-            if (Files.exists(langFile)) {
-                Files.writeString(langFile, Files.readString(langFile) + newLangEntry);
-            }
+            SkinManifestEditor.add(storeDir.resolve("skins.json"), newSkin);
+            String translationKey = "skin.%s.%s".formatted(importsPackId.replace("skinpack.", ""), safeSkinId);
+            LangFileEditor.put(storeDir.resolve("texts/en_us.lang"), translationKey, skinName);
 
             this.onClose();
             Minecraft.getInstance().execute(() -> {

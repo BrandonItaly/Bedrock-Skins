@@ -43,7 +43,6 @@ import net.minecraft.resources.Identifier;
 
 import java.io.File;
 import java.util.*;
-import java.util.function.Consumer;
 
 public class SkinSelectionScreen extends Screen {
     private static final int[] PERSONA_COLORS = {
@@ -97,12 +96,6 @@ public class SkinSelectionScreen extends Screen {
     private EmoteGridWidget emoteGrid;
     private EditBox searchBox;
     private boolean searchExpanded;
-    private List<LoadedSkin> displayedSkins = List.of();
-    private List<LoadedCosmetic> displayedCosmetics = List.of();
-    private List<LoadedEmote> displayedEmotes = List.of();
-    private int displayedSkinColumns = -1;
-    private int displayedCosmeticColumns = -1;
-    private int displayedEmoteColumns = -1;
     private String selectedCosmeticType = "all";
     private String selectedCapesCategory = "owned";
     private List<MinecraftCape> ownedCapes = null;
@@ -489,9 +482,7 @@ public class SkinSelectionScreen extends Screen {
     }
 
     private static void positionPanelContent(AbstractWidget widget, Rect panel) {
-        widget.setPosition(panel.x + PANEL_CONTENT_INSET, panelContentY(panel));
-        widget.setWidth(panelContentWidth(panel));
-        widget.setHeight(panelContentHeight(panel));
+        positionSidebarContent(widget, panel);
     }
 
     private static void positionSidebarContent(AbstractWidget widget, Rect panel) {
@@ -503,7 +494,6 @@ public class SkinSelectionScreen extends Screen {
     private void onFavoritesChanged() {
         buildSkinCache();
         refreshPackList();
-        if (FAVORITES_PACK_ID.equals(selectedPackId)) selectPack(FAVORITES_PACK_ID);
     }
 
     private void refreshPackList() {
@@ -534,18 +524,13 @@ public class SkinSelectionScreen extends Screen {
     private void selectPack(String packId) {
         this.selectedPackId = packId;
         if (skinGrid != null) {
+            String query = searchQuery();
             List<LoadedSkin> skins = skinCache.getOrDefault(packId, List.of()).stream()
-                .filter(skin -> matchesSearch(GuiSkinUtils.getSkinDisplayNameText(skin),
+                .filter(skin -> matchesSearch(query, GuiSkinUtils.getSkinDisplayNameText(skin),
                     skin.skinDisplayName, skin.safeSkinName,
                     skin.serializeName, skin.packDisplayName))
                 .toList();
-            int cols = Math.max(1, (rSkins.w - 18) / 65);
-            if (displayedSkinColumns == cols && displayedSkins.equals(skins)) return;
-            displayedSkins = List.copyOf(skins);
-            displayedSkinColumns = cols;
-            skinGrid.clear();
-            skinGrid.setScrollAmount(0.0);
-            addGridRows(skins, cols, skinGrid::addSkinsRow);
+            skinGrid.refreshRows(skins, skinGrid::addSkinsRow);
         }
     }
 
@@ -812,18 +797,12 @@ public class SkinSelectionScreen extends Screen {
         }
     }
 
-    private static <T> void addGridRows(List<T> values, int columns, Consumer<List<T>> addRow) {
-        for (int i = 0; i < values.size(); i += columns) {
-            addRow.accept(values.subList(i, Math.min(i + columns, values.size())));
-        }
-    }
 
     private String searchQuery() {
         return searchBox == null ? "" : searchBox.getValue().strip().toLowerCase(Locale.ROOT);
     }
 
-    private boolean matchesSearch(String... values) {
-        String query = searchQuery();
+    private static boolean matchesSearch(String query, String... values) {
         if (query.isEmpty()) return true;
         for (String value : values) {
             if (value != null && value.toLowerCase(Locale.ROOT).contains(query)) return true;
@@ -833,16 +812,11 @@ public class SkinSelectionScreen extends Screen {
 
     private void refreshEmoteGrid() {
         if (emoteGrid == null) return;
+        String query = searchQuery();
         List<LoadedEmote> emotes = EmoteManager.all().stream()
-            .filter(emote -> matchesSearch(emote.displayName(), emote.id(), emote.animationName()))
+            .filter(emote -> matchesSearch(query, emote.displayName(), emote.id(), emote.animationName()))
             .toList();
-        int columns = Math.max(1, (rSkins.w - 18) / 65);
-        if (displayedEmoteColumns == columns && displayedEmotes.equals(emotes)) return;
-        displayedEmotes = List.copyOf(emotes);
-        displayedEmoteColumns = columns;
-        emoteGrid.clear();
-        emoteGrid.setScrollAmount(0.0);
-        addGridRows(emotes, columns, emoteGrid::addEmotesRow);
+        emoteGrid.refreshRows(emotes, emoteGrid::addEmotesRow);
     }
 
     public void openEmoteSlotPicker(LoadedEmote emote) {
@@ -940,6 +914,7 @@ public class SkinSelectionScreen extends Screen {
 
     private void refreshCosmeticGrid() {
         if (cosmeticGrid == null) return;
+        String query = searchQuery();
         Set<String> equippedIds = PersonaManager.localEquipped().stream()
             .map(cosmetic -> cosmetic.id)
             .collect(java.util.stream.Collectors.toSet());
@@ -947,17 +922,11 @@ public class SkinSelectionScreen extends Screen {
             .filter(cosmetic -> PersonaTypeNames.EQUIPPED.equals(selectedCosmeticType)
                 ? equippedIds.contains(cosmetic.id)
                 : PersonaTypeNames.belongsTo(cosmetic.type, selectedCosmeticType))
-            .filter(cosmetic -> matchesSearch(cosmetic.displayName, cosmetic.id,
+            .filter(cosmetic -> matchesSearch(query, cosmetic.displayName, cosmetic.id,
                 PersonaTypeNames.displayName(cosmetic.type).getString()))
             .toList();
         visibleCosmeticCount = shown.size();
-        int columns = Math.max(1, (rSkins.w - 18) / 65);
-        if (displayedCosmeticColumns == columns && displayedCosmetics.equals(shown)) return;
-        displayedCosmetics = List.copyOf(shown);
-        displayedCosmeticColumns = columns;
-        cosmeticGrid.clear();
-        cosmeticGrid.setScrollAmount(0.0);
-        addGridRows(shown, columns, cosmeticGrid::addCosmeticsRow);
+        cosmeticGrid.refreshRows(shown, cosmeticGrid::addCosmeticsRow);
     }
 
     private void fetchCapes() {
@@ -977,14 +946,7 @@ public class SkinSelectionScreen extends Screen {
             ownedCapes.add(new MinecraftCape("none", "INACTIVE", "", "bedrockskins.capes.none"));
             ownedCapes.addAll(capes);
             
-            boolean hasActive = false;
-            for (MinecraftCape c : capes) {
-                if (c.state.equals("ACTIVE")) {
-                    hasActive = true;
-                    break;
-                }
-            }
-            if (!hasActive) {
+            if (capes.stream().noneMatch(cape -> "ACTIVE".equals(cape.state))) {
                 ownedCapes.set(0, new MinecraftCape("none", "ACTIVE", "", "bedrockskins.capes.none"));
             }
 
@@ -1091,7 +1053,6 @@ public class SkinSelectionScreen extends Screen {
             Set<String> uniqueCapePaths = new HashSet<>();
             String activeCapeId = getActiveLocalCapeId();
             
-            boolean hasActive = false;
             capesToShow.add(new MinecraftCape("none", (activeCapeId == null || "none".equals(activeCapeId)) ? "ACTIVE" : "INACTIVE", "", "bedrockskins.capes.none"));
 
             for (List<LoadedSkin> skins : skinCache.values()) {
@@ -1102,7 +1063,6 @@ public class SkinSelectionScreen extends Screen {
                             String pathStr = skin.capeIdentifier.toString();
                             if (uniqueCapePaths.add(pathStr)) {
                                 String state = (activeCapeId != null && activeCapeId.equals(pathStr)) ? "ACTIVE" : "INACTIVE";
-                                if (state.equals("ACTIVE")) hasActive = true;
                                 
                                 MinecraftCape cape = new MinecraftCape(
                                     "skinpack:" + skin.skinId.toString(),
@@ -1117,16 +1077,13 @@ public class SkinSelectionScreen extends Screen {
                     }
                 }
             }
-            if (hasActive) {
-                capesToShow.set(0, new MinecraftCape("none", "INACTIVE", "", "bedrockskins.capes.none"));
-            }
         }
 
-        capesToShow.removeIf(cape -> !matchesSearch(
+        String query = searchQuery();
+        capesToShow.removeIf(cape -> !matchesSearch(query,
             GuiSkinUtils.translatedOrFallback(cape.alias, cape.alias), cape.alias, cape.id));
         
-        int cols = Math.max(1, (rSkins.w - 18) / 65);
-        addGridRows(capesToShow, cols, capeGrid::addCapesRow);
+        capeGrid.refreshRows(capesToShow, capeGrid::addCapesRow);
     }
 
     public void onCapeChanged(String capeId) {

@@ -6,6 +6,7 @@ import io.github.brandonitaly.bedrockskins.client.persistence.StateManager;
 import io.github.brandonitaly.bedrockskins.client.render.model.BedrockPlayerModel;
 
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedEmote;
+import io.github.brandonitaly.bedrockskins.pack.StringUtils;
 import io.github.brandonitaly.bedrockskins.pack.persona.PersonaCatalog;
 import io.github.brandonitaly.bedrockskins.pack.persona.PersonaEmoteLoader;
 import io.github.brandonitaly.bedrockskins.pack.persona.DressingRoomAnimationLoader;
@@ -93,7 +94,7 @@ public final class EmoteManager {
             int width = image.getWidth();
             int height = image.getHeight();
             Identifier id = Identifier.fromNamespaceAndPath("bedrockskins",
-                "persona/emote_thumbnail/" + emote.id().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9/._-]", "_"));
+                "persona/emote_thumbnail/" + StringUtils.sanitize(emote.id()));
             DynamicTexture texture = new DynamicTexture(() -> "persona_emote_thumbnail", image);
             Runnable registerTask = () -> {
                 texture.upload();
@@ -124,13 +125,7 @@ public final class EmoteManager {
 
     public static void equip(int index, LoadedEmote emote) {
         if (index < 0 || index >= SLOT_COUNT || emote == null || !EMOTES.containsKey(emote.id())) return;
-        int previousSlot = -1;
-        for (int i = 0; i < SLOT_COUNT; i++) {
-            if (emote.id().equals(EQUIPPED_SLOTS[i])) {
-                previousSlot = i;
-                break;
-            }
-        }
+        int previousSlot = slotOf(emote);
         if (previousSlot >= 0 && previousSlot != index) {
             EQUIPPED_SLOTS[previousSlot] = EQUIPPED_SLOTS[index];
         }

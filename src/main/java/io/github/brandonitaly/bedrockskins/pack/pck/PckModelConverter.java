@@ -161,9 +161,6 @@ final class PckModelConverter {
                     String baseType = baseTypeForBoneName(lowerBoneName);
                     if (baseType != null) {
                         Float offsetY = offsets.get(baseType);
-                        if (offsetY == null && "HELMET".equals(baseType)) {
-                            offsetY = offsets.get("HEAD");
-                        }
 
                         if (offsetY != null && Math.abs(offsetY) > 0.0001f) {
                             applyOffsetToBoneCubesY(bone, offsetY);
@@ -182,9 +179,7 @@ final class PckModelConverter {
         // Add PCK Cubes
         for (PckBox box : boxes) {
             String baseType = baseTypeForBoxType(box.type());
-            float offsetY = box.type().equals("HEADWEAR")
-                ? offsets.getOrDefault("HELMET", offsets.getOrDefault("HEAD", 0.0f))
-                : offsets.getOrDefault(baseType, 0.0f);
+            float offsetY = offsets.getOrDefault(baseType, 0.0f);
             float[] origin = toBedrockOrigin(box);
             origin[1] -= offsetY;
 
@@ -348,7 +343,7 @@ final class PckModelConverter {
     private static String baseTypeForBoneName(String lowerBoneName) {
         return switch (lowerBoneName) {
             case "head" -> "HEAD";
-            case "hat" -> "HELMET";
+            case "hat" -> "HEAD";
             case "body", "jacket" -> "BODY";
             case "rightarm", "rightsleeve" -> "ARM0";
             case "leftarm", "leftsleeve" -> "ARM1";

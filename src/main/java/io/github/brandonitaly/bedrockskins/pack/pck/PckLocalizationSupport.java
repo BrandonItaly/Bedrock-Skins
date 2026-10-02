@@ -1,6 +1,7 @@
 package io.github.brandonitaly.bedrockskins.pack.pck;
 
 import io.github.brandonitaly.bedrockskins.pack.StringUtils;
+import io.github.brandonitaly.bedrockskins.pack.TranslationLookup;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -11,10 +12,6 @@ import java.util.Map;
 
 final class PckLocalizationSupport {
     private PckLocalizationSupport() {}
-
-    static String cleanLocText(String in) {
-        return StringUtils.cleanLocalizationText(in);
-    }
 
     static String findPackDisplayToken(Map<String, Map<String, String>> pckTranslations, String currentLang) {
         if (getTranslationFromMap(pckTranslations, "ids_display_name", currentLang) != null) {
@@ -47,7 +44,7 @@ final class PckLocalizationSupport {
     }
 
     static void copyLocalizedValueToTranslations(String sourceToken, String targetKey, String fallbackValue, Map<String, Map<String, String>> pckTranslations, Map<String, Map<String, String>> globalTranslations) {
-        String sourceKey = cleanLocText(sourceToken);
+        String sourceKey = StringUtils.cleanLocalizationText(sourceToken);
         if (sourceKey != null) sourceKey = sourceKey.toLowerCase(Locale.ROOT);
 
         String target = targetKey == null ? null : targetKey.trim().toLowerCase(Locale.ROOT);
@@ -71,7 +68,7 @@ final class PckLocalizationSupport {
 
     static String resolvePckLocalizedToken(String token, Map<String, Map<String, String>> pckTranslations, String currentLang) {
         if (token == null) return null;
-        String normalized = cleanLocText(token).toLowerCase(Locale.ROOT);
+        String normalized = StringUtils.cleanLocalizationText(token).toLowerCase(Locale.ROOT);
         if (normalized.isBlank()) return null;
 
         String translated = getTranslationFromMap(pckTranslations, normalized, currentLang);
@@ -80,25 +77,8 @@ final class PckLocalizationSupport {
 
     static String getTranslationFromMap(Map<String, Map<String, String>> source, String key, String currentLang) {
         if (source == null || source.isEmpty() || key == null) return null;
-        String normalizedKey = cleanLocText(key).toLowerCase(Locale.ROOT);
-
-        Map<String, String> currentLangMap = source.get(currentLang);
-        if (currentLangMap != null) {
-            String val = currentLangMap.get(normalizedKey);
-            if (val != null) return val;
-        }
-
-        Map<String, String> enMap = source.get("en_us");
-        if (enMap != null) {
-            String val = enMap.get(normalizedKey);
-            if (val != null) return val;
-        }
-
-        for (Map<String, String> map : source.values()) {
-            String val = map.get(normalizedKey);
-            if (val != null) return val;
-        }
-        return null;
+        String normalizedKey = StringUtils.cleanLocalizationText(key).toLowerCase(Locale.ROOT);
+        return TranslationLookup.find(source, normalizedKey, currentLang);
     }
 
     static Map<String, Map<String, String>> loadPckLocalisations(List<PckFileParser.PckAsset> allAssets) {

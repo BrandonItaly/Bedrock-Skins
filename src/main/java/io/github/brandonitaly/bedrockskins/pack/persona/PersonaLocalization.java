@@ -30,7 +30,7 @@ final class PersonaLocalization {
         keys.add("persona.offer.title");
         if (fallback != null && !fallback.isBlank()) keys.add("persona." + fallback + ".title");
 
-        for (File root = pieceDirectory, previous = null; root != null && root != previous; previous = root, root = root.getParentFile()) {
+        for (File root = pieceDirectory; root != null; root = root.getParentFile()) {
             File language = languageFile(root);
             if (language != null) {
                 String translated = find(language, keys);

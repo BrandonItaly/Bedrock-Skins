@@ -2,6 +2,7 @@ package io.github.brandonitaly.bedrockskins.client.appearance.persona;
 
 import io.github.brandonitaly.bedrockskins.pack.model.AssetSource;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedCosmetic;
+import io.github.brandonitaly.bedrockskins.pack.StringUtils;
 import io.github.brandonitaly.bedrockskins.pack.persona.PersonaTexturePayload;
 import io.github.brandonitaly.bedrockskins.pack.persona.PersonaAnimationClock;
 import io.github.brandonitaly.bedrockskins.pack.persona.BlinkAnimation;
@@ -16,7 +17,6 @@ import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -51,7 +51,7 @@ final class PersonaTextureManager {
 
     static void prepare(LoadedCosmetic cosmetic, int color) {
         if (cosmetic == null) return;
-        Identifier ignored = texture(cosmetic, color);
+        texture(cosmetic, color);
         ManagedTexture animation = TEXTURES.get(new VariantKey(cosmetic.id,
             cosmetic.tintable ? color & 0xFFFFFF : cosmetic.defaultTintColor));
         if (animation == null || animation.regions.isEmpty()) return;
@@ -155,13 +155,9 @@ final class PersonaTextureManager {
         }
     }
 
-    private static String sanitize(String value) {
-        return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9/._-]", "_");
-    }
-
     private static Identifier textureId(LoadedCosmetic cosmetic, int color) {
         return Identifier.fromNamespaceAndPath("bedrockskins",
-            "persona/" + sanitize(cosmetic.id) + "/" + String.format("%06x", color & 0xFFFFFF));
+            "persona/" + StringUtils.sanitize(cosmetic.id) + "/" + String.format("%06x", color & 0xFFFFFF));
     }
 
     private record VariantKey(String cosmeticId, int color) {}

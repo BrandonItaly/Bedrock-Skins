@@ -10,6 +10,7 @@ import io.github.brandonitaly.bedrockskins.pack.pck.PckImporter;
 import io.github.brandonitaly.bedrockskins.pack.persona.PersonaImages;
 import io.github.brandonitaly.bedrockskins.pack.persona.PersonaTexturePayload;
 import io.github.brandonitaly.bedrockskins.pack.StringUtils;
+import io.github.brandonitaly.bedrockskins.pack.TranslationLookup;
 
 import io.github.brandonitaly.bedrockskins.util.ExternalAssetUtil;
 import com.google.gson.JsonArray;
@@ -25,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import java.util.function.Function;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
@@ -67,23 +69,7 @@ public final class SkinPackLoader {
 
     public static String getTranslation(String key) {
         String normalizedKey = StringUtils.cleanLocalizationText(key).toLowerCase(Locale.ROOT);
-        
-        String result = getLangValue(getClientLanguage(), normalizedKey);
-        if (result != null) return result;
-
-        result = getLangValue("en_us", normalizedKey);
-        if (result != null) return result;
-
-        for (Map<String, String> map : translations.values()) {
-            String val = map.get(normalizedKey);
-            if (val != null) return val;
-        }
-        return null;
-    }
-
-    private static String getLangValue(String lang, String key) {
-        Map<String, String> map = translations.get(lang);
-        return map != null ? map.get(key) : null;
+        return TranslationLookup.find(translations, normalizedKey, getClientLanguage());
     }
 
     public static void loadPacks() {
@@ -311,23 +297,7 @@ public final class SkinPackLoader {
             registerPackType(manifest);
             registerDynamicPackIcon(packIdFor(manifest.serializeName()), findPackIconFile(packDir));
 
-            for (SkinEntry entry : manifest.skins()) {
-                JsonObject geometry = resolveGeometry(entry.geometry(), geometryJson);
-                if (geometry == null || entry.texture() == null) continue;
-
-                AssetSource textureSource = resolveExternalAsset(entry.texture(), packDir);
-                if (textureSource == null) continue;
-
-                SkinId id = SkinId.of(manifest.serializeName(), entry.localizationName());
-                LoadedSkin ls = new LoadedSkin(
-                    manifest.serializeName(), manifest.localizationName(), entry.localizationName(),
-                    geometry, textureSource, resolveExternalAsset(entry.cape(), packDir),
-                    hasUpsideDownAnimation(entry)
-                );
-                
-                ls.unfair = entry.unfair();
-                loadedSkins.put(id, ls);
-            }
+            registerPackSkins(manifest, geometryJson, path -> resolveExternalAsset(path, packDir));
         } catch (Exception e) {
             LOGGER.warn("Failed to load external pack from {}", packDir.getName(), e);
         }
@@ -358,25 +328,10 @@ public final class SkinPackLoader {
                 loadInternalTranslations(manager, id.getNamespace(), packPath);
                 registerResourcePackIcon(packIdFor(manifest.serializeName()), findResourcePackIcon(id.getNamespace(), packPath, manager));
 
-                for (SkinEntry entry : manifest.skins()) {
-                    JsonObject geometry = resolveGeometry(entry.geometry(), geoJson);
-                    if (geometry == null) continue;
-                    
-                    Identifier textureId = resolveInternalAsset(entry.texture(), id.getNamespace(), packPath, manager);
-                    if (textureId == null) continue;
-
-                    SkinId skinId = SkinId.of(manifest.serializeName(), entry.localizationName());
-                    Identifier capeId = resolveInternalAsset(entry.cape(), id.getNamespace(), packPath, manager);
-
-                    LoadedSkin ls = new LoadedSkin(
-                        manifest.serializeName(), manifest.localizationName(), entry.localizationName(),
-                        geometry, new AssetSource.Resource(textureId),
-                        capeId != null ? new AssetSource.Resource(capeId) : null,
-                        hasUpsideDownAnimation(entry)
-                    );
-                    ls.unfair = entry.unfair();
-                    loadedSkins.put(skinId, ls);
-                }
+                registerPackSkins(manifest, geoJson, path -> {
+                    Identifier asset = resolveInternalAsset(path, id.getNamespace(), packPath, manager);
+                    return asset != null ? new AssetSource.Resource(asset) : null;
+                });
             } catch (Exception e) {
                 LOGGER.warn("Failed to load internal pack {}", id, e);
             }
@@ -384,6 +339,28 @@ public final class SkinPackLoader {
     }
 
     // --- Helpers: Geometry & Assets ---
+
+    private static void registerPackSkins(SkinPackManifest manifest, JsonObject geometryJson,
+                                         Function<String, AssetSource> resolveAsset) {
+        for (SkinEntry entry : manifest.skins()) {
+            registerLoadedSkin(loadPackSkin(manifest, entry, geometryJson, resolveAsset));
+        }
+    }
+
+    static LoadedSkin loadPackSkin(SkinPackManifest manifest, SkinEntry entry, JsonObject geometryJson,
+                                   Function<String, AssetSource> resolveAsset) {
+        JsonObject geometry = resolveGeometry(entry.geometry(), geometryJson);
+        if (geometry == null || entry.texture() == null) return null;
+        AssetSource texture = resolveAsset.apply(entry.texture());
+        if (texture == null) return null;
+
+        AssetSource cape = entry.cape() != null ? resolveAsset.apply(entry.cape()) : null;
+        LoadedSkin skin = new LoadedSkin(
+            manifest.serializeName(), manifest.localizationName(), entry.localizationName(),
+            geometry, texture, cape, hasUpsideDownAnimation(entry));
+        skin.unfair = entry.unfair();
+        return skin;
+    }
 
     private static AssetSource resolveExternalAsset(String path, File packDir) {
         if (path == null) return null;

@@ -206,7 +206,7 @@ public class PckImporter {
 
                     String skinThemeToken = PckLocalizationSupport.deriveSkinThemeToken(loc.asset(), loc.skinDisplayToken(), loc.skinKey(), pckTranslations, lang);
                     String resolvedTheme = PckLocalizationSupport.resolvePckLocalizedToken(skinThemeToken, pckTranslations, lang);
-                    if (resolvedTheme != null && !resolvedTheme.isBlank() && !resolvedTheme.equalsIgnoreCase(PckLocalizationSupport.cleanLocText(skinThemeToken))) {
+                    if (resolvedTheme != null && !resolvedTheme.isBlank() && !resolvedTheme.equalsIgnoreCase(StringUtils.cleanLocalizationText(skinThemeToken))) {
                         langBuilder.append(loc.safeSkinTranslationKey()).append(".description=").append(resolvedTheme).append("\n");
                     }
                 }

@@ -26,41 +26,39 @@ public final class PersonaResourceLoader {
     public static synchronized boolean beginReload(ResourceManager manager) {
         try {
             if (extractedRoot == null) extractedRoot = Files.createTempDirectory("bedrockskins-bundled-persona-");
-            final Path targetRoot = extractedRoot;
             Set<Path> present = new HashSet<>();
-            boolean[] complete = {true};
+            boolean complete = true;
 
-            manager.listResources("persona", id ->
-                "bedrockskins".equals(id.getNamespace())).forEach((id, resource) -> {
+            var resources = manager.listResources("persona", id -> "bedrockskins".equals(id.getNamespace()));
+            for (var entry : resources.entrySet()) {
+                var id = entry.getKey();
                 String path = id.getPath();
-                if (!path.startsWith(RESOURCE_PREFIX)) return;
-                Path target = safeTarget(targetRoot, path.substring(RESOURCE_PREFIX.length()));
-                if (target == null) return;
+                if (!path.startsWith(RESOURCE_PREFIX)) continue;
+                Path target = safeTarget(extractedRoot, path.substring(RESOURCE_PREFIX.length()));
+                if (target == null) continue;
                 present.add(target);
-                try {
-                    try (var input = resource.open()) {
-                        byte[] data = input.readAllBytes();
-                        byte[] digest = MessageDigest.getInstance("SHA-256").digest(data);
-                        if (!Arrays.equals(digest, fingerprints.get(target)) || !Files.isRegularFile(target)) {
-                            Files.createDirectories(target.getParent());
-                            Files.write(target, data);
-                            fingerprints.put(target, digest);
-                        }
+                try (var input = entry.getValue().open()) {
+                    byte[] data = input.readAllBytes();
+                    byte[] digest = MessageDigest.getInstance("SHA-256").digest(data);
+                    if (!Arrays.equals(digest, fingerprints.get(target)) || !Files.isRegularFile(target)) {
+                        Files.createDirectories(target.getParent());
+                        Files.write(target, data);
+                        fingerprints.put(target, digest);
                     }
                 } catch (Exception exception) {
-                    complete[0] = false;
+                    complete = false;
                     fingerprints.remove(target);
                     try { Files.deleteIfExists(target); } catch (Exception ignored) {}
                     LOGGER.warn("Failed to extract bundled Persona resource {}", id, exception);
                 }
-            });
+            }
             for (Path stale : Set.copyOf(fingerprints.keySet())) {
                 if (!present.contains(stale)) {
                     Files.deleteIfExists(stale);
                     fingerprints.remove(stale);
                 }
             }
-            return complete[0];
+            return complete;
         } catch (Exception exception) {
             LOGGER.warn("Failed to discover bundled Persona resources", exception);
             return false;

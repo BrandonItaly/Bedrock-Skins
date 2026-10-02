@@ -88,10 +88,6 @@ public class SkinPreviewPanel {
     public LoadedCosmetic getSelectedCosmetic() { return selectedCosmetic; }
     public LoadedEmote getSelectedEmote() { return selectedEmote; }
 
-    public void playEmote(LoadedEmote emote) {
-        if (dummyPlayer != null && emote != null) EmoteManager.play(dummyPlayer.getUuid(), emote);
-    }
-
     public void setSelectedEmote(LoadedEmote emote) {
         this.selectedEmote = emote;
         if (dummyPlayer != null) {
@@ -749,23 +745,6 @@ public class SkinPreviewPanel {
         GuiUtils.renderEntityInRect(gui, entity, rotationX * 3, centerX - halfW, centerY - halfH, centerX + halfW, centerY + halfH, scale);
     }
     
-    public void setButtonsVisible(boolean visible) {
-        if (selectButton != null) selectButton.visible = visible;
-        if (replayEmoteButton != null) {
-            replayEmoteButton.visible = visible && parentScreen instanceof SkinSelectionScreen screen
-                && screen.getActiveTab() == AppearanceTab.EMOTES;
-        }
-        if (favoriteButton != null) favoriteButton.getButton().visible = visible;
-        if (previewButton != null) previewButton.visible = visible;
-        if (uploadSkinButton != null) {
-            uploadSkinButton.visible = visible && BedrockSkinsConfig.isAccountSkinUploadAllowed()
-                && selectedSkin != null && !MinecraftAccountSkin.is(selectedSkin)
-                && !ImportSkinAction.is(selectedSkin);
-        }
-        if (deleteSkinButton != null) deleteSkinButton.visible = visible && isSelectedImportedSkin();
-        positionFloatingActionButtons();
-    }
-
     public void updateButtonsForTab(AppearanceTab tabIndex) {
         reposition(x, y, width, height);
         if (replayEmoteButton != null) replayEmoteButton.visible = tabIndex == AppearanceTab.EMOTES;

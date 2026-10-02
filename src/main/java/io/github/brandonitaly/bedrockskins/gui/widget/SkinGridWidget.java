@@ -5,7 +5,6 @@ import io.github.brandonitaly.bedrockskins.gui.preview.GuiUtils;
 import io.github.brandonitaly.bedrockskins.gui.preview.PreviewPlayer;
 import io.github.brandonitaly.bedrockskins.gui.preview.MinecraftAccountSkin;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
-import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -40,18 +39,9 @@ public class SkinGridWidget extends CardGridWidget<SkinGridWidget.SkinCell> {
         addCellsRow(skins.stream().map(SkinCell::new).toList());
     }
 
-    public void addActionRow(Component label, Runnable onClick) {
-        addCellsRow(List.of(new SkinCell(label, onClick)));
-    }
-
     @Override
     protected void renderCell(SkinCell cell, GuiGraphicsExtractor graphics, int x, int y,
                               boolean hovered, int mouseX, int mouseY) {
-        if (cell.actionCell) {
-            GuiUtils.renderActionCard(graphics, font, cell.label, x, y, cellWidth(), cellHeight(),
-                hovered, mouseX, mouseY);
-            return;
-        }
         LoadedSkin selected = getSelectedSkin.get();
         boolean isSelected = selected != null && selected.equals(cell.skin);
         PreviewPlayer preview = cell.player();
@@ -72,9 +62,9 @@ public class SkinGridWidget extends CardGridWidget<SkinGridWidget.SkinCell> {
 
     @Override
     protected boolean clickCell(SkinCell cell, MouseButtonEvent click, boolean doubled) {
-        cell.activate(onSelectSkin);
+        onSelectSkin.accept(cell.skin);
         GuiUtils.playButtonClickSound();
-        if (doubled && !cell.actionCell) cell.activate(onSelectSkin);
+        if (doubled) onSelectSkin.accept(cell.skin);
         return true;
     }
 
@@ -82,37 +72,18 @@ public class SkinGridWidget extends CardGridWidget<SkinGridWidget.SkinCell> {
 
     protected static final class SkinCell {
         private final LoadedSkin skin;
-        private final Runnable onClick;
-        private final Component label;
         private final Component displayName;
-        private final boolean actionCell;
         private PreviewPlayer player;
         private float hoverYaw;
         private long lastHoverTime = Util.getMillis();
 
         private SkinCell(LoadedSkin skin) {
             this.skin = skin;
-            this.onClick = null;
-            this.label = null;
-            this.actionCell = false;
             this.displayName = Component.literal(GuiSkinUtils.getSkinDisplayNameText(skin));
         }
 
-        private SkinCell(Component label, Runnable onClick) {
-            this.skin = null;
-            this.onClick = onClick;
-            this.label = label;
-            this.actionCell = true;
-            this.displayName = label != null ? label : Component.empty();
-        }
-
-        private void activate(Consumer<LoadedSkin> onSelectSkin) {
-            if (onClick != null) onClick.run();
-            else if (skin != null) onSelectSkin.accept(skin);
-        }
-
         private PreviewPlayer player() {
-            if (player != null || actionCell) return player;
+            if (player != null) return player;
             player = new PreviewPlayer("");
             try {
                 GuiSkinUtils.applyLoadedSkinPreview(player, skin);
@@ -123,7 +94,7 @@ public class SkinGridWidget extends CardGridWidget<SkinGridWidget.SkinCell> {
         }
 
         private void cleanup() {
-            if (actionCell || player == null) return;
+            if (player == null) return;
             player.close();
             player = null;
         }

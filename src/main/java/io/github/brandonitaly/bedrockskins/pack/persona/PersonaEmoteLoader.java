@@ -36,7 +36,7 @@ public final class PersonaEmoteLoader {
             if (animations == null || animations.isEmpty()) return Optional.empty();
             if (animationName == null || !animations.has(animationName)) animationName = animations.keySet().iterator().next();
             JsonObject animation = animations.getAsJsonObject(animationName);
-            float duration = animation.has("animation_length") ? animation.get("animation_length").getAsFloat() : maxTime(animation);
+            float duration = animationDuration(animation);
             if (duration <= 0.0f) return Optional.empty();
             String id = string(metadata, "piece_id");
             String pieceName = string(metadata, "piece_name");
@@ -63,6 +63,10 @@ public final class PersonaEmoteLoader {
         } catch (Exception ignored) {
         }
         return new byte[0];
+    }
+
+    static float animationDuration(JsonObject animation) {
+        return animation.has("animation_length") ? animation.get("animation_length").getAsFloat() : maxTime(animation);
     }
 
     private static float maxTime(JsonElement value) {

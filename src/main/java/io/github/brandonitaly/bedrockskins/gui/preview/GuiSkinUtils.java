@@ -6,7 +6,6 @@ import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
 import io.github.brandonitaly.bedrockskins.pack.model.SkinId;
 import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerModelType;
 import net.minecraft.world.entity.player.PlayerSkin;
@@ -23,10 +22,6 @@ public final class GuiSkinUtils {
     public static String translatedOrFallback(String translationKey, String fallback) {
         String translated = SkinPackLoader.getTranslation(translationKey);
         return translated != null ? translated : fallback;
-    }
-
-    public static Component getSkinDisplayName(LoadedSkin skin) {
-        return skin == null ? Component.empty() : Component.literal(getSkinDisplayNameText(skin));
     }
 
     public static String getSkinDisplayNameText(LoadedSkin skin) {
