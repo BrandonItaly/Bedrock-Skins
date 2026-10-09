@@ -1,3 +1,1 @@
-- Fixed elytra not following torso and root movement during emotes.
-- Fixed number keys 1–6 not selecting emote wheel slots on Minecraft 26.3.
-- Made skin, cosmetic, emote, and cape cards resize with their panels while preserving proportions and consistent spacing.
+- Fixed cape-hidden skin parts remaining visible on the paper doll.

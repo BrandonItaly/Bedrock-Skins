@@ -2,6 +2,7 @@ package io.github.brandonitaly.bedrockskins.gui.screen;
 
 import io.github.brandonitaly.bedrockskins.gui.preview.*;
 import io.github.brandonitaly.bedrockskins.gui.widget.*;
+import io.github.brandonitaly.bedrockskins.gui.WidgetVisibility;
 
 import io.github.brandonitaly.bedrockskins.client.appearance.skin.FavoritesManager;
 import io.github.brandonitaly.bedrockskins.client.appearance.skin.SkinManager;
@@ -137,10 +138,18 @@ public class SkinSelectionScreen extends Screen {
         }
         previewPanel.init(rPreview.x, rPreview.y, rPreview.w, rPreview.h, this, this::addRenderableWidget);
         
+        //? if >=26.4-snapshot-2 {
+        /*var tabBuilder = MenuTabBar.builder(tabManager, width);
+        for (AppearanceTab tab : AppearanceTab.values()) {
+            tabBuilder.addTab(tab.title(), new AppearanceGridTab(tab));
+        }
+        tabNavigationBar = tabBuilder.build();
+        *///?} else {
         //~ if >=26.2 'TabNavigationBar.' -> 'MenuTabBar.' {
         tabNavigationBar = MenuTabBar.builder(tabManager, width)
             .addTabs(Arrays.stream(AppearanceTab.values()).map(AppearanceGridTab::new).toArray(GridLayoutTab[]::new))
             .build();//~}
+        //?}
         
         this.addRenderableWidget(tabNavigationBar);
 
@@ -209,7 +218,7 @@ public class SkinSelectionScreen extends Screen {
         positionCosmeticControls();
 
         boolean isCosmetics = activeTab == AppearanceTab.COSMETICS;
-        setVisible(isCosmetics, cosmeticGrid, cosmeticSidebar);
+        setVisible(isCosmetics, cosmeticSidebar);
         if (isCosmetics) refreshCosmeticGrid();
 
         boolean isCapes = activeTab == AppearanceTab.CAPES;
@@ -256,7 +265,6 @@ public class SkinSelectionScreen extends Screen {
 
         openPacksButton.setPosition(width / 2 - 154, btnY);
         openPacksButton.setWidth(btnW); openPacksButton.setHeight(btnH);
-        openPacksButton.visible = true;
 
         doneButton.setPosition(width / 2 + 4, btnY);
         doneButton.setWidth(btnW); doneButton.setHeight(btnH);
@@ -357,7 +365,6 @@ public class SkinSelectionScreen extends Screen {
             addRenderableWidget(cosmeticSidebar);
         }
         positionSidebarContent(cosmeticSidebar, rPacks);
-        cosmeticSidebar.visible = activeTab == AppearanceTab.COSMETICS;
 
         if (cosmeticGrid == null) {
             cosmeticGrid = new CosmeticGridWidget(minecraft, contentWidth, cgH, cgY, 65,
@@ -366,7 +373,6 @@ public class SkinSelectionScreen extends Screen {
             addRenderableWidget(cosmeticGrid);
         }
         positionPanelContent(cosmeticGrid, rSkins);
-        cosmeticGrid.visible = activeTab == AppearanceTab.COSMETICS;
 
         if (searchBox == null) {
             searchBox = new EditBox(font, 0, 0,
@@ -429,7 +435,6 @@ public class SkinSelectionScreen extends Screen {
             addRenderableWidget(capeSidebar);
         }
         positionSidebarContent(capeSidebar, rPacks);
-        capeSidebar.visible = activeTab == AppearanceTab.CAPES;
 
         if (capeGrid == null) {
             capeGrid = new CapeGridWidget(minecraft, contentWidth, cgH, cgY, 65,
@@ -443,7 +448,6 @@ public class SkinSelectionScreen extends Screen {
             addRenderableWidget(capeGrid);
         }
         positionPanelContent(capeGrid, rSkins);
-        capeGrid.visible = activeTab == AppearanceTab.CAPES;
 
         // Emotes Widgets
         if (emoteSidebar == null) {
@@ -452,7 +456,6 @@ public class SkinSelectionScreen extends Screen {
             addRenderableWidget(emoteSidebar);
         }
         positionSidebarContent(emoteSidebar, rPacks);
-        emoteSidebar.visible = activeTab == AppearanceTab.EMOTES;
 
         if (emoteGrid == null) {
             emoteGrid = new EmoteGridWidget(minecraft, contentWidth, cgH, cgY, 90,
@@ -462,10 +465,8 @@ public class SkinSelectionScreen extends Screen {
             addRenderableWidget(emoteGrid);
         }
         positionPanelContent(emoteGrid, rSkins);
-        emoteGrid.visible = activeTab == AppearanceTab.EMOTES;
 
         updateCosmeticCustomizationLayout();
-        updateCosmeticControls();
         refreshPackList();
     }
 
@@ -770,7 +771,9 @@ public class SkinSelectionScreen extends Screen {
         private final AppearanceTab tab;
 
         AppearanceGridTab(AppearanceTab tab) {
+            //? if <26.4-snapshot-2 {
             super(tab.title());
+            //?}
             this.tab = tab;
         }
 
@@ -793,7 +796,7 @@ public class SkinSelectionScreen extends Screen {
 
     private static void setVisible(boolean visible, AbstractWidget... widgets) {
         for (AbstractWidget widget : widgets) {
-            if (widget != null) widget.visible = visible;
+            if (widget != null) WidgetVisibility.setVisible(widget, visible);
         }
     }
 
@@ -858,23 +861,23 @@ public class SkinSelectionScreen extends Screen {
         boolean colorUsable = cosmeticsTab && PersonaManager.isColorSelectable(cosmetic);
         if (!colorUsable) colorPickerOpen = false;
         if (colorPickerButton != null) {
-            colorPickerButton.visible = colorUsable;
+            WidgetVisibility.setVisible(colorPickerButton, colorUsable);
             colorPickerButton.active = colorUsable;
         }
         if (searchBox != null) {
-            searchBox.visible = isSearchAvailable() && searchExpanded;
+            WidgetVisibility.setVisible(searchBox, isSearchAvailable() && searchExpanded);
         }
-        if (cosmeticGrid != null) cosmeticGrid.visible = cosmeticsTab && !colorPickerOpen;
+        if (cosmeticGrid != null) WidgetVisibility.setVisible(cosmeticGrid, cosmeticsTab && !colorPickerOpen);
         boolean colorsVisible = cosmeticsTab && colorPickerOpen && colorUsable;
         if (colorPalette != null) {
-            colorPalette.visible = colorsVisible;
+            WidgetVisibility.setVisible(colorPalette, colorsVisible);
             colorPalette.active = colorsVisible;
             colorPalette.setBounds(rCosmeticOptions.x + 4, customizationContentY(),
                 rCosmeticOptions.w - 8,
                 rCosmeticOptions.h - GuiUtils.PANEL_HEADER_HEIGHT - 8);
         }
-        if (previousSideButton != null) previousSideButton.visible = sideSelectable;
-        if (nextSideButton != null) nextSideButton.visible = sideSelectable;
+        if (previousSideButton != null) WidgetVisibility.setVisible(previousSideButton, sideSelectable);
+        if (nextSideButton != null) WidgetVisibility.setVisible(nextSideButton, sideSelectable);
     }
 
     private void cycleSelectedLimbSide(int direction) {

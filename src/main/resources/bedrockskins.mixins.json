@@ -18,6 +18,7 @@
     "skin.PlayerListEntryMixin",
     "skin.PlayerSkinRenderCacheMixin",
     "skin.PlayerFaceExtractorMixin",
+    "skin.ChatHeadsHeadMixin",
     "skin.PlayerHeadGlyphMixin",
     "skin.VoiceChatHeadMixin",
     "gui.TitleScreenMixin",

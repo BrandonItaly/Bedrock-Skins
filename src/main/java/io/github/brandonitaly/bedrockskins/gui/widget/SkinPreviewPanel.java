@@ -2,6 +2,7 @@ package io.github.brandonitaly.bedrockskins.gui.widget;
 
 import io.github.brandonitaly.bedrockskins.gui.preview.*;
 import io.github.brandonitaly.bedrockskins.gui.screen.*;
+import io.github.brandonitaly.bedrockskins.gui.WidgetVisibility;
 
 import io.github.brandonitaly.bedrockskins.client.BedrockSkinsClient;
 import io.github.brandonitaly.bedrockskins.client.persistence.BedrockSkinsConfig;
@@ -14,7 +15,6 @@ import io.github.brandonitaly.bedrockskins.client.appearance.cape.CapeManager.Mi
 import io.github.brandonitaly.bedrockskins.client.appearance.persona.PersonaManager;
 import io.github.brandonitaly.bedrockskins.client.appearance.persona.PersonaTypeNames;
 import io.github.brandonitaly.bedrockskins.client.appearance.skin.ClientSkinSync;
-import java.util.concurrent.CompletableFuture;
 import io.github.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import io.github.brandonitaly.bedrockskins.util.ExternalAssetUtil;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
@@ -37,6 +37,7 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
@@ -135,7 +136,7 @@ public class SkinPreviewPanel {
 
         replayEmoteButton = Button.builder(Component.translatable("bedrockskins.button.play_again"),
             b -> replaySelectedEmote()).bounds(0, 0, 10, 20).build();
-        replayEmoteButton.visible = false;
+        WidgetVisibility.setVisible(replayEmoteButton, false);
         widgetAdder.accept(replayEmoteButton);
 
         favoriteButton = new FavoriteHeartButton(20, BedrockSkinsSprites.HEART_CONTAINER, BedrockSkinsSprites.HEART_FULL, b -> toggleFavorite());
@@ -201,7 +202,7 @@ public class SkinPreviewPanel {
         }
         if (deleteSkinButton != null) {
             deleteSkinButton.setPosition(buttonX, buttonY);
-            if (deleteSkinButton.visible) buttonX -= 22;
+            if (WidgetVisibility.isVisible(deleteSkinButton)) buttonX -= 22;
         }
         if (uploadSkinButton != null) {
             uploadSkinButton.setPosition(buttonX, buttonY);
@@ -543,14 +544,17 @@ public class SkinPreviewPanel {
     }
 
     private void updateActionButtons() {
+        boolean skinsTab = !(parentScreen instanceof SkinSelectionScreen selectionScreen)
+            || selectionScreen.getActiveTab() == AppearanceTab.SKINS;
         if (uploadSkinButton != null) {
             boolean uploadable = selectedSkin != null && !MinecraftAccountSkin.is(selectedSkin)
                 && !ImportSkinAction.is(selectedSkin);
             uploadSkinButton.active = !isUploadingSkin && uploadable;
-            uploadSkinButton.visible = BedrockSkinsConfig.isAccountSkinUploadAllowed() && uploadable;
+            WidgetVisibility.setVisible(uploadSkinButton, skinsTab
+                && BedrockSkinsConfig.isAccountSkinUploadAllowed() && uploadable);
         }
         if (deleteSkinButton != null) {
-            deleteSkinButton.visible = isSelectedImportedSkin();
+            WidgetVisibility.setVisible(deleteSkinButton, skinsTab && isSelectedImportedSkin());
             deleteSkinButton.active = !isDeletingSkin;
         }
         positionFloatingActionButtons();
@@ -573,12 +577,10 @@ public class SkinPreviewPanel {
                 selectButton.setMessage(Component.translatable(equipped
                     ? "bedrockskins.button.unequip" : "bedrockskins.button.equip"));
             }
-            if (uploadSkinButton != null) uploadSkinButton.visible = false;
             return;
         }
         if (parentScreen instanceof SkinSelectionScreen selectionScreen && selectionScreen.getActiveTab() == AppearanceTab.CAPES) {
             if (selectButton != null) selectButton.active = selectedCape != null;
-            if (uploadSkinButton != null) uploadSkinButton.visible = false;
             return;
         }
         if (parentScreen instanceof SkinSelectionScreen selectionScreen && selectionScreen.getActiveTab() == AppearanceTab.EMOTES) {
@@ -587,7 +589,6 @@ public class SkinPreviewPanel {
                 selectButton.setMessage(Component.translatable("bedrockskins.button.equip"));
             }
             if (replayEmoteButton != null) replayEmoteButton.active = selectedEmote != null;
-            if (uploadSkinButton != null) uploadSkinButton.visible = false;
             return;
         }
 
@@ -747,46 +748,12 @@ public class SkinPreviewPanel {
     
     public void updateButtonsForTab(AppearanceTab tabIndex) {
         reposition(x, y, width, height);
-        if (replayEmoteButton != null) replayEmoteButton.visible = tabIndex == AppearanceTab.EMOTES;
-        if (tabIndex == AppearanceTab.SKINS) {
-            this.rotationX = 0.0f;
-            if (selectButton != null) {
-                selectButton.visible = true;
-                selectButton.setMessage(Component.translatable("bedrockskins.button.equip"));
-            }
-            if (favoriteButton != null) favoriteButton.getButton().visible = true;
-            if (previewButton != null) previewButton.visible = true;
-            if (uploadSkinButton != null) {
-                uploadSkinButton.visible = BedrockSkinsConfig.isAccountSkinUploadAllowed()
-                    && selectedSkin != null && !MinecraftAccountSkin.is(selectedSkin)
-                    && !ImportSkinAction.is(selectedSkin);
-            }
-            if (deleteSkinButton != null) deleteSkinButton.visible = isSelectedImportedSkin();
-        } else if (tabIndex == AppearanceTab.COSMETICS) {
-            this.rotationX = 0.0f;
-            if (selectButton != null) {
-                selectButton.visible = true;
-                selectButton.setMessage(Component.translatable("bedrockskins.button.equip"));
-            }
-            if (favoriteButton != null) favoriteButton.getButton().visible = false;
-            if (previewButton != null) previewButton.visible = true;
-            if (uploadSkinButton != null) uploadSkinButton.visible = false;
-            if (deleteSkinButton != null) deleteSkinButton.visible = false;
-        } else if (tabIndex == AppearanceTab.CAPES) {
-            this.rotationX = -220.0F / 3.0F;
-            if (selectButton != null) {
-                selectButton.visible = true;
-                selectButton.setMessage(Component.translatable("bedrockskins.button.equip"));
-            }
-            if (favoriteButton != null) favoriteButton.getButton().visible = false;
-            if (previewButton != null) previewButton.visible = true;
-            if (uploadSkinButton != null) uploadSkinButton.visible = false;
-            if (deleteSkinButton != null) deleteSkinButton.visible = false;
-        } else if (tabIndex == AppearanceTab.EMOTES) {
-            this.rotationX = 0.0f;
-            if (selectButton != null) {
-                selectButton.visible = true;
-                selectButton.setMessage(Component.translatable("bedrockskins.button.equip"));
+        this.rotationX = tabIndex == AppearanceTab.CAPES ? -220.0F / 3.0F : 0.0F;
+        if (replayEmoteButton != null) WidgetVisibility.setVisible(replayEmoteButton, tabIndex == AppearanceTab.EMOTES);
+        if (favoriteButton != null) WidgetVisibility.setVisible(favoriteButton.getButton(), tabIndex == AppearanceTab.SKINS);
+        if (selectButton != null) {
+            selectButton.setMessage(Component.translatable("bedrockskins.button.equip"));
+            if (tabIndex == AppearanceTab.EMOTES) {
                 int gap = 4;
                 int actionX = x + 8;
                 int actionWidth = Math.max(10, width - 16);
@@ -798,13 +765,8 @@ public class SkinPreviewPanel {
                     replayEmoteButton.setWidth(Math.max(10, actionWidth - halfWidth - gap));
                 }
             }
-            if (favoriteButton != null) favoriteButton.getButton().visible = false;
-            if (previewButton != null) previewButton.visible = true;
-            if (uploadSkinButton != null) uploadSkinButton.visible = false;
-            if (deleteSkinButton != null) deleteSkinButton.visible = false;
         }
         updateFavoriteButton();
-        positionFloatingActionButtons();
     }
 
     public void renderSprites(GuiGraphicsExtractor gui) {
@@ -833,7 +795,7 @@ public class SkinPreviewPanel {
         public void setTooltip(Component tooltip) { button.setTooltip(Tooltip.create(tooltip)); }
 
         public void renderSprites(GuiGraphicsExtractor graphics) {
-            if (button.visible && isFavorited) {
+            if (WidgetVisibility.isVisible(button) && isFavorited) {
                 graphics.blitSprite(RenderPipelines.GUI_TEXTURED, fullSprite, button.getX() + 4, button.getY() + 4, 12, 12);
             }
         }

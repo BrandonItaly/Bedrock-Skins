@@ -6,6 +6,7 @@ import io.github.brandonitaly.bedrockskins.client.BedrockSkinsClient;
 import io.github.brandonitaly.bedrockskins.client.appearance.persona.PersonaManager;
 import io.github.brandonitaly.bedrockskins.client.appearance.skin.SkinManager;
 import io.github.brandonitaly.bedrockskins.gui.screen.SkinSelectionScreen;
+import io.github.brandonitaly.bedrockskins.gui.WidgetVisibility;
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
 import io.github.brandonitaly.bedrockskins.pack.model.SkinId;
 import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
@@ -73,7 +74,7 @@ public class PaperDollWidget extends AbstractWidget {
     public static AbstractWidget findMenuTargetButton(Screen parentScreen) {
         AbstractWidget target = null;
         for (var child : parentScreen.children()) {
-            if (!(child instanceof Button widget) || !widget.visible || child instanceof PaperDollWidget) continue;
+            if (!(child instanceof Button widget) || !WidgetVisibility.isVisible(widget) || child instanceof PaperDollWidget) continue;
             if (widget instanceof PlainTextButton || widget instanceof SpriteIconButton) continue;
             if (target == null || widget.getY() > target.getY() || (widget.getY() == target.getY() && widget.getX() > target.getX())) {
                 target = widget;
