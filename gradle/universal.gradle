@@ -1,0 +1,98 @@
+import io.github.brandonitaly.packaging.UniversalJar
+
+def allUniversal = tasks.register('universalJar') {
+    group = 'build'
+    description = 'Builds release jars for all supported Minecraft versions, combining loaders when available.'
+}
+
+def publishUniversal = tasks.register('publishMods') {
+    group = 'publishing'
+    description = 'Publishes one release jar per supported Minecraft version.'
+}
+
+rootProject.childProjects.values().findAll { it.name.endsWith('-fabric') }.each { fabric ->
+    def minecraftVersion = fabric.name - '-fabric'
+    def suffix = minecraftVersion.replace('.', '_')
+    def neoForge = findProject(":${minecraftVersion}-neoforge")
+    def smokeDirectory = "universal-smoke/${minecraftVersion}"
+    def fabricJarTask = minecraftVersion.startsWith('1.') ? 'remapJar' : 'jar'
+
+    def universal = neoForge != null ? tasks.register("universalJar${suffix}", UniversalJar) {
+        group = 'build'
+        description = "Builds one Minecraft ${minecraftVersion} jar for Fabric and NeoForge."
+        dependsOn "${fabric.path}:${fabricJarTask}", "${neoForge.path}:jar"
+        fabricJar.set(providers.provider { fabric.tasks.named(fabricJarTask).get().archiveFile.get() })
+        neoForgeJar.set(providers.provider { neoForge.tasks.named('jar').get().archiveFile.get() })
+        outputJar.set(layout.buildDirectory.file(providers.gradleProperty('mod_version').map {
+            "libs/${it}/BedrockSkins-${minecraftVersion}-${it}.jar"
+        }))
+    } : tasks.register("universalJar${suffix}", Copy) {
+        group = 'build'
+        description = "Builds one Minecraft ${minecraftVersion} jar for Fabric."
+        dependsOn "${fabric.path}:${fabricJarTask}"
+        from providers.provider { fabric.tasks.named(fabricJarTask).get().archiveFile.get() }
+        into layout.buildDirectory.dir(providers.gradleProperty('mod_version').map { "libs/${it}" })
+        rename { "BedrockSkins-${minecraftVersion}-${providers.gradleProperty('mod_version').get()}.jar" }
+    }
+    def releaseOutput = layout.buildDirectory.file(providers.gradleProperty('mod_version').map {
+        "libs/${it}/BedrockSkins-${minecraftVersion}-${it}.jar"
+    })
+    allUniversal.configure { dependsOn universal }
+    publishUniversal.configure { dependsOn "${fabric.path}:publishMods" }
+
+    def prepareServer = { String name, String loader ->
+        tasks.register("prepareUniversal${name}Server${suffix}", Sync) {
+            dependsOn universal
+            from releaseOutput
+            into layout.buildDirectory.dir("${smokeDirectory}/${loader}/mods")
+            doLast {
+                rootProject.layout.buildDirectory.file("${smokeDirectory}/${loader}/server.properties").get().asFile.text =
+                    'server-ip=127.0.0.1\nserver-port=0\nonline-mode=false\n'
+            }
+        }
+    }
+
+    // Isolated server launches exercise the packaged jar instead of the development classes.
+    fabric.afterEvaluate {
+        def installFabric = prepareServer('Fabric', 'fabric')
+        fabric.tasks.register('runUniversalFabricServer', JavaExec) {
+            group = 'verification'
+            description = 'Starts an isolated Fabric server with the combined jar.'
+            dependsOn installFabric
+            if (fabricJarTask == 'remapJar') dependsOn 'generateRemapClasspath'
+            mainClass.set('net.fabricmc.loader.impl.launch.knot.KnotServer')
+            classpath = fabric.sourceSets.main.runtimeClasspath.minus(fabric.sourceSets.main.output)
+            systemProperty 'fabric.development', 'true'
+            workingDir rootProject.layout.buildDirectory.dir("${smokeDirectory}/fabric").get().asFile
+            args '--nogui'
+            standardInput = System.in
+            doFirst {
+                workingDir.mkdirs()
+                if (fabricJarTask == 'remapJar') {
+                    systemProperty 'fabric.remapClasspathFile',
+                        fabric.tasks.named('generateRemapClasspath').get().remapClasspathFile.get().asFile.absolutePath
+                }
+            }
+        }
+    }
+
+    neoForge?.pluginManager?.withPlugin('net.neoforged.moddev') {
+        def installNeoForge = prepareServer('NeoForge', 'neoforge')
+        def smokeSource = neoForge.sourceSets.create('universalSmoke')
+        smokeSource.runtimeClasspath = neoForge.sourceSets.main.runtimeClasspath.minus(neoForge.sourceSets.main.output)
+        neoForge.neoForge.runs.create('universalServer') {
+            server()
+            sourceSet.set(smokeSource)
+            loadedMods.set([])
+            gameDirectory.set(rootProject.layout.buildDirectory.dir("${smokeDirectory}/neoforge"))
+            programArgument '--nogui'
+            taskBefore installNeoForge
+            disableIdeRun()
+        }
+        neoForge.tasks.withType(JavaExec).configureEach {
+            if (name == 'runUniversalServer') {
+                standardInput = System.in
+            }
+        }
+    }
+}

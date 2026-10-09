@@ -4,23 +4,19 @@ plugins {
     id("net.neoforged.moddev") version "2.0.147" apply false
 }
 
+apply(from = "gradle/universal.gradle")
+
 stonecutter active "26.2-fabric" /* [SC] DO NOT EDIT */
 
 stonecutter parameters {
     val loader = node.project.property("loom.platform").toString()
     constants.match(loader, "fabric", "neoforge")
 
-    val legacy4jVersion = node.project.findProperty("legacy4j_version")
-        ?.toString()
-        ?.takeUnless { it.isBlank() || it == "[VERSIONED]" }
-    val legacy4jFlag = if (legacy4jVersion != null) "legacy4j" else ""
-    constants.match(legacy4jFlag, "legacy4j")
-
-    val modmenuVersion = node.project.findProperty("modmenu_version")
-        ?.toString()
-        ?.takeUnless { it.isBlank() || it == "[VERSIONED]" }
-    val modmenuFlag = if (modmenuVersion != null) "modmenu" else ""
-    constants.match(modmenuFlag, "modmenu")
+    for (mod in listOf("legacy4j", "modmenu")) {
+        val version = node.project.findProperty("${mod}_version")?.toString()
+        val enabled = !version.isNullOrBlank() && version != "[VERSIONED]"
+        constants.match(if (enabled) mod else "", mod)
+    }
 
     replacements {
         string(eval(current.version, ">=26.1")) {

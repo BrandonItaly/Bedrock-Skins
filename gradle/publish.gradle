@@ -1,0 +1,70 @@
+apply plugin: 'me.modmuss50.mod-publish-plugin'
+
+def envFile = rootProject.file('.env')
+def dotenvValues = envFile.exists() ? envFile.readLines().findResults { line ->
+    def entry = line.split('=', 2)
+    entry.length == 2 && !line.trim().startsWith('#') ?
+        [(entry[0].trim()): entry[1].trim()] : null
+}.collectEntries() : [:]
+def secret = { key ->
+    project.findProperty(key) ?: System.getenv(key) ?: dotenvValues[key] ?: System.getProperty(key) ?: ''
+}
+def curseforgeProject = (project.findProperty('curseforge_id') ?: '').toString().trim()
+def modrinthProject = (project.findProperty('modrinth_id') ?: '').toString().trim()
+def minecraftVersion = stonecutter.current.version
+def universal = rootProject.tasks.named("universalJar${minecraftVersion.replace('.', '_')}")
+def hasNeoForge = rootProject.findProject(":${minecraftVersion}-neoforge") != null
+def modmenuVersion = project.findProperty('modmenu_version')
+def hasModMenu = modmenuVersion && modmenuVersion != '[VERSIONED]'
+def changelogFile = rootProject.file('CHANGELOG.md')
+def supportedRange = project.findProperty('mc_version_range')?.toString()
+def supportedMinecraft = supportedRange && supportedRange != '[VERSIONED]' ?
+    supportedRange.split(',').collect { it.trim() }.findAll { it } : [minecraftVersion]
+def releaseVersion = "${minecraftVersion}-${mod_version}"
+
+// Publish once per Minecraft version through its Fabric project.
+publishMods {
+    displayName = "[${hasNeoForge ? 'Fabric/NeoForge' : 'Fabric'}] ${releaseVersion}"
+    version = "${releaseVersion}+${hasNeoForge ? 'fabric+neoforge' : 'fabric'}"
+    type = stage
+    changelog = changelogFile.exists() ? changelogFile.text :
+        "## ${mod_name} ${mod_version}\n\nNo changelog available."
+    file = universal.map {
+        rootProject.layout.buildDirectory.file("libs/${mod_version}/BedrockSkins-${minecraftVersion}-${mod_version}.jar").get()
+    }
+    dryRun = providers.gradleProperty('publishDryRun').map { it.toBoolean() }.orElse(false)
+    modLoaders.add('fabric')
+    if (hasNeoForge) modLoaders.add('neoforge')
+
+    if (curseforgeProject) {
+        curseforge {
+            projectId = curseforgeProject
+            accessToken = secret('CURSEFORGE_API_KEY')
+            minecraftVersions.addAll(supportedMinecraft)
+            javaVersions.add(java.targetCompatibility)
+            client = true
+            server = true
+            if (hasModMenu) optional('modmenu')
+            if (!hasNeoForge) requires('fabric-api')
+        }
+    }
+    if (modrinthProject) {
+        modrinth {
+            projectId = modrinthProject
+            accessToken = secret('MODRINTH_TOKEN')
+            minecraftVersions.addAll(supportedMinecraft)
+            environment = CLIENT_ONLY_SERVER_OPTIONAL
+            if (hasModMenu) optional('modmenu')
+            if (!hasNeoForge) requires('fabric-api')
+        }
+    }
+}
+
+tasks.named('publishMods') {
+    dependsOn universal
+    doFirst {
+        if (!curseforgeProject && !modrinthProject) {
+            throw new GradleException('Set curseforge_id and/or modrinth_id to your F3 Backport project IDs in gradle.properties.')
+        }
+    }
+}
