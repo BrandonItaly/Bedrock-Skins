@@ -1,1 +1,2 @@
+- Added Simplified Chinese translations ([#25](https://github.com/BrandonItaly/Bedrock-Skins/pull/25)).
 - Fixed cape-hidden skin parts remaining visible on the paper doll.
