@@ -9,7 +9,6 @@ import io.github.brandonitaly.bedrockskins.client.appearance.emote.EmoteManager;
 import io.github.brandonitaly.bedrockskins.client.render.model.PersonaVisibilityModel;
 import io.github.brandonitaly.bedrockskins.pack.model.SkinId;
 import java.util.UUID;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.player.PlayerModel;
@@ -197,18 +196,7 @@ public abstract class HumanoidModelMixin<T extends HumanoidRenderState> implemen
 
     @Unique
     private boolean hasActualCape(T state) {
-        UUID uuid = BedrockRenderStateStore.getUniqueId(state);
-        if (uuid == null) return false;
-
-        try {
-            var client = Minecraft.getInstance();
-            if (client.getConnection() == null) return false;
-            var entry = client.getConnection().getPlayerInfo(uuid);
-            if (entry == null) return false;
-            var textures = entry.getSkin();
-            return textures.cape() != null;
-        } catch (Throwable ignored) {
-            return false;
-        }
+        return state instanceof AvatarRenderState avatarState
+            && avatarState.skin != null && avatarState.skin.cape() != null;
     }
 }
