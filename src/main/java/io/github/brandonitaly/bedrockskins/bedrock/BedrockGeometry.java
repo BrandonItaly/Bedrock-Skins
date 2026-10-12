@@ -4,10 +4,6 @@ import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
 public class BedrockGeometry {
-    @SerializedName("bedrockskins_legacy_animation")
-    private boolean legacyAnimation;
-    public boolean isLegacyAnimation() { return legacyAnimation; }
-
     private GeometryDescription description;
     private List<BedrockBone> bones;
 

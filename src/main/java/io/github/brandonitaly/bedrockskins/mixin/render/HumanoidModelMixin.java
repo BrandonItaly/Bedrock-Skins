@@ -2,6 +2,7 @@ package io.github.brandonitaly.bedrockskins.mixin.render;
 
 import io.github.brandonitaly.bedrockskins.client.render.model.BedrockModelManager;
 import io.github.brandonitaly.bedrockskins.client.render.model.BedrockPlayerModel;
+import io.github.brandonitaly.bedrockskins.client.render.model.ResourcePackAnimationPose;
 import io.github.brandonitaly.bedrockskins.client.appearance.AppearanceResolver;
 import io.github.brandonitaly.bedrockskins.client.render.state.BedrockRenderStateStore;
 import io.github.brandonitaly.bedrockskins.client.appearance.persona.PersonaManager;
@@ -12,6 +13,7 @@ import java.util.UUID;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.player.PlayerModel;
+import net.minecraft.client.model.player.PlayerCapeModel;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
 import org.spongepowered.asm.mixin.Mixin;
@@ -57,14 +59,18 @@ public abstract class HumanoidModelMixin<T extends HumanoidRenderState> implemen
 
     @Inject(method = "setupAnim", at = @At("RETURN"))
     private void bedrockSkins$syncToBedrockModel(T state, CallbackInfo ci) {
+        if (ResourcePackAnimationPose.isAnimatingSource(this)) return;
+        if ((Object) this instanceof PlayerCapeModel cape && ResourcePackAnimationPose.hasAnimation(cape)) return;
         if ((Object) this instanceof BedrockPlayerModel bedrockPlayerModel) {
-            if (bedrockPlayerModel.animFlags.legacy()
-                && io.github.brandonitaly.bedrockskins.client.persistence.BedrockSkinsConfig.isSkinAnimationsEnabled()) {
-                io.github.brandonitaly.bedrockskins.client.render.model.LegacyActionPose.apply(bedrockPlayerModel, state);
-            }
             if (bedrockPlayerModel.animFlags.invertedCrouch()
                 && io.github.brandonitaly.bedrockskins.client.persistence.BedrockSkinsConfig.isSkinAnimationsEnabled()) {
                 io.github.brandonitaly.bedrockskins.client.render.model.InvertedCrouchPose.apply(bedrockPlayerModel, state);
+            }
+            // Finish the base pose before cosmetic offsets and emotes, so each
+            // is applied once rather than restored and repeated after setupAnim.
+            if (!bedrockPlayerModel.usesCustomAnimations() && state instanceof AvatarRenderState avatar) {
+                var pose = BedrockRenderStateStore.animationPose(avatar);
+                if (pose != null) pose.apply(bedrockPlayerModel);
             }
             applyBedrockPartVisibility(bedrockPlayerModel, state);
             if (bedrockPlayerModel.personaCosmetic) {

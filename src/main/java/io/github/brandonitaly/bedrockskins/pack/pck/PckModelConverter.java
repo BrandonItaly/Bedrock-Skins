@@ -100,11 +100,9 @@ final class PckModelConverter {
         List<PckBox> boxes = asset != null ? parsePckBoxes(asset) : List.of();
         Map<String, Float> offsets = asset != null ? parsePckOffsets(asset) : Map.of();
 
-
         JsonObject geometry = baseWrappedGeometry.deepCopy();
         JsonObject node = firstGeometryNode(geometry);
         if (node == null) return baseWrappedGeometry;
-        node.addProperty("bedrockskins_legacy_animation", true);
 
         if (animMask != null) applyAnimationFlagsToGeometryFields(node, animMask);
 

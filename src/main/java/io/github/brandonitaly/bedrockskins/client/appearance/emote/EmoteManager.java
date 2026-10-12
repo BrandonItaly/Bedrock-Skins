@@ -228,6 +228,12 @@ public final class EmoteManager {
         if (model != null) restoreAnimatedParts(model);
     }
 
+    public static boolean hasEmotePose(HumanoidModel<?> model) {
+        // Every applied emote records a head-tracking adjustment, even when
+        // the animation has no head channel.
+        return LAST_DELTAS.containsKey(part(model, "head"));
+    }
+
     /** Copy the base pose without transferring the source model's additive emote. */
     public static void copyBasePose(ModelPart from, ModelPart to) {
         if (from == null || to == null || from == to) return;

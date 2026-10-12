@@ -15,9 +15,18 @@ import java.util.List;
 public final class ElytraAttachmentPose {
     private ElytraAttachmentPose() {}
 
-    public static boolean applies(HumanoidRenderState state) {
+    public static boolean applies(HumanoidRenderState state, HumanoidModel<?> model) {
         return state instanceof AvatarRenderState && (AppearanceResolver.skinId(state) != null
+            || ResourcePackAnimationPose.hasAnimation(model)
             || EmoteManager.isPlaying(BedrockRenderStateStore.getUniqueId(state)));
+    }
+
+    /** Packs already move their attachments with the torso; add only our changes. */
+    public static void applyResourcePackCorrection(PoseStack matrices, HumanoidRenderState state,
+                                                  HumanoidModel<?> model) {
+        if (!(state instanceof AvatarRenderState avatar)) return;
+        var pose = BedrockRenderStateStore.animationPose(avatar);
+        if (pose != null) matrices.mulPose(pose.attachmentCorrection(model));
     }
 
     /** Apply the torso's complete ancestry, including animated root and waist bones. */

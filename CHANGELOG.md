@@ -1,2 +1,3 @@
+- Added support for EMF player-animation resource packs, such as Fresh Animations: Player Extension.
 - Added Simplified Chinese translations ([#25](https://github.com/BrandonItaly/Bedrock-Skins/pull/25)).
 - Fixed cape-hidden skin parts remaining visible on the paper doll.

@@ -6,21 +6,31 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import io.github.brandonitaly.bedrockskins.client.render.model.ElytraAttachmentPose;
+import io.github.brandonitaly.bedrockskins.client.render.model.ResourcePackAnimationPose;
+import net.minecraft.client.model.object.equipment.ElytraModel;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.entity.layers.WingsLayer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(WingsLayer.class)
 public abstract class WingsLayerMixin {
+    @Shadow @Final private ElytraModel elytraModel;
+    @Shadow @Final private ElytraModel elytraBabyModel;
+
     @WrapOperation(method = "submit", at = @At(value = "INVOKE",
         target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(FFF)V"))
     private void bedrockSkins$attachWings(PoseStack matrices, float x, float y, float z,
             Operation<Void> original, @Local(argsOnly = true) HumanoidRenderState state) {
         var parent = ((RenderLayer<?, ?>) (Object) this).getParentModel();
-        if (ElytraAttachmentPose.applies(state) && parent instanceof HumanoidModel<?> model) {
+        var wings = state.isBaby ? elytraBabyModel : elytraModel;
+        if (ResourcePackAnimationPose.hasAnimation(wings) && parent instanceof HumanoidModel<?> model) {
+            ElytraAttachmentPose.applyResourcePackCorrection(matrices, state, model);
+        } else if (parent instanceof HumanoidModel<?> model && ElytraAttachmentPose.applies(state, model)) {
             ElytraAttachmentPose.apply(matrices, model);
             // Vanilla's wing angles already include the normal crouching lean.
             // Retain only the torso's additional skin/emote rotation.

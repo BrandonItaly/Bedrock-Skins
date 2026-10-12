@@ -1,6 +1,9 @@
 package io.github.brandonitaly.bedrockskins.client.render.state;
 
 import io.github.brandonitaly.bedrockskins.pack.model.SkinId;
+import io.github.brandonitaly.bedrockskins.client.render.model.ResourcePackAnimationPose;
+import net.minecraft.client.model.player.PlayerModel;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
@@ -11,9 +14,36 @@ public final class BedrockRenderStateStore {
         private SkinId skinId;
         private UUID uniqueId;
         private boolean guiRender;
+        private PlayerModel animationSource;
+        private ResourcePackAnimationPose animationPose;
     }
 
     private BedrockRenderStateStore() {}
+
+    public static void setAnimationSource(Object state, PlayerModel source) {
+        synchronized (CONTEXTS) {
+            RenderContext context = CONTEXTS.computeIfAbsent(state, ignored -> new RenderContext());
+            context.animationSource = source;
+            context.animationPose = null;
+        }
+    }
+
+    public static ResourcePackAnimationPose animationPose(AvatarRenderState state) {
+        synchronized (CONTEXTS) {
+            RenderContext context = CONTEXTS.get(state);
+            if (context == null) return null;
+            if (context.animationPose == null && context.animationSource != null) {
+                context.animationPose = ResourcePackAnimationPose.animate(context.animationSource, state);
+            }
+            return context.animationPose;
+        }
+    }
+
+    public static void setAnimationPose(AvatarRenderState state, ResourcePackAnimationPose pose) {
+        synchronized (CONTEXTS) {
+            CONTEXTS.computeIfAbsent(state, ignored -> new RenderContext()).animationPose = pose;
+        }
+    }
 
     public static boolean isGuiRender(Object renderState) {
         if (renderState == null) return false;

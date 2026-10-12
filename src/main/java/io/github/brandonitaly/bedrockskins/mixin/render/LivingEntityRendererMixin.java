@@ -62,6 +62,8 @@ public abstract class LivingEntityRendererMixin {
         if (!(state instanceof AvatarRenderState))
             return;
 
+        // Reset for every submission: render states and models are reused between frames.
+        BedrockRenderStateStore.setAnimationSource(state, null);
         BedrockPlayerModel bedrockModel = AppearanceResolver.baseModel((AvatarRenderState) state);
         if (bedrockModel == null)
             return;
@@ -70,6 +72,7 @@ public abstract class LivingEntityRendererMixin {
         this.model = bedrockModel;
 
         if (this.originalModel instanceof net.minecraft.client.model.player.PlayerModel playerModel) {
+            BedrockRenderStateStore.setAnimationSource(state, playerModel);
             EmoteManager.restorePoseDeltas(bedrockModel);
             bedrockModel.copyFromVanilla(playerModel);
         }

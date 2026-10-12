@@ -61,7 +61,6 @@ public class BedrockPlayerModel extends PlayerModel {
             return new BedrockAnimFlags(g);
         }
 
-        public boolean legacy() { return geometry.isLegacyAnimation(); }
         public boolean invertedCrouch() { return isTrue(geometry.getAnimationInvertedCrouch()); }
         public boolean armsDown() { return isTrue(geometry.getAnimationArmsDown()); }
         public boolean statueArms() { return isTrue(geometry.getAnimationStatueOfLibertyArms()); }
@@ -70,6 +69,9 @@ public class BedrockPlayerModel extends PlayerModel {
         public boolean singleArm() { return isTrue(geometry.getAnimationSingleArmAnimation()); }
         public boolean stationaryLegs() { return isTrue(geometry.getAnimationStationaryLegs()); }
         public boolean singleLeg() { return isTrue(geometry.getAnimationSingleLegAnimation()); }
+        public boolean hasCustomAnimation() {
+            return invertedCrouch() || overridesArms() || stationaryLegs() || singleLeg();
+        }
         public boolean dontShowArmor() { return isTrue(geometry.getAnimationDontShowArmor()); }
         public boolean headDisabled() { return isTrue(geometry.getAnimationHeadDisabled()); }
         public boolean bodyDisabled() { return isTrue(geometry.getAnimationBodyDisabled()); }
@@ -110,6 +112,10 @@ public class BedrockPlayerModel extends PlayerModel {
     public void setLeggingsVisible(boolean visible) { armorParts.setVisible(EquipmentSlot.LEGS, visible); }
     public void setBootsVisible(boolean visible) { armorParts.setVisible(EquipmentSlot.FEET, visible); }
 
+    public boolean usesCustomAnimations() {
+        return BedrockSkinsConfig.isSkinAnimationsEnabled() && animFlags.hasCustomAnimation();
+    }
+
     /** Invoked during vanilla setup, after walking but before riding, items and attacks. */
     public void applySkinBasePose(net.minecraft.client.renderer.entity.state.HumanoidRenderState state) {
         if (!BedrockSkinsConfig.isSkinAnimationsEnabled()) return;
@@ -117,7 +123,7 @@ public class BedrockPlayerModel extends PlayerModel {
     }
 
     public void copyFromVanilla(PlayerModel vanillaModel) {
-        if ((animFlags.legacy() || animFlags.invertedCrouch()) && BedrockSkinsConfig.isSkinAnimationsEnabled()) return;
+        if (animFlags.invertedCrouch() && BedrockSkinsConfig.isSkinAnimationsEnabled()) return;
         copyRotation(customHead, vanillaModel.head);
         copyRotation(customBody, vanillaModel.body);
         copyRotation(customHat, vanillaModel.hat);
