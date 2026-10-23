@@ -332,7 +332,7 @@ public class SkinSelectionScreen extends Screen {
             packList = new SidebarListWidget(minecraft, sidebarWidth, plH, plY, 28, font);
             addRenderableWidget(packList);
         }
-        positionSidebarContent(packList, rPacks);
+        positionPanelContent(packList, rPacks);
 
         int sgY = contentY, sgH = contentH;
         if (skinGrid == null) {
@@ -364,7 +364,7 @@ public class SkinSelectionScreen extends Screen {
             addCosmeticCategory("persona_back");
             addRenderableWidget(cosmeticSidebar);
         }
-        positionSidebarContent(cosmeticSidebar, rPacks);
+        positionPanelContent(cosmeticSidebar, rPacks);
 
         if (cosmeticGrid == null) {
             cosmeticGrid = new CosmeticGridWidget(minecraft, contentWidth, cgH, cgY, 65,
@@ -434,7 +434,7 @@ public class SkinSelectionScreen extends Screen {
                 () -> selectCapesCategory("skinpack"), () -> "skinpack".equals(selectedCapesCategory));
             addRenderableWidget(capeSidebar);
         }
-        positionSidebarContent(capeSidebar, rPacks);
+        positionPanelContent(capeSidebar, rPacks);
 
         if (capeGrid == null) {
             capeGrid = new CapeGridWidget(minecraft, contentWidth, cgH, cgY, 65,
@@ -455,7 +455,7 @@ public class SkinSelectionScreen extends Screen {
             emoteSidebar.add(Component.translatable("bedrockskins.emotes.all"), () -> {}, () -> true);
             addRenderableWidget(emoteSidebar);
         }
-        positionSidebarContent(emoteSidebar, rPacks);
+        positionPanelContent(emoteSidebar, rPacks);
 
         if (emoteGrid == null) {
             emoteGrid = new EmoteGridWidget(minecraft, contentWidth, cgH, cgY, 90,
@@ -483,10 +483,6 @@ public class SkinSelectionScreen extends Screen {
     }
 
     private static void positionPanelContent(AbstractWidget widget, Rect panel) {
-        positionSidebarContent(widget, panel);
-    }
-
-    private static void positionSidebarContent(AbstractWidget widget, Rect panel) {
         widget.setPosition(panel.x + SIDEBAR_CONTENT_INSET, panelContentY(panel));
         widget.setWidth(Math.max(10, panel.w - SIDEBAR_CONTENT_INSET * 2));
         widget.setHeight(panelContentHeight(panel));
@@ -506,9 +502,8 @@ public class SkinSelectionScreen extends Screen {
 
         List<String> sortedPacks = packIds.stream()
                 .filter(pid -> !FAVORITES_PACK_ID.equals(pid) && !"skinpack.Remote".equals(pid))
-                .sorted(PackSortUtil.buildPackComparator(BedrockSkinsConfig.getPackSortOrder(), pid -> {
-                    return GuiSkinUtils.getPackDisplayName(pid);
-                }))
+                .sorted(PackSortUtil.buildPackComparator(BedrockSkinsConfig.getPackSortOrder(),
+                    GuiSkinUtils::getPackDisplayName))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
 
         if (!FavoritesManager.getFavoriteKeys().isEmpty()) sortedPacks.addFirst(FAVORITES_PACK_ID);
@@ -919,7 +914,7 @@ public class SkinSelectionScreen extends Screen {
         boolean colors = colorPickerOpen && PersonaManager.isColorSelectable(cosmetic);
         rCosmeticCategories.set(rPacks.x, rPacks.y, rPacks.w, rPacks.h);
         rCosmeticOptions.set(rSkins.x, rSkins.y, rSkins.w, colors ? rSkins.h : 0);
-        positionSidebarContent(cosmeticSidebar, rCosmeticCategories);
+        positionPanelContent(cosmeticSidebar, rCosmeticCategories);
     }
 
     private int customizationContentY() {

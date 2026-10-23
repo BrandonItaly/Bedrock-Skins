@@ -58,18 +58,7 @@ final class PckModelConverter {
     private PckModelConverter() {}
 
     static Long parseAnimMask(PckFileParser.PckAsset asset) {
-        String anim = asset.getFirstProperty("ANIM");
-        if (anim == null || anim.isBlank()) return null;
-
-        String cleaned = anim.trim();
-        try {
-            if (cleaned.startsWith("0x") || cleaned.startsWith("0X")) {
-                return Long.parseUnsignedLong(cleaned.substring(2), 16);
-            }
-            return Long.parseUnsignedLong(cleaned);
-        } catch (Exception ignored) {
-            return null;
-        }
+        return parseUnsignedFlags(asset.getFirstProperty("ANIM"));
     }
 
     static boolean isAnimFlagSet(Long mask, int bit) {
@@ -80,10 +69,12 @@ final class PckModelConverter {
     static boolean isUpsideDown(Long mask) { return isAnimFlagSet(mask, PCK_ANIM_FLAG_DINNERBONE); }
 
     static Long parseGameFlags(PckFileParser.PckAsset asset) {
-        String gf = asset.getFirstProperty("GAME_FLAGS", "GAMEFLAGS");
-        if (gf == null || gf.isBlank()) return null;
+        return parseUnsignedFlags(asset.getFirstProperty("GAME_FLAGS", "GAMEFLAGS"));
+    }
 
-        String cleaned = gf.trim();
+    private static Long parseUnsignedFlags(String value) {
+        if (value == null || value.isBlank()) return null;
+        String cleaned = value.trim();
         try {
             if (cleaned.startsWith("0x") || cleaned.startsWith("0X")) {
                 return Long.parseUnsignedLong(cleaned.substring(2), 16);

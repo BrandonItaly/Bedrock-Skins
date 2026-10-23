@@ -1,6 +1,7 @@
 package io.github.brandonitaly.bedrockskins.gui.preview;
 
 import io.github.brandonitaly.bedrockskins.client.appearance.emote.EmoteManager;
+import io.github.brandonitaly.bedrockskins.client.appearance.cape.CapeManager;
 import io.github.brandonitaly.bedrockskins.client.appearance.persona.PersonaManager;
 import io.github.brandonitaly.bedrockskins.client.appearance.skin.SkinManager;
 import java.util.UUID;
@@ -96,21 +97,12 @@ public final class PreviewPlayer implements AutoCloseable {
         }
 
         ClientAsset.Texture finalBody = forcedBody != null ? forcedBody : original.body();
-        ClientAsset.Texture finalCape = original.cape();
-        if (hasForcedCapeOverride) {
-            if (forcedCapeTexture == null) {
+        ClientAsset.Texture finalCape = hasForcedCapeOverride ? forcedCapeTexture : original.cape();
+        if (hasForcedCapeOverride && finalCape != null) {
+            Identifier path = finalCape.texturePath();
+            if (path.getNamespace().equals("bedrockskins") && path.getPath().startsWith("capes/mojang/")
+                    && !CapeManager.isCapeRegistered(path)) {
                 finalCape = null;
-            } else {
-                Identifier path = forcedCapeTexture.texturePath();
-                if (path.getNamespace().equals("bedrockskins") && path.getPath().startsWith("capes/mojang/")) {
-                    if (io.github.brandonitaly.bedrockskins.client.appearance.cape.CapeManager.isCapeRegistered(path)) {
-                        finalCape = forcedCapeTexture;
-                    } else {
-                        finalCape = null;
-                    }
-                } else {
-                    finalCape = forcedCapeTexture;
-                }
             }
         }
 

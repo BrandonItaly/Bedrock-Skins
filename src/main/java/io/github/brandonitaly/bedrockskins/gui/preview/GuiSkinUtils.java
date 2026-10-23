@@ -48,13 +48,10 @@ public final class GuiSkinUtils {
         if (skin == null) return;
 
         SkinId skinId = skin.skinId != null ? skin.skinId : SkinId.of(skin.serializeName, skin.skinDisplayName);
-        
+        SkinManager.setLocalSkin(skinId);
         if (minecraft.player != null) {
-            SkinManager.setLocalSkin(skinId);
             ClientSkinSync.syncCurrentSkin(minecraft);
             minecraft.player.refreshDimensions();
-        } else {
-            SkinManager.setLocalSkin(skinId);
         }
     }
 
@@ -145,18 +142,10 @@ public final class GuiSkinUtils {
         }
         
         Identifier resolved = SkinManager.resolveCape(skin, !ignoreCapeOverrides);
-        if (resolved != null) {
-            if (resolved.equals(SkinManager.CAPE_NONE)) {
-                previewPlayer.setForcedCape(null);
-            } else {
-                previewPlayer.setForcedCape(resolved);
-            }
+        if (resolved == null && !ignoreCapeOverrides) {
+            previewPlayer.clearForcedCape();
         } else {
-            if (ignoreCapeOverrides) {
-                previewPlayer.setForcedCape(null);
-            } else {
-                previewPlayer.clearForcedCape();
-            }
+            previewPlayer.setForcedCape(SkinManager.CAPE_NONE.equals(resolved) ? null : resolved);
         }
     }
 

@@ -3,10 +3,6 @@ package io.github.brandonitaly.bedrockskins.client.appearance.skin;
 import io.github.brandonitaly.bedrockskins.client.ContentManager;
 
 import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
-import io.github.brandonitaly.bedrockskins.util.ExternalAssetUtil;
-import com.mojang.logging.LogUtils;
-import net.minecraft.client.Minecraft;
-import org.slf4j.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
@@ -17,17 +13,11 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public final class MojangSkinManager {
-    private static final Logger LOGGER = LogUtils.getLogger();
-
     private MojangSkinManager() {}
 
     public static boolean isSkinSlim(LoadedSkin skin) {
-        if (skin == null) return false;
-        if (skin.geometryData != null) {
-            String geo = skin.geometryData.toString().toLowerCase();
-            return geo.contains("slim");
-        }
-        return false;
+        return skin != null && skin.geometryData != null
+            && skin.geometryData.toString().toLowerCase().contains("slim");
     }
 
     public static CompletableFuture<Void> uploadSkin(String accessToken, byte[] textureBytes, String variant) {

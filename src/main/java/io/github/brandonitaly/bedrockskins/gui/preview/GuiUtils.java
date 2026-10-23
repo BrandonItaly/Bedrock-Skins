@@ -19,7 +19,6 @@ import net.minecraft.util.Util;
 import net.minecraft.world.entity.EntityType;
 //? if >=26.2
 import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.PlayerModelPart;
 import org.joml.Quaternionf;

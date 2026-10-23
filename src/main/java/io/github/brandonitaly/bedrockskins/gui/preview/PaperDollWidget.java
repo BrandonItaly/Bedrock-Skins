@@ -142,7 +142,6 @@ public class PaperDollWidget extends AbstractWidget {
     /*protected void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics) {
         int mouseX = guiGraphics.mouseX();
         int mouseY = guiGraphics.mouseY();
-        float delta = guiGraphics.partialTicks();
     *///?} else {
     protected void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float delta) {
     //?}

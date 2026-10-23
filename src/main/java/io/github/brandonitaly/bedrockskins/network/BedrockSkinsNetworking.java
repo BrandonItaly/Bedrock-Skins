@@ -56,11 +56,12 @@ public final class BedrockSkinsNetworking {
                 buf.writeByteArray(new byte[0]);
                 return;
             }
-            if (string.getBytes(StandardCharsets.UTF_8).length > 1_048_576) throw new io.netty.handler.codec.EncoderException("Geometry JSON too large");
+            byte[] geometryBytes = string.getBytes(StandardCharsets.UTF_8);
+            if (geometryBytes.length > 1_048_576) throw new io.netty.handler.codec.EncoderException("Geometry JSON too large");
             try {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
                 try (GZIPOutputStream gzip = new GZIPOutputStream(baos)) {
-                    gzip.write(string.getBytes(StandardCharsets.UTF_8));
+                    gzip.write(geometryBytes);
                 }
                 if (baos.size() > 262_144) throw new io.netty.handler.codec.EncoderException("Compressed geometry too large");
                 buf.writeByteArray(baos.toByteArray());

@@ -326,7 +326,6 @@ public final class BedrockChangeSkinSource implements ChangeSkinScreenSource {
             cachedBedrockSkins.put(skinId, entry);
         }
 
-        LoadedSkin firstSkin = skins.isEmpty() ? null : skins.getFirst();
         Identifier icon = SkinPackLoader.packIconsByPackId.getOrDefault(packId, DEFAULT_PACK_ICON);
         
         return new SkinPack(

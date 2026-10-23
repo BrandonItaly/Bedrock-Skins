@@ -89,6 +89,11 @@ public class SkinPreviewPanel {
     public LoadedCosmetic getSelectedCosmetic() { return selectedCosmetic; }
     public LoadedEmote getSelectedEmote() { return selectedEmote; }
 
+    private AppearanceTab activeTab() {
+        return parentScreen instanceof SkinSelectionScreen selectionScreen
+            ? selectionScreen.getActiveTab() : AppearanceTab.SKINS;
+    }
+
     public void setSelectedEmote(LoadedEmote emote) {
         this.selectedEmote = emote;
         if (dummyPlayer != null) {
@@ -310,15 +315,16 @@ public class SkinPreviewPanel {
     }
 
     private void applySkin() {
-        if (parentScreen instanceof SkinSelectionScreen selectionScreen && selectionScreen.getActiveTab() == AppearanceTab.COSMETICS) {
+        AppearanceTab activeTab = activeTab();
+        if (activeTab == AppearanceTab.COSMETICS) {
             applyCosmetic();
             return;
         }
-        if (parentScreen instanceof SkinSelectionScreen selectionScreen && selectionScreen.getActiveTab() == AppearanceTab.CAPES) {
+        if (activeTab == AppearanceTab.CAPES) {
             applyCape();
             return;
         }
-        if (parentScreen instanceof SkinSelectionScreen selectionScreen && selectionScreen.getActiveTab() == AppearanceTab.EMOTES) {
+        if (activeTab == AppearanceTab.EMOTES) {
             applyEmote();
             return;
         }
@@ -544,8 +550,7 @@ public class SkinPreviewPanel {
     }
 
     private void updateActionButtons() {
-        boolean skinsTab = !(parentScreen instanceof SkinSelectionScreen selectionScreen)
-            || selectionScreen.getActiveTab() == AppearanceTab.SKINS;
+        boolean skinsTab = activeTab() == AppearanceTab.SKINS;
         if (uploadSkinButton != null) {
             boolean uploadable = selectedSkin != null && !MinecraftAccountSkin.is(selectedSkin)
                 && !ImportSkinAction.is(selectedSkin);
@@ -570,7 +575,8 @@ public class SkinPreviewPanel {
 
     private void updateFavoriteButton() {
         updateActionButtons();
-        if (parentScreen instanceof SkinSelectionScreen selectionScreen && selectionScreen.getActiveTab() == AppearanceTab.COSMETICS) {
+        AppearanceTab activeTab = activeTab();
+        if (activeTab == AppearanceTab.COSMETICS) {
             if (selectButton != null) {
                 selectButton.active = selectedCosmetic != null;
                 boolean equipped = PersonaManager.isLocallyEquipped(selectedCosmetic);
@@ -579,11 +585,11 @@ public class SkinPreviewPanel {
             }
             return;
         }
-        if (parentScreen instanceof SkinSelectionScreen selectionScreen && selectionScreen.getActiveTab() == AppearanceTab.CAPES) {
+        if (activeTab == AppearanceTab.CAPES) {
             if (selectButton != null) selectButton.active = selectedCape != null;
             return;
         }
-        if (parentScreen instanceof SkinSelectionScreen selectionScreen && selectionScreen.getActiveTab() == AppearanceTab.EMOTES) {
+        if (activeTab == AppearanceTab.EMOTES) {
             if (selectButton != null) {
                 selectButton.active = selectedEmote != null;
                 selectButton.setMessage(Component.translatable("bedrockskins.button.equip"));
@@ -616,8 +622,7 @@ public class SkinPreviewPanel {
         int contentTop = previewTop;
         int contentBottom = previewBottom;
         int centerX = x + width / 2;
-        AppearanceTab activeTab = (parentScreen instanceof SkinSelectionScreen selectionScreen)
-            ? selectionScreen.getActiveTab() : AppearanceTab.SKINS;
+        AppearanceTab activeTab = activeTab();
 
         int rotateW = Math.clamp((int)(width * 0.3f), 30, 90);
         int rotateH = (int)Math.ceil(rotateW * (7.0f / 45.0f));
@@ -722,8 +727,7 @@ public class SkinPreviewPanel {
     }
     
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        AppearanceTab activeTab = (parentScreen instanceof SkinSelectionScreen selectionScreen)
-            ? selectionScreen.getActiveTab() : AppearanceTab.SKINS;
+        AppearanceTab activeTab = activeTab();
         if (activeTab == AppearanceTab.COSMETICS && PersonaManager.isSideSelectable(selectedCosmetic)
                 && mouseY < y + 52) return false;
         if ((button == 0 || button == InputConstants.MOUSE_BUTTON_LEFT) && mouseX >= previewLeft && mouseX <= previewRight && mouseY >= previewTop && mouseY <= previewBottom) {

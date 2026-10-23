@@ -68,19 +68,13 @@ final class BedrockGeometryBaker {
             float v1 = rect[1] / textureHeight;
             float u2 = rect[2] / textureWidth;
             float v2 = rect[3] / textureHeight;
-            ModelPart.Vertex[] oldVertices = polygon.vertices();
-            ModelPart.Vertex[] vertices = new ModelPart.Vertex[oldVertices.length];
-            for (int i = 0; i < oldVertices.length; i++) {
-                ModelPart.Vertex old = oldVertices[i];
-                float[] uv = faceUv(targetFace, old, oldVertices, u1, v1, u2, v2);
-                vertices[i] = new ModelPart.Vertex(old.x(), old.y(), old.z(), uv[0], uv[1]);
-            }
+            ModelPart.Vertex[] vertices = faceVertices(targetFace, polygon.vertices(), u1, v1, u2, v2);
             cube.polygons[faceIndex] = new ModelPart.Polygon(vertices, polygon.normal());
         }
     }
 
-    private static float[] faceUv(String face, ModelPart.Vertex vertex, ModelPart.Vertex[] vertices,
-                                  float u1, float v1, float u2, float v2) {
+    private static ModelPart.Vertex[] faceVertices(String face, ModelPart.Vertex[] vertices,
+                                                  float u1, float v1, float u2, float v2) {
         float minX = Float.POSITIVE_INFINITY, maxX = Float.NEGATIVE_INFINITY;
         float minY = Float.POSITIVE_INFINITY, maxY = Float.NEGATIVE_INFINITY;
         float minZ = Float.POSITIVE_INFINITY, maxZ = Float.NEGATIVE_INFINITY;
@@ -90,18 +84,24 @@ final class BedrockGeometryBaker {
             minZ = Math.min(minZ, value.z()); maxZ = Math.max(maxZ, value.z());
         }
 
-        boolean lowX = Math.abs(vertex.x() - minX) <= Math.abs(vertex.x() - maxX);
-        boolean lowY = Math.abs(vertex.y() - minY) <= Math.abs(vertex.y() - maxY);
-        boolean lowZ = Math.abs(vertex.z() - minZ) <= Math.abs(vertex.z() - maxZ);
-        return switch (face) {
-            case "north" -> new float[] {lowX ? u1 : u2, lowY ? v1 : v2};
-            case "south" -> new float[] {lowX ? u2 : u1, lowY ? v1 : v2};
-            case "west" -> new float[] {lowZ ? u2 : u1, lowY ? v1 : v2};
-            case "east" -> new float[] {lowZ ? u1 : u2, lowY ? v1 : v2};
-            case "up" -> new float[] {lowX ? u2 : u1, lowZ ? v2 : v1};
-            case "down" -> new float[] {lowX ? u1 : u2, lowZ ? v1 : v2};
-            default -> new float[] {u1, v1};
-        };
+        ModelPart.Vertex[] result = new ModelPart.Vertex[vertices.length];
+        for (int index = 0; index < vertices.length; index++) {
+            ModelPart.Vertex vertex = vertices[index];
+            boolean lowX = Math.abs(vertex.x() - minX) <= Math.abs(vertex.x() - maxX);
+            boolean lowY = Math.abs(vertex.y() - minY) <= Math.abs(vertex.y() - maxY);
+            boolean lowZ = Math.abs(vertex.z() - minZ) <= Math.abs(vertex.z() - maxZ);
+            float[] uv = switch (face) {
+                case "north" -> new float[] {lowX ? u1 : u2, lowY ? v1 : v2};
+                case "south" -> new float[] {lowX ? u2 : u1, lowY ? v1 : v2};
+                case "west" -> new float[] {lowZ ? u2 : u1, lowY ? v1 : v2};
+                case "east" -> new float[] {lowZ ? u1 : u2, lowY ? v1 : v2};
+                case "up" -> new float[] {lowX ? u2 : u1, lowZ ? v2 : v1};
+                case "down" -> new float[] {lowX ? u1 : u2, lowZ ? v1 : v2};
+                default -> new float[] {u1, v1};
+            };
+            result[index] = new ModelPart.Vertex(vertex.x(), vertex.y(), vertex.z(), uv[0], uv[1]);
+        }
+        return result;
     }
 
     private static float[] faceRect(Object value, BedrockCube cube, String face,

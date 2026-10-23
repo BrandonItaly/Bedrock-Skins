@@ -56,12 +56,10 @@ public final class SkinManager {
         Identifier customCapeId = null;
 
         // 1. Explicit custom skin pack cape override (local player only)
-        if (isLocalPlayer) {
-            if (capeOverrideId != null && !capeOverrideId.equals(CAPE_NONE_SKIN_ID)) {
-                var capeSkin = SkinPackLoader.getLoadedSkin(capeOverrideId);
-                if (capeSkin != null && capeSkin.capeIdentifier != null) {
-                    customCapeId = capeSkin.capeIdentifier;
-                }
+        if (isLocalPlayer && capeOverrideId != null && !capeOverrideId.equals(CAPE_NONE_SKIN_ID)) {
+            var capeSkin = SkinPackLoader.getLoadedSkin(capeOverrideId);
+            if (capeSkin != null && capeSkin.capeIdentifier != null) {
+                customCapeId = capeSkin.capeIdentifier;
             }
         }
 
@@ -72,21 +70,11 @@ public final class SkinManager {
         }
 
         // 3. Local Mojang account cape override (local player only)
-        if (customCapeId == null && isLocalPlayer) {
-            if (accountCapeOverride != null) {
-                if (accountCapeOverride.equals(CAPE_NONE)) {
-                    return CAPE_NONE;
-                } else {
-                    customCapeId = accountCapeOverride;
-                }
-            }
+        if (customCapeId == null && isLocalPlayer && accountCapeOverride != null) {
+            return accountCapeOverride.equals(CAPE_NONE) ? CAPE_NONE : accountCapeOverride;
         }
 
-        if (customCapeId != null) {
-            return customCapeId;
-        }
-
-        return null;
+        return customCapeId;
     }
 
     public static PlayerSkin applySkinOverrides(UUID playerId, PlayerSkin original) {
@@ -160,7 +148,7 @@ public final class SkinManager {
             String selected = state.selected();
             SkinAssignment assignment = assignment(localUuid);
             assignment.selected = selected != null && !selected.isBlank() ? SkinId.parse(selected) : null;
-            clearMissingLocalSkin(localUuid, assignment);
+            clearMissingLocalSkin(assignment);
             removeIfEmpty(localUuid, assignment);
 
             String cape = state.selectedCape();
@@ -191,7 +179,7 @@ public final class SkinManager {
         if (localUuid != null) {
             SkinAssignment assignment = skinAssignments.get(localUuid);
             if (assignment != null && assignment.selected != null) {
-                clearMissingLocalSkin(localUuid, assignment);
+                clearMissingLocalSkin(assignment);
                 if (assignment.selected != null) return assignment.selected;
             }
         }
@@ -291,7 +279,7 @@ public final class SkinManager {
         }
     }
 
-    private static void clearMissingLocalSkin(UUID localUuid, SkinAssignment assignment) {
+    private static void clearMissingLocalSkin(SkinAssignment assignment) {
         if (assignment.selected == null || SkinPackLoader.getLoadedSkin(assignment.selected) != null) return;
         assignment.selected = null;
         saveCurrentState();

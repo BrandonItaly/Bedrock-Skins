@@ -13,9 +13,6 @@ public final class HeadPreviewButton extends Button {
     @Override
     //? if >=26.4-snapshot-5 {
     /*protected void extractContents(GuiGraphicsExtractor headGraphics) {
-        int mouseX = headGraphics.mouseX();
-        int mouseY = headGraphics.mouseY();
-        float delta = headGraphics.partialTicks();
     *///?} else {
     protected void extractContents(GuiGraphicsExtractor headGraphics, int mouseX, int mouseY, float delta) {
     //?}

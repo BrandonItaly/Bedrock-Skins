@@ -11,11 +11,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.OptionsSubScreen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.client.OptionInstance;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class BedrockSkinsConfigScreen extends OptionsSubScreen {
     public BedrockSkinsConfigScreen(Screen previous) {
@@ -25,9 +20,7 @@ public class BedrockSkinsConfigScreen extends OptionsSubScreen {
     @Override
     protected void addOptions() {
         if (this.list != null) {
-            List<OptionInstance<?>> options = new ArrayList<>(Arrays.asList(BedrockSkinsConfig.asOptions()));
-            
-            this.list.addSmall(options.toArray(new OptionInstance[0]));
+            this.list.addSmall(BedrockSkinsConfig.asOptions());
         }
     }
 

@@ -193,10 +193,11 @@ public class PckImporter {
 
             Set<String> languages = new TreeSet<>(pckTranslations.keySet());
             languages.add("en_us");
+            String fallbackPackDisplayToken = StringUtils.firstNonBlank(getPackDisplayName(generalAssets), fileBaseName);
 
             for (String lang : languages) {
                 StringBuilder langBuilder = new StringBuilder();
-                String packDisplayToken = StringUtils.firstNonBlank(PckLocalizationSupport.findPackDisplayToken(pckTranslations, lang), StringUtils.firstNonBlank(getPackDisplayName(generalAssets), fileBaseName));
+                String packDisplayToken = StringUtils.firstNonBlank(PckLocalizationSupport.findPackDisplayToken(pckTranslations, lang), fallbackPackDisplayToken);
                 String packDisplayName = StringUtils.firstNonBlank(PckLocalizationSupport.resolvePckLocalizedToken(packDisplayToken, pckTranslations, lang), fileBaseName);
                 langBuilder.append(safePackTranslationKey).append("=").append(packDisplayName).append("\n");
 
