@@ -34,9 +34,7 @@ public abstract class PauseScreenMixin extends Screen {
 
         if (!((PauseScreen) (Object) this).showsPauseMenu() || !BedrockSkinsConfig.isShowPaperDollOnPauseScreen()) return;
 
-        int x = PaperDollWidget.getDefaultLeft(this, this.width);
-        int y = PaperDollWidget.getDefaultTop(this, this.height);
-        bedrockskins$dollWidget = new PaperDollWidget(x, y, this, false);
+        bedrockskins$dollWidget = new PaperDollWidget(this);
         this.addRenderableWidget(bedrockskins$dollWidget);
     }
 

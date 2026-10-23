@@ -65,11 +65,11 @@ factory_api_compile_mc="26.1.2"
 legacy4j_version="1.9.1"
 legacy4j_compile_mc="26.1.2"
 
-["26.4-snapshot-2-fabric"]
+["26.4-snapshot-5-fabric"]
 loom.platform="fabric"
-fabric_loader_version="0.19.5"
-fabric_api_version="0.162.1+26.4"
-mc_version_range="26.4-snapshot-2"
+fabric_loader_version="0.20.1"
+fabric_api_version="0.165.0+26.4"
+mc_version_range="26.4-snapshot-5"
 stage="BETA"
 
 ["26.3-neoforge"]

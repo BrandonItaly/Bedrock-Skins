@@ -66,7 +66,14 @@ public final class EmoteWheelScreen extends Screen {
     }
 
     @Override
+    //? if >=26.4-snapshot-5 {
+    /*public void extractRenderState(GuiGraphicsExtractor gui) {
+        int mouseX = gui.mouseX();
+        int mouseY = gui.mouseY();
+        float delta = gui.partialTicks();
+    *///?} else {
     public void extractRenderState(GuiGraphicsExtractor gui, int mouseX, int mouseY, float delta) {
+    //?}
         int wheelX = (width - WHEEL_WIDTH) / 2;
         int wheelY = wheelY();
         hoveredSlot = slotAt(mouseX, mouseY, wheelX, wheelY);
@@ -132,7 +139,11 @@ public final class EmoteWheelScreen extends Screen {
             gui.centeredText(font, footer, width / 2, wheelY + WHEEL_HEIGHT + 5, 0xFFFFFFFF);
         }
 
+        //? if >=26.4-snapshot-5 {
+        /*super.extractRenderState(gui);
+        *///?} else {
         super.extractRenderState(gui, mouseX, mouseY, delta);
+        //?}
     }
 
     @Override

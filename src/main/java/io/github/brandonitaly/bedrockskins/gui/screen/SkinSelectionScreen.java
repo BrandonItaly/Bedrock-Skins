@@ -138,7 +138,7 @@ public class SkinSelectionScreen extends Screen {
         }
         previewPanel.init(rPreview.x, rPreview.y, rPreview.w, rPreview.h, this, this::addRenderableWidget);
         
-        //? if >=26.4-snapshot-2 {
+        //? if >=26.4-snapshot-5 {
         /*var tabBuilder = MenuTabBar.builder(tabManager, width);
         for (AppearanceTab tab : AppearanceTab.values()) {
             tabBuilder.addTab(tab.title(), new AppearanceGridTab(tab));
@@ -576,7 +576,14 @@ public class SkinSelectionScreen extends Screen {
         }
     }
 
+    //? if >=26.4-snapshot-5 {
+    /*public void extractRenderState(GuiGraphicsExtractor gui) {
+        int mouseX = gui.mouseX();
+        int mouseY = gui.mouseY();
+        float delta = gui.partialTicks();
+    *///?} else {
     public void extractRenderState(GuiGraphicsExtractor gui, int mouseX, int mouseY, float delta) {
+    //?}
         if (activeTab == AppearanceTab.SKINS) {
             GuiUtils.drawPanelChrome(gui, rPacks.x, rPacks.y, rPacks.w, rPacks.h, Component.translatable("bedrockskins.gui.packs"), font);
             GuiUtils.drawPanelChrome(gui, rSkins.x, rSkins.y, rSkins.w, rSkins.h, Component.literal(GuiSkinUtils.getPackDisplayName(selectedPackId)), font);
@@ -633,7 +640,11 @@ public class SkinSelectionScreen extends Screen {
                 rPreview.y + Math.max(0, (GuiUtils.PANEL_HEADER_HEIGHT - font.lineHeight) / 2),
                 0xFFFFFFFF);
         }
+        //? if >=26.4-snapshot-5 {
+        /*super.extractRenderState(gui);
+        *///?} else {
         super.extractRenderState(gui, mouseX, mouseY, delta);
+        //?}
         if (previewPanel != null) previewPanel.renderSprites(gui);
         
         gui.blit(RenderPipelines.GUI_TEXTURED, Screen.FOOTER_SEPARATOR, 0, height - layout.getFooterHeight() - 2, 0.0F, 0.0F, width, 2, 32, 2);
@@ -771,7 +782,7 @@ public class SkinSelectionScreen extends Screen {
         private final AppearanceTab tab;
 
         AppearanceGridTab(AppearanceTab tab) {
-            //? if <26.4-snapshot-2 {
+            //? if <26.4-snapshot-5 {
             super(tab.title());
             //?}
             this.tab = tab;

@@ -83,8 +83,15 @@ abstract class CardGridWidget<C> extends PanelListWidget<CardGridWidget<C>.CardR
         private CardRow(List<C> cells) { this.cells = List.copyOf(cells); }
         private void cleanup() { cells.forEach(CardGridWidget.this::cleanupCell); }
 
+        //? if >=26.4-snapshot-5 {
+        /*public void extractContent(GuiGraphicsExtractor graphics, boolean hovered) {
+            int mouseX = graphics.mouseX();
+            int mouseY = graphics.mouseY();
+            float delta = graphics.partialTicks();
+        *///?} else {
         public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
                                    boolean hovered, float delta) {
+        //?}
             boolean mouseInGrid = mouseX >= CardGridWidget.this.getX()
                 && mouseX < CardGridWidget.this.getX() + CardGridWidget.this.width
                 && mouseY >= CardGridWidget.this.getY()

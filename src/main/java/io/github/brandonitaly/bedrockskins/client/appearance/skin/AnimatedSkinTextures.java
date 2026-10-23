@@ -4,7 +4,7 @@ import io.github.brandonitaly.bedrockskins.pack.persona.PersonaImages;
 import io.github.brandonitaly.bedrockskins.pack.persona.BlinkAnimation;
 import io.github.brandonitaly.bedrockskins.pack.persona.PersonaTexturePayload;
 import io.github.brandonitaly.bedrockskins.pack.persona.PersonaAnimationClock;
-import net.minecraft.client.renderer.texture.DynamicTexture;
+import io.github.brandonitaly.bedrockskins.client.render.texture.SkinTexture;
 import net.minecraft.resources.Identifier;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -17,8 +17,8 @@ import java.util.Map;
 /** Remote skin strips share the lifetime of their registered skin texture. Client thread only. */
 public final class AnimatedSkinTextures {
     private record Region(PersonaTexturePayload.AnimationRegion layout, BufferedImage strip) {}
-    private record Animation(DynamicTexture texture, List<Region> regions, BlinkAnimation blink, int[] frames) {
-        private Animation(DynamicTexture texture, List<Region> regions) {
+    private record Animation(SkinTexture texture, List<Region> regions, BlinkAnimation blink, int[] frames) {
+        private Animation(SkinTexture texture, List<Region> regions) {
             this(texture, List.copyOf(regions), new BlinkAnimation(), new int[regions.size()]);
             Arrays.fill(frames, -1);
         }
@@ -27,7 +27,7 @@ public final class AnimatedSkinTextures {
     private static long lastFrame = Long.MIN_VALUE;
     private AnimatedSkinTextures() {}
 
-    public static void register(Identifier id, DynamicTexture texture, PersonaTexturePayload payload) throws IOException {
+    public static void register(Identifier id, SkinTexture texture, PersonaTexturePayload payload) throws IOException {
         List<Region> regions = new ArrayList<>();
         var target = texture.getPixels();
         if (target == null) throw new IOException("Missing remote skin texture");

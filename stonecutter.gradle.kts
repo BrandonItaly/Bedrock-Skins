@@ -59,5 +59,11 @@ stonecutter parameters {
             replace("InputConstants.Type.KEYSYM", "InputConstants.Type.KEYBOARD")
             replace("GLFW.GLFW_KEY", "InputConstants.KEY")
         }
+
+        string(eval(current.version, ">=26.4-snapshot-5")) {
+            replace("net.minecraft.client.renderer.RenderPipelines", "net.minecraft.client.renderer.pipeline.RenderPipelines")
+            replace(".getTexture(icon).getTextureView()", ".getTexture(icon).textureView()")
+            replace("SubmitNodeCollector;II)V", "SubmitNodeCollector;II)I")
+        }
     }
 }

@@ -44,8 +44,15 @@ public class SidebarListWidget extends PanelListWidget<SidebarListWidget.Sidebar
         }
 
         @Override
+        //? if >=26.4-snapshot-5 {
+        /*public void extractContent(GuiGraphicsExtractor graphics, boolean hovered) {
+            int mouseX = graphics.mouseX();
+            int mouseY = graphics.mouseY();
+            float delta = graphics.partialTicks();
+        *///?} else {
         public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
                                    boolean hovered, float delta) {
+        //?}
             int rowWidth = Math.max(10, SidebarListWidget.this.getRowWidth());
             int rowHeight = rowSlotHeight;
             int rowY = getY();

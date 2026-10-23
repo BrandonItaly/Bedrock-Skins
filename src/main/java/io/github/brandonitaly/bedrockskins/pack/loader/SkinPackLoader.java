@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.function.Function;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.DynamicTexture;
+import io.github.brandonitaly.bedrockskins.client.render.texture.SkinTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.slf4j.Logger;
@@ -118,11 +118,11 @@ public final class SkinPackLoader {
         if (skin.identifier != null) {
             io.github.brandonitaly.bedrockskins.client.appearance.skin.HeadIconTextures.remove(skin.identifier);
             AnimatedSkinTextures.remove(skin.identifier);
-            tm.release(skin.identifier);
+            SkinTexture.release(tm, skin.identifier);
             skin.identifier = null;
         }
         if (skin.capeIdentifier != null) {
-            tm.release(skin.capeIdentifier);
+            SkinTexture.release(tm, skin.capeIdentifier);
             skin.capeIdentifier = null;
         }
     }
@@ -202,23 +202,23 @@ public final class SkinPackLoader {
 
             PersonaTexturePayload payload = PersonaTexturePayload.decode(textureData);
             NativeImage img = NativeImage.read(new ByteArrayInputStream(payload.baseTexture()));
-            DynamicTexture texture = null;
+            SkinTexture texture = null;
             Identifier id = null;
             
             NativeImage capeImg = (capeData != null && capeData.length > 0) ? NativeImage.read(new ByteArrayInputStream(capeData)) : null;
-            DynamicTexture capeTexture = null;
+            SkinTexture capeTexture = null;
             Identifier capeId = null;
             
             boolean success = false;
             try {
-                texture = new DynamicTexture(() -> "bedrock_skin_remote", img);
+                texture = new SkinTexture(() -> "bedrock_skin_remote", img);
                 id = createIdentifier("bedrockskins", "skins/remote/" + StringUtils.sanitize(key) + "/" + contentHash);
-                Minecraft.getInstance().getTextureManager().register(id, texture);
+                texture.register(Minecraft.getInstance().getTextureManager(), id);
 
                 if (capeImg != null) {
-                    capeTexture = new DynamicTexture(() -> "bedrock_cape_remote", capeImg);
+                    capeTexture = new SkinTexture(() -> "bedrock_cape_remote", capeImg);
                     capeId = createIdentifier("bedrockskins", "capes/remote/" + StringUtils.sanitize(key) + "/" + contentHash);
-                    Minecraft.getInstance().getTextureManager().register(capeId, capeTexture);
+                    capeTexture.register(Minecraft.getInstance().getTextureManager(), capeId);
                 }
 
                 // The object's ID must match its registry key: GUI previews and head
@@ -237,9 +237,9 @@ public final class SkinPackLoader {
                     if (previous.identifier != null) {
                         io.github.brandonitaly.bedrockskins.client.appearance.skin.HeadIconTextures.remove(previous.identifier);
                         AnimatedSkinTextures.remove(previous.identifier);
-                        manager.release(previous.identifier);
+                        SkinTexture.release(manager, previous.identifier);
                     }
-                    if (previous.capeIdentifier != null) manager.release(previous.capeIdentifier);
+                    if (previous.capeIdentifier != null) SkinTexture.release(manager, previous.capeIdentifier);
                     io.github.brandonitaly.bedrockskins.client.render.model.BedrockModelManager.invalidate(idKey);
                 }
                 success = true;
@@ -252,7 +252,7 @@ public final class SkinPackLoader {
                     }
                     if (id != null) {
                         AnimatedSkinTextures.remove(id);
-                        Minecraft.getInstance().getTextureManager().release(id);
+                        SkinTexture.release(Minecraft.getInstance().getTextureManager(), id);
                     }
                     if (capeTexture != null) {
                         capeTexture.close();
@@ -260,7 +260,7 @@ public final class SkinPackLoader {
                         capeImg.close();
                     }
                     if (capeId != null) {
-                        Minecraft.getInstance().getTextureManager().release(capeId);
+                        SkinTexture.release(Minecraft.getInstance().getTextureManager(), capeId);
                     }
                 }
             }
@@ -426,11 +426,11 @@ public final class SkinPackLoader {
 
         NativeImage img = loadNativeImage(skin.texture);
         if (img != null) {
-            DynamicTexture texture = null;
+            SkinTexture texture = null;
             try {
                 skin.identifier = createIdentifier("bedrockskins", "skins/" + skin.safePackName + "/" + skin.safeSkinName);
-                texture = new DynamicTexture(() -> "bedrock_skin", img);
-                tm.register(skin.identifier, texture);
+                texture = new SkinTexture(() -> "bedrock_skin", img);
+                texture.register(tm, skin.identifier);
             } catch (Exception e) {
                 LOGGER.warn("Failed to register skin texture for {}:{}", skin.serializeName, skin.skinDisplayName, e);
                 skin.identifier = null;
@@ -445,11 +445,11 @@ public final class SkinPackLoader {
         if (skin.capeIdentifier == null && skin.cape != null) {
             NativeImage capeImg = loadNativeImage(skin.cape);
             if (capeImg != null) {
-                DynamicTexture texture = null;
+                SkinTexture texture = null;
                 try {
                     skin.capeIdentifier = createIdentifier("bedrockskins", "capes/" + skin.safePackName + "/" + skin.safeSkinName);
-                    texture = new DynamicTexture(() -> "bedrock_cape", capeImg);
-                    tm.register(skin.capeIdentifier, texture);
+                    texture = new SkinTexture(() -> "bedrock_cape", capeImg);
+                    texture.register(tm, skin.capeIdentifier);
                 } catch (Exception e) {
                     LOGGER.warn("Failed to register cape texture for {}:{}", skin.serializeName, skin.skinDisplayName, e);
                     skin.capeIdentifier = null;
@@ -558,7 +558,7 @@ public final class SkinPackLoader {
 
     private static void clearPackIcons() {
         var tm = Minecraft.getInstance().getTextureManager();
-        dynamicPackIcons.forEach(tm::release);
+        dynamicPackIcons.forEach(id -> SkinTexture.release(tm, id));
         dynamicPackIcons.clear();
         packIconsByPackId.clear();
     }
@@ -591,7 +591,7 @@ public final class SkinPackLoader {
         if (image == null) return;
 
         Identifier id = createIdentifier("bedrockskins", "pack_icons/" + StringUtils.sanitize(packId));
-        Minecraft.getInstance().getTextureManager().register(id, new DynamicTexture(() -> "bedrock_pack_icon", image));
+        new SkinTexture(() -> "bedrock_pack_icon", image).register(Minecraft.getInstance().getTextureManager(), id);
         dynamicPackIcons.add(id);
         packIconsByPackId.put(packId, id);
     }

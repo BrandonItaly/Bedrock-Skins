@@ -2,14 +2,11 @@ package io.github.brandonitaly.bedrockskins.gui.preview;
 
 import io.github.brandonitaly.bedrockskins.client.render.model.BedrockModelManager;
 import io.github.brandonitaly.bedrockskins.client.render.model.BedrockPlayerModel;
-import io.github.brandonitaly.bedrockskins.client.BedrockSkinsClient;
 import io.github.brandonitaly.bedrockskins.client.appearance.persona.PersonaManager;
 import io.github.brandonitaly.bedrockskins.client.appearance.skin.SkinManager;
 import io.github.brandonitaly.bedrockskins.gui.screen.SkinSelectionScreen;
 import io.github.brandonitaly.bedrockskins.gui.WidgetVisibility;
-import io.github.brandonitaly.bedrockskins.pack.model.LoadedSkin;
 import io.github.brandonitaly.bedrockskins.pack.model.SkinId;
-import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
 import io.github.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -27,8 +24,6 @@ import net.minecraft.client.input.MouseButtonEvent;
 import org.lwjgl.glfw.GLFW;
 //?}
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
-
 
 public class PaperDollWidget extends AbstractWidget {
     public static final int PREVIEW_W = 78;
@@ -39,19 +34,22 @@ public class PaperDollWidget extends AbstractWidget {
     private static final double Y_TRANSLATION = 0.9;
     private static final double PLAYER_HEIGHT_BLOCKS = 1.8;
     private static final int SPACER = 8;
+    private static final int SCREEN_MARGIN = 4;
+    private static final int MENU_GAP = 20;
+    private static final int SCALED_CONTENT_HEIGHT = 96;
 
     private PreviewPlayer previewPlayer;
     private final SpriteIconButton openSkinButton;
-    private final Screen parentScreen;
+    private double layoutScale;
 
     private float previewYaw = 0.0F;
     private boolean draggingPreview = false;
     private boolean leftMouseDown = false;
     private double lastRotMouseX = 0.0;
 
-    public PaperDollWidget(int x, int y, Screen parentScreen, boolean isTitleScreen) {
-        super(x, y, PREVIEW_W, PREVIEW_H + BTN_SIZE + SPACER, Component.translatable("bedrockskins.button.wardrobe.tooltip"));
-        this.parentScreen = parentScreen;
+    public PaperDollWidget(Screen parentScreen) {
+        super(0, 0, PREVIEW_W, PREVIEW_H + BTN_SIZE + SPACER, Component.translatable("bedrockskins.button.wardrobe.tooltip"));
+        positionBesideMenu(parentScreen);
 
         Minecraft minecraft = Minecraft.getInstance();
         String name = minecraft.getGameProfile() != null ? minecraft.getGameProfile().name() : "Preview";
@@ -71,38 +69,50 @@ public class PaperDollWidget extends AbstractWidget {
         this.openSkinButton.setTooltip(Tooltip.create(Component.translatable("bedrockskins.button.wardrobe.tooltip")));
     }
 
-    public static AbstractWidget findMenuTargetButton(Screen parentScreen) {
-        AbstractWidget target = null;
+    private void positionBesideMenu(Screen parentScreen) {
+        int menuLeft = Integer.MAX_VALUE;
+        int menuRight = Integer.MIN_VALUE;
+        int menuBottom = 0;
         for (var child : parentScreen.children()) {
-            if (!(child instanceof Button widget) || !WidgetVisibility.isVisible(widget) || child instanceof PaperDollWidget) continue;
-            if (widget instanceof PlainTextButton || widget instanceof SpriteIconButton) continue;
-            if (target == null || widget.getY() > target.getY() || (widget.getY() == target.getY() && widget.getX() > target.getX())) {
-                target = widget;
-            }
+            if (!(child instanceof Button widget) || widget instanceof PlainTextButton || !WidgetVisibility.isVisible(widget)) continue;
+            menuLeft = Math.min(menuLeft, widget.getX());
+            menuRight = Math.max(menuRight, widget.getX() + widget.getWidth());
+            menuBottom = Math.max(menuBottom, widget.getY() + widget.getHeight());
         }
-        return target;
+        if (menuLeft == Integer.MAX_VALUE) {
+            menuLeft = menuRight = parentScreen.width / 2;
+            menuBottom = parentScreen.height / 2;
+        }
+        int rightSpace = Math.max(0, parentScreen.width - SCREEN_MARGIN - menuRight);
+        int leftSpace = Math.max(0, menuLeft - SCREEN_MARGIN);
+        boolean useRight = rightSpace >= PREVIEW_W + MENU_GAP || rightSpace >= leftSpace;
+        int space = useRight ? rightSpace : leftSpace;
+        int gap = space >= PREVIEW_W + MENU_GAP ? MENU_GAP : SPACER;
+        double horizontalScale = (space - gap) / (double) PREVIEW_W;
+        double verticalScale = (parentScreen.height - 2 * SCREEN_MARGIN - BTN_SIZE) / (double) SCALED_CONTENT_HEIGHT;
+        this.layoutScale = Math.max(0, Math.min(1.0, Math.min(horizontalScale, verticalScale)));
+
+        int width = Math.max(BTN_SIZE, (int) Math.floor(PREVIEW_W * this.layoutScale));
+        int height = Math.max(scaled(PREVIEW_H), (int) Math.round(getModelFeet(0) + scaled(SPACER)) + BTN_SIZE);
+        int left = useRight ? menuRight + gap : menuLeft - gap - width;
+        left = Math.max(SCREEN_MARGIN, Math.min(left, parentScreen.width - SCREEN_MARGIN - width));
+        int top = Math.max(SCREEN_MARGIN, Math.min(menuBottom - height, parentScreen.height - SCREEN_MARGIN - height));
+        this.setPosition(left, top);
+        this.setWidth(width);
+        this.setHeight(height);
     }
 
-    public static int getDefaultLeft(Screen parentScreen, int width) {
-        AbstractWidget target = findMenuTargetButton(parentScreen);
-        if (target != null) {
-            return target.getX() + target.getWidth() + 20;
-        }
-        return Math.round((float) ((width * 5 / 6.0) - (PREVIEW_W / 2.0)));
+    private int scaled(int value) {
+        return (int) Math.round(value * this.layoutScale);
     }
 
-    public static int getDefaultTop(Screen parentScreen, int height) {
-        AbstractWidget target = findMenuTargetButton(parentScreen);
-        if (target != null) {
-            return target.getY() + target.getHeight() - 115;
-        }
-        return Math.round((float) ((height / 2.0) - (PREVIEW_H / 2.0)));
+    private int getModelSize() {
+        return Math.max(1, Math.min((scaled(PREVIEW_H) + scaled(RENDER_PADDING_TOP)) / 3, scaled(SIZE_CAP)));
     }
 
     private double getModelFeet(int top) {
-        int size = Math.min((PREVIEW_H + RENDER_PADDING_TOP) / 3, SIZE_CAP);
-        double centerY = (top - RENDER_PADDING_TOP + top + PREVIEW_H) / 2.0;
-        return centerY + Y_TRANSLATION * size;
+        double centerY = top + (scaled(PREVIEW_H) - scaled(RENDER_PADDING_TOP)) / 2.0;
+        return centerY + Y_TRANSLATION * getModelSize();
     }
 
     private double getModelTop(int top) {
@@ -112,8 +122,7 @@ public class PaperDollWidget extends AbstractWidget {
             BedrockPlayerModel model = BedrockModelManager.getModel(selected);
             if (model != null) heightMultiplier = model.heightMultiplier;
         }
-        int size = Math.min((PREVIEW_H + RENDER_PADDING_TOP) / 3, SIZE_CAP);
-        return getModelFeet(top) - (PLAYER_HEIGHT_BLOCKS * size * heightMultiplier);
+        return getModelFeet(top) - (PLAYER_HEIGHT_BLOCKS * getModelSize() * heightMultiplier);
     }
 
     private void updatePreviewSkin(Minecraft minecraft) {
@@ -123,13 +132,21 @@ public class PaperDollWidget extends AbstractWidget {
     private boolean isMouseOverModel(int mouseX, int mouseY) {
         int left = this.getX();
         int top = this.getY();
-        return mouseX >= left && mouseX <= left + PREVIEW_W
-            && mouseY >= top && mouseY <= top + PREVIEW_H;
+        return mouseX >= left && mouseX <= left + this.getWidth()
+            && mouseY >= top && mouseY <= top + scaled(PREVIEW_H);
     }
 
     //~ if >=26.1 'renderWidget' -> 'extractWidgetRenderState' {
     @Override
-    protected void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float delta) { //~}
+    //? if >=26.4-snapshot-5 {
+    /*protected void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics) {
+        int mouseX = guiGraphics.mouseX();
+        int mouseY = guiGraphics.mouseY();
+        float delta = guiGraphics.partialTicks();
+    *///?} else {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float delta) {
+    //?}
+    //~}
         if (this.previewPlayer == null) return;
 
         // The paper doll uses a synthetic UUID, so keep its Persona preview bound
@@ -163,18 +180,27 @@ public class PaperDollWidget extends AbstractWidget {
         int left = this.getX();
         int top = this.getY();
 
-        GuiUtils.renderEntityInRect(guiGraphics, this.previewPlayer, this.previewYaw, left - 40, top - RENDER_PADDING_TOP, left + PREVIEW_W + 40, top + PREVIEW_H, SIZE_CAP);
+        GuiUtils.renderEntityInRect(guiGraphics, this.previewPlayer, this.previewYaw, left - scaled(40), top - scaled(RENDER_PADDING_TOP), left + this.getWidth() + scaled(40), top + scaled(PREVIEW_H), Math.max(1, scaled(SIZE_CAP)));
 
         if (this.previewPlayer.shouldShowName()) {
             Font font = minecraft.font;
             int nametagTopY = (int) Math.round(getModelTop(top) - SPACER - font.lineHeight);
-            GuiUtils.renderNameTag(guiGraphics, font, this.previewPlayer.getDisplayName(), left + (PREVIEW_W / 2), Math.max(2, nametagTopY));
+            Component displayName = this.previewPlayer.getDisplayName();
+            if (this.layoutScale < 1.0) {
+                displayName = Component.literal(font.plainSubstrByWidth(displayName.getString(), Math.max(0, this.getWidth() - 4)));
+            }
+            GuiUtils.renderNameTag(guiGraphics, font, displayName, left + (this.getWidth() / 2), Math.max(2, nametagTopY));
         }
 
-        this.openSkinButton.setX(left + (PREVIEW_W - BTN_SIZE) / 2);
-        this.openSkinButton.setY((int) Math.round(getModelFeet(top) + SPACER));
+        this.openSkinButton.setX(left + (this.getWidth() - BTN_SIZE) / 2);
+        this.openSkinButton.setY((int) Math.round(getModelFeet(top) + scaled(SPACER)));
         //~ if >=26.1 'render' -> 'extractRenderState' {
-        this.openSkinButton.extractRenderState(guiGraphics, mouseX, mouseY, delta); //~}
+        //? if >=26.4-snapshot-5 {
+        /*this.openSkinButton.extractRenderState(guiGraphics);
+        *///?} else {
+        this.openSkinButton.extractRenderState(guiGraphics, mouseX, mouseY, delta);
+        //?}
+        //~}
     }
 
     @Override

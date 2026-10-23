@@ -112,6 +112,10 @@ public class BedrockSkinsClient /*? if fabric {*/ implements ClientModInitialize
             reloadResources(client);
             ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new Reloader());
         });
+        //? if >=26.4-snapshot-5 {
+        /*ClientLifecycleEvents.CLIENT_STOPPING.register(client ->
+            io.github.brandonitaly.bedrockskins.client.render.texture.SkinTexture.releaseAll(client.getTextureManager()));
+        *///?}
         
         ClientPlayConnectionEvents.JOIN.register((h, s, client) -> queueSavedAppearanceSync());
         ClientPlayConnectionEvents.DISCONNECT.register((h, client) -> client.execute(() -> {

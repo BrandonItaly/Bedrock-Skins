@@ -17,6 +17,7 @@
     "render.ModelPartAccessor",
     "gui.PauseScreenMixin",
     "gui.SocialPlayerEntryMixin",
+    "gui.PlayerOptionsScreenMixin",
     "render.PlayerEntityRendererMixin",
     "skin.PlayerListEntryMixin",
     "skin.PlayerSkinRenderCacheMixin",

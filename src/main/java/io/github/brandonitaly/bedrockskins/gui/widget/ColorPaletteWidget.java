@@ -47,7 +47,15 @@ public final class ColorPaletteWidget extends AbstractWidget {
 
     //~ if >=26.1 'renderWidget' -> 'extractWidgetRenderState' {
     @Override
-    protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) { //~}
+    //? if >=26.4-snapshot-5 {
+    /*protected void extractWidgetRenderState(GuiGraphicsExtractor graphics) {
+        int mouseX = graphics.mouseX();
+        int mouseY = graphics.mouseY();
+        float delta = graphics.partialTicks();
+    *///?} else {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+    //?}
+    //~}
         Layout layout = layout();
         int selected = selectedColor.getAsInt();
         int hovered = indexAt(mouseX, mouseY, layout);

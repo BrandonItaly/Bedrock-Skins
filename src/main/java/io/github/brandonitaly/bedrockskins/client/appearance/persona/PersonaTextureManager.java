@@ -9,7 +9,7 @@ import io.github.brandonitaly.bedrockskins.pack.persona.BlinkAnimation;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.DynamicTexture;
+import io.github.brandonitaly.bedrockskins.client.render.texture.SkinTexture;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 
@@ -106,8 +106,8 @@ final class PersonaTextureManager {
                 mask = null;
             }
             Identifier id = textureId(cosmetic, key.color);
-            DynamicTexture texture = new DynamicTexture(() -> "persona_cosmetic", target);
-            Minecraft.getInstance().getTextureManager().register(id, texture);
+            SkinTexture texture = new SkinTexture(() -> "persona_cosmetic", target);
+            texture.register(Minecraft.getInstance().getTextureManager(), id);
 
             List<AnimatedRegion> regions = new ArrayList<>();
             for (PersonaTexturePayload.AnimationRegion region : payload.animations()) {
@@ -177,7 +177,7 @@ final class PersonaTextureManager {
 
     private static final class ManagedTexture {
         private final Identifier id;
-        private final DynamicTexture texture;
+        private final SkinTexture texture;
         private final NativeImage base;
         private final NativeImage mask;
         private final int baseColor;
@@ -186,7 +186,7 @@ final class PersonaTextureManager {
         private long lastTick = Long.MIN_VALUE;
         private final BlinkAnimation blink = new BlinkAnimation();
 
-        private ManagedTexture(Identifier id, DynamicTexture texture, NativeImage base, NativeImage mask,
+        private ManagedTexture(Identifier id, SkinTexture texture, NativeImage base, NativeImage mask,
                                int baseColor, List<AnimatedRegion> regions) {
             this.id = id;
             this.texture = texture;
@@ -208,7 +208,7 @@ final class PersonaTextureManager {
         }
 
         private void closeAndRelease() {
-            Minecraft.getInstance().getTextureManager().release(id);
+            SkinTexture.release(Minecraft.getInstance().getTextureManager(), id);
             base.close();
             if (mask != null) mask.close();
             for (AnimatedRegion region : regions) region.close();

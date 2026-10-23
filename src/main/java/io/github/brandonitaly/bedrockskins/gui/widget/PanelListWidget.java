@@ -44,7 +44,13 @@ abstract class PanelListWidget<E extends ObjectSelectionList.Entry<E>> extends O
     }
 
     @Override
+    //? if >=26.4-snapshot-5 {
+    /*protected void extractScrollbar(GuiGraphicsExtractor graphics) {
+        int mouseX = graphics.mouseX();
+        int mouseY = graphics.mouseY();
+    *///?} else {
     protected void extractScrollbar(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    //?}
         if (maxScrollAmount() <= 0) return;
         int x = scrollBarX();
         int y = scrollBarY();

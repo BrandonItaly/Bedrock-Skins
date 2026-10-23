@@ -104,7 +104,14 @@ public final class FullScreenPreviewScreen extends Screen {
     }
 
     @Override
+    //? if >=26.4-snapshot-5 {
+    /*public void extractRenderState(GuiGraphicsExtractor gui) {
+        int mouseX = gui.mouseX();
+        int mouseY = gui.mouseY();
+        float delta = gui.partialTicks();
+    *///?} else {
     public void extractRenderState(GuiGraphicsExtractor gui, int mouseX, int mouseY, float delta) {
+    //?}
         if (dragging) rotation -= (mouseX - lastMouseX) * 0.5F;
         lastMouseX = mouseX;
 
@@ -117,7 +124,11 @@ public final class FullScreenPreviewScreen extends Screen {
                 horizontalMargin, 24, width - horizontalMargin, height - 34,
                 Math.max(80, Math.min(width, height)));
         }
+        //? if >=26.4-snapshot-5 {
+        /*super.extractRenderState(gui);
+        *///?} else {
         super.extractRenderState(gui, mouseX, mouseY, delta);
+        //?}
     }
 
     @Override

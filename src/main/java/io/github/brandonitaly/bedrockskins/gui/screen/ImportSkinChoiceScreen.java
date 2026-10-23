@@ -267,8 +267,19 @@ public class ImportSkinChoiceScreen extends SkinDialogScreen {
     }
 
     @Override
+    //? if >=26.4-snapshot-5 {
+    /*public void extractRenderState(GuiGraphicsExtractor gui) {
+        int mouseX = gui.mouseX();
+        int mouseY = gui.mouseY();
+        float delta = gui.partialTicks();
+    *///?} else {
     public void extractRenderState(GuiGraphicsExtractor gui, int mouseX, int mouseY, float delta) {
+    //?}
+        //? if >=26.4-snapshot-5 {
+        /*super.extractRenderState(gui);
+        *///?} else {
         super.extractRenderState(gui, mouseX, mouseY, delta);
+        //?}
         Component text;
         int color;
         if (!statusMessage.isEmpty()) {

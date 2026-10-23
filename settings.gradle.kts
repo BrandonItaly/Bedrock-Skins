@@ -19,7 +19,7 @@ stonecutter {
                 version("$minecraft-$loader", minecraft)
             }
         }
-        version("26.4-snapshot-2-fabric", "26.4-snapshot-2")
+        version("26.4-snapshot-5-fabric", "26.4-snapshot-5")
         vcsVersion = "26.1-fabric"
     }
 }

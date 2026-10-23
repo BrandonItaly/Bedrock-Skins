@@ -7,7 +7,7 @@ public final class WidgetVisibility {
     private WidgetVisibility() {}
 
     public static boolean isVisible(AbstractWidget widget) {
-        //? if >=26.4-snapshot-2 {
+        //? if >=26.4-snapshot-5 {
         /*return widget.isVisible();
         *///?} else {
         return widget.visible;
@@ -15,7 +15,7 @@ public final class WidgetVisibility {
     }
 
     public static void setVisible(AbstractWidget widget, boolean visible) {
-        //? if >=26.4-snapshot-2 {
+        //? if >=26.4-snapshot-5 {
         /*widget.setVisible(visible);
         *///?} else {
         widget.visible = visible;

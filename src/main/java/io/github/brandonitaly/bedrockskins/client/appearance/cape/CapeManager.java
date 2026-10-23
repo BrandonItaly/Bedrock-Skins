@@ -9,7 +9,7 @@ import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.DynamicTexture;
+import io.github.brandonitaly.bedrockskins.client.render.texture.SkinTexture;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 
@@ -147,7 +147,7 @@ public final class CapeManager {
                 .thenAccept(img -> {
                     if (img != null) {
                         Minecraft.getInstance().execute(() -> {
-                            Minecraft.getInstance().getTextureManager().register(texIdx, new DynamicTexture(() -> "cape_mojang_" + cape.id, img));
+                            new SkinTexture(() -> "cape_mojang_" + cape.id, img).register(Minecraft.getInstance().getTextureManager(), texIdx);
                             registeredCapes.add(texIdx);
                             downloadingCapes.remove(cape.id);
                             if (onLoad != null) {

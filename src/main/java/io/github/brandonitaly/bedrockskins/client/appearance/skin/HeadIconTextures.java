@@ -7,7 +7,7 @@ import io.github.brandonitaly.bedrockskins.mixin.render.ModelPartAccessor;
 import io.github.brandonitaly.bedrockskins.pack.loader.SkinPackLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.renderer.texture.DynamicTexture;
+import io.github.brandonitaly.bedrockskins.client.render.texture.SkinTexture;
 import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -27,7 +27,8 @@ public final class HeadIconTextures {
         var skin = SkinPackLoader.getLoadedSkinByTexture(source);
         if (skin == null) return source;
         var manager = Minecraft.getInstance().getTextureManager();
-        if (!(manager.getTexture(source) instanceof DynamicTexture texture) || texture.getPixels() == null) return source;
+        NativeImage input = SkinTexture.pixels(manager, source);
+        if (input == null) return source;
         var model = BedrockModelManager.getModel(skin.skinId);
         if (model == null) return source;
         List<HeadIconRasterizer.Triangle> triangles = new ArrayList<>();
@@ -36,7 +37,6 @@ public final class HeadIconTextures {
         model.partsMap.forEach((name, part) -> { if (name.toLowerCase(Locale.ROOT).endsWith("helmet")) hats.add(part); });
         var crop = collect(model.root(), new Matrix4f(), false, false, model.customHead, hats, hat, triangles);
         if (triangles.isEmpty()) return source;
-        NativeImage input = texture.getPixels();
         int[] pixels = HeadIconRasterizer.render(triangles, 64, input.getWidth(), input.getHeight(), input::getPixel, crop);
         // Static portraits only retain the texture ID; TextureManager owns the GPU resource.
         if (CACHE.size() >= 128) clear();
@@ -44,9 +44,9 @@ public final class HeadIconTextures {
         for (int y = 0; y < 64; y++) for (int x = 0; x < 64; x++) {
             atlas.setPixel(64 + x, 64 + y, pixels[y * 64 + x]);
         }
-        DynamicTexture output = new DynamicTexture(() -> "bedrock_head_icon", atlas);
+        SkinTexture output = new SkinTexture(() -> "bedrock_head_icon", atlas);
         Identifier id = Identifier.fromNamespaceAndPath("bedrockskins", "head_icons/" + nextId++);
-        manager.register(id, output);
+        output.register(manager, id);
         output.upload();
         CACHE.put(key, id);
         return id;
@@ -115,12 +115,12 @@ public final class HeadIconTextures {
     public static void remove(Identifier source) {
         CACHE.entrySet().removeIf(entry -> {
             if (!entry.getKey().source.equals(source)) return false;
-            Minecraft.getInstance().getTextureManager().release(entry.getValue());
+            SkinTexture.release(Minecraft.getInstance().getTextureManager(), entry.getValue());
             return true;
         });
     }
     public static void clear() {
-        CACHE.values().forEach(Minecraft.getInstance().getTextureManager()::release);
+        CACHE.values().forEach(id -> SkinTexture.release(Minecraft.getInstance().getTextureManager(), id));
         CACHE.clear();
     }
 }

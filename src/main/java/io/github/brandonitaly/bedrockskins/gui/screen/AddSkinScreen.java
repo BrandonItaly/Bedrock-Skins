@@ -114,8 +114,19 @@ public class AddSkinScreen extends SkinDialogScreen {
     }
 
     @Override
+    //? if >=26.4-snapshot-5 {
+    /*public void extractRenderState(net.minecraft.client.gui.GuiGraphicsExtractor gui) {
+        int mouseX = gui.mouseX();
+        int mouseY = gui.mouseY();
+        float delta = gui.partialTicks();
+    *///?} else {
     public void extractRenderState(net.minecraft.client.gui.GuiGraphicsExtractor gui, int mouseX, int mouseY, float delta) {
+    //?}
+        //? if >=26.4-snapshot-5 {
+        /*super.extractRenderState(gui);
+        *///?} else {
         super.extractRenderState(gui, mouseX, mouseY, delta);
+        //?}
         renderGeometrySelector(gui, mouseX, mouseY);
     }
 

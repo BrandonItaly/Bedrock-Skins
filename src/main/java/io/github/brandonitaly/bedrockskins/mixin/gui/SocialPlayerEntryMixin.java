@@ -21,6 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(PlayerEntry.class)
 public abstract class SocialPlayerEntryMixin {
+    //? if <26.4-snapshot-5 {
     @Unique private Button bedrockskins$previewButton;
 
     @Unique
@@ -59,5 +60,6 @@ public abstract class SocialPlayerEntryMixin {
                                            boolean hovered, float delta, CallbackInfo ci) {
         bedrockskins$headButton().extractRenderState(gui, mouseX, mouseY, delta);
     }
+    //?}
 
 }

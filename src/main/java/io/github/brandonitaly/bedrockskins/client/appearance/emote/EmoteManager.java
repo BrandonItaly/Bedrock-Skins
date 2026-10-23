@@ -18,7 +18,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.renderer.texture.DynamicTexture;
+import io.github.brandonitaly.bedrockskins.client.render.texture.SkinTexture;
 import net.minecraft.resources.Identifier;
 import org.joml.Matrix3f;
 import org.joml.Quaternionf;
@@ -53,7 +53,7 @@ public final class EmoteManager {
 
     public static void reload() {
         var textureManager = Minecraft.getInstance().getTextureManager();
-        THUMBNAILS.values().forEach(thumbnail -> textureManager.release(thumbnail.texture()));
+        THUMBNAILS.values().forEach(thumbnail -> SkinTexture.release(textureManager, thumbnail.texture()));
         THUMBNAILS.clear();
         EMOTES.clear();
         DRESSING_ROOM = DressingRoomAnimationLoader.load();
@@ -95,10 +95,10 @@ public final class EmoteManager {
             int height = image.getHeight();
             Identifier id = Identifier.fromNamespaceAndPath("bedrockskins",
                 "persona/emote_thumbnail/" + StringUtils.sanitize(emote.id()));
-            DynamicTexture texture = new DynamicTexture(() -> "persona_emote_thumbnail", image);
+            SkinTexture texture = new SkinTexture(() -> "persona_emote_thumbnail", image);
             Runnable registerTask = () -> {
                 texture.upload();
-                Minecraft.getInstance().getTextureManager().register(id, texture);
+                texture.register(Minecraft.getInstance().getTextureManager(), id);
                 THUMBNAILS.put(emote.id(), new Thumbnail(id, width, height));
             };
             if (Minecraft.getInstance().isSameThread()) {

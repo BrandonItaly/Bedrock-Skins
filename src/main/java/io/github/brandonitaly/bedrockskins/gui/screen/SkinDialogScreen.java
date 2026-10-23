@@ -81,16 +81,31 @@ public abstract class SkinDialogScreen extends Screen {
     }
 
     @Override
+    //? if >=26.4-snapshot-5 {
+    /*public void extractRenderState(GuiGraphicsExtractor gui) {
+        int mouseX = gui.mouseX();
+        int mouseY = gui.mouseY();
+        float delta = gui.partialTicks();
+    *///?} else {
     public void extractRenderState(GuiGraphicsExtractor gui, int mouseX, int mouseY, float delta) {
+    //?}
         if (this.parent != null) {
+            //? if >=26.4-snapshot-5 {
+            /*gui.extractWithoutMouse(() -> this.parent.extractRenderState(gui));
+            *///?} else {
             this.parent.extractRenderState(gui, Integer.MIN_VALUE, Integer.MIN_VALUE, delta);
+            //?}
         }
 
         gui.fill(0, 0, this.width, this.height, 0xAA000000);
 
         GuiUtils.drawPanelChrome(gui, popupX(), popupY(), popupWidth, popupHeight, this.title, this.font);
 
+        //? if >=26.4-snapshot-5 {
+        /*super.extractRenderState(gui);
+        *///?} else {
         super.extractRenderState(gui, mouseX, mouseY, delta);
+        //?}
     }
 
     @Override

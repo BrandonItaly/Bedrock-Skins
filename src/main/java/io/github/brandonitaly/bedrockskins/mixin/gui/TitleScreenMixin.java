@@ -2,6 +2,9 @@ package io.github.brandonitaly.bedrockskins.mixin.gui;
 
 import io.github.brandonitaly.bedrockskins.client.persistence.BedrockSkinsConfig;
 import io.github.brandonitaly.bedrockskins.gui.preview.PaperDollWidget;
+//? if >=26.4-snapshot-5 {
+/*import io.github.brandonitaly.bedrockskins.gui.WidgetVisibility;
+*///?}
 import io.github.brandonitaly.bedrockskins.gui.screen.SkinSelectionScreen;
 import io.github.brandonitaly.bedrockskins.util.BedrockSkinsSprites;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -39,6 +42,19 @@ public abstract class TitleScreenMixin extends Screen {
         if (!BedrockSkinsConfig.isShowPaperDollOnMainMenu()) {
             List<AbstractWidget> iconButtons = new ArrayList<>();
             int topPos = this.height / 4 + 48 + 24;
+            //? if >=26.4-snapshot-5 {
+            /*int iconRowY = Integer.MIN_VALUE;
+            for (var listener : this.children()) {
+                if (!(listener instanceof SpriteIconButton widget) || !WidgetVisibility.isVisible(widget)
+                    || widget.getWidth() != 20 || widget.getHeight() != 20) continue;
+                if (widget.getY() > iconRowY) {
+                    iconButtons.clear();
+                    iconRowY = widget.getY();
+                }
+                if (widget.getY() == iconRowY) iconButtons.add(widget);
+            }
+            if (!iconButtons.isEmpty()) topPos = iconRowY;
+            *///?} else {
             for (var listener : this.children()) {
                 if (listener instanceof AbstractWidget widget) {
                     if (widget.getWidth() == 20 && widget.getHeight() == 20 && widget.getY() > this.height / 2) {
@@ -47,6 +63,7 @@ public abstract class TitleScreenMixin extends Screen {
                     }
                 }
             }
+            //?}
 
             iconButtons.sort(Comparator.comparingInt(AbstractWidget::getX));
 
@@ -81,9 +98,7 @@ public abstract class TitleScreenMixin extends Screen {
         /*if (!BedrockSkinsConfig.isShowPaperDollOnMainMenu()) return;
         *///?}
         
-        int x = PaperDollWidget.getDefaultLeft(this, this.width);
-        int y = PaperDollWidget.getDefaultTop(this, this.height);
-        bedrockskins$dollWidget = new PaperDollWidget(x, y, this, true);
+        bedrockskins$dollWidget = new PaperDollWidget(this);
         this.addRenderableWidget(bedrockskins$dollWidget);
     }
 
