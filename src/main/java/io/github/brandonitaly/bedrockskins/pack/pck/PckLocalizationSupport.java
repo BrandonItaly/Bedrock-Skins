@@ -9,8 +9,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 final class PckLocalizationSupport {
+    private static final Pattern LOC_LANGUAGE = Pattern.compile("[a-z]{2}_[a-z0-9]{2,4}");
+
     private PckLocalizationSupport() {}
 
     static String findPackDisplayToken(Map<String, Map<String, String>> pckTranslations, String currentLang) {
@@ -187,7 +190,7 @@ final class PckLocalizationSupport {
     }
 
     private static boolean looksLikeLocLanguage(String lang) {
-        return lang != null && lang.toLowerCase(Locale.ROOT).matches("[a-z]{2}_[a-z0-9]{2,4}");
+        return lang != null && LOC_LANGUAGE.matcher(lang.toLowerCase(Locale.ROOT)).matches();
     }
 
     private static boolean resyncToNextLocBlock(LocReader r, int fromPos) {

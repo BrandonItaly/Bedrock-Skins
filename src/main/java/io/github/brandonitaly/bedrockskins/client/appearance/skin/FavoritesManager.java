@@ -11,13 +11,12 @@ import org.slf4j.Logger;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 public final class FavoritesManager {
     private FavoritesManager() {}
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final Set<SkinId> favoriteIds = new LinkedHashSet<>();
+    private static final LinkedHashSet<SkinId> favoriteIds = new LinkedHashSet<>();
 
     public static void load() {
         favoriteIds.clear();
@@ -47,11 +46,7 @@ public final class FavoritesManager {
         
         SkinId id = skin.skinId;
         if (!favoriteIds.contains(id)) {
-            Set<SkinId> newSet = new LinkedHashSet<>();
-            newSet.add(id);
-            newSet.addAll(favoriteIds);
-            favoriteIds.clear();
-            favoriteIds.addAll(newSet);
+            favoriteIds.addFirst(id);
             save();
         }
     }

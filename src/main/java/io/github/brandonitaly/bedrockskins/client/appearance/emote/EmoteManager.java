@@ -40,6 +40,8 @@ import org.slf4j.Logger;
 public final class EmoteManager {
     public static final int SLOT_COUNT = 6;
     private static final float PLAYER_GROUND_PIVOT_Y = 24.0F;
+    private static final float[] ZERO_VECTOR = {0, 0, 0};
+    private static final float[] UNIT_SCALE = {1, 1, 1};
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new Gson();
     private static final Map<String, LoadedEmote> EMOTES = new LinkedHashMap<>();
@@ -269,9 +271,9 @@ public final class EmoteManager {
         for (var entry : bones.entrySet()) {
             if (!entry.getValue().isJsonObject()) continue;
             JsonObject channels = entry.getValue().getAsJsonObject();
-            float[] position = sample(channels.get("position"), time, new float[] {0, 0, 0});
-            float[] rotation = sample(channels.get("rotation"), time, new float[] {0, 0, 0});
-            float[] scale = sample(channels.get("scale"), time, new float[] {1, 1, 1});
+            float[] position = sample(channels.get("position"), time, ZERO_VECTOR);
+            float[] rotation = sample(channels.get("rotation"), time, ZERO_VECTOR);
+            float[] scale = sample(channels.get("scale"), time, UNIT_SCALE);
             Delta delta = new Delta(position[0], -position[1], position[2],
                 (float) Math.toRadians(rotation[0]), (float) Math.toRadians(rotation[1]),
                 (float) Math.toRadians(rotation[2]), scale[0], scale[1], scale[2]);
@@ -280,28 +282,17 @@ public final class EmoteManager {
     }
 
     private static ModelPart part(HumanoidModel<?> model, String name) {
-        if (model instanceof BedrockPlayerModel bedrock) {
-            return switch (name.toLowerCase(Locale.ROOT)) {
-                // The Bedrock geometry's named root is only one child of the baked
-                // Java root. Emote root motion must move every model part.
-                case "root" -> model.root();
-                case "head" -> bedrock.customHead;
-                case "body" -> bedrock.customBody;
-                case "rightarm", "right_arm" -> bedrock.customRightArm;
-                case "leftarm", "left_arm" -> bedrock.customLeftArm;
-                case "rightleg", "right_leg" -> bedrock.customRightLeg;
-                case "leftleg", "left_leg" -> bedrock.customLeftLeg;
-                default -> null;
-            };
-        }
+        BedrockPlayerModel bedrock = model instanceof BedrockPlayerModel custom ? custom : null;
         return switch (name.toLowerCase(Locale.ROOT)) {
+            // The Bedrock geometry's named root is only one child of the baked
+            // Java root. Emote root motion must move every model part.
             case "root" -> model.root();
-            case "head" -> model.head;
-            case "body" -> model.body;
-            case "rightarm", "right_arm" -> model.rightArm;
-            case "leftarm", "left_arm" -> model.leftArm;
-            case "rightleg", "right_leg" -> model.rightLeg;
-            case "leftleg", "left_leg" -> model.leftLeg;
+            case "head" -> bedrock != null ? bedrock.customHead : model.head;
+            case "body" -> bedrock != null ? bedrock.customBody : model.body;
+            case "rightarm", "right_arm" -> bedrock != null ? bedrock.customRightArm : model.rightArm;
+            case "leftarm", "left_arm" -> bedrock != null ? bedrock.customLeftArm : model.leftArm;
+            case "rightleg", "right_leg" -> bedrock != null ? bedrock.customRightLeg : model.rightLeg;
+            case "leftleg", "left_leg" -> bedrock != null ? bedrock.customLeftLeg : model.leftLeg;
             default -> null;
         };
     }
@@ -312,24 +303,20 @@ public final class EmoteManager {
      * body animation cannot rotate the torso cube away from the rest of the player.
      */
     private static void applyBone(HumanoidModel<?> model, String name, Delta delta) {
-        String normalized = name.toLowerCase(Locale.ROOT);
-        if (normalized.equals("root")) {
-            ModelPart root = part(model, name);
-            if (root != null) apply(root, groundRootTransform(delta));
-            return;
-        }
-        if (normalized.equals("hip") || normalized.equals("waist")) {
-            applyVirtualParent(delta, 0.0f, 12.0f, 0.0f,
+        switch (name.toLowerCase(Locale.ROOT)) {
+            case "root" -> {
+                ModelPart root = model.root();
+                if (root != null) apply(root, groundRootTransform(delta));
+            }
+            case "hip", "waist" -> applyVirtualParent(delta, 0.0f, 12.0f, 0.0f,
                 model.body, model.head, model.rightArm, model.leftArm);
-            return;
-        }
-        if (normalized.equals("body")) {
-            applyVirtualParent(delta, model.body.x, model.body.y, model.body.z,
+            case "body" -> applyVirtualParent(delta, model.body.x, model.body.y, model.body.z,
                 model.body, model.head, model.rightArm, model.leftArm);
-            return;
+            default -> {
+                ModelPart part = part(model, name);
+                if (part != null) apply(part, delta);
+            }
         }
-        ModelPart part = part(model, name);
-        if (part != null) apply(part, delta);
     }
 
     /**
@@ -356,21 +343,24 @@ public final class EmoteManager {
                                            ModelPart... children) {
         Quaternionf parentRotation = new Quaternionf()
             .rotationZYX(parent.zRot, parent.yRot, parent.xRot);
+        Matrix3f parentMatrix = new Matrix3f()
+            .rotationZYX(parent.zRot, parent.yRot, parent.xRot);
+        Matrix3f composedRotation = new Matrix3f();
+        Vector3f offset = new Vector3f();
+        Vector3f targetRotation = new Vector3f();
         for (ModelPart child : children) {
             if (child == null) continue;
 
-            Vector3f offset = new Vector3f(
-                child.x - pivotX, child.y - pivotY, child.z - pivotZ)
+            offset.set(child.x - pivotX, child.y - pivotY, child.z - pivotZ)
                 .mul(parent.xScale, parent.yScale, parent.zScale)
                 .rotate(parentRotation);
             float targetX = pivotX + parent.x + offset.x;
             float targetY = pivotY + parent.y + offset.y;
             float targetZ = pivotZ + parent.z + offset.z;
 
-            Matrix3f composedRotation = new Matrix3f()
-                .rotationZYX(parent.zRot, parent.yRot, parent.xRot)
+            composedRotation.set(parentMatrix)
                 .rotateZYX(child.zRot, child.yRot, child.xRot);
-            Vector3f targetRotation = composedRotation.getEulerAnglesZYX(new Vector3f());
+            composedRotation.getEulerAnglesZYX(targetRotation);
 
             apply(child, new Delta(
                 targetX - child.x, targetY - child.y, targetZ - child.z,
