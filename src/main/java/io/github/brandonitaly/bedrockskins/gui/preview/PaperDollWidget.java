@@ -16,6 +16,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.PlainTextButton;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
@@ -34,13 +35,9 @@ public class PaperDollWidget extends AbstractWidget {
     private static final double Y_TRANSLATION = 0.9;
     private static final double PLAYER_HEIGHT_BLOCKS = 1.8;
     private static final int SPACER = 8;
-    private static final int SCREEN_MARGIN = 4;
-    private static final int MENU_GAP = 20;
-    private static final int SCALED_CONTENT_HEIGHT = 96;
 
     private PreviewPlayer previewPlayer;
     private final SpriteIconButton openSkinButton;
-    private double layoutScale;
 
     private float previewYaw = 0.0F;
     private boolean draggingPreview = false;
@@ -48,8 +45,8 @@ public class PaperDollWidget extends AbstractWidget {
     private double lastRotMouseX = 0.0;
 
     public PaperDollWidget(Screen parentScreen) {
-        super(0, 0, PREVIEW_W, PREVIEW_H + BTN_SIZE + SPACER, Component.translatable("bedrockskins.button.wardrobe.tooltip"));
-        positionBesideMenu(parentScreen);
+        super(getDefaultLeft(parentScreen, parentScreen.width), getDefaultTop(parentScreen, parentScreen.height),
+            PREVIEW_W, PREVIEW_H + BTN_SIZE + SPACER, Component.translatable("bedrockskins.button.wardrobe.tooltip"));
 
         Minecraft minecraft = Minecraft.getInstance();
         String name = minecraft.getGameProfile() != null ? minecraft.getGameProfile().name() : "Preview";
@@ -69,49 +66,38 @@ public class PaperDollWidget extends AbstractWidget {
         this.openSkinButton.setTooltip(Tooltip.create(Component.translatable("bedrockskins.button.wardrobe.tooltip")));
     }
 
-    private void positionBesideMenu(Screen parentScreen) {
-        int menuLeft = Integer.MAX_VALUE;
-        int menuRight = Integer.MIN_VALUE;
-        int menuBottom = 0;
-        for (var child : parentScreen.children()) {
-            if (!(child instanceof Button widget) || widget instanceof PlainTextButton || !WidgetVisibility.isVisible(widget)) continue;
-            menuLeft = Math.min(menuLeft, widget.getX());
-            menuRight = Math.max(menuRight, widget.getX() + widget.getWidth());
-            menuBottom = Math.max(menuBottom, widget.getY() + widget.getHeight());
+    static AbstractWidget findMenuTargetButton(Iterable<? extends GuiEventListener> children) {
+        AbstractWidget target = null;
+        for (var child : children) {
+            if (!(child instanceof Button widget) || !WidgetVisibility.isVisible(widget)) continue;
+            if (widget instanceof PlainTextButton
+                || (widget instanceof SpriteIconButton && widget.getWidth() <= BTN_SIZE)) continue;
+            if (target == null || widget.getY() > target.getY()
+                || (widget.getY() == target.getY() && widget.getX() > target.getX())) {
+                target = widget;
+            }
         }
-        if (menuLeft == Integer.MAX_VALUE) {
-            menuLeft = menuRight = parentScreen.width / 2;
-            menuBottom = parentScreen.height / 2;
-        }
-        int rightSpace = Math.max(0, parentScreen.width - SCREEN_MARGIN - menuRight);
-        int leftSpace = Math.max(0, menuLeft - SCREEN_MARGIN);
-        boolean useRight = rightSpace >= PREVIEW_W + MENU_GAP || rightSpace >= leftSpace;
-        int space = useRight ? rightSpace : leftSpace;
-        int gap = space >= PREVIEW_W + MENU_GAP ? MENU_GAP : SPACER;
-        double horizontalScale = (space - gap) / (double) PREVIEW_W;
-        double verticalScale = (parentScreen.height - 2 * SCREEN_MARGIN - BTN_SIZE) / (double) SCALED_CONTENT_HEIGHT;
-        this.layoutScale = Math.max(0, Math.min(1.0, Math.min(horizontalScale, verticalScale)));
-
-        int width = Math.max(BTN_SIZE, (int) Math.floor(PREVIEW_W * this.layoutScale));
-        int height = Math.max(scaled(PREVIEW_H), (int) Math.round(getModelFeet(0) + scaled(SPACER)) + BTN_SIZE);
-        int left = useRight ? menuRight + gap : menuLeft - gap - width;
-        left = Math.max(SCREEN_MARGIN, Math.min(left, parentScreen.width - SCREEN_MARGIN - width));
-        int top = Math.max(SCREEN_MARGIN, Math.min(menuBottom - height, parentScreen.height - SCREEN_MARGIN - height));
-        this.setPosition(left, top);
-        this.setWidth(width);
-        this.setHeight(height);
+        return target;
     }
 
-    private int scaled(int value) {
-        return (int) Math.round(value * this.layoutScale);
+    public static int getDefaultLeft(Screen parentScreen, int width) {
+        AbstractWidget target = findMenuTargetButton(parentScreen.children());
+        return target != null ? target.getX() + target.getWidth() + 20
+            : Math.round((float) (width * 5 / 6.0 - PREVIEW_W / 2.0));
+    }
+
+    public static int getDefaultTop(Screen parentScreen, int height) {
+        AbstractWidget target = findMenuTargetButton(parentScreen.children());
+        return target != null ? target.getY() + target.getHeight() - 115
+            : Math.round((float) (height / 2.0 - PREVIEW_H / 2.0));
     }
 
     private int getModelSize() {
-        return Math.max(1, Math.min((scaled(PREVIEW_H) + scaled(RENDER_PADDING_TOP)) / 3, scaled(SIZE_CAP)));
+        return Math.min((PREVIEW_H + RENDER_PADDING_TOP) / 3, SIZE_CAP);
     }
 
     private double getModelFeet(int top) {
-        double centerY = top + (scaled(PREVIEW_H) - scaled(RENDER_PADDING_TOP)) / 2.0;
+        double centerY = top + (PREVIEW_H - RENDER_PADDING_TOP) / 2.0;
         return centerY + Y_TRANSLATION * getModelSize();
     }
 
@@ -132,8 +118,8 @@ public class PaperDollWidget extends AbstractWidget {
     private boolean isMouseOverModel(int mouseX, int mouseY) {
         int left = this.getX();
         int top = this.getY();
-        return mouseX >= left && mouseX <= left + this.getWidth()
-            && mouseY >= top && mouseY <= top + scaled(PREVIEW_H);
+        return mouseX >= left && mouseX <= left + PREVIEW_W
+            && mouseY >= top && mouseY <= top + PREVIEW_H;
     }
 
     //~ if >=26.1 'renderWidget' -> 'extractWidgetRenderState' {
@@ -179,20 +165,16 @@ public class PaperDollWidget extends AbstractWidget {
         int left = this.getX();
         int top = this.getY();
 
-        GuiUtils.renderEntityInRect(guiGraphics, this.previewPlayer, this.previewYaw, left - scaled(40), top - scaled(RENDER_PADDING_TOP), left + this.getWidth() + scaled(40), top + scaled(PREVIEW_H), Math.max(1, scaled(SIZE_CAP)));
+        GuiUtils.renderEntityInRect(guiGraphics, this.previewPlayer, this.previewYaw, left - 40, top - RENDER_PADDING_TOP, left + PREVIEW_W + 40, top + PREVIEW_H, SIZE_CAP);
 
         if (this.previewPlayer.shouldShowName()) {
             Font font = minecraft.font;
             int nametagTopY = (int) Math.round(getModelTop(top) - SPACER - font.lineHeight);
-            Component displayName = this.previewPlayer.getDisplayName();
-            if (this.layoutScale < 1.0) {
-                displayName = Component.literal(font.plainSubstrByWidth(displayName.getString(), Math.max(0, this.getWidth() - 4)));
-            }
-            GuiUtils.renderNameTag(guiGraphics, font, displayName, left + (this.getWidth() / 2), Math.max(2, nametagTopY));
+            GuiUtils.renderNameTag(guiGraphics, font, this.previewPlayer.getDisplayName(), left + (PREVIEW_W / 2), Math.max(2, nametagTopY));
         }
 
-        this.openSkinButton.setX(left + (this.getWidth() - BTN_SIZE) / 2);
-        this.openSkinButton.setY((int) Math.round(getModelFeet(top) + scaled(SPACER)));
+        this.openSkinButton.setX(left + (PREVIEW_W - BTN_SIZE) / 2);
+        this.openSkinButton.setY((int) Math.round(getModelFeet(top) + SPACER));
         //~ if >=26.1 'render' -> 'extractRenderState' {
         //? if >=26.4-snapshot-5 {
         /*this.openSkinButton.extractRenderState(guiGraphics);
